@@ -1,0 +1,173 @@
+<template>
+	<view class="process-card" @click="onClick">
+		<view class="card-header">
+			<text class="process-code">{{ item.code }}</text>
+			<view class="status-tag" :class="statusClass">
+				<text class="status-text">{{ item.status }}</text>
+			</view>
+		</view>
+		
+		<text class="process-name">{{ item.name }}</text>
+		
+		<view class="card-info">
+			<view class="info-row">
+				<text class="info-icon">📦</text>
+				<text class="info-text">{{ item.productName }}</text>
+			</view>
+			<view class="info-row">
+				<text class="info-icon">📋</text>
+				<text class="info-text">{{ item.stepCount }} 个步骤</text>
+			</view>
+		</view>
+		
+		<view class="card-footer">
+			<text class="version-text">{{ item.version }}</text>
+			<text class="update-time">{{ formattedDate }}</text>
+		</view>
+	</view>
+</template>
+
+<script lang="uts">
+	import { ProcessListItem } from '@/types/process'
+	
+	/**
+	 * 工艺卡片组件
+	 * @description 展示工艺列表中的单个工艺项
+	 */
+	export default {
+		name: 'process-card',
+		emits: ['click'],
+		props: {
+			item: {
+				type: Object as PropType<ProcessListItem>,
+				required: true
+			}
+		},
+		computed: {
+			/**
+			 * 状态样式类
+			 */
+			statusClass(): string {
+				const status = this.item.status
+				if (status == '已发布') {
+					return 'status-published'
+				} else if (status == '草稿') {
+					return 'status-draft'
+				} else {
+					return 'status-default'
+				}
+			},
+			
+			/**
+			 * 格式化日期
+			 */
+			formattedDate(): string {
+				if (this.item.updatedAt == '') {
+					return '-'
+				}
+				const date = new Date(this.item.updatedAt)
+				const month = (date.getMonth() + 1).toString().padStart(2, '0')
+				const day = date.getDate().toString().padStart(2, '0')
+				return `${month}-${day}`
+			}
+		},
+		methods: {
+			onClick() {
+				this.$emit('click', this.item)
+			}
+		}
+	}
+</script>
+
+<style>
+	.process-card {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 16px;
+		margin-bottom: 12px;
+		flex-direction: column;
+	}
+	
+	.card-header {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+	
+	.process-code {
+		font-size: 12px;
+		color: #666666;
+	}
+	
+	.status-tag {
+		padding: 2px 8px;
+		border-radius: 4px;
+	}
+	
+	.status-published {
+		background-color: #e8f5e9;
+	}
+	
+	.status-draft {
+		background-color: #fff3e0;
+	}
+	
+	.status-default {
+		background-color: #f5f5f5;
+	}
+	
+	.status-text {
+		font-size: 12px;
+		color: #333333;
+	}
+	
+	.process-name {
+		font-size: 16px;
+		font-weight: bold;
+		color: #333333;
+		margin-bottom: 12px;
+	}
+	
+	.card-info {
+		flex-direction: row;
+		flex-wrap: wrap;
+		margin-bottom: 12px;
+	}
+	
+	.info-row {
+		flex-direction: row;
+		align-items: center;
+		margin-right: 16px;
+		margin-bottom: 4px;
+	}
+	
+	.info-icon {
+		font-size: 14px;
+		margin-right: 4px;
+	}
+	
+	.info-text {
+		font-size: 13px;
+		color: #666666;
+	}
+	
+	.card-footer {
+		flex-direction: row;
+		justify-content: space-between;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #f0f0f0;
+		padding-top: 12px;
+	}
+	
+	.version-text {
+		font-size: 12px;
+		color: #007aff;
+	}
+	
+	.update-time {
+		font-size: 12px;
+		color: #999999;
+	}
+</style>

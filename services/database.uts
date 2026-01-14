@@ -1,0 +1,344 @@
+/**
+ * MPM 工艺预览系统 - 本地数据库服务
+ * @description 封装 SQLite 数据库操作
+ */
+
+// #ifdef APP-ANDROID
+import { UTSAndroid } from "dcloudio.uts.android";
+import SQLiteDatabase from 'android.database.sqlite.SQLiteDatabase';
+import Cursor from 'android.database.Cursor';
+// #endif
+
+/**
+ * 数据库名称
+ */
+const DB_NAME: string = 'mpm_offline.db'
+
+/**
+ * 数据库版本
+ */
+const DB_VERSION: number = 1
+
+/**
+ * 数据库实例引用
+ */
+// #ifdef APP-ANDROID
+let dbInstance: SQLiteDatabase | null = null
+// #endif
+// #ifdef WEB
+let dbInstance: IDBDatabase | null = null
+// #endif
+// #ifdef APP-HARMONY
+let dbInstance: any = null
+// #endif
+
+
+/**
+ * 初始化数据库
+ * @returns Promise<boolean> 初始化是否成功
+ */
+export function initDatabase(): Promise<boolean> {
+	return new Promise((resolve: (value: boolean) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID
+		initSQLiteDatabase()
+			.then(() => {
+				createTables()
+					.then(() => {
+						resolve(true)
+					})
+					.catch((e: any) => {
+						reject(new Error(JSON.stringify(e)))
+					})
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		resolve(true)
+		// #endif
+		
+		// #ifdef WEB
+		initIndexedDB()
+			.then(() => {
+				resolve(true)
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
+		// #endif
+	})
+}
+
+/**
+ * 初始化 SQLite 数据库（App端）
+ */
+function initSQLiteDatabase(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		try {
+			// #ifdef APP-ANDROID
+			const context = UTSAndroid.getAppContext()
+			if (context != null) {
+				const dbPath = context.getDatabasePath(DB_NAME).getAbsolutePath()
+				dbInstance = SQLiteDatabase.openOrCreateDatabase(dbPath, null)
+				console.log('数据库打开成功')
+				resolve()
+			} else {
+				reject(new Error('无法获取 Android Context'))
+			}
+			// #endif
+			
+			// #ifdef APP-HARMONY
+			resolve()
+			// #endif
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * 创建数据表
+ */
+function createTables(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		const createProcessTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_process (
+				id TEXT PRIMARY KEY,
+				code TEXT NOT NULL,
+				name TEXT NOT NULL,
+				version TEXT,
+				status TEXT,
+				product_id TEXT,
+				product_name TEXT,
+				product_model TEXT,
+				step_count INTEGER DEFAULT 0,
+				created_at TEXT,
+				updated_at TEXT,
+				data_json TEXT
+			)
+		`
+		
+		const createStepTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_process_step (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				process_id TEXT NOT NULL,
+				step_no INTEGER NOT NULL,
+				name TEXT NOT NULL,
+				description TEXT,
+				duration INTEGER DEFAULT 0,
+				tools_json TEXT,
+				materials_json TEXT,
+				images_json TEXT,
+				videos_json TEXT
+			)
+		`
+		
+		const createAttachmentTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_process_attachment (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				process_id TEXT NOT NULL,
+				type TEXT,
+				name TEXT,
+				path TEXT
+			)
+		`
+		
+		const createPackageTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_import_package (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				file_name TEXT,
+				version TEXT,
+				source TEXT,
+				process_count INTEGER,
+				import_time TEXT,
+				checksum TEXT
+			)
+		`
+		
+		// #ifdef APP-ANDROID
+		if (dbInstance != null) {
+			try {
+				dbInstance!.execSQL(createProcessTableSQL)
+				dbInstance!.execSQL(createStepTableSQL)
+				dbInstance!.execSQL(createAttachmentTableSQL)
+				dbInstance!.execSQL(createPackageTableSQL)
+				console.log('数据表创建成功')
+				resolve()
+			} catch(e: any) {
+				console.error('数据表创建失败：', e)
+				reject(new Error(e.toString()))
+			}
+		} else {
+			resolve()
+		}
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		resolve()
+		// #endif
+	})
+}
+
+/**
+ * 执行 SQL 语句
+ * @param sql - SQL 语句
+ * @param params - 参数数组
+ */
+export function executeSQL(sql: string, params: any[] = []): Promise<any> {
+	return new Promise((resolve: (value: any) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID
+		if (dbInstance == null) {
+			reject(new Error('数据库未初始化'))
+			return
+		}
+		
+		try {
+			if (params.length > 0) {
+				const args = params.map((p):any => p)
+				dbInstance!.execSQL(sql, args.toTypedArray())
+			} else {
+				dbInstance!.execSQL(sql)
+			}
+			resolve(true)
+		} catch (e: any) {
+			console.error('SQL 执行失败：', sql, e)
+			reject(new Error('SQL 执行失败: ' + e.toString()))
+		}
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		resolve(true)
+		// #endif
+		
+		// #ifdef WEB
+		console.warn('Web 端 IndexedDB 不支持直接 SQL 执行')
+		resolve(null)
+		// #endif
+	})
+}
+
+/**
+ * 查询数据
+ * @param sql - 查询 SQL
+ * @param params - 参数数组
+ */
+export function querySQL(sql: string, params: any[] = []): Promise<any[]> {
+	return new Promise((resolve: (value: any[]) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID
+		if (dbInstance == null) {
+			reject(new Error('数据库未初始化'))
+			return
+		}
+		
+		try {
+			let args: string[] | null = null
+			if (params.length > 0) {
+				args = params.map((p):string => {
+					if (p == null) return ''
+					return p.toString()
+				})
+			}
+			
+			const cursor = dbInstance!.rawQuery(sql, args != null ? args.toTypedArray() : null)
+			const result: any[] = []
+			
+			if (cursor.moveToFirst()) {
+				do {
+					const row: any = {}
+					const columnCount = cursor.getColumnCount()
+					for (let i = 0; i < columnCount; i++) {
+						const columnName = cursor.getColumnName(i)
+						const type = cursor.getType(i)
+						
+						if (type == 3) { // STRING
+							row[columnName] = cursor.getString(i)
+						} else if (type == 1) { // INTEGER
+							row[columnName] = cursor.getLong(i)
+						} else if (type == 2) { // FLOAT
+							row[columnName] = cursor.getDouble(i)
+						} else if (type == 0) { // NULL
+							row[columnName] = null
+						} else if (type == 4) { // BLOB
+							row[columnName] = null 
+						}
+					}
+					result.push(row)
+				} while (cursor.moveToNext())
+			}
+			cursor.close()
+			resolve(result)
+		} catch (e: any) {
+			console.error('查询失败：', sql, e)
+			reject(new Error('查询失败: ' + e.toString()))
+		}
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		resolve([] as any[])
+		// #endif
+		
+		// #ifdef WEB
+		resolve([] as any[])
+		// #endif
+	})
+}
+
+/**
+ * 关闭数据库
+ */
+export function closeDatabase(): void {
+	// #ifdef APP-ANDROID
+	if (dbInstance != null) {
+		try {
+			dbInstance!.close()
+			dbInstance = null
+			console.log('数据库关闭成功')
+		} catch (e: any) {
+			console.error('数据库关闭失败：', e)
+		}
+	}
+	// #endif
+}
+
+// #ifdef WEB
+/**
+ * 初始化 IndexedDB（Web端）
+ */
+function initIndexedDB(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		try {
+			const request = indexedDB.open(DB_NAME, DB_VERSION)
+			
+			request.onerror = (_event: Event) => {
+				reject(new Error('IndexedDB 打开失败'))
+			}
+			
+			request.onsuccess = (_event: Event) => {
+				dbInstance = request.result
+				console.log('IndexedDB 打开成功')
+				resolve()
+			}
+			
+			request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+				const db = (event.target as IDBOpenDBRequest).result
+				
+				// 创建工艺表
+				if (!db.objectStoreNames.contains('processes')) {
+					const processStore = db.createObjectStore('processes', { keyPath: 'id' })
+					processStore.createIndex('code', 'code', { unique: false })
+					processStore.createIndex('name', 'name', { unique: false })
+				}
+				
+				// 创建导入记录表
+				if (!db.objectStoreNames.contains('importRecords')) {
+					db.createObjectStore('importRecords', { keyPath: 'id', autoIncrement: true })
+				}
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+// #endif

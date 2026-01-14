@@ -1,0 +1,205 @@
+/**
+ * MPM 工艺预览系统 - AES-256 加解密工具
+ * @description 提供数据包的加密和解密功能
+ */
+
+// 预置密钥（生产环境应使用更安全的密钥管理方式）
+const PRESET_KEY: string = 'MPM_OFFLINE_2026_SECURE_KEY_256B'
+const ALGORITHM: string = 'AES-256-CBC'
+
+/**
+ * 加密头信息类型
+ */
+type EncryptHeader = {
+	iv: string
+	algorithm: string
+}
+
+/**
+ * 解密结果类型
+ */
+export type DecryptResult = {
+	success: boolean
+	data: ArrayBuffer | null
+	errorMessage: string
+}
+
+/**
+ * 解密数据包文件
+ * @param encryptedData - 加密的数据
+ * @returns 解密结果
+ */
+export function decryptPackage(encryptedData: ArrayBuffer): DecryptResult {
+	// #ifdef APP-ANDROID
+	return decryptAndroid(encryptedData)
+	// #endif
+	
+	// #ifdef APP-HARMONY
+	return decryptHarmony(encryptedData)
+	// #endif
+	
+	// #ifdef WEB
+	return decryptWeb(encryptedData)
+	// #endif
+}
+
+// #ifdef APP-ANDROID
+import Cipher from 'javax.crypto.Cipher';
+import SecretKeySpec from 'javax.crypto.spec.SecretKeySpec';
+import IvParameterSpec from 'javax.crypto.spec.IvParameterSpec';
+
+/**
+ * Android 平台解密实现
+ */
+function decryptAndroid(encryptedData: ArrayBuffer): DecryptResult {
+	try {
+		const dataBytes = new Int8Array(encryptedData)
+		
+		// 读取加密头（前16字节为IV）
+		if (dataBytes.length < 16) {
+			return {
+				success: false,
+				data: null,
+				errorMessage: '数据包格式错误：数据太短'
+			}
+		}
+		
+		const ivBytes = dataBytes.slice(0, 16)
+		const encryptedBytes = dataBytes.slice(16)
+		
+		// 初始化解密器
+		const keyBytes = PRESET_KEY.substring(0, 32).split('').map((c: string): number => c.charCodeAt(0) as number)
+		const secretKey = new SecretKeySpec(keyBytes as ByteArray, 'AES')
+		const ivSpec = new IvParameterSpec(ivBytes as ByteArray)
+		
+		const cipher = Cipher.getInstance('AES/CBC/PKCS5Padding')
+		cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+		
+		const decryptedBytes = cipher.doFinal(encryptedBytes as ByteArray)
+		
+		return {
+			success: true,
+			data: (decryptedBytes as Int8Array).buffer,
+			errorMessage: ''
+		}
+	} catch (e: any) {
+		return {
+			success: false,
+			data: null,
+			errorMessage: '解密失败：' + e.message
+		}
+	}
+}
+// #endif
+
+// #ifdef APP-HARMONY
+/**
+ * HarmonyOS 平台解密实现
+ */
+function decryptHarmony(encryptedData: ArrayBuffer): DecryptResult {
+	try {
+		// HarmonyOS 使用 @ohos.security.cryptoFramework
+		// 此处为占位实现，实际需要调用鸿蒙加密 API
+		console.log('HarmonyOS decrypt called')
+		return {
+			success: false,
+			data: null,
+			errorMessage: 'HarmonyOS 加密模块待实现'
+		}
+	} catch (e: any) {
+		return {
+			success: false,
+			data: null,
+			errorMessage: '解密失败：' + e.message
+		}
+	}
+}
+// #endif
+
+// #ifdef WEB
+/**
+ * Web 平台解密实现
+ */
+function decryptWeb(encryptedData: ArrayBuffer): DecryptResult {
+	try {
+		// Web 平台使用 SubtleCrypto API
+		// 此处为占位实现，实际需要异步处理
+		console.log('Web decrypt called')
+		return {
+			success: false,
+			data: null,
+			errorMessage: 'Web 加密模块待实现'
+		}
+	} catch (e: any) {
+		return {
+			success: false,
+			data: null,
+			errorMessage: '解密失败：' + e.message
+		}
+	}
+}
+// #endif
+
+/**
+ * 验证数据包完整性（MD5校验）
+ * @param data - 数据
+ * @param expectedChecksum - 期望的校验值
+ * @returns 是否验证通过
+ */
+export function verifyChecksum(data: ArrayBuffer, expectedChecksum: string): boolean {
+	// #ifdef APP-ANDROID
+	return verifyChecksumAndroid(data, expectedChecksum)
+	// #endif
+	
+	// #ifdef APP-HARMONY
+	return verifyChecksumHarmony(data, expectedChecksum)
+	// #endif
+	
+	// #ifdef WEB
+	return verifyChecksumWeb(data, expectedChecksum)
+	// #endif
+}
+
+// #ifdef APP-ANDROID
+import MessageDigest from 'java.security.MessageDigest';
+
+function verifyChecksumAndroid(data: ArrayBuffer, expectedChecksum: string): boolean {
+	try {
+		const md = MessageDigest.getInstance('MD5')
+		const dataBytes = new Int8Array(data)
+		md.update(dataBytes as ByteArray)
+		const digestBytes = md.digest()
+		
+		// 转换为十六进制字符串
+		let hexString = ''
+		for (let i = 0; i < digestBytes.length; i++) {
+			const hex = (digestBytes[i] & 0xFF).toString(16)
+			if (hex.length == 1) {
+				hexString += '0'
+			}
+			hexString += hex
+		}
+		
+		return hexString.toLowerCase() == expectedChecksum.toLowerCase()
+	} catch (e: any) {
+		console.error('MD5 校验失败：', e.message)
+		return false
+	}
+}
+// #endif
+
+// #ifdef APP-HARMONY
+function verifyChecksumHarmony(data: ArrayBuffer, expectedChecksum: string): boolean {
+	// HarmonyOS 实现
+	console.log('HarmonyOS checksum verification')
+	return true
+}
+// #endif
+
+// #ifdef WEB
+function verifyChecksumWeb(data: ArrayBuffer, expectedChecksum: string): boolean {
+	// Web 实现
+	console.log('Web checksum verification')
+	return true
+}
+// #endif

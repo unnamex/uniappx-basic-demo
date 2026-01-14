@@ -1,0 +1,146 @@
+<template>
+	<view class="video-player-page">
+		<!-- 视频播放器 -->
+		<video 
+			id="videoPlayer"
+			class="video-player"
+			:src="videoSrc"
+			:autoplay="true"
+			:controls="true"
+			:show-fullscreen-btn="true"
+			:show-center-play-btn="true"
+			:show-play-btn="true"
+			:show-progress="true"
+			:enable-progress-gesture="true"
+			@error="handleError"
+			@ended="handleEnded"
+		></video>
+		
+		<!-- 视频信息 -->
+		<view class="video-info">
+			<text class="video-title">{{ videoTitle }}</text>
+		</view>
+		
+		<!-- 操作栏 -->
+		<view class="action-bar">
+			<button class="btn-back" @click="goBack">
+				<text class="btn-text">返回</text>
+			</button>
+		</view>
+	</view>
+</template>
+
+<script lang="uts">
+	export default {
+		data() {
+			return {
+				// 视频源地址
+				videoSrc: '',
+				
+				// 视频标题
+				videoTitle: '视频播放'
+			}
+		},
+		
+		onLoad(options: any) {
+			// 获取视频源
+			if (options['src'] != null) {
+				const src = options['src']
+				const decoded = decodeURIComponent(String(src ?? ''))
+				this.videoSrc = decoded != null ? decoded : ''
+				
+				// 从路径中提取标题
+				this.videoTitle = this.getFileName(this.videoSrc)
+			}
+			
+			// 设置导航栏标题
+			uni.setNavigationBarTitle({
+				title: this.videoTitle
+			})
+		},
+		
+		methods: {
+			/**
+			 * 获取文件名
+			 */
+			getFileName(path: string): string {
+				const parts = path.split('/')
+				let fileName = parts[parts.length - 1]
+				
+				// 移除扩展名
+				const dotIndex = fileName.lastIndexOf('.')
+				if (dotIndex > 0) {
+					fileName = fileName.substring(0, dotIndex)
+				}
+				
+				return fileName
+			},
+			
+			/**
+			 * 播放错误处理
+			 */
+			handleError(e: any) {
+				console.error('视频播放错误：', e)
+				uni.showToast({
+					title: '视频播放失败',
+					icon: 'none'
+				})
+			},
+			
+			/**
+			 * 播放结束处理
+			 */
+			handleEnded() {
+				console.log('视频播放结束')
+			},
+			
+			/**
+			 * 返回上一页
+			 */
+			goBack() {
+				uni.navigateBack()
+			}
+		}
+	}
+</script>
+
+<style>
+	.video-player-page {
+		flex: 1;
+		flex-direction: column;
+		background-color: #000000;
+	}
+	
+	.video-player {
+		width: 100%;
+		flex: 1;
+	}
+	
+	.video-info {
+		padding: 16px;
+		background-color: #1a1a1a;
+	}
+	
+	.video-title {
+		font-size: 16px;
+		color: #ffffff;
+	}
+	
+	.action-bar {
+		padding: 16px;
+		background-color: #1a1a1a;
+	}
+	
+	.btn-back {
+		background-color: #333333;
+		border-radius: 8px;
+		height: 44px;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.btn-text {
+		color: #ffffff;
+		font-size: 14px;
+	}
+</style>

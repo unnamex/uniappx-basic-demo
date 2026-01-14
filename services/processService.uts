@@ -1,0 +1,395 @@
+/**
+ * MPM 工艺预览系统 - 工艺数据服务
+ * @description 提供工艺数据的查询和管理功能
+ */
+
+import { ProcessInfo, ProcessListItem, ProcessStep } from '@/types/process'
+import { PageParams, PageResult } from '@/types/common'
+import { querySQL, executeSQL } from '@/services/database'
+
+/**
+ * 获取工艺列表
+ * @param params - 分页参数
+ * @returns Promise<PageResult<ProcessListItem>> 分页结果
+ */
+export function getProcessList(params: PageParams): Promise<PageResult<ProcessListItem>> {
+	return new Promise((resolve: (value: PageResult<ProcessListItem>) => void, reject: (reason: Error) => void) => {
+		const offset = (params.page - 1) * params.pageSize
+		
+		let countSQL = 'SELECT COUNT(*) as total FROM t_process'
+		let querySQL_str = `
+			SELECT id, code, name, version, status, product_name as productName, 
+				   step_count as stepCount, updated_at as updatedAt
+			FROM t_process
+		`
+		
+		// 添加搜索条件
+		if (params.keyword != '') {
+			const whereClause = ` WHERE name LIKE '%${params.keyword}%' OR code LIKE '%${params.keyword}%'`
+			countSQL += whereClause
+			querySQL_str += whereClause
+		}
+		
+		querySQL_str += ` ORDER BY updated_at DESC LIMIT ${params.pageSize} OFFSET ${offset}`
+		
+		// 查询总数
+		querySQL(countSQL)
+			.then((countResult: any[]) => {
+				const total = countResult.length > 0 ? (countResult[0]['total'] as number) : 0
+				
+				// 查询列表数据
+				querySQL(querySQL_str)
+					.then((listResult: any[]) => {
+						const list: ProcessListItem[] = []
+						
+						for (let i = 0; i < listResult.length; i++) {
+							const row = listResult[i]
+							list.push({
+								id: row['id'] as string,
+								code: row['code'] as string,
+								name: row['name'] as string,
+								version: row['version'] as string,
+								status: row['status'] as string,
+								productName: row['productName'] as string,
+								stepCount: row['stepCount'] as number,
+								updatedAt: row['updatedAt'] as string
+							})
+						}
+						
+						resolve({
+							list: list,
+							total: total,
+							page: params.page,
+							pageSize: params.pageSize
+						})
+					})
+					.catch((e: any) => {
+						reject(new Error(JSON.stringify(e)))
+					})
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
+	})
+}
+
+/**
+ * 获取工艺详情
+ * @param processId - 工艺ID
+ * @returns Promise<ProcessInfo | null> 工艺详情
+ */
+export function getProcessDetail(processId: string): Promise<ProcessInfo | null> {
+	return new Promise((resolve: (value: ProcessInfo | null) => void, reject: (reason: Error) => void) => {
+		const sql = `SELECT data_json FROM t_process WHERE id = '${processId}'`
+		
+		querySQL(sql)
+			.then((result: any[]) => {
+				if (result.length > 0) {
+					const dataJson = result[0]['data_json'] as string
+					const processInfo = JSON.parse(dataJson) as ProcessInfo
+					resolve(processInfo)
+				} else {
+					resolve(null)
+				}
+			})
+			.catch((e: Error) => {
+				reject(e)
+			})
+	})
+}
+
+/**
+ * 获取工艺步骤列表
+ * @param processId - 工艺ID
+ * @returns Promise<ProcessStep[]> 步骤列表
+ */
+export function getProcessSteps(processId: string): Promise<ProcessStep[]> {
+	return new Promise((resolve: (value: ProcessStep[]) => void, reject: (reason: Error) => void) => {
+		const sql = `
+			SELECT step_no, name, description, duration, 
+				   tools_json, materials_json, images_json, videos_json
+			FROM t_process_step 
+			WHERE process_id = '${processId}'
+			ORDER BY step_no ASC
+		`
+		
+		querySQL(sql)
+			.then((result: any[]) => {
+				const steps: ProcessStep[] = []
+				
+				for (let i = 0; i < result.length; i++) {
+					const row = result[i]
+					steps.push({
+						stepNo: row['step_no'] as number,
+						name: row['name'] as string,
+						description: row['description'] as string,
+						duration: row['duration'] as number,
+						tools: JSON.parse(row['tools_json'] as string) as string[],
+						materials: JSON.parse(row['materials_json'] as string) as string[],
+						images: JSON.parse(row['images_json'] as string) as string[],
+						videos: JSON.parse(row['videos_json'] as string) as string[]
+					})
+				}
+				
+				resolve(steps)
+			})
+			.catch((e: Error) => {
+				reject(e)
+			})
+	})
+}
+
+/**
+ * 搜索工艺
+ * @param keyword - 搜索关键词
+ * @returns Promise<ProcessListItem[]> 搜索结果
+ */
+export function searchProcess(keyword: string): Promise<ProcessListItem[]> {
+	return new Promise((resolve: (value: ProcessListItem[]) => void, reject: (reason: Error) => void) => {
+		if (keyword == '') {
+			resolve([])
+			return
+		}
+		
+		const sql = `
+			SELECT id, code, name, version, status, product_name as productName, 
+				   step_count as stepCount, updated_at as updatedAt
+			FROM t_process
+			WHERE name LIKE '%${keyword}%' OR code LIKE '%${keyword}%'
+			ORDER BY updated_at DESC
+			LIMIT 20
+		`
+		
+		querySQL(sql)
+			.then((result: any[]) => {
+				const list: ProcessListItem[] = []
+				
+				for (let i = 0; i < result.length; i++) {
+					const row = result[i]
+					list.push({
+						id: row['id'] as string,
+						code: row['code'] as string,
+						name: row['name'] as string,
+						version: row['version'] as string,
+						status: row['status'] as string,
+						productName: row['productName'] as string,
+						stepCount: row['stepCount'] as number,
+						updatedAt: row['updatedAt'] as string
+					})
+				}
+				
+				resolve(list)
+			})
+			.catch((e: Error) => {
+				reject(e)
+			})
+	})
+}
+
+/**
+ * 获取工艺总数
+ * @returns Promise<number> 工艺总数
+ */
+export function getProcessCount(): Promise<number> {
+	return new Promise((resolve: (value: number) => void, reject: (reason: Error) => void) => {
+		const sql = 'SELECT COUNT(*) as total FROM t_process'
+		
+		querySQL(sql)
+			.then((result: any[]) => {
+				const total = result.length > 0 ? (result[0]['total'] as number) : 0
+				resolve(total)
+			})
+			.catch((e: Error) => {
+				reject(e)
+			})
+	})
+}
+
+/**
+ * 删除所有工艺数据（用于重新导入）
+ * @returns Promise<void>
+ */
+export function clearAllProcesses(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		executeSQL('DELETE FROM t_process_attachment')
+			.then(() => executeSQL('DELETE FROM t_process_step'))
+			.then(() => executeSQL('DELETE FROM t_process'))
+			.then(() => {
+				console.log('工艺数据已清空')
+				resolve()
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
+	})
+}
+
+/**
+ * 生成测试数据
+ * @returns Promise<void>
+ */
+export function generateMockData(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		const timestamp = new Date().toISOString()
+		
+		const mockProcesses: any[] = [
+			{
+				id: 'mock_001',
+				code: 'MPM-2026-001',
+				name: '发动机总成装配工艺',
+				version: 'v1.0',
+				status: '已发布',
+				product: {
+					id: 'prod_001',
+					name: 'V8发动机',
+					model: 'Turbo-X'
+				},
+				step_count: 3,
+				created_at: timestamp,
+				updated_at: timestamp,
+				steps: [
+					{
+						stepNo: 1,
+						name: '缸体清洁',
+						description: '使用高压气枪清洁缸体内部，确保无金属屑残留。',
+						duration: 15,
+						tools: ['高压气枪', '清洁布'],
+						materials: ['清洁剂'],
+						images: ['/static/logo.png'],
+						videos: []
+					},
+					{
+						stepNo: 2,
+						name: '活塞安装',
+						description: '将活塞环对齐，使用专用工具将活塞压入缸筒。注意方向标记。',
+						duration: 25,
+						tools: ['活塞环压缩钳', '橡胶锤'],
+						materials: ['润滑油'],
+						images: ['/static/logo.png'],
+						videos: [] 
+					},
+					{
+						stepNo: 3,
+						name: '缸盖紧固',
+						description: '按照对角线顺序分三次拧紧缸盖螺栓，最终扭矩为 80Nm。',
+						duration: 20,
+						tools: ['扭力扳手'],
+						materials: ['密封垫'],
+						images: [],
+						videos: []
+					}
+				],
+				attachments: [
+					{
+						type: 'document',
+						name: '装配技术规范.pdf',
+						path: 'mock_doc_path'
+					},
+					{
+						type: 'drawing',
+						name: '总成图纸.dwg',
+						path: 'mock_drawing_path'
+					}
+				]
+			},
+			{
+				id: 'mock_002',
+				code: 'MPM-2026-002',
+				name: '变速箱壳体加工',
+				version: 'v0.9',
+				status: '草稿',
+				product: {
+					id: 'prod_002',
+					name: '自动变速箱',
+					model: 'AT-8Speed'
+				},
+				step_count: 2,
+				created_at: timestamp,
+				updated_at: timestamp,
+				steps: [
+					{
+						stepNo: 1,
+						name: '基准面铣削',
+						description: '铣削底面作为后续加工基准，平面度要求 0.02mm。',
+						duration: 30,
+						tools: ['面铣刀'],
+						materials: [],
+						images: ['/static/logo.png'],
+						videos: []
+					},
+					{
+						stepNo: 2,
+						name: '钻孔攻丝',
+						description: '加工连接螺孔，注意冷却液流量。',
+						duration: 45,
+						tools: ['钻头Φ8', '丝锥M10'],
+						materials: ['切削液'],
+						images: [],
+						videos: []
+					}
+				],
+				attachments: []
+			}
+		]
+		
+		const savePromises: Promise<any>[] = []
+		
+		// 清理旧数据
+		executeSQL('DELETE FROM t_process WHERE id LIKE "mock_%"')
+			.then(() => executeSQL('DELETE FROM t_process_step WHERE process_id LIKE "mock_%"'))
+			.then(() => executeSQL('DELETE FROM t_process_attachment WHERE process_id LIKE "mock_%"'))
+			.then(() => {
+				// 插入新数据
+				for (let i = 0; i < mockProcesses.length; i++) {
+					const p = mockProcesses[i]
+					
+					// 插入主表
+					const insertProcessSQL = `
+						INSERT INTO t_process 
+						(id, code, name, version, status, product_id, product_name, product_model, step_count, created_at, updated_at, data_json)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					`
+					const pParams = [
+						p.id, p.code, p.name, p.version, p.status, 
+						p.product.id, p.product.name, p.product.model, 
+						p.step_count, p.created_at, p.updated_at, 
+						JSON.stringify(p)
+					]
+					savePromises.push(executeSQL(insertProcessSQL, pParams))
+					
+					// 插入步骤
+					for (let j = 0; j < p.steps.length; j++) {
+						const s = p.steps[j]
+						const insertStepSQL = `
+							INSERT INTO t_process_step 
+							(process_id, step_no, name, description, duration, tools_json, materials_json, images_json, videos_json)
+							VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+						`
+						const sParams = [
+							p.id, s.stepNo, s.name, s.description, s.duration,
+							JSON.stringify(s.tools), JSON.stringify(s.materials),
+							JSON.stringify(s.images), JSON.stringify(s.videos)
+						]
+						savePromises.push(executeSQL(insertStepSQL, sParams))
+					}
+					
+					// 插入附件
+					for (let k = 0; k < p.attachments.length; k++) {
+						const a = p.attachments[k]
+						const insertAttSQL = `
+							INSERT INTO t_process_attachment (process_id, type, name, path) VALUES (?, ?, ?, ?)
+						`
+						savePromises.push(executeSQL(insertAttSQL, [p.id, a.type, a.name, a.path]))
+					}
+				}
+				
+				return Promise.all(savePromises)
+			})
+			.then(() => {
+				resolve()
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
+	})
+}

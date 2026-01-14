@@ -1,0 +1,337 @@
+<template>
+	<!-- #ifdef APP -->
+	<scroll-view class="page-container" @scrolltolower="loadMore">
+	<!-- #endif -->
+		<view class="list-page">
+			<!-- 搜索栏 -->
+			<view class="search-bar">
+				<view class="search-input-container">
+					<text class="search-icon">🔍</text>
+					<input 
+						class="search-input" 
+						type="text" 
+						placeholder="搜索工艺名称或编号"
+						:value="keyword"
+						@input="handleSearchInput"
+						@confirm="handleSearch"
+					/>
+					<text class="search-clear" v-if="keyword != ''" @click="handleClearSearch">✕</text>
+				</view>
+			</view>
+			
+			<!-- 统计信息 -->
+			<view class="stats-bar">
+				<text class="stats-text">共 {{ totalCount }} 条工艺</text>
+			</view>
+			
+			<!-- 工艺列表 -->
+			<view class="process-list" v-if="processList.length > 0">
+				<process-card 
+					v-for="(item, index) in processList" 
+					:key="item.id"
+					:item="item"
+					@click="handleCardClick"
+				></process-card>
+			</view>
+			
+			<!-- 空状态 -->
+			<view class="empty-state" v-else-if="!isLoading">
+				<text class="empty-icon">📭</text>
+				<text class="empty-title">暂无工艺数据</text>
+				<text class="empty-desc">请先导入工艺数据包</text>
+				<button class="btn-import" @click="goToImport">
+					<text class="btn-text">去导入</text>
+				</button>
+			</view>
+			
+			<!-- 加载状态 -->
+			<view class="loading-more" v-if="isLoading">
+				<text class="loading-text">加载中...</text>
+			</view>
+			
+			<!-- 加载完成 -->
+			<view class="load-end" v-if="!hasMore && processList.length > 0">
+				<text class="load-end-text">—— 已加载全部 ——</text>
+			</view>
+		</view>
+	<!-- #ifdef APP -->
+	</scroll-view>
+	<!-- #endif -->
+</template>
+
+<script lang="uts">
+	import { ProcessListItem } from '@/types/process'
+	import { PageParams, PageResult } from '@/types/common'
+	import { getProcessList, getProcessCount } from '@/services/processService'
+	import { initDatabase } from '@/services/database'
+	
+	export default {
+		data() {
+			return {
+				// 搜索关键词
+				keyword: '',
+				
+				// 工艺列表
+				processList: [] as ProcessListItem[],
+				
+				// 总数
+				totalCount: 0,
+				
+				// 当前页码
+				currentPage: 1,
+				
+				// 每页数量
+				pageSize: 10,
+				
+				// 是否还有更多
+				hasMore: true,
+				
+				// 是否正在加载
+				isLoading: false
+			}
+		},
+		
+		onLoad() {
+			this.initPage()
+		},
+		
+		onShow() {
+			// 每次显示时刷新数据
+			this.refreshList()
+		},
+		
+		methods: {
+			/**
+			 * 初始化页面
+			 */
+			initPage() {
+				initDatabase()
+					.then(() => {
+						this.loadProcessList()
+					})
+					.catch((e: Error) => {
+						console.error('数据库初始化失败：', e.message)
+					})
+			},
+			
+			/**
+			 * 刷新列表
+			 */
+			refreshList() {
+				this.currentPage = 1
+				this.hasMore = true
+				this.processList = []
+				this.loadProcessList()
+			},
+			
+			/**
+			 * 加载工艺列表
+			 */
+			loadProcessList() {
+				if (this.isLoading || !this.hasMore) {
+					return
+				}
+				
+				this.isLoading = true
+				
+				const params: PageParams = {
+					page: this.currentPage,
+					pageSize: this.pageSize,
+					keyword: this.keyword
+				}
+				
+				getProcessList(params)
+					.then((result: PageResult<ProcessListItem>) => {
+						this.isLoading = false
+						this.totalCount = result.total
+						
+						if (this.currentPage == 1) {
+							this.processList = result.list
+						} else {
+							for (let i = 0; i < result.list.length; i++) {
+								this.processList.push(result.list[i])
+							}
+						}
+						
+						// 判断是否还有更多
+						if (result.list.length < this.pageSize) {
+							this.hasMore = false
+						}
+					})
+					.catch((e: Error) => {
+						this.isLoading = false
+						console.error('加载工艺列表失败：', e.message)
+						uni.showToast({
+							title: '加载失败',
+							icon: 'none'
+						})
+					})
+			},
+			
+			/**
+			 * 加载更多
+			 */
+			loadMore() {
+				if (this.hasMore && !this.isLoading) {
+					this.currentPage++
+					this.loadProcessList()
+				}
+			},
+			
+			/**
+			 * 搜索输入
+			 */
+			handleSearchInput(e: InputEvent) {
+				this.keyword = (e.detail as InputEventDetail).value
+			},
+			
+			/**
+			 * 执行搜索
+			 */
+			handleSearch() {
+				this.refreshList()
+			},
+			
+			/**
+			 * 清除搜索
+			 */
+			handleClearSearch() {
+				this.keyword = ''
+				this.refreshList()
+			},
+			
+			/**
+			 * 点击工艺卡片
+			 */
+			handleCardClick(item: ProcessListItem) {
+				uni.navigateTo({
+					url: '/pages/process/detail?id=' + item.id
+				})
+			},
+			
+			/**
+			 * 跳转到导入页面
+			 */
+			goToImport() {
+				uni.navigateTo({
+					url: '/pages/import/import'
+				})
+			}
+		}
+	}
+</script>
+
+<style>
+	.page-container {
+		flex: 1;
+		background-color: #f5f6f7;
+	}
+	
+	.list-page {
+		flex-direction: column;
+		padding: 12px;
+	}
+	
+	/* 搜索栏 */
+	.search-bar {
+		margin-bottom: 12px;
+	}
+	
+	.search-input-container {
+		flex-direction: row;
+		align-items: center;
+		background-color: #ffffff;
+		border-radius: 8px;
+		padding: 0 12px;
+		height: 44px;
+	}
+	
+	.search-icon {
+		font-size: 16px;
+		margin-right: 8px;
+	}
+	
+	.search-input {
+		flex: 1;
+		font-size: 14px;
+		color: #333333;
+	}
+	
+	.search-clear {
+		font-size: 14px;
+		color: #999999;
+		padding: 4px;
+	}
+	
+	/* 统计信息 */
+	.stats-bar {
+		padding: 8px 4px;
+	}
+	
+	.stats-text {
+		font-size: 12px;
+		color: #999999;
+	}
+	
+	/* 工艺卡片 */
+	.process-list {
+		flex-direction: column;
+	}
+
+	
+	/* 空状态 */
+	.empty-state {
+		flex-direction: column;
+		align-items: center;
+		padding: 60px 20px;
+	}
+	
+	.empty-icon {
+		font-size: 64px;
+		margin-bottom: 16px;
+	}
+	
+	.empty-title {
+		font-size: 18px;
+		color: #333333;
+		margin-bottom: 8px;
+	}
+	
+	.empty-desc {
+		font-size: 14px;
+		color: #999999;
+		margin-bottom: 24px;
+	}
+	
+	.btn-import {
+		background-color: #007aff;
+		border-radius: 8px;
+		padding: 12px 32px;
+	}
+	
+	.btn-text {
+		color: #ffffff;
+		font-size: 14px;
+	}
+	
+	/* 加载状态 */
+	.loading-more {
+		padding: 20px;
+		align-items: center;
+	}
+	
+	.loading-text {
+		font-size: 14px;
+		color: #999999;
+	}
+	
+	.load-end {
+		padding: 20px;
+		align-items: center;
+	}
+	
+	.load-end-text {
+		font-size: 12px;
+		color: #cccccc;
+	}
+</style>

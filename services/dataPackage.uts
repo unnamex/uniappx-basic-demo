@@ -1,0 +1,611 @@
+/**
+ * MPM 工艺预览系统 - 数据包解析服务
+ * @description 处理数据包的选择、解密、解压和导入
+ */
+
+import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/dataPackage'
+import { ProcessInfo } from '@/types/process'
+import { decryptPackage, verifyChecksum } from '@/utils/crypto'
+import { executeSQL } from '@/services/database'
+
+/**
+ * 导入状态回调类型
+ */
+export type ImportProgressCallback = (progress: ImportProgress) => void
+
+/**
+ * 当前选中的文件路径
+ */
+let selectedFilePath: string = ''
+
+/**
+ * 选择数据包文件
+ * @returns Promise<PackageInfo> 数据包信息
+ */
+export function selectPackageFile(): Promise<PackageInfo> {
+	return new Promise((resolve: (value: PackageInfo) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID
+		selectFileAndroid(resolve, reject)
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		selectFileHarmony(resolve, reject)
+		// #endif
+		
+		// #ifdef WEB
+		selectFileWeb(resolve, reject)
+		// #endif
+	})
+}
+
+// #ifdef APP-ANDROID
+import Intent from 'android.content.Intent';
+import Activity from 'android.app.Activity';
+import Uri from 'android.net.Uri';
+
+/**
+ * Android 平台文件选择
+ */
+function selectFileAndroid(
+	resolve: (value: PackageInfo) => void, 
+	reject: (reason: Error) => void
+): void {
+	try {
+		uni.chooseFile({
+			count: 1,
+			extension: ['.mpm'],
+			success: (res: UniChooseFileSuccessCallbackResult) => {
+				if (res.tempFilePaths.length > 0) {
+					const filePath = res.tempFilePaths[0]
+					selectedFilePath = filePath
+					
+					// 获取文件信息
+					uni.getFileInfo({
+						filePath: filePath,
+						success: (fileInfo: UniGetFileInfoSuccessCallbackResult) => {
+							resolve({
+								fileName: getFileName(filePath),
+								fileSize: fileInfo.size,
+								manifest: null,
+								isValid: true,
+								errorMessage: ''
+							})
+						},
+						fail: (err: any) => {
+							reject(new Error('获取文件信息失败'))
+						}
+					})
+				} else {
+					reject(new Error('未选择文件'))
+				}
+			},
+			fail: (err: any) => {
+				reject(new Error('选择文件失败'))
+			}
+		})
+	} catch (e: Error) {
+		reject(e)
+	}
+}
+// #endif
+
+// #ifdef APP-HARMONY
+/**
+ * HarmonyOS 平台文件选择
+ */
+function selectFileHarmony(
+	resolve: (value: PackageInfo) => void, 
+	reject: (reason: Error) => void
+): void {
+	try {
+		uni.chooseFile({
+			count: 1,
+			extension: ['.mpm'],
+			success: (res: UniChooseFileSuccessCallbackResult) => {
+				if (res.tempFilePaths.length > 0) {
+					const filePath = res.tempFilePaths[0]
+					selectedFilePath = filePath
+					
+					uni.getFileInfo({
+						filePath: filePath,
+						success: (fileInfo: UniGetFileInfoSuccessCallbackResult) => {
+							resolve({
+								fileName: getFileName(filePath),
+								fileSize: fileInfo.size,
+								manifest: null,
+								isValid: true,
+								errorMessage: ''
+							})
+						},
+						fail: (err: any) => {
+							reject(new Error('获取文件信息失败'))
+						}
+					})
+				} else {
+					reject(new Error('未选择文件'))
+				}
+			},
+			fail: (err: any) => {
+				reject(new Error('选择文件失败'))
+			}
+		})
+	} catch (e: Error) {
+		reject(e)
+	}
+}
+// #endif
+
+// #ifdef WEB
+/**
+ * Web 平台文件选择
+ */
+function selectFileWeb(
+	resolve: (value: PackageInfo) => void, 
+	reject: (reason: Error) => void
+): void {
+	try {
+		const input = document.createElement('input')
+		input.type = 'file'
+		input.accept = '.mpm'
+		
+		input.onchange = (event: Event) => {
+			const target = event.target as HTMLInputElement
+			if (target.files != null && target.files.length > 0) {
+				const file = target.files[0]
+				selectedFilePath = URL.createObjectURL(file)
+				
+				resolve({
+					fileName: file.name,
+					fileSize: file.size,
+					manifest: null,
+					isValid: true,
+					errorMessage: ''
+				})
+			} else {
+				reject(new Error('未选择文件'))
+			}
+		}
+		
+		input.click()
+	} catch (e: any) {
+		reject(e)
+	}
+}
+// #endif
+
+/**
+ * 获取文件名
+ */
+function getFileName(filePath: string): string {
+	const parts = filePath.split('/')
+	return parts[parts.length - 1]
+}
+
+/**
+ * 验证并预览数据包
+ * @param filePath - 文件路径
+ * @returns Promise<PackageManifest> 数据包清单
+ */
+export function validatePackage(filePath: string): Promise<PackageManifest> {
+	return new Promise((resolve: (value: PackageManifest) => void, reject: (reason: Error) => void) => {
+		readFileAsArrayBuffer(filePath)
+			.then((encryptedData: ArrayBuffer) => {
+				// 解密数据包
+				const decryptResult = decryptPackage(encryptedData)
+				if (!decryptResult.success || decryptResult.data == null) {
+					reject(new Error(decryptResult.errorMessage))
+					return
+				}
+				
+				// 解压并读取清单文件
+				parseManifestFromZip(decryptResult.data)
+					.then((manifest: PackageManifest) => {
+						resolve(manifest)
+					})
+					.catch((e: any) => {
+						reject(new Error(e.toString()))
+					})
+			})
+			.catch((e: any) => {
+				reject(new Error(e.toString()))
+			})
+	})
+}
+
+/**
+ * 导入数据包
+ * @param filePath - 文件路径
+ * @param onProgress - 进度回调
+ * @returns Promise<ImportResult> 导入结果
+ */
+export function importPackage(
+	filePath: string = selectedFilePath, 
+	onProgress: ImportProgressCallback | null = null
+): Promise<ImportResult> {
+	const startTime = Date.now()
+	
+	return new Promise((resolve: (value: ImportResult) => void, reject: (reason: Error) => void) => {
+		if (filePath == '') {
+			reject(new Error('未选择数据包文件'))
+			return
+		}
+		
+		// 更新进度：开始读取文件
+				if (onProgress != null) {
+					onProgress({
+						current: 0,
+						total: 100,
+						currentFile: '读取数据包...',
+						status: 'reading'
+					})
+				}
+				
+				readFileAsArrayBuffer(filePath)
+					.then((encryptedData: ArrayBuffer) => {
+						// 更新进度：解密中
+						if (onProgress != null) {
+							onProgress({
+								current: 20,
+								total: 100,
+								currentFile: '解密数据包...',
+								status: 'decrypting'
+							})
+						}
+						
+						const decryptResult = decryptPackage(encryptedData)
+						if (!decryptResult.success || decryptResult.data == null) {
+							reject(new Error(decryptResult.errorMessage))
+							return
+						}
+						
+						// 更新进度：解压中
+						if (onProgress != null) {
+							onProgress({
+								current: 40,
+								total: 100,
+								currentFile: '解压数据包...',
+								status: 'extracting'
+							})
+						}
+						
+						// 解压并解析数据
+						extractAndParsePackage(decryptResult.data, onProgress)
+							.then((processCount: number) => {
+								const importTime = Date.now() - startTime
+								
+								// 更新进度：完成
+								if (onProgress != null) {
+									onProgress({
+										current: 100,
+										total: 100,
+										currentFile: '导入完成',
+										status: 'completed'
+									})
+								}
+								
+								resolve({
+									success: true,
+									message: '导入成功',
+									processCount: processCount,
+									importTime: importTime
+								})
+							})
+							.catch((e: any) => {
+								reject(new Error(JSON.stringify(e)))
+							})
+					})
+					.catch((e: any) => {
+						reject(new Error(JSON.stringify(e)))
+					})
+	})
+}
+
+/**
+ * 读取文件为 ArrayBuffer
+ */
+function readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
+	return new Promise((resolve: (value: ArrayBuffer) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		uni.getFileSystemManager().readFile({
+			filePath: filePath,
+			success: (res: ReadFileSuccessCallbackResult) => {
+				resolve(res.data as ArrayBuffer)
+			},
+			fail: (err: any) => {
+				reject(new Error('读取文件失败'))
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		// @ts-ignore
+		fetch(filePath)
+			.then((response: Response) => response.arrayBuffer())
+			.then((buffer: ArrayBuffer) => {
+				resolve(buffer)
+			})
+			.catch((e: any) => {
+				reject(new Error(e.toString()))
+			})
+		// #endif
+	})
+}
+
+/**
+ * 从 ZIP 数据中解析清单文件
+ */
+function parseManifestFromZip(zipData: ArrayBuffer): Promise<PackageManifest> {
+	return new Promise((resolve: (value: PackageManifest) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID
+		parseManifestAndroid(zipData, resolve, reject)
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		parseManifestHarmony(zipData, resolve, reject)
+		// #endif
+		
+		// #ifdef WEB
+		parseManifestWeb(zipData, resolve, reject)
+		// #endif
+	})
+}
+
+// #ifdef APP-ANDROID
+import ZipInputStream from 'java.util.zip.ZipInputStream';
+import ByteArrayInputStream from 'java.io.ByteArrayInputStream';
+import ByteArrayOutputStream from 'java.io.ByteArrayOutputStream';
+
+function parseManifestAndroid(
+	zipData: ArrayBuffer,
+	resolve: (value: PackageManifest) => void,
+	reject: (reason: Error) => void
+): void {
+	try {
+		const inputStream = new ByteArrayInputStream(new Int8Array(zipData) as ByteArray)
+		const zipStream = new ZipInputStream(inputStream)
+		
+		let entry = zipStream.getNextEntry()
+		while (entry != null) {
+			if (entry.getName() == 'manifest.json') {
+				const outputStream = new ByteArrayOutputStream()
+				const buffer = new ByteArray(1024)
+				let len = zipStream.read(buffer)
+				while (len > 0) {
+					outputStream.write(buffer, 0, len)
+					len = zipStream.read(buffer)
+				}
+				
+				const manifestJson = outputStream.toString('UTF-8')
+				const manifest = JSON.parse(manifestJson) as PackageManifest
+				
+				zipStream.close()
+				resolve(manifest)
+				return
+			}
+			entry = zipStream.getNextEntry()
+		}
+		
+		zipStream.close()
+		reject(new Error('数据包中未找到清单文件'))
+	} catch (e: any) {
+		reject(new Error('解析清单文件失败：' + e.toString()))
+	}
+}
+// #endif
+
+// #ifdef APP-HARMONY
+function parseManifestHarmony(
+	zipData: ArrayBuffer,
+	resolve: (value: PackageManifest) => void,
+	reject: (reason: Error) => void
+): void {
+	// HarmonyOS 实现
+	reject(new Error('HarmonyOS ZIP 解析待实现'))
+}
+// #endif
+
+// #ifdef WEB
+function parseManifestWeb(
+	zipData: ArrayBuffer,
+	resolve: (value: PackageManifest) => void,
+	reject: (reason: Error) => void
+): void {
+	// Web 端可使用 JSZip 库
+	reject(new Error('Web ZIP 解析待实现'))
+}
+// #endif
+
+/**
+ * 解压并解析数据包内容
+ */
+function extractAndParsePackage(
+	zipData: ArrayBuffer, 
+	onProgress: ImportProgressCallback | null
+): Promise<number> {
+	return new Promise((resolve: (value: number) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID
+		extractAndParseAndroid(zipData, onProgress, resolve, reject)
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		extractAndParseHarmony(zipData, onProgress, resolve, reject)
+		// #endif
+		
+		// #ifdef WEB
+		extractAndParseWeb(zipData, onProgress, resolve, reject)
+		// #endif
+	})
+}
+
+// #ifdef APP-ANDROID
+function extractAndParseAndroid(
+	zipData: ArrayBuffer,
+	onProgress: ImportProgressCallback | null,
+	resolve: (value: number) => void,
+	reject: (reason: Error) => void
+): void {
+	try {
+		const inputStream = new ByteArrayInputStream(new Int8Array(zipData) as ByteArray)
+		const zipStream = new ZipInputStream(inputStream)
+		
+		const processes: ProcessInfo[] = []
+		let entry = zipStream.getNextEntry()
+		
+		while (entry != null) {
+			const entryName = entry.getName()
+			
+			// 解析工艺 JSON 文件
+			if (entryName.startsWith('processes/') && entryName.endsWith('.json')) {
+				const outputStream = new ByteArrayOutputStream()
+				const buffer = new ByteArray(1024)
+				let len = zipStream.read(buffer)
+				while (len > 0) {
+					outputStream.write(buffer, 0, len)
+					len = zipStream.read(buffer)
+				}
+				
+				const processJson = outputStream.toString('UTF-8')
+				const processInfo = JSON.parse(processJson) as ProcessInfo
+				processes.push(processInfo)
+				
+				// 更新进度
+				if (onProgress != null) {
+					onProgress({
+						current: 40 + (processes.length * 40 / 10), // 假设最多10个工艺
+						total: 100,
+						currentFile: '导入工艺：' + processInfo.name,
+						status: 'importing'
+					})
+				}
+			}
+			
+			entry = zipStream.getNextEntry()
+		}
+		
+		zipStream.close()
+		
+		// 保存到数据库
+		saveProcessesToDatabase(processes)
+			.then(() => {
+				resolve(processes.length)
+			})
+			.catch((e: any) => {
+				reject(new Error(e.toString()))
+			})
+			
+	} catch (e: any) {
+		reject(new Error('解析数据包失败：' + e.toString()))
+	}
+}
+// #endif
+
+// #ifdef APP-HARMONY
+function extractAndParseHarmony(
+	zipData: ArrayBuffer,
+	onProgress: ImportProgressCallback | null,
+	resolve: (value: number) => void,
+	reject: (reason: Error) => void
+): void {
+	reject(new Error('HarmonyOS 解析待实现'))
+}
+// #endif
+
+// #ifdef WEB
+function extractAndParseWeb(
+	zipData: ArrayBuffer,
+	onProgress: ImportProgressCallback | null,
+	resolve: (value: number) => void,
+	reject: (reason: Error) => void
+): void {
+	reject(new Error('Web 解析待实现'))
+}
+// #endif
+
+/**
+ * 保存工艺数据到数据库
+ */
+function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		const savePromises: Promise<any>[] = []
+		
+		for (let i = 0; i < processes.length; i++) {
+			const process = processes[i]
+			
+			// 插入工艺主表
+			const insertProcessSQL = `
+				INSERT OR REPLACE INTO t_process 
+				(id, code, name, version, status, product_id, product_name, product_model, step_count, created_at, updated_at, data_json)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`
+			
+			const processParams: any[] = [
+				process.id,
+				process.code,
+				process.name,
+				process.version,
+				process.status,
+				process.product.id,
+				process.product.name,
+				process.product.model,
+				process.steps.length,
+				process.createdAt,
+				process.updatedAt,
+				JSON.stringify(process)
+			]
+			
+			savePromises.push(executeSQL(insertProcessSQL, processParams))
+			
+			// 插入工艺步骤
+			for (let j = 0; j < process.steps.length; j++) {
+				const step = process.steps[j]
+				const insertStepSQL = `
+					INSERT INTO t_process_step 
+					(process_id, step_no, name, description, duration, tools_json, materials_json, images_json, videos_json)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				`
+				
+				const stepParams: any[] = [
+					process.id,
+					step.stepNo,
+					step.name,
+					step.description,
+					step.duration,
+					JSON.stringify(step.tools),
+					JSON.stringify(step.materials),
+					JSON.stringify(step.images),
+					JSON.stringify(step.videos)
+				]
+				
+				savePromises.push(executeSQL(insertStepSQL, stepParams))
+			}
+			
+			// 插入附件
+			for (let k = 0; k < process.attachments.length; k++) {
+				const attachment = process.attachments[k]
+				const insertAttachmentSQL = `
+					INSERT INTO t_process_attachment 
+					(process_id, type, name, path)
+					VALUES (?, ?, ?, ?)
+				`
+				
+				const attachmentParams: any[] = [
+					process.id,
+					attachment.type,
+					attachment.name,
+					attachment.path
+				]
+				
+				savePromises.push(executeSQL(insertAttachmentSQL, attachmentParams))
+			}
+		}
+		
+		Promise.all(savePromises)
+			.then(() => {
+				console.log('工艺数据保存成功，共 ' + processes.length.toString() + ' 条')
+				resolve()
+			})
+			.catch((e: any) => {
+				reject(new Error(e.toString()))
+			})
+	})
+}

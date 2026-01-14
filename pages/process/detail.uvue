@@ -1,0 +1,418 @@
+<template>
+	<!-- #ifdef APP -->
+	<scroll-view class="page-container">
+	<!-- #endif -->
+		<view class="detail-page">
+			<!-- 基本信息卡片 -->
+			<view class="info-card">
+				<view class="card-header">
+					<text class="process-code">{{ processInfo?.code ?? '' }}</text>
+					<view class="status-tag" :class="getStatusClass(processInfo?.status ?? '')">
+						<text class="status-text">{{ processInfo?.status ?? '' }}</text>
+					</view>
+				</view>
+				
+				<text class="process-name">{{ processInfo?.name ?? '' }}</text>
+				
+				<view class="info-grid">
+					<view class="info-item">
+						<text class="info-label">产品名称</text>
+						<text class="info-value">{{ processInfo?.product?.name ?? '-' }}</text>
+					</view>
+					<view class="info-item">
+						<text class="info-label">产品型号</text>
+						<text class="info-value">{{ processInfo?.product?.model ?? '-' }}</text>
+					</view>
+					<view class="info-item">
+						<text class="info-label">版本</text>
+						<text class="info-value">{{ processInfo?.version ?? '-' }}</text>
+					</view>
+					<view class="info-item">
+						<text class="info-label">工艺步骤</text>
+						<text class="info-value">{{ processInfo?.steps?.length ?? 0 }} 个</text>
+					</view>
+				</view>
+				
+				<view class="time-info">
+					<text class="time-text">创建：{{ formatTime(processInfo?.createdAt ?? '') }}</text>
+					<text class="time-text">更新：{{ formatTime(processInfo?.updatedAt ?? '') }}</text>
+				</view>
+			</view>
+			
+			<!-- 工艺步骤列表 -->
+			<view class="section">
+				<view class="section-header">
+					<text class="section-title">工艺步骤</text>
+					<text class="section-count">共 {{ processInfo?.steps?.length ?? 0 }} 步</text>
+				</view>
+				
+				<view class="steps-list" v-if="processInfo != null && processInfo.steps.length > 0">
+					<process-step
+						v-for="(step, index) in processInfo.steps" 
+						:key="index"
+						:step="step"
+						:expanded="expandedSteps.includes(index)"
+						:resourceBasePath="resourceBasePath"
+						@toggle="onStepToggle(index, $event)"
+					></process-step>
+				</view>
+			</view>
+			
+			<!-- 附件列表 -->
+			<view class="section" v-if="processInfo != null && processInfo.attachments.length > 0">
+				<view class="section-header">
+					<text class="section-title">相关附件</text>
+				</view>
+				
+				<view class="attachment-list">
+					<view 
+						class="attachment-item" 
+						v-for="(attachment, aIdx) in processInfo.attachments" 
+						:key="aIdx"
+						@click="openAttachment(attachment)"
+					>
+						<text class="attachment-icon">{{ getAttachmentIcon(attachment.type) }}</text>
+						<text class="attachment-name">{{ attachment.name }}</text>
+						<text class="attachment-arrow">→</text>
+					</view>
+				</view>
+			</view>
+		</view>
+	<!-- #ifdef APP -->
+	</scroll-view>
+	<!-- #endif -->
+</template>
+
+<script lang="uts">
+	import { ProcessInfo, ProcessAttachment } from '@/types/process'
+	import { getProcessDetail } from '@/services/processService'
+	import { initDatabase } from '@/services/database'
+	
+	export default {
+		data() {
+			return {
+				// 工艺ID
+				processId: '',
+				
+				// 工艺信息
+				processInfo: null as ProcessInfo | null,
+				
+				// 展开的步骤索引列表
+				expandedSteps: [] as number[],
+				
+				// 资源文件基础路径
+				resourceBasePath: ''
+			}
+		},
+		
+		onLoad(options: any) {
+			if (options['id'] != null) {
+				this.processId = options['id'] as string
+			}
+			
+			// 设置资源路径
+			// #ifdef APP-ANDROID || APP-HARMONY
+			this.resourceBasePath = uni.env.USER_DATA_PATH + '/mpm_resources/'
+			// #endif
+			
+			this.loadProcessDetail()
+		},
+		
+		methods: {
+			/**
+			 * 加载工艺详情
+			 */
+			loadProcessDetail() {
+				if (this.processId == '') {
+					uni.showToast({
+						title: '参数错误',
+						icon: 'none'
+					})
+					return
+				}
+				
+				uni.showLoading({ title: '加载中...' })
+				
+				initDatabase()
+					.then(() => {
+						return getProcessDetail(this.processId)
+					})
+					.then((info: ProcessInfo | null) => {
+						uni.hideLoading()
+						
+						if (info != null) {
+							this.processInfo = info
+							
+							// 设置导航栏标题
+							uni.setNavigationBarTitle({
+								title: info.name
+							})
+						} else {
+							uni.showToast({
+								title: '工艺不存在',
+								icon: 'none'
+							})
+						}
+					})
+					.catch((e: Error) => {
+						uni.hideLoading()
+						console.error('加载工艺详情失败：', e.message)
+						uni.showToast({
+							title: '加载失败',
+							icon: 'none'
+						})
+					})
+			},
+			
+			/**
+			 * 步骤展开切换回调
+			 */
+			onStepToggle(index: number, expanded: boolean) {
+				const idx = this.expandedSteps.indexOf(index)
+				if (expanded) {
+					if (idx == -1) {
+						this.expandedSteps.push(index)
+					}
+				} else {
+					if (idx > -1) {
+						this.expandedSteps.splice(idx, 1)
+					}
+				}
+			},
+			
+			/**
+			 * 获取资源文件路径
+			 */
+			getResourcePath(fileName: string): string {
+				return this.resourceBasePath + fileName
+			},
+			
+			/**
+			 * 打开附件
+			 */
+			openAttachment(attachment: ProcessAttachment) {
+				const fullPath = this.getResourcePath(attachment.path)
+				
+				// #ifdef APP-ANDROID || APP-HARMONY
+				uni.openDocument({
+					filePath: fullPath,
+					showMenu: true,
+					fail: (err: any) => {
+						uni.showToast({
+							title: '无法打开文件',
+							icon: 'none'
+						})
+					}
+				})
+				// #endif
+				
+				// #ifdef WEB
+				window.open(fullPath, '_blank')
+				// #endif
+			},
+			
+			/**
+			 * 获取附件图标
+			 */
+			getAttachmentIcon(type: string): string {
+				if (type == 'drawing') {
+					return '📐'
+				} else if (type == 'document') {
+					return '📄'
+				} else if (type == 'image') {
+					return '🖼️'
+				} else if (type == 'video') {
+					return '🎬'
+				} else {
+					return '📎'
+				}
+			},
+			
+			/**
+			 * 获取状态样式类
+			 */
+			getStatusClass(status: string): string {
+				if (status == '已发布') {
+					return 'status-published'
+				} else if (status == '草稿') {
+					return 'status-draft'
+				} else {
+					return 'status-default'
+				}
+			},
+			
+			/**
+			 * 格式化时间
+			 */
+			formatTime(isoTime: string): string {
+				if (isoTime == '') {
+					return '-'
+				}
+				const date = new Date(isoTime)
+				const year = date.getFullYear()
+				const month = (date.getMonth() + 1).toString().padStart(2, '0')
+				const day = date.getDate().toString().padStart(2, '0')
+				return `${year}-${month}-${day}`
+			}
+		}
+	}
+</script>
+
+<style>
+	.page-container {
+		flex: 1;
+		background-color: #f5f6f7;
+	}
+	
+	.detail-page {
+		flex-direction: column;
+		padding: 12px;
+	}
+	
+	/* 信息卡片 */
+	.info-card {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 20px;
+		margin-bottom: 12px;
+		flex-direction: column;
+	}
+	
+	.card-header {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 12px;
+	}
+	
+	.process-code {
+		font-size: 14px;
+		color: #666666;
+	}
+	
+	.status-tag {
+		padding: 4px 12px;
+		border-radius: 4px;
+	}
+	
+	.status-published {
+		background-color: #e8f5e9;
+	}
+	
+	.status-draft {
+		background-color: #fff3e0;
+	}
+	
+	.status-default {
+		background-color: #f5f5f5;
+	}
+	
+	.status-text {
+		font-size: 12px;
+		color: #333333;
+	}
+	
+	.process-name {
+		font-size: 20px;
+		font-weight: bold;
+		color: #333333;
+		margin-bottom: 16px;
+	}
+	
+	.info-grid {
+		flex-direction: row;
+		flex-wrap: wrap;
+		margin-bottom: 16px;
+	}
+	
+	.info-item {
+		width: 50%;
+		flex-direction: column;
+		margin-bottom: 12px;
+	}
+	
+	.info-label {
+		font-size: 12px;
+		color: #999999;
+		margin-bottom: 4px;
+	}
+	
+	.info-value {
+		font-size: 14px;
+		color: #333333;
+	}
+	
+	.time-info {
+		flex-direction: row;
+		justify-content: space-between;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #f0f0f0;
+		padding-top: 12px;
+	}
+	
+	.time-text {
+		font-size: 12px;
+		color: #999999;
+	}
+	
+	/* 分区 */
+	.section {
+		margin-bottom: 12px;
+	}
+	
+	.section-header {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 4px;
+	}
+	
+	.section-title {
+		font-size: 16px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	.section-count {
+		font-size: 12px;
+		color: #999999;
+	}
+	
+	/* 步骤列表容器 */
+	.steps-list {
+		flex-direction: column;
+	}
+	
+	/* 附件列表 */
+	.attachment-list {
+		background-color: #ffffff;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+	
+	.attachment-item {
+		flex-direction: row;
+		align-items: center;
+		padding: 14px 16px;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #f0f0f0;
+	}
+	
+	.attachment-icon {
+		font-size: 20px;
+		margin-right: 12px;
+	}
+	
+	.attachment-name {
+		flex: 1;
+		font-size: 14px;
+		color: #333333;
+	}
+	
+	.attachment-arrow {
+		font-size: 14px;
+		color: #cccccc;
+	}
+</style>

@@ -1,0 +1,557 @@
+<template>
+	<!-- #ifdef APP -->
+	<scroll-view class="page-container">
+	<!-- #endif -->
+		<view class="import-page">
+			<!-- 页面头部 -->
+			<view class="page-header">
+				<text class="page-title">数据包导入</text>
+				<text class="page-subtitle">从 MPM 系统导出的工艺数据包</text>
+			</view>
+			
+			<!-- 文件选择区域 -->
+			<view class="file-picker" @click="handleSelectFile">
+				<view class="file-picker-content" v-if="!packageInfo.fileName">
+					<text class="file-picker-icon">📦</text>
+					<text class="file-picker-text">点击选择 .mpm 数据包文件</text>
+					<text class="file-picker-hint">支持从设备存储中选择文件</text>
+				</view>
+				<view class="file-info" v-else>
+					<text class="file-name">{{ packageInfo.fileName }}</text>
+					<text class="file-size">{{ formatFileSize(packageInfo.fileSize) }}</text>
+					<text class="file-change-btn">重新选择</text>
+				</view>
+			</view>
+			
+			<!-- 数据包信息预览 -->
+			<view class="package-info" v-if="manifest != null">
+				<view class="info-header">
+					<text class="info-title">数据包信息</text>
+				</view>
+				<view class="info-item">
+					<text class="info-label">来源系统</text>
+					<text class="info-value">{{ manifest.source }}</text>
+				</view>
+				<view class="info-item">
+					<text class="info-label">导出时间</text>
+					<text class="info-value">{{ formatTime(manifest.exportTime) }}</text>
+				</view>
+				<view class="info-item">
+					<text class="info-label">工艺数量</text>
+					<text class="info-value">{{ manifest.processCount }} 条</text>
+				</view>
+				<view class="info-item">
+					<text class="info-label">版本</text>
+					<text class="info-value">{{ manifest.version }}</text>
+				</view>
+			</view>
+			
+			<!-- 测试功能 -->
+			<view class="test-section" style="margin-top: 20px; align-items: center;">
+				<button size="mini" type="warn" @click="handleGenerateMockData">生成测试数据</button>
+			</view>
+
+			<!-- 导入进度 -->
+			<view class="progress-section" v-if="isImporting">
+				<text class="progress-label">{{ importProgress.currentFile }}</text>
+				<view class="progress-bar-container">
+					<view class="progress-bar" :style="{ width: importProgress.current + '%' }"></view>
+				</view>
+				<text class="progress-percent">{{ importProgress.current }}%</text>
+			</view>
+			
+			<!-- 导入结果 -->
+			<view class="result-section" v-if="importResult != null">
+				<view class="result-icon-container" :class="importResult.success ? 'success' : 'error'">
+					<text class="result-icon">{{ importResult.success ? '✓' : '✕' }}</text>
+				</view>
+				<text class="result-message">{{ importResult.message }}</text>
+				<text class="result-detail" v-if="importResult.success">
+					成功导入 {{ importResult.processCount }} 条工艺数据，耗时 {{ importResult.importTime }} ms
+				</text>
+			</view>
+			
+			<!-- 操作按钮 -->
+			<view class="action-buttons">
+				<button 
+					:class="packageInfo.fileName == '' || isImporting ? 'btn-import btn-import-disabled' : 'btn-import'" 
+					:disabled="packageInfo.fileName == '' || isImporting"
+					@click="handleImport"
+				>
+					<text class="btn-text">{{ isImporting ? '导入中...' : '开始导入' }}</text>
+				</button>
+				
+				<button 
+					class="btn-view" 
+					v-if="importResult != null && importResult.success"
+					@click="handleViewProcess"
+				>
+					<text class="btn-text">查看工艺列表</text>
+				</button>
+			</view>
+		</view>
+	<!-- #ifdef APP -->
+	</scroll-view>
+	<!-- #endif -->
+</template>
+
+<script lang="uts">
+	import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/dataPackage'
+	import { selectPackageFile, validatePackage, importPackage, ImportProgressCallback } from '@/services/dataPackage'
+	import { initDatabase } from '@/services/database'
+	import { generateMockData } from '@/services/processService'
+	
+	export default {
+		data() {
+			return {
+				// 数据包信息
+				packageInfo: {
+					fileName: '',
+					fileSize: 0,
+					manifest: null,
+					isValid: false,
+					errorMessage: ''
+				} as PackageInfo,
+				
+				// 清单信息
+				manifest: null as PackageManifest | null,
+				
+				// 导入状态
+				isImporting: false,
+				
+				// 导入进度
+				importProgress: {
+					current: 0,
+					total: 100,
+					currentFile: '',
+					status: ''
+				} as ImportProgress,
+				
+				// 导入结果
+				importResult: null as ImportResult | null,
+				
+				// 数据库是否已初始化
+				isDbReady: false
+			}
+		},
+		
+		onLoad() {
+			// 初始化数据库
+			this.initDb()
+		},
+		
+		methods: {
+			/**
+			 * 初始化数据库
+			 */
+			initDb() {
+				initDatabase()
+					.then(() => {
+						this.isDbReady = true
+						console.log('数据库初始化成功')
+					})
+					.catch((e: Error) => {
+						console.error('数据库初始化失败：', e.message)
+						uni.showToast({
+							title: '数据库初始化失败',
+							icon: 'none'
+						})
+					})
+			},
+			
+			/**
+			 * 生成测试数据
+			 */
+			handleGenerateMockData() {
+				uni.showLoading({ title: '生成数据中...' })
+				initDatabase()
+					.then(() => {
+						return generateMockData()
+					})
+					.then(() => {
+						uni.hideLoading()
+						uni.showToast({
+							title: '测试数据已生成',
+							icon: 'success'
+						})
+					})
+					.catch((e: any) => {
+						uni.hideLoading()
+						uni.showToast({
+							title: '生成失败',
+							icon: 'none'
+						})
+						console.error(e)
+					})
+			},
+			
+			/**
+			 * 选择文件
+			 */
+			handleSelectFile() {
+				if (this.isImporting) {
+					return
+				}
+				
+				// 重置状态
+				this.importResult = null
+				
+				selectPackageFile()
+					.then((info: PackageInfo) => {
+						this.packageInfo = info
+						
+						// 预览数据包内容
+						uni.showLoading({ title: '解析数据包...' })
+						
+						validatePackage('')
+							.then((manifest: PackageManifest) => {
+								uni.hideLoading()
+								this.manifest = manifest
+								this.packageInfo.manifest = manifest
+								this.packageInfo.isValid = true
+							})
+							.catch((e: Error) => {
+								uni.hideLoading()
+								this.packageInfo.isValid = false
+								this.packageInfo.errorMessage = e.message
+								uni.showToast({
+									title: '数据包验证失败',
+									icon: 'none'
+								})
+							})
+					})
+					.catch((e: Error) => {
+						console.error('选择文件失败：', e.message)
+					})
+			},
+			
+			/**
+			 * 开始导入
+			 */
+			handleImport() {
+				if (!this.isDbReady) {
+					uni.showToast({
+						title: '数据库未就绪',
+						icon: 'none'
+					})
+					return
+				}
+				
+				if (this.packageInfo.fileName == '') {
+					uni.showToast({
+						title: '请先选择数据包',
+						icon: 'none'
+					})
+					return
+				}
+				
+				this.isImporting = true
+				this.importResult = null
+				
+				// 进度回调
+				const onProgress: ImportProgressCallback = (progress: ImportProgress) => {
+					this.importProgress = progress
+				}
+				
+				importPackage('', onProgress)
+					.then((result: ImportResult) => {
+						this.isImporting = false
+						this.importResult = result
+						
+						if (result.success) {
+							uni.showToast({
+								title: '导入成功',
+								icon: 'success'
+							})
+						}
+					})
+					.catch((e: Error) => {
+						this.isImporting = false
+						this.importResult = {
+							success: false,
+							message: e.message,
+							processCount: 0,
+							importTime: 0
+						}
+						
+						uni.showToast({
+							title: '导入失败',
+							icon: 'none'
+						})
+					})
+			},
+			
+			/**
+			 * 查看工艺列表
+			 */
+			handleViewProcess() {
+				uni.navigateTo({
+					url: '/pages/process/list'
+				})
+			},
+			
+			/**
+			 * 格式化文件大小
+			 */
+			formatFileSize(size: number): string {
+				if (size < 1024) {
+					return size.toString() + ' B'
+				} else if (size < 1024 * 1024) {
+					return (size / 1024).toFixed(2) + ' KB'
+				} else {
+					return (size / 1024 / 1024).toFixed(2) + ' MB'
+				}
+			},
+			
+			/**
+			 * 格式化时间
+			 */
+			formatTime(isoTime: string): string {
+				const date = new Date(isoTime)
+				const year = date.getFullYear()
+				const month = (date.getMonth() + 1).toString().padStart(2, '0')
+				const day = date.getDate().toString().padStart(2, '0')
+				const hour = date.getHours().toString().padStart(2, '0')
+				const minute = date.getMinutes().toString().padStart(2, '0')
+				return `${year}-${month}-${day} ${hour}:${minute}`
+			}
+		}
+	}
+</script>
+
+<style>
+	.page-container {
+		flex: 1;
+		background-color: #f5f6f7;
+	}
+	
+	.import-page {
+		flex-direction: column;
+		padding: 20px;
+	}
+	
+	/* 页面头部 */
+	.page-header {
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 30px;
+	}
+	
+	.page-title {
+		font-size: 24px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	.page-subtitle {
+		font-size: 14px;
+		color: #999999;
+		margin-top: 8px;
+	}
+	
+	/* 文件选择区域 */
+	.file-picker {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 30px;
+		align-items: center;
+		justify-content: center;
+		border-width: 2px;
+		border-style: dashed;
+		border-color: #e0e0e0;
+		margin-bottom: 20px;
+	}
+	
+	.file-picker-content {
+		flex-direction: column;
+		align-items: center;
+	}
+	
+	.file-picker-icon {
+		font-size: 48px;
+		margin-bottom: 16px;
+	}
+	
+	.file-picker-text {
+		font-size: 16px;
+		color: #333333;
+		margin-bottom: 8px;
+	}
+	
+	.file-picker-hint {
+		font-size: 12px;
+		color: #999999;
+	}
+	
+	.file-info {
+		flex-direction: column;
+		align-items: center;
+	}
+	
+	.file-name {
+		font-size: 16px;
+		color: #333333;
+		font-weight: bold;
+	}
+	
+	.file-size {
+		font-size: 14px;
+		color: #666666;
+		margin-top: 4px;
+	}
+	
+	.file-change-btn {
+		font-size: 14px;
+		color: #007aff;
+		margin-top: 12px;
+	}
+	
+	/* 数据包信息 */
+	.package-info {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 20px;
+		margin-bottom: 20px;
+	}
+	
+	.info-header {
+		margin-bottom: 16px;
+	}
+	
+	.info-title {
+		font-size: 16px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	.info-item {
+		flex-direction: row;
+		justify-content: space-between;
+		padding: 10px 0;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #f0f0f0;
+	}
+	
+	.info-label {
+		font-size: 14px;
+		color: #666666;
+	}
+	
+	.info-value {
+		font-size: 14px;
+		color: #333333;
+	}
+	
+	/* 进度条 */
+	.progress-section {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 20px;
+		margin-bottom: 20px;
+		align-items: center;
+	}
+	
+	.progress-label {
+		font-size: 14px;
+		color: #666666;
+		margin-bottom: 12px;
+	}
+	
+	.progress-bar-container {
+		width: 100%;
+		height: 8px;
+		background-color: #f0f0f0;
+		border-radius: 4px;
+		overflow: hidden;
+	}
+	
+	.progress-bar {
+		height: 8px;
+		background-color: #007aff;
+		border-radius: 4px;
+	}
+	
+	.progress-percent {
+		font-size: 14px;
+		color: #333333;
+		margin-top: 8px;
+	}
+	
+	/* 导入结果 */
+	.result-section {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 30px;
+		margin-bottom: 20px;
+		align-items: center;
+	}
+	
+	.result-icon-container {
+		width: 60px;
+		height: 60px;
+		border-radius: 30px;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 16px;
+	}
+	
+	.result-icon-container.success {
+		background-color: #4cd964;
+	}
+	
+	.result-icon-container.error {
+		background-color: #ff3b30;
+	}
+	
+	.result-icon {
+		font-size: 32px;
+		color: #ffffff;
+	}
+	
+	.result-message {
+		font-size: 18px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	.result-detail {
+		font-size: 14px;
+		color: #666666;
+		margin-top: 8px;
+		text-align: center;
+	}
+	
+	/* 按钮 */
+	.action-buttons {
+		flex-direction: column;
+		margin-top: 20px;
+	}
+	
+	.btn-import {
+		background-color: #007aff;
+		border-radius: 8px;
+		height: 50px;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 12px;
+	}
+	
+	.btn-import-disabled {
+		background-color: #cccccc;
+	}
+	
+	.btn-view {
+		background-color: #4cd964;
+		border-radius: 8px;
+		height: 50px;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.btn-text {
+		color: #ffffff;
+		font-size: 16px;
+		font-weight: bold;
+	}
+</style>

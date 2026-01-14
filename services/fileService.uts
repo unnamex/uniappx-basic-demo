@@ -1,0 +1,306 @@
+/**
+ * MPM 工艺预览系统 - 文件服务
+ * @description 处理资源文件的读取、复制和管理
+ */
+
+import { FileInfo } from '@/types/common'
+
+/**
+ * 应用数据目录
+ */
+let appDataPath: string = ''
+
+/**
+ * 资源文件目录
+ */
+let resourcePath: string = ''
+
+/**
+ * 初始化文件服务
+ */
+export function initFileService(): void {
+	// #ifdef APP-ANDROID || APP-HARMONY
+	appDataPath = uni.env.USER_DATA_PATH as string
+	resourcePath = appDataPath + '/mpm_resources'
+	
+	// 确保资源目录存在
+	createDirectory(resourcePath)
+	// #endif
+	
+	// #ifdef WEB
+	appDataPath = ''
+	resourcePath = ''
+	// #endif
+}
+
+/**
+ * 获取资源文件完整路径
+ * @param relativePath - 相对路径
+ * @returns 完整路径
+ */
+export function getResourcePath(relativePath: string): string {
+	if (relativePath == '') {
+		return ''
+	}
+	
+	// #ifdef APP-ANDROID || APP-HARMONY
+	return resourcePath + '/' + relativePath
+	// #endif
+	
+	// #ifdef WEB
+	// Web 端使用 IndexedDB 或 Blob URL
+	return relativePath
+	// #endif
+}
+
+/**
+ * 复制资源文件到应用目录
+ * @param sourcePath - 源文件路径
+ * @param targetRelativePath - 目标相对路径
+ */
+export function copyResourceFile(sourcePath: string, targetRelativePath: string): Promise<string> {
+	return new Promise((resolve: (value: string) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		const targetPath = resourcePath + '/' + targetRelativePath
+		
+		// 确保目标目录存在
+		const dirPath = getDirectoryPath(targetPath)
+		createDirectory(dirPath)
+		
+		uni.getFileSystemManager().copyFile({
+			srcPath: sourcePath,
+			destPath: targetPath,
+			success: () => {
+				resolve(targetPath)
+			},
+			fail: (err: any) => {
+				console.error('复制文件失败：', err)
+				reject(new Error('复制文件失败'))
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		// Web 端直接返回源路径
+		resolve(sourcePath)
+		// #endif
+	})
+}
+
+/**
+ * 保存 ArrayBuffer 数据为文件
+ * @param data - 文件数据
+ * @param relativePath - 相对路径
+ */
+export function saveFile(data: ArrayBuffer, relativePath: string): Promise<string> {
+	return new Promise((resolve: (value: string) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		const targetPath = resourcePath + '/' + relativePath
+		
+		// 确保目标目录存在
+		const dirPath = getDirectoryPath(targetPath)
+		createDirectory(dirPath)
+		
+		uni.getFileSystemManager().writeFile({
+			filePath: targetPath,
+			data: data,
+			success: () => {
+				resolve(targetPath)
+			},
+			fail: (err: any) => {
+				console.error('保存文件失败：', err)
+				reject(new Error('保存文件失败'))
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		// Web 端使用 Blob URL
+		const blob = new Blob([data])
+		const url = URL.createObjectURL(blob)
+		resolve(url)
+		// #endif
+	})
+}
+
+/**
+ * 删除资源文件
+ * @param relativePath - 相对路径
+ */
+export function deleteResourceFile(relativePath: string): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		const targetPath = resourcePath + '/' + relativePath
+		
+		uni.getFileSystemManager().unlink({
+			filePath: targetPath,
+			success: () => {
+				resolve()
+			},
+			fail: (err: any) => {
+				console.error('删除文件失败：', err)
+				reject(new Error('删除文件失败'))
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		resolve()
+		// #endif
+	})
+}
+
+/**
+ * 清空所有资源文件
+ */
+export function clearAllResources(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		uni.getFileSystemManager().rmdir({
+			dirPath: resourcePath,
+			recursive: true,
+			success: () => {
+				// 重新创建资源目录
+				createDirectory(resourcePath)
+				resolve()
+			},
+			fail: (err: any) => {
+				console.error('清空资源失败：', err)
+				reject(new Error('清空资源失败'))
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		resolve()
+		// #endif
+	})
+}
+
+/**
+ * 获取文件信息
+ * @param relativePath - 相对路径
+ */
+export function getFileInfo(relativePath: string): Promise<FileInfo> {
+	return new Promise((resolve: (value: FileInfo) => void, reject: (reason: Error) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		const targetPath = resourcePath + '/' + relativePath
+		
+		uni.getFileInfo({
+			filePath: targetPath,
+			success: (res: UniGetFileInfoSuccessCallbackResult) => {
+				resolve({
+					name: getFileName(relativePath),
+					path: targetPath,
+					size: res.size,
+					extension: getFileExtension(relativePath)
+				})
+			},
+			fail: (err: any) => {
+				reject(new Error('获取文件信息失败'))
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		resolve({
+			name: getFileName(relativePath),
+			path: relativePath,
+			size: 0,
+			extension: getFileExtension(relativePath)
+		})
+		// #endif
+	})
+}
+
+/**
+ * 检查文件是否存在
+ * @param relativePath - 相对路径
+ */
+export function fileExists(relativePath: string): Promise<boolean> {
+	return new Promise((resolve: (value: boolean) => void) => {
+		// #ifdef APP-ANDROID || APP-HARMONY
+		const targetPath = resourcePath + '/' + relativePath
+		
+		uni.getFileSystemManager().access({
+			path: targetPath,
+			success: () => {
+				resolve(true)
+			},
+			fail: () => {
+				resolve(false)
+			}
+		})
+		// #endif
+		
+		// #ifdef WEB
+		resolve(false)
+		// #endif
+	})
+}
+
+/**
+ * 创建目录
+ * @param dirPath - 目录路径
+ */
+function createDirectory(dirPath: string): void {
+	// #ifdef APP-ANDROID || APP-HARMONY
+	try {
+		uni.getFileSystemManager().mkdirSync(dirPath, true)
+	} catch (e: Error) {
+		// 目录可能已存在，忽略错误
+	}
+	// #endif
+}
+
+/**
+ * 获取目录路径
+ * @param filePath - 文件路径
+ */
+function getDirectoryPath(filePath: string): string {
+	const lastSlash = filePath.lastIndexOf('/')
+	if (lastSlash > 0) {
+		return filePath.substring(0, lastSlash)
+	}
+	return filePath
+}
+
+/**
+ * 获取文件名
+ * @param filePath - 文件路径
+ */
+function getFileName(filePath: string): string {
+	const lastSlash = filePath.lastIndexOf('/')
+	if (lastSlash >= 0) {
+		return filePath.substring(lastSlash + 1)
+	}
+	return filePath
+}
+
+/**
+ * 获取文件扩展名
+ * @param filePath - 文件路径
+ */
+function getFileExtension(filePath: string): string {
+	const lastDot = filePath.lastIndexOf('.')
+	if (lastDot >= 0) {
+		return filePath.substring(lastDot + 1).toLowerCase()
+	}
+	return ''
+}
+
+/**
+ * 格式化文件大小
+ * @param bytes - 字节数
+ */
+export function formatFileSize(bytes: number): string {
+	if (bytes < 1024) {
+		return bytes.toString() + ' B'
+	} else if (bytes < 1024 * 1024) {
+		return (bytes / 1024).toFixed(2) + ' KB'
+	} else if (bytes < 1024 * 1024 * 1024) {
+		return (bytes / 1024 / 1024).toFixed(2) + ' MB'
+	} else {
+		return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB'
+	}
+}

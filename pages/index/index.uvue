@@ -1,47 +1,390 @@
 <template>
-	<view>
-		<image class="logo" src="/static/logo.png"></image>
-		<view class="text-area">
-			<text class="title">{{title}}</text>
-			<text class="title">uni-app x offline for android</text>
+	<!-- #ifdef APP -->
+	<scroll-view class="page-container">
+	<!-- #endif -->
+		<view class="home-page">
+			<!-- 头部欢迎区 -->
+			<view class="welcome-section">
+				<view class="welcome-content">
+					<text class="welcome-title">MPM 工艺预览系统</text>
+					<text class="welcome-subtitle">离线版 · 车间专用</text>
+				</view>
+				<image class="logo" src="/static/logo.png"></image>
+			</view>
+			
+			<!-- 统计卡片 -->
+			<view class="stats-cards">
+				<view class="stat-card">
+					<text class="stat-value">{{ processCount }}</text>
+					<text class="stat-label">工艺总数</text>
+				</view>
+				<view class="stat-card stat-card-last">
+					<text class="stat-value">{{ lastImportTime }}</text>
+					<text class="stat-label">最近导入</text>
+				</view>
+			</view>
+			
+			<!-- 快捷入口 -->
+			<view class="quick-actions">
+				<view class="action-card" @click="goToProcessList">
+					<view class="action-icon-container" style="background-color: #e3f2fd;">
+						<text class="action-icon">📋</text>
+					</view>
+					<view class="action-info">
+						<text class="action-title">工艺列表</text>
+						<text class="action-desc">浏览所有工艺数据</text>
+					</view>
+					<text class="action-arrow">→</text>
+				</view>
+				
+				<view class="action-card" @click="goToImport">
+					<view class="action-icon-container" style="background-color: #e8f5e9;">
+						<text class="action-icon">📦</text>
+					</view>
+					<view class="action-info">
+						<text class="action-title">数据导入</text>
+						<text class="action-desc">导入MPM数据包</text>
+					</view>
+					<text class="action-arrow">→</text>
+				</view>
+				
+				<view class="action-card" @click="goToSettings">
+					<view class="action-icon-container" style="background-color: #ede7f6;">
+						<text class="action-icon">⚙️</text>
+					</view>
+					<view class="action-info">
+						<text class="action-title">系统设置</text>
+						<text class="action-desc">缓存清理与管理</text>
+					</view>
+					<text class="action-arrow">→</text>
+				</view>
+			</view>
+			
+			<!-- 最近查看 -->
+			<view class="section" v-if="recentProcesses.length > 0">
+				<view class="section-header">
+					<text class="section-title">最近查看</text>
+				</view>
+				
+				<view class="recent-list">
+					<view 
+						class="recent-item" 
+						v-for="(item, index) in recentProcesses" 
+						:key="index"
+						@click="goToDetail(item.id)"
+					>
+						<view class="recent-info">
+							<text class="recent-name">{{ item.name }}</text>
+							<text class="recent-code">{{ item.code }}</text>
+						</view>
+						<text class="recent-arrow">→</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 系统信息 -->
+			<view class="system-info">
+				<text class="system-text">版本: 1.0.0</text>
+				<text class="system-text">离线工艺预览系统</text>
+			</view>
 		</view>
-		<video controls="true" show-fullscreen-btn="true" show-center-play-btn="true" show-play-btn="true"
-			show-progress="true" src="https://qiniu-web-assets.dcloud.net.cn/video/sample/2minute-demo.mp4"></video>
-	</view>
+	<!-- #ifdef APP -->
+	</scroll-view>
+	<!-- #endif -->
 </template>
 
-<script>
-	import { useRequest, UseOptions } from '@/uni_modules/kux-request';
-	const http = useRequest({
-		baseURL: 'http://example.com/api',
-		responseType: 'json'
-	} as UseOptions);
-
+<script lang="uts">
+	import { ProcessListItem } from '@/types/process'
+	import { getProcessCount } from '@/services/processService'
+	import { initDatabase } from '@/services/database'
+	
+	/**
+	 * 最近查看的工艺项类型
+	 */
+	type RecentProcess = {
+		id: string
+		name: string
+		code: string
+	}
+	
 	export default {
 		data() {
 			return {
-				title: 'Hello'
+				// 工艺总数
+				processCount: 0,
+				
+				// 最近导入时间
+				lastImportTime: '-',
+				
+				// 最近查看的工艺
+				recentProcesses: [] as RecentProcess[]
 			}
 		},
-		onLoad() {
-
+		
+		onShow() {
+			this.loadData()
 		},
+		
 		methods: {
-
+			/**
+			 * 加载数据
+			 */
+			loadData() {
+				initDatabase()
+					.then(() => {
+						return getProcessCount()
+					})
+					.then((count: number) => {
+						this.processCount = count
+					})
+					.catch((e: Error) => {
+						console.error('加载数据失败：', e.message)
+					})
+				
+				// 加载最近查看记录（从本地存储）
+				this.loadRecentProcesses()
+			},
+			
+			/**
+			 * 加载最近查看记录
+			 */
+			loadRecentProcesses() {
+				try {
+					const recentStr = uni.getStorageSync('recent_processes') as string
+					if (recentStr != '') {
+						this.recentProcesses = JSON.parse(recentStr) as RecentProcess[]
+					}
+				} catch (e: any) {
+					console.error('加载最近记录失败：', JSON.stringify(e))
+				}
+			},
+			
+			/**
+			 * 跳转到工艺列表
+			 */
+			goToProcessList() {
+				uni.switchTab({
+					url: '/pages/process/list'
+				})
+			},
+			
+			/**
+			 * 跳转到数据导入
+			 */
+			goToImport() {
+				uni.switchTab({
+					url: '/pages/import/import'
+				})
+			},
+			
+			/**
+			 * 跳转到设置页面
+			 */
+			goToSettings() {
+				uni.navigateTo({
+					url: '/pages/settings/settings'
+				})
+			},
+			
+			/**
+			 * 跳转到工艺详情
+			 */
+			goToDetail(processId: string) {
+				uni.navigateTo({
+					url: '/pages/process/detail?id=' + processId
+				})
+			}
 		}
 	}
 </script>
 
 <style>
-	.logo {
-		height: 100px;
-		width: 100px;
-		margin: 100px auto 25px auto;
+	.page-container {
+		flex: 1;
+		background-color: #f5f6f7;
 	}
-
-	.title {
+	
+	.home-page {
+		flex-direction: column;
+		padding: 16px;
+	}
+	
+	/* 欢迎区 */
+	.welcome-section {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		background-color: #007aff;
+		border-radius: 16px;
+		padding: 24px 20px;
+		margin-bottom: 16px;
+	}
+	
+	.welcome-content {
+		flex-direction: column;
+	}
+	
+	.welcome-title {
+		font-size: 22px;
+		font-weight: bold;
+		color: #ffffff;
+	}
+	
+	.welcome-subtitle {
+		font-size: 14px;
+		color: rgba(255, 255, 255, 0.8);
+		margin-top: 4px;
+	}
+	
+	.logo {
+		width: 60px;
+		height: 60px;
+		border-radius: 12px;
+	}
+	
+	/* 统计卡片 */
+	.stats-cards {
+		flex-direction: row;
+		margin-bottom: 16px;
+	}
+	
+	.stat-card {
+		flex: 1;
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 20px;
+		margin-right: 12px;
+		align-items: center;
+		flex-direction: column;
+	}
+	
+	.stat-card-last {
+		margin-right: 0;
+	}
+	
+	.stat-value {
+		font-size: 28px;
+		font-weight: bold;
+		color: #007aff;
+	}
+	
+	.stat-label {
+		font-size: 13px;
+		color: #999999;
+		margin-top: 4px;
+	}
+	
+	/* 快捷入口 */
+	.quick-actions {
+		flex-direction: column;
+		margin-bottom: 16px;
+	}
+	
+	.action-card {
+		flex-direction: row;
+		align-items: center;
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 16px;
+		margin-bottom: 12px;
+	}
+	
+	.action-icon-container {
+		width: 48px;
+		height: 48px;
+		border-radius: 12px;
+		align-items: center;
+		justify-content: center;
+		margin-right: 16px;
+	}
+	
+	.action-icon {
+		font-size: 24px;
+	}
+	
+	.action-info {
+		flex: 1;
+		flex-direction: column;
+	}
+	
+	.action-title {
+		font-size: 16px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	.action-desc {
+		font-size: 13px;
+		color: #999999;
+		margin-top: 2px;
+	}
+	
+	.action-arrow {
 		font-size: 18px;
-		color: #8f8f94;
-		text-align: center;
+		color: #cccccc;
+	}
+	
+	/* 分区 */
+	.section {
+		margin-bottom: 16px;
+	}
+	
+	.section-header {
+		padding: 8px 4px;
+	}
+	
+	.section-title {
+		font-size: 16px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	/* 最近查看 */
+	.recent-list {
+		background-color: #ffffff;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+	
+	.recent-item {
+		flex-direction: row;
+		align-items: center;
+		padding: 14px 16px;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #f0f0f0;
+	}
+	
+	.recent-info {
+		flex: 1;
+		flex-direction: column;
+	}
+	
+	.recent-name {
+		font-size: 15px;
+		color: #333333;
+	}
+	
+	.recent-code {
+		font-size: 12px;
+		color: #999999;
+		margin-top: 2px;
+	}
+	
+	.recent-arrow {
+		font-size: 14px;
+		color: #cccccc;
+	}
+	
+	/* 系统信息 */
+	.system-info {
+		align-items: center;
+		padding: 20px;
+	}
+	
+	.system-text {
+		font-size: 12px;
+		color: #cccccc;
+		margin-bottom: 4px;
 	}
 </style>

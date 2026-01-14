@@ -1,0 +1,201 @@
+<template>
+	<!-- #ifdef APP -->
+	<scroll-view class="page-container">
+	<!-- #endif -->
+		<view class="settings-page">
+			<!-- 存储管理 -->
+			<view class="section">
+				<text class="section-title">存储管理</text>
+				<view class="settings-card">
+					<view class="setting-item" @click="handleClearCache">
+						<view class="item-content">
+							<text class="item-label">清理资源缓存</text>
+							<text class="item-desc">清理所有导入的图片、视频和文档文件</text>
+						</view>
+						<text class="item-arrow">></text>
+					</view>
+					
+					<view class="setting-item" @click="handleClearData">
+						<view class="item-content">
+							<text class="item-label">清空工艺数据</text>
+							<text class="item-desc">删除所有工艺列表数据和导入记录</text>
+						</view>
+						<text class="item-arrow">></text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 关于应用 -->
+			<view class="section">
+				<text class="section-title">关于应用</text>
+				<view class="settings-card">
+					<view class="setting-item">
+						<text class="item-label">应用版本</text>
+						<text class="item-value">v1.0.0</text>
+					</view>
+					<view class="setting-item">
+						<text class="item-label">构建时间</text>
+						<text class="item-value">2026-01-14</text>
+					</view>
+				</view>
+			</view>
+			
+			<view class="copyright">
+				<text class="copyright-text">MPM Offline Viewer</text>
+			</view>
+		</view>
+	<!-- #ifdef APP -->
+	</scroll-view>
+	<!-- #endif -->
+</template>
+
+<script lang="uts">
+	import { clearAllProcesses } from '@/services/processService'
+	import { clearAllResources } from '@/services/fileService'
+	
+	export default {
+		methods: {
+			/**
+			 * 清理资源缓存
+			 */
+			handleClearCache() {
+				uni.showModal({
+					title: '确认清理',
+					content: '确定要清理所有资源文件吗？这将导致工艺详情中的图片和视频无法查看。',
+					success: (res) => {
+						if (res.confirm) {
+							uni.showLoading({ title: '清理中...' })
+							clearAllResources()
+								.then(() => {
+									uni.hideLoading()
+									uni.showToast({
+										title: '清理成功',
+										icon: 'success'
+									})
+								})
+								.catch((e: Error) => {
+									uni.hideLoading()
+									console.error('清理资源失败：', e.message)
+									uni.showToast({
+										title: '清理失败',
+										icon: 'none'
+									})
+								})
+						}
+					}
+				})
+			},
+			
+			/**
+			 * 清空工艺数据
+			 */
+			handleClearData() {
+				uni.showModal({
+					title: '危险操作',
+					content: '确定要清空所有工艺数据吗？此操作不可恢复！',
+					success: (res) => {
+						if (res.confirm) {
+							uni.showLoading({ title: '清空中...' })
+							clearAllProcesses()
+								.then(() => {
+									uni.hideLoading()
+									uni.showToast({
+										title: '清空成功',
+										icon: 'success'
+									})
+									
+									// 发送事件通知列表刷新
+									uni.$emit('processDataCleared', {})
+								})
+								.catch((e: Error) => {
+									uni.hideLoading()
+									console.error('清空数据失败：', e.message)
+									uni.showToast({
+										title: '清空失败',
+										icon: 'none'
+									})
+								})
+						}
+					}
+				})
+			}
+		}
+	}
+</script>
+
+<style>
+	.page-container {
+		flex: 1;
+		background-color: #f5f6f7;
+	}
+	
+	.settings-page {
+		flex-direction: column;
+		padding: 16px;
+	}
+	
+	.section {
+		margin-bottom: 24px;
+		flex-direction: column;
+	}
+	
+	.section-title {
+		font-size: 14px;
+		color: #666666;
+		margin-bottom: 8px;
+		margin-left: 4px;
+	}
+	
+	.settings-card {
+		background-color: #ffffff;
+		border-radius: 12px;
+		flex-direction: column;
+	}
+	
+	.setting-item {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 16px;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #f5f5f5;
+	}
+	
+	.item-content {
+		flex-direction: column;
+		flex: 1;
+	}
+	
+	.item-label {
+		font-size: 16px;
+		color: #333333;
+	}
+	
+	.item-desc {
+		font-size: 12px;
+		color: #999999;
+		margin-top: 4px;
+	}
+	
+	.item-value {
+		font-size: 14px;
+		color: #666666;
+	}
+	
+	.item-arrow {
+		font-size: 14px;
+		color: #cccccc;
+		margin-left: 8px;
+	}
+	
+	.copyright {
+		align-items: center;
+		margin-top: 20px;
+	}
+	
+	.copyright-text {
+		font-size: 12px;
+		color: #cccccc;
+	}
+</style>

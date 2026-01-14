@@ -1,0 +1,305 @@
+<template>
+	<view class="step-card" @click="toggleExpand">
+		<view class="step-header">
+			<view class="step-number">
+				<text class="step-number-text">{{ step.stepNo }}</text>
+			</view>
+			<view class="step-info">
+				<text class="step-name">{{ step.name }}</text>
+				<text class="step-duration">预计 {{ step.duration }} 分钟</text>
+			</view>
+			<text class="step-arrow">{{ isExpanded ? '▲' : '▼' }}</text>
+		</view>
+		
+		<!-- 步骤详情（展开时显示） -->
+		<view class="step-detail" v-if="isExpanded">
+			<!-- 操作描述 -->
+			<view class="detail-section">
+				<text class="detail-label">操作说明</text>
+				<text class="detail-content">{{ step.description }}</text>
+			</view>
+			
+			<!-- 工具清单 -->
+			<view class="detail-section" v-if="step.tools.length > 0">
+				<text class="detail-label">所需工具</text>
+				<view class="tag-list">
+					<view class="tag" v-for="(tool, tIdx) in step.tools" :key="tIdx">
+						<text class="tag-text">{{ tool }}</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 材料清单 -->
+			<view class="detail-section" v-if="step.materials.length > 0">
+				<text class="detail-label">所需材料</text>
+				<view class="tag-list">
+					<view class="tag material-tag" v-for="(material, mIdx) in step.materials" :key="mIdx">
+						<text class="tag-text">{{ material }}</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 图片预览 -->
+			<view class="detail-section" v-if="step.images.length > 0">
+				<text class="detail-label">参考图片</text>
+				<view class="image-list">
+					<image 
+						class="preview-image" 
+						v-for="(img, iIdx) in step.images" 
+						:key="iIdx"
+						:src="getResourcePath(img)"
+						mode="aspectFill"
+						@click.stop="onPreviewImage(iIdx)"
+					></image>
+				</view>
+			</view>
+			
+			<!-- 视频预览 -->
+			<view class="detail-section" v-if="step.videos.length > 0">
+				<text class="detail-label">操作视频</text>
+				<view class="video-list">
+					<view 
+						class="video-item" 
+						v-for="(video, vIdx) in step.videos" 
+						:key="vIdx"
+						@click.stop="onPlayVideo(video)"
+					>
+						<text class="video-icon">▶</text>
+						<text class="video-name">{{ getFileName(video) }}</text>
+					</view>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script lang="uts">
+	import { ProcessStep } from '@/types/process'
+	
+	/**
+	 * 工艺步骤组件
+	 * @description 展示单个工艺步骤的详情，支持展开/收起
+	 */
+	export default {
+		name: 'process-step',
+		emits: ['toggle'],
+		props: {
+			step: {
+				type: Object as PropType<ProcessStep>,
+				required: true
+			},
+			expanded: {
+				type: Boolean,
+				default: false
+			},
+			resourceBasePath: {
+				type: String,
+				default: ''
+			}
+		},
+		data() {
+			return {
+				isExpanded: this.expanded
+			}
+		},
+		watch: {
+			expanded(newVal: boolean) {
+				this.isExpanded = newVal
+			}
+		},
+		methods: {
+			/**
+			 * 切换展开状态
+			 */
+			toggleExpand() {
+				this.isExpanded = !this.isExpanded
+				this.$emit('toggle', this.isExpanded)
+			},
+			
+			/**
+			 * 获取资源路径
+			 */
+			getResourcePath(path: string): string {
+				return this.resourceBasePath + path
+			},
+			
+			/**
+			 * 获取文件名
+			 */
+			getFileName(path: string): string {
+				const parts = path.split('/')
+				return parts[parts.length - 1]
+			},
+			
+			/**
+			 * 预览图片
+			 */
+			onPreviewImage(index: number) {
+				const urls: string[] = []
+				for (let i = 0; i < this.step.images.length; i++) {
+					urls.push(this.getResourcePath(this.step.images[i]))
+				}
+				
+				uni.previewImage({
+					urls: urls,
+					current: index
+				})
+			},
+			
+			/**
+			 * 播放视频
+			 */
+			onPlayVideo(videoPath: string) {
+				const fullPath = this.getResourcePath(videoPath)
+				
+				// #ifdef APP-ANDROID || APP-HARMONY
+				uni.navigateTo({
+					url: '/pages/video/player?src=' + encodeURIComponent(fullPath)
+				})
+				// #endif
+				
+				// #ifdef WEB
+				window.open(fullPath, '_blank')
+				// #endif
+			}
+		}
+	}
+</script>
+
+<style>
+	.step-card {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 16px;
+		margin-bottom: 8px;
+		flex-direction: column;
+	}
+	
+	.step-header {
+		flex-direction: row;
+		align-items: center;
+	}
+	
+	.step-number {
+		width: 32px;
+		height: 32px;
+		border-radius: 16px;
+		background-color: #007aff;
+		align-items: center;
+		justify-content: center;
+		margin-right: 12px;
+	}
+	
+	.step-number-text {
+		font-size: 14px;
+		font-weight: bold;
+		color: #ffffff;
+	}
+	
+	.step-info {
+		flex: 1;
+		flex-direction: column;
+	}
+	
+	.step-name {
+		font-size: 15px;
+		font-weight: bold;
+		color: #333333;
+	}
+	
+	.step-duration {
+		font-size: 12px;
+		color: #999999;
+		margin-top: 2px;
+	}
+	
+	.step-arrow {
+		font-size: 12px;
+		color: #cccccc;
+	}
+	
+	/* 步骤详情 */
+	.step-detail {
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #f0f0f0;
+		flex-direction: column;
+	}
+	
+	.detail-section {
+		margin-bottom: 16px;
+		flex-direction: column;
+	}
+	
+	.detail-label {
+		font-size: 13px;
+		color: #666666;
+		margin-bottom: 8px;
+	}
+	
+	.detail-content {
+		font-size: 14px;
+		color: #333333;
+		line-height: 22px;
+	}
+	
+	.tag-list {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	
+	.tag {
+		background-color: #e3f2fd;
+		padding: 4px 10px;
+		border-radius: 4px;
+		margin-right: 8px;
+		margin-bottom: 8px;
+	}
+	
+	.material-tag {
+		background-color: #fff3e0;
+	}
+	
+	.tag-text {
+		font-size: 12px;
+		color: #333333;
+	}
+	
+	.image-list {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	
+	.preview-image {
+		width: 80px;
+		height: 80px;
+		border-radius: 8px;
+		margin-right: 8px;
+		margin-bottom: 8px;
+	}
+	
+	.video-list {
+		flex-direction: column;
+	}
+	
+	.video-item {
+		flex-direction: row;
+		align-items: center;
+		padding: 10px;
+		background-color: #f5f5f5;
+		border-radius: 8px;
+		margin-bottom: 8px;
+	}
+	
+	.video-icon {
+		font-size: 16px;
+		margin-right: 8px;
+	}
+	
+	.video-name {
+		font-size: 14px;
+		color: #333333;
+	}
+</style>

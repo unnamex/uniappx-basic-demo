@@ -1,0 +1,66 @@
+/**
+ * MPM 工艺预览系统 - 工艺相关类型定义
+ * @description 定义工艺数据的核心类型
+ */
+
+/**
+ * 产品信息类型
+ */
+export type ProductInfo = {
+	id: string
+	name: string
+	model: string
+}
+
+/**
+ * 工艺步骤类型
+ */
+export type ProcessStep = {
+	stepNo: number
+	name: string
+	description: string
+	duration: number
+	tools: string[]
+	materials: string[]
+	images: string[]
+	videos: string[]
+}
+
+/**
+ * 工艺附件类型
+ */
+export type ProcessAttachment = {
+	type: string
+	name: string
+	path: string
+}
+
+/**
+ * 完整工艺信息类型
+ */
+export type ProcessInfo = {
+	id: string
+	code: string
+	name: string
+	version: string
+	status: string
+	product: ProductInfo
+	steps: ProcessStep[]
+	attachments: ProcessAttachment[]
+	createdAt: string
+	updatedAt: string
+}
+
+/**
+ * 工艺列表项类型（用于列表展示，不含完整步骤信息）
+ */
+export type ProcessListItem = {
+	id: string
+	code: string
+	name: string
+	version: string
+	status: string
+	productName: string
+	stepCount: number
+	updatedAt: string
+}

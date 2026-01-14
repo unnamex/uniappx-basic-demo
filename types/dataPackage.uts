@@ -1,0 +1,47 @@
+/**
+ * MPM 工艺预览系统 - 数据包相关类型定义
+ * @description 定义数据包导入相关的类型
+ */
+
+/**
+ * 数据包清单类型
+ */
+export type PackageManifest = {
+	version: string
+	exportTime: string
+	source: string
+	processCount: number
+	processes: string[]
+	checksum: string
+}
+
+/**
+ * 导入进度类型
+ */
+export type ImportProgress = {
+	current: number
+	total: number
+	currentFile: string
+	status: string
+}
+
+/**
+ * 导入结果类型
+ */
+export type ImportResult = {
+	success: boolean
+	message: string
+	processCount: number
+	importTime: number
+}
+
+/**
+ * 数据包信息类型
+ */
+export type PackageInfo = {
+	fileName: string
+	fileSize: number
+	manifest: PackageManifest | null
+	isValid: boolean
+	errorMessage: string
+}
