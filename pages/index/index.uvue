@@ -1,0 +1,47 @@
+<template>
+	<view>
+		<image class="logo" src="/static/logo.png"></image>
+		<view class="text-area">
+			<text class="title">{{title}}</text>
+			<text class="title">uni-app x offline for android</text>
+		</view>
+		<video controls="true" show-fullscreen-btn="true" show-center-play-btn="true" show-play-btn="true"
+			show-progress="true" src="https://qiniu-web-assets.dcloud.net.cn/video/sample/2minute-demo.mp4"></video>
+	</view>
+</template>
+
+<script>
+	import { useRequest, UseOptions } from '@/uni_modules/kux-request';
+	const http = useRequest({
+		baseURL: 'http://example.com/api',
+		responseType: 'json'
+	} as UseOptions);
+
+	export default {
+		data() {
+			return {
+				title: 'Hello'
+			}
+		},
+		onLoad() {
+
+		},
+		methods: {
+
+		}
+	}
+</script>
+
+<style>
+	.logo {
+		height: 100px;
+		width: 100px;
+		margin: 100px auto 25px auto;
+	}
+
+	.title {
+		font-size: 18px;
+		color: #8f8f94;
+		text-align: center;
+	}
+</style>
