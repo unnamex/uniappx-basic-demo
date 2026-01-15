@@ -1,0 +1,259 @@
+<template>
+	<view class="ux-table">
+		<view class="header">
+			<view class="header-row">
+				<view v-for="(col, index) in columns" :key="index" class="header-cell"
+					:style="{ flex: col['width'] == null ? 1 : 'none', width: col['width'] == null ? '' : col['width'] + 'rpx' }">
+					<text class="header-text">{{ col['label'] }}</text>
+				</view>
+			</view>
+		</view>
+		<view class="body">
+			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex" class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
+				<view v-for="(col, colIndex) in columns" :key="colIndex" class="cell"
+					:style="{ flex: col['width'] == null ? 1 : 'none', width: col['width'] == null ? '' : col['width'] + 'rpx' }">
+					
+					<view v-if="colIndex === 0" class="cell-content-wrapper">
+						<view :style="{ width: (row.level * 40) + 'rpx' }"></view>
+						<view class="expand-icon" @click.stop="toggleExpand(row)">
+							<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
+							<text class="icon-text" v-else></text>
+						</view>
+						<text class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+					</view>
+					
+					<view v-else class="cell-content-wrapper">
+						<text class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+					</view>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script lang="uts">
+	import { PropType } from 'vue'
+
+	type TableRow = {
+		id : string
+		level : number
+		expanded : boolean
+		hasChildren : boolean
+		parentId : string | null
+		originData : UTSJSONObject
+		// 方便计算显示
+		isShow : boolean
+	}
+
+	export default {
+		name: "ux-table",
+		props: {
+			data: {
+				type: Array as PropType<UTSJSONObject[]>,
+				default: () => [] as UTSJSONObject[]
+			},
+			columns: {
+				type: Array as PropType<UTSJSONObject[]>,
+				default: () => [] as UTSJSONObject[]
+			}
+		},
+		data() {
+			return {
+				allRows: [] as TableRow[],
+				selectedRowId: null as string | null
+			}
+		},
+		computed: {
+			visibleRows() : TableRow[] {
+				return this.allRows.filter((row: TableRow) : boolean => {
+					return row.isShow
+				})
+			}
+		},
+		watch: {
+			data: {
+				handler(newData : UTSJSONObject[]) {
+					this.initTableData(newData)
+				},
+				deep: true,
+				immediate: true
+			}
+		},
+		methods: {
+			getStringValue(data : UTSJSONObject, key : string) : string {
+				const val = data[key]
+				if (val == null) return ''
+				return val.toString()
+			},
+			initTableData(treeData : UTSJSONObject[]) {
+				this.allRows = []
+				this.flatten(treeData, 0, null)
+			},
+			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
+				list.forEach((item, index) => {
+					// 假设 item 有唯一 id，如果没有，生成一个
+					let id = item["id"]
+					if (id == null) {
+						id = `${parentId}_${index}` // 简易ID生成
+					}
+					
+					const children = item["children"] as UTSJSONObject[] | null
+					const hasChildren = children != null && children.length > 0
+					
+					const row : TableRow = {
+						id: id.toString(),
+						level: level,
+						expanded: true, // 默认全部展开
+						hasChildren: hasChildren,
+						parentId: parentId,
+						originData: item,
+						isShow: true // 默认根据父级计算，这里初始化时先全部设为 true (如果是全部展开)
+						// 如果要支持默认折叠，需要调整逻辑
+					}
+					
+					this.allRows.push(row)
+					
+					if (hasChildren) {
+						this.flatten(children!, level + 1, row.id)
+					}
+				})
+			},
+			toggleExpand(row : TableRow) {
+				if (!row.hasChildren) return
+				
+				row.expanded = !row.expanded
+				
+				// 更新子孙节点的 isShow
+				this.updateChildrenVisibility(row)
+			},
+			updateChildrenVisibility(parentRow : TableRow) {
+				// 找到 parentRow 在 allRows 中的 index
+				const startIndex = this.allRows.findIndex((r: TableRow) : boolean => r.id == parentRow.id)
+				if (startIndex == -1) return
+				
+				for (let i = startIndex + 1; i < this.allRows.length; i++) {
+					const child = this.allRows[i]
+					// 如果遇到同级或更高级别的节点，说明子孙节点结束
+					if (child.level <= parentRow.level) {
+						break
+					}
+					
+					if (parentRow.expanded) {
+						// 展开操作
+						// 只有当 child 的直接父级是 expanded 时，child 才显示
+						// 这是一个递归依赖。
+						// 我们可以查看 child 的 parentId 对应的 row 是否 expanded
+						
+						const pRow = this.findRowById(child.parentId)
+						if (pRow != null && pRow.expanded && pRow.isShow) {
+							child.isShow = true
+						} else {
+							child.isShow = false
+						}
+					} else {
+						// 折叠操作：所有子孙都隐藏
+						child.isShow = false
+					}
+				}
+			},
+			findRowById(id : string | null) : TableRow | null {
+				if (id == null) return null
+				// 这里可以用 Map 优化
+				return this.allRows.find((r: TableRow) : boolean => r.id == id) || null
+			},
+			handleRowClick(row : TableRow) {
+				this.selectedRowId = row.id
+				this.$emit('row-click', row.originData)
+			}
+		}
+	}
+</script>
+
+<style>
+	.ux-table {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #EBEEF5;
+	}
+
+	.header {
+		background-color: #F5F7FA;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #EBEEF5;
+	}
+
+	.header-row {
+		display: flex;
+		flex-direction: row;
+		padding: 20rpx;
+	}
+
+	.header-cell {
+		justify-content: center;
+		padding-left: 10rpx;
+		padding-right: 10rpx;
+	}
+
+	.header-text {
+		font-size: 28rpx;
+		font-weight: bold;
+		color: #909399;
+	}
+
+	.body {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.row {
+		display: flex;
+		flex-direction: row;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #EBEEF5;
+		background-color: #ffffff;
+		padding: 20rpx;
+	}
+
+	.cell {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding-left: 10rpx;
+		padding-right: 10rpx;
+	}
+	
+	.cell-content-wrapper {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.cell-text {
+		font-size: 28rpx;
+		color: #606266;
+	}
+
+	.expand-icon {
+		width: 40rpx;
+		height: 40rpx;
+		justify-content: center;
+		align-items: center;
+		margin-right: 10rpx;
+		/* background-color: #f0f0f0; */
+		border-radius: 4px;
+	}
+	
+	.icon-text {
+		font-size: 24rpx;
+		color: #C0C4CC;
+	}
+
+	.row-selected {
+		background-color: #f0f9eb !important;
+	}
+</style>
