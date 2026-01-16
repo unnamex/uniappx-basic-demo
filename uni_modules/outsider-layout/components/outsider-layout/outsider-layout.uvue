@@ -1,0 +1,450 @@
+<template>
+	<view class="outsider-layout-container">
+		<view v-if="$slots.header" class="outsider-header">
+			<slot name="header"></slot>
+		</view>
+		<view class="outsider-body-wrapper">
+			<view class="outsider-body-container">
+				<!-- Left Sidebar -->
+				<view v-if="$slots.left" class="outsider-left" :style="{ width: currentLeftWidth + 'px', display: isCollapsed ? 'none' : 'flex' }">
+					<slot name="left"></slot>
+				</view>
+
+				<!-- Divider (Left-Main) -->
+				<view v-if="$slots.left" class="outsider-divider" 
+					@touchstart="onTouchStart" 
+					@touchmove="onTouchMove" 
+					@touchend="onTouchEnd"
+					@mousedown="onMouseDown"
+					>
+					<view class="outsider-divider-line"></view>
+					<view class="outsider-toggle-btn" @click.stop="toggleCollapse">
+						<text class="outsider-toggle-text">{{ isCollapsed ? '>' : '<' }}</text>
+					</view>
+				</view>
+
+				<!-- Main Content -->
+				<view class="outsider-main">
+					<!-- Vertical Split Layout if main-bottom exists -->
+					<view v-if="$slots['main-bottom']" class="outsider-main-split-container">
+						<!-- Top Section -->
+						<scroll-view scroll-y class="outsider-main-top" :style="{ height: currentMainTopHeight + 'px' }">
+							<slot></slot>
+						</scroll-view>
+
+						<!-- Horizontal Divider -->
+						<view class="outsider-main-divider-horizontal"
+							@touchstart="onTouchStartMain"
+							@touchmove="onTouchMoveMain"
+							@touchend="onTouchEndMain"
+							@mousedown="onMouseDownMain"
+						>
+							<view class="outsider-divider-line-horizontal"></view>
+						</view>
+
+						<!-- Bottom Section -->
+						<scroll-view scroll-y class="outsider-main-bottom">
+							<slot name="main-bottom"></slot>
+						</scroll-view>
+					</view>
+					
+					<!-- Standard Layout (Single Main Content) -->
+					<scroll-view v-else scroll-y class="outsider-main-content-full">
+						<slot></slot>
+					</scroll-view>
+				</view>
+
+				<!-- Divider (Main-Right) -->
+				<view v-if="$slots.right" class="outsider-divider" 
+					@touchstart="onTouchStartRight" 
+					@touchmove="onTouchMoveRight" 
+					@touchend="onTouchEndRight"
+					@mousedown="onMouseDownRight"
+					>
+					<view class="outsider-divider-line"></view>
+					<view class="outsider-toggle-btn" @click.stop="toggleRightCollapse">
+						<text class="outsider-toggle-text">{{ isRightCollapsed ? '<' : '>' }}</text>
+					</view>
+				</view>
+
+				<!-- Right Sidebar -->
+				<view v-if="$slots.right" class="outsider-right" :style="{ width: currentRightWidth + 'px', display: isRightCollapsed ? 'none' : 'flex' }">
+					<slot name="right"></slot>
+				</view>
+			</view>
+		</view>
+		<view v-if="$slots.footer" class="outsider-footer">
+			<slot name="footer"></slot>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * Outsider Layout
+	 * Supports Header, Footer, Left Sidebar (Resizable/Collapsible), Right Sidebar (Resizable/Collapsible), and Main Content (opt. split Top/Bottom)
+	 */
+	
+	type Props = {
+		initLeftWidth ?: number
+		minLeftWidth ?: number
+		maxLeftWidth ?: number
+		initMainTopHeight ?: number
+		minMainTopHeight ?: number
+		initRightWidth ?: number
+		minRightWidth ?: number
+		maxRightWidth ?: number
+	}
+
+	const props = withDefaults(defineProps<Props>(), {
+		initLeftWidth: 250,
+		minLeftWidth: 100,
+		maxLeftWidth: 500,
+		initMainTopHeight: 300,
+		minMainTopHeight: 100,
+		initRightWidth: 250,
+		minRightWidth: 100,
+		maxRightWidth: 500
+	})
+
+	// State - Left Sidebar
+	const currentLeftWidth = ref(props.initLeftWidth)
+	const isCollapsed = ref(false)
+	const isDragging = ref(false)
+	const startX = ref(0)
+	const startWidth = ref(0)
+	
+	// State - Main Split
+	const currentMainTopHeight = ref(props.initMainTopHeight)
+	const isDraggingMain = ref(false)
+	const startY = ref(0)
+	const startHeight = ref(0)
+	
+	// State - Right Sidebar
+	const currentRightWidth = ref(props.initRightWidth)
+	const isRightCollapsed = ref(false)
+	const isDraggingRight = ref(false)
+	const startXRight = ref(0)
+	const startWidthRight = ref(0)
+
+	// Toggle Collapse Left
+	const toggleCollapse = () => {
+		isCollapsed.value = !isCollapsed.value
+	}
+	
+	// Toggle Collapse Right
+	const toggleRightCollapse = () => {
+		isRightCollapsed.value = !isRightCollapsed.value
+	}
+
+	// --- Left Sidebar Resize Logic ---
+	// Touch Events for Mobile/H5 Touch
+	const onTouchStart = (e: TouchEvent) => {
+		isDragging.value = true
+		startX.value = e.touches[0].clientX
+		startWidth.value = currentLeftWidth.value
+	}
+
+	const onTouchMove = (e: TouchEvent) => {
+		if (!isDragging.value) return
+		const clientX = e.touches[0].clientX
+		const deltaX = clientX - startX.value
+		
+		let newWidth = startWidth.value + deltaX
+		
+		// Clamp width
+		if (newWidth < props.minLeftWidth) newWidth = props.minLeftWidth
+		if (newWidth > props.maxLeftWidth) newWidth = props.maxLeftWidth
+		
+		currentLeftWidth.value = newWidth
+	}
+
+	const onTouchEnd = (e: TouchEvent) => {
+		isDragging.value = false
+	}
+	
+	// Mouse Events (H5) - Left
+	// Note: In uni-app x, standard MouseEvent might vary by platform, but for H5 compatibility we try to handle it.
+	// Since uni-app x implies strong typing, we need to be careful with types. 
+	// If MouseEvent is not strictly global in all targets, we might rely on 'any' casting or conditional logic locally.
+	// For simplicity in this demo, strict Touch logic covers mobile. 
+	// H5 Desktop often maps mouse to touch in some emulations, but native mouse events:
+	
+	// Mouse Events for H5 Desktop
+	// On uni-app x Android/iOS, MouseEvent type might not be globally available. Use 'any' or specific platform types if needed.
+	// For web target, we cast it or use it inside ifdef.
+	
+	const onMouseDown = (e: any) => {
+		// #ifdef WEB
+		// In Web environment, e is MouseEvent
+		const mouseEvent = e as MouseEvent
+		isDragging.value = true
+		startX.value = mouseEvent.clientX
+		startWidth.value = currentLeftWidth.value
+		
+		const moveHandler = (moveEvent: MouseEvent) => {
+			if (!isDragging.value) return
+			const deltaX = moveEvent.clientX - startX.value
+			let newWidth = startWidth.value + deltaX
+			if (newWidth < props.minLeftWidth) newWidth = props.minLeftWidth
+			if (newWidth > props.maxLeftWidth) newWidth = props.maxLeftWidth
+			currentLeftWidth.value = newWidth
+		}
+
+		const upHandler = (_: MouseEvent) => {
+			isDragging.value = false
+			window.removeEventListener('mousemove', moveHandler)
+			window.removeEventListener('mouseup', upHandler)
+		}
+
+		window.addEventListener('mousemove', moveHandler)
+		window.addEventListener('mouseup', upHandler)
+		// #endif
+	}
+	
+	// --- Main Content Vertical Split Resize Logic ---
+	// Touch
+	const onTouchStartMain = (e: TouchEvent) => {
+		isDraggingMain.value = true
+		startY.value = e.touches[0].clientY
+		startHeight.value = currentMainTopHeight.value
+	}
+	
+	const onTouchMoveMain = (e: TouchEvent) => {
+		if (!isDraggingMain.value) return
+		const clientY = e.touches[0].clientY
+		const deltaY = clientY - startY.value
+		
+		let newHeight = startHeight.value + deltaY
+		if (newHeight < props.minMainTopHeight) newHeight = props.minMainTopHeight
+		// Max height constraint could be checked against container height if needed, skipping for now
+		
+		currentMainTopHeight.value = newHeight
+	}
+	
+	const onTouchEndMain = (e: TouchEvent) => {
+		isDraggingMain.value = false
+	}
+	
+	// Mouse (H5) - Main
+	const onMouseDownMain = (e: any) => {
+		// #ifdef WEB
+		const mouseEvent = e as MouseEvent
+		isDraggingMain.value = true
+		startY.value = mouseEvent.clientY
+		startHeight.value = currentMainTopHeight.value
+		
+		const moveHandler = (moveEvent: MouseEvent) => {
+			if (!isDraggingMain.value) return
+			const deltaY = moveEvent.clientY - startY.value
+			let newHeight = startHeight.value + deltaY
+			if (newHeight < props.minMainTopHeight) newHeight = props.minMainTopHeight
+			currentMainTopHeight.value = newHeight
+		}
+
+		const upHandler = (_: MouseEvent) => {
+			isDraggingMain.value = false
+			window.removeEventListener('mousemove', moveHandler)
+			window.removeEventListener('mouseup', upHandler)
+		}
+
+		window.addEventListener('mousemove', moveHandler)
+		window.addEventListener('mouseup', upHandler)
+		// #endif
+	}
+	
+	// --- Right Sidebar Resize Logic ---
+	// Touch
+	const onTouchStartRight = (e: TouchEvent) => {
+		isDraggingRight.value = true
+		startXRight.value = e.touches[0].clientX
+		startWidthRight.value = currentRightWidth.value
+	}
+
+	const onTouchMoveRight = (e: TouchEvent) => {
+		if (!isDraggingRight.value) return
+		const clientX = e.touches[0].clientX
+		const deltaX = clientX - startXRight.value
+		
+		// For right sidebar, moving left (negative delta) increases width
+		let newWidth = startWidthRight.value - deltaX
+		
+		if (newWidth < props.minRightWidth) newWidth = props.minRightWidth
+		if (newWidth > props.maxRightWidth) newWidth = props.maxRightWidth
+		
+		currentRightWidth.value = newWidth
+	}
+
+	const onTouchEndRight = (e: TouchEvent) => {
+		isDraggingRight.value = false
+	}
+	
+	// Mouse (H5) - Right
+	const onMouseDownRight = (e: any) => {
+		// #ifdef WEB
+		const mouseEvent = e as MouseEvent
+		isDraggingRight.value = true
+		startXRight.value = mouseEvent.clientX
+		startWidthRight.value = currentRightWidth.value
+		
+		const moveHandler = (moveEvent: MouseEvent) => {
+			if (!isDraggingRight.value) return
+			const deltaX = moveEvent.clientX - startXRight.value
+			// Inverse logic for right sidebar
+			let newWidth = startWidthRight.value - deltaX
+			
+			if (newWidth < props.minRightWidth) newWidth = props.minRightWidth
+			if (newWidth > props.maxRightWidth) newWidth = props.maxRightWidth
+			currentRightWidth.value = newWidth
+		}
+
+		const upHandler = (_: MouseEvent) => {
+			isDraggingRight.value = false
+			window.removeEventListener('mousemove', moveHandler)
+			window.removeEventListener('mouseup', upHandler)
+		}
+
+		window.addEventListener('mousemove', moveHandler)
+		window.addEventListener('mouseup', upHandler)
+		// #endif
+	}
+
+</script>
+
+<style>
+	.outsider-layout-container {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.outsider-header {
+		flex: none;
+	}
+
+	.outsider-body-wrapper {
+		flex: 1;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.outsider-body-container {
+		display: flex;
+		flex-direction: row;
+		flex: 1;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.outsider-left {
+		flex: none;
+		overflow: hidden;
+		border-right: 1px solid #eee;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.outsider-divider {
+		width: 10px;
+		background-color: #f5f5f5;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: col-resize;
+		position: relative;
+		flex: none;
+		border-left: 1px solid #ddd;
+		border-right: 1px solid #ddd;
+	}
+
+	.outsider-divider-line {
+		width: 2px;
+		height: 100%;
+		background-color: #ddd; /* Visual line center */
+		display: none; /* simple background is enough usually, can enable for styling */
+	}
+
+	.outsider-toggle-btn {
+		width: 16px;
+		height: 30px;
+		background-color: #e0e0e0;
+		border-radius: 4px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10;
+		cursor: pointer;
+	}
+	
+	.outsider-toggle-text {
+		font-size: 10px;
+		color: #666;
+		font-weight: bold;
+	}
+
+	.outsider-main {
+		flex: 1;
+		overflow: hidden;
+		background-color: #fff;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.outsider-main-content-full {
+		flex: 1;
+	}
+	
+	.outsider-main-split-container {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		height: 100%;
+		overflow: hidden;
+	}
+	
+	.outsider-main-top {
+		flex: none; /* Controlled by height style */
+		overflow: hidden;
+	}
+	
+	.outsider-main-divider-horizontal {
+		height: 10px;
+		background-color: #f5f5f5;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: row-resize;
+		flex: none;
+		border-top: 1px solid #ddd;
+		border-bottom: 1px solid #ddd;
+	}
+	
+	.outsider-divider-line-horizontal {
+		height: 2px;
+		width: 100%;
+		background-color: #ddd;
+		display: none;
+	}
+	
+	.outsider-main-bottom {
+		flex: 1;
+		overflow: hidden;
+	}
+
+	.outsider-right {
+		flex: none;
+		overflow: hidden;
+		border-left: 1px solid #eee;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.outsider-footer {
+		flex: none;
+	}
+</style>
