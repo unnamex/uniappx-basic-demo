@@ -1,21 +1,28 @@
 <template>
-	<view class="ux-tabs">
-		<!-- Scrollable Tab Header -->
-		<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
-			<view class="ux-tabs__nav-wrap">
-				<view class="ux-tabs__nav">
-					<view 
-						v-for="(pane, index) in panes" 
-						:key="index"
-						:class="['ux-tabs__item', { 'is-active': pane['name'] == currentName, 'is-disabled': pane['disabled'] == true }]"
-						@click="handleTabClick(pane)"
-					>
-						<text :class="['ux-tabs__item-text', { 'is-active-text': pane['name'] == currentName }]">{{ pane['label'] }}</text>
-						<view v-if="pane['name'] == currentName" class="ux-tabs__active-bar"></view>
+	<view :class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]">
+		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
+		<view class="ux-tabs__header-row">
+			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
+				<view class="ux-tabs__nav-wrap">
+					<view class="ux-tabs__nav">
+						<view 
+							v-for="(pane, index) in panes" 
+							:key="index"
+							:class="['ux-tabs__item', { 'is-active': pane['name'] == currentName, 'is-disabled': pane['disabled'] == true }]"
+							@click="handleTabClick(pane)"
+						>
+							<text :class="['ux-tabs__item-text', { 'is-active-text': pane['name'] == currentName }]">{{ pane['label'] }}</text>
+							<view v-if="pane['name'] == currentName" class="ux-tabs__active-bar"></view>
+						</view>
 					</view>
 				</view>
+			</scroll-view>
+			
+			<!-- Fullscreen Toggle Button -->
+			<view class="ux-tabs__fullscreen-btn" @click="toggleFullscreen">
+				<text class="ux-tabs__fullscreen-icon">{{ isFullscreen ? '✕' : '⛶' }}</text>
 			</view>
-		</scroll-view>
+		</view>
 		
 		<!-- Tab Content -->
 		<view class="ux-tabs__content">
@@ -28,7 +35,7 @@
 	
 	/**
 	 * ux-tabs
-	 * Emulates Element UI Tabs
+	 * Emulates Element UI Tabs with Fullscreen support
 	 */
 
 	const props = defineProps({
@@ -42,8 +49,8 @@
 	
 	// State
 	const currentName = ref(props.modelValue)
-	// We store pane context objects here
 	const panes = ref<UTSJSONObject[]>([])
+	const isFullscreen = ref(false)
 	
 	// Watch modelValue to update internal state
 	watch(() => props.modelValue, (newVal) => {
@@ -59,6 +66,10 @@
 		emit('update:modelValue', name)
 		emit('tab-click', pane)
 		emit('change', name)
+	}
+	
+	const toggleFullscreen = () => {
+		isFullscreen.value = !isFullscreen.value
 	}
 	
 	// Registry for child Panes
@@ -97,13 +108,49 @@
 		flex-direction: column;
 		width: 100%;
 		flex: 1; /* Allow filling parent */
+		background-color: #fff;
+		transition-property: all;
+		transition-duration: 0.3s;
 	}
 	
-	.ux-tabs__header {
+	.ux-tabs-fullscreen {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 999;
+		height: 100%;
+		width: 100%;
+	}
+	
+	.ux-tabs__header-row {
+		display: flex;
 		flex-direction: row;
 		border-bottom: 2px solid #e4e7ed;
 		background-color: #fff;
 		flex-shrink: 0;
+		align-items: center;
+	}
+	
+	.ux-tabs__header {
+		flex: 1;
+		flex-direction: row;
+	}
+	
+	.ux-tabs__fullscreen-btn {
+		width: 40px;
+		height: 40px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		cursor: pointer;
+		border-left: 1px solid #f0f0f0;
+	}
+	
+	.ux-tabs__fullscreen-icon {
+		font-size: 18px;
+		color: #606266;
 	}
 	
 	.ux-tabs__nav-wrap {
@@ -158,5 +205,6 @@
 		flex: 1; /* Grow to fill remaining space */
 		display: flex;
 		flex-direction: column;
+		background-color: #fff;
 	}
 </style>
