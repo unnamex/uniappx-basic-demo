@@ -62,21 +62,41 @@
 			</view>
 		</template>
 
-		<!-- Right Sidebar Area -->
+		<!-- Right Sidebar Top Area -->
 		<template #right>
 			<view class="right-panel">
-				<text class="panel-title">Properties</text>
-				<view class="right-content">
-					<text class="right-placeholder">Right Sidebar Placeholder</text>
-					<view v-if="selectedRow != null" class="prop-list">
-						<text class="prop-item">ID: {{ selectedRow?.['id'] }}</text>
-						<text class="prop-item">Name: {{ selectedRow?.['name'] }}</text>
-						<text class="prop-item">Date: {{ selectedRow?.['date'] }}</text>
+				<!-- ux-tabs handles the title bar effectively now via tabs -->
+				<ux-tabs v-model="activeRightTab">
+					<ux-tab-pane label="Properties" name="props">
+						<view class="right-content">
+							<view v-if="selectedRow != null" class="prop-list">
+								<text class="prop-item">ID: {{ selectedRow?.['id'] }}</text>
+								<text class="prop-item">Name: {{ selectedRow?.['name'] }}</text>
+								<text class="prop-item">Date: {{ selectedRow?.['date'] }}</text>
+							</view>
+							<view v-else class="empty-state">
+								<text>Select an item to view properties</text>
+							</view>
+							
+							<view v-if="lastRightLogClicked != ''" class="interaction-feedback">
+								<text class="subtitle">Last Log Clicked:</text>
+								<text class="feedback-text">{{ lastRightLogClicked }}</text>
+							</view>
+						</view>
+					</ux-tab-pane>
+				</ux-tabs>
+			</view>
+		</template>
+		
+		<!-- Right Sidebar Bottom Area -->
+		<template #right-bottom>
+			<view class="right-panel-bottom">
+				<text class="title-small">Right Logs (Click me)</text>
+				<scroll-view scroll-y="true" style="height: 100%; flex: 1;">
+					<view v-for="(log, index) in rightLogs" :key="index" @click="handleRightLogClick(log)" class="log-item-clickable">
+						<text class="log-text">{{ log }}</text>
 					</view>
-					<view v-else class="empty-state">
-						<text>Select an item to view properties</text>
-					</view>
-				</view>
+				</scroll-view>
 			</view>
 		</template>
 	</outsider-layout>
@@ -141,7 +161,10 @@
 	const selectedRow = ref(null as UTSJSONObject | null)
 	const activeTab = ref('main')
 	const activeBottomTab = ref('contact')
+	const activeRightTab = ref('props')
 	const logs = ref<string[]>([])
+	const rightLogs = ref<string[]>([])
+	const lastRightLogClicked = ref('')
 
 	const handleRowClick = (row : UTSJSONObject) => {
 		console.log('Row clicked:', row)
@@ -149,6 +172,15 @@
 		// Add a log entry demonstrating interaction propagation
 		const now = new Date().toLocaleTimeString()
 		logs.value.unshift(`[${now}] Clicked row: ${row['name']}`)
+		
+		// Also update right bottom logs
+		rightLogs.value.unshift(`[${now}] Row selected: ${row['id']}`)
+	}
+	
+	const handleRightLogClick = (log: string) => {
+		lastRightLogClicked.value = log
+		// Switch to props tab to see effect if needed, or just show in props
+		activeRightTab.value = 'props'
 	}
 
 </script>
@@ -287,6 +319,40 @@
 		padding: 20px 0;
 		align-items: center;
 		justify-content: center;
+	}
+	
+	.right-panel-bottom {
+		padding: 10px;
+		background-color: #fafafa;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+	
+	.title-small {
+		font-size: 14px;
+		font-weight: bold;
+		margin-bottom: 5px;
+		color: #555;
+	}
+	
+	.log-item-clickable {
+		padding: 5px;
+		border-bottom: 1px solid #eee;
+		/* cursor: pointer; */ /* Pointer not always applicable in native, handled by click */
+	}
+	
+	.interaction-feedback {
+		margin-top: 20px;
+		padding: 10px;
+		background-color: #e6f7ff;
+		border: 1px solid #91d5ff;
+		border-radius: 4px;
+	}
+	
+	.feedback-text {
+		color: #0050b3;
+		font-size: 12px;
 	}
 </style>
 

@@ -69,7 +69,35 @@
 
 				<!-- Right Sidebar -->
 				<view v-if="$slots.right" class="outsider-right" :style="{ width: currentRightWidth + 'px', display: isRightCollapsed ? 'none' : 'flex' }">
-					<slot name="right"></slot>
+					
+					<!-- Vertical Split Layout for Right Sidebar if right-bottom exists -->
+					<view v-if="$slots['right-bottom']" class="outsider-right-split-container">
+						<!-- Right Top Section -->
+						<scroll-view scroll-y class="outsider-right-top" :style="{ height: currentRightTopHeight + 'px' }">
+							<slot name="right"></slot>
+						</scroll-view>
+
+						<!-- Horizontal Divider -->
+						<view class="outsider-right-divider-horizontal"
+							@touchstart="onTouchStartRightMain"
+							@touchmove="onTouchMoveRightMain"
+							@touchend="onTouchEndRightMain"
+							@mousedown="onMouseDownRightMain"
+						>
+							<view class="outsider-divider-line-horizontal"></view>
+						</view>
+
+						<!-- Right Bottom Section -->
+						<scroll-view scroll-y class="outsider-right-bottom">
+							<slot name="right-bottom"></slot>
+						</scroll-view>
+					</view>
+
+					<!-- Standard Layout (Single Right Content) -->
+					<scroll-view v-else scroll-y class="outsider-right-content-full">
+						<slot name="right"></slot>
+					</scroll-view>
+					
 				</view>
 			</view>
 		</view>
@@ -94,6 +122,8 @@
 		initRightWidth ?: number
 		minRightWidth ?: number
 		maxRightWidth ?: number
+		initRightTopHeight ?: number
+		minRightTopHeight ?: number
 	}
 
 	const props = withDefaults(defineProps<Props>(), {
@@ -104,7 +134,9 @@
 		minMainTopHeight: 100,
 		initRightWidth: 250,
 		minRightWidth: 100,
-		maxRightWidth: 500
+		maxRightWidth: 500,
+		initRightTopHeight: 300,
+		minRightTopHeight: 100
 	})
 
 	// State - Left Sidebar
@@ -126,6 +158,12 @@
 	const isDraggingRight = ref(false)
 	const startXRight = ref(0)
 	const startWidthRight = ref(0)
+	
+	// State - Right Sidebar Split
+	const currentRightTopHeight = ref(props.initRightTopHeight)
+	const isDraggingRightMain = ref(false)
+	const startYRight = ref(0)
+	const startHeightRight = ref(0)
 
 	// Toggle Collapse Left
 	const toggleCollapse = () => {
@@ -309,6 +347,56 @@
 		// #endif
 	}
 
+	// --- Right Sidebar Vertical Split Resize Logic ---
+	// Touch
+	const onTouchStartRightMain = (e: TouchEvent) => {
+		isDraggingRightMain.value = true
+		startYRight.value = e.touches[0].clientY
+		startHeightRight.value = currentRightTopHeight.value
+	}
+	
+	const onTouchMoveRightMain = (e: TouchEvent) => {
+		if (!isDraggingRightMain.value) return
+		const clientY = e.touches[0].clientY
+		const deltaY = clientY - startYRight.value
+		
+		let newHeight = startHeightRight.value + deltaY
+		if (newHeight < props.minRightTopHeight) newHeight = props.minRightTopHeight
+		
+		currentRightTopHeight.value = newHeight
+	}
+	
+	const onTouchEndRightMain = (e: TouchEvent) => {
+		isDraggingRightMain.value = false
+	}
+	
+	// Mouse (H5) - Right Split
+	const onMouseDownRightMain = (e: any) => {
+		// #ifdef WEB
+		const mouseEvent = e as MouseEvent
+		isDraggingRightMain.value = true
+		startYRight.value = mouseEvent.clientY
+		startHeightRight.value = currentRightTopHeight.value
+		
+		const moveHandler = (moveEvent: MouseEvent) => {
+			if (!isDraggingRightMain.value) return
+			const deltaY = moveEvent.clientY - startYRight.value
+			let newHeight = startHeightRight.value + deltaY
+			if (newHeight < props.minRightTopHeight) newHeight = props.minRightTopHeight
+			currentRightTopHeight.value = newHeight
+		}
+
+		const upHandler = (_: MouseEvent) => {
+			isDraggingRightMain.value = false
+			window.removeEventListener('mousemove', moveHandler)
+			window.removeEventListener('mouseup', upHandler)
+		}
+
+		window.addEventListener('mousemove', moveHandler)
+		window.addEventListener('mouseup', upHandler)
+		// #endif
+	}
+
 </script>
 
 <style>
@@ -442,6 +530,41 @@
 		border-left: 1px solid #eee;
 		display: flex;
 		flex-direction: column;
+	}
+	
+	.outsider-right-split-container {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		height: 100%;
+		overflow: hidden;
+	}
+	
+	.outsider-right-top {
+		flex: none;
+		overflow: hidden;
+	}
+	
+	.outsider-right-divider-horizontal {
+		height: 10px;
+		background-color: #f5f5f5;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: row-resize;
+		flex: none;
+		border-top: 1px solid #ddd;
+		border-bottom: 1px solid #ddd;
+	}
+	
+	.outsider-right-bottom {
+		flex: 1;
+		overflow: hidden;
+	}
+	
+	.outsider-right-content-full {
+		flex: 1;
 	}
 
 	.outsider-footer {
