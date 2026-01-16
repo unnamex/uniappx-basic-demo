@@ -31,12 +31,14 @@
 	
 	const active = ref(false)
 	
-	const paneConfig = reactive({
-		label: props.label,
-		name: props.name,
-		disabled: props.disabled,
-		uid: Math.random().toString()
-	})
+	// Create a UTSJSONObject ensuring dynamic usage
+	const baseConfig = new UTSJSONObject()
+	baseConfig['label'] = props.label
+	baseConfig['name'] = props.name
+	baseConfig['disabled'] = props.disabled
+	baseConfig['uid'] = Math.random().toString()
+	
+	const paneConfig = reactive(baseConfig)
 	
 	// Watch props to update config
 	watch(() => props.label, (val) => { paneConfig['label'] = val })
