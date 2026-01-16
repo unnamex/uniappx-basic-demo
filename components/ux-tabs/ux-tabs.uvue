@@ -1,0 +1,162 @@
+<template>
+	<view class="ux-tabs">
+		<!-- Scrollable Tab Header -->
+		<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
+			<view class="ux-tabs__nav-wrap">
+				<view class="ux-tabs__nav">
+					<view 
+						v-for="(pane, index) in panes" 
+						:key="index"
+						:class="['ux-tabs__item', { 'is-active': pane['name'] == currentName, 'is-disabled': pane['disabled'] == true }]"
+						@click="handleTabClick(pane)"
+					>
+						<text :class="['ux-tabs__item-text', { 'is-active-text': pane['name'] == currentName }]">{{ pane['label'] }}</text>
+						<view v-if="pane['name'] == currentName" class="ux-tabs__active-bar"></view>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+		
+		<!-- Tab Content -->
+		<view class="ux-tabs__content">
+			<slot></slot>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	
+	/**
+	 * ux-tabs
+	 * Emulates Element UI Tabs
+	 */
+
+	const props = defineProps({
+		modelValue: {
+			type: [String, Number],
+			default: ''
+		}
+	})
+	
+	const emit = defineEmits(['update:modelValue', 'tab-click', 'change'])
+	
+	// State
+	const currentName = ref(props.modelValue)
+	// We store pane context objects here
+	const panes = ref<UTSJSONObject[]>([])
+	
+	// Watch modelValue to update internal state
+	watch(() => props.modelValue, (newVal) => {
+		currentName.value = newVal
+	})
+	
+	// Tab Click Handler
+	const handleTabClick = (pane: UTSJSONObject) => {
+		if (pane['disabled'] == true) return
+		
+		const name = pane['name'] ?? ''
+		currentName.value = name
+		emit('update:modelValue', name)
+		emit('tab-click', pane)
+		emit('change', name)
+	}
+	
+	// Registry for child Panes
+	const registerPane = (pane: UTSJSONObject) => {
+		panes.value.push(pane)
+		
+		// If no active tab, set first one active
+		if (currentName.value == '' && panes.value.length > 0) {
+			const firstName = panes.value[0]['name']
+			if (firstName != null) {
+				currentName.value = firstName
+				emit('update:modelValue', firstName)
+			}
+		}
+	}
+	
+	const unregisterPane = (pane: UTSJSONObject) => {
+		const index = panes.value.indexOf(pane)
+		if (index > -1) {
+			panes.value.splice(index, 1)
+		}
+	}
+	
+	// Provide context to children
+	provide('uxTabsContext', {
+		currentName: currentName,
+		registerPane: registerPane,
+		unregisterPane: unregisterPane
+	})
+
+</script>
+
+<style>
+	.ux-tabs {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		flex: 1; /* Allow filling parent */
+	}
+	
+	.ux-tabs__header {
+		flex-direction: row;
+		border-bottom: 2px solid #e4e7ed;
+		background-color: #fff;
+		flex-shrink: 0;
+	}
+	
+	.ux-tabs__nav-wrap {
+		display: flex;
+		flex-direction: row;
+	}
+	
+	.ux-tabs__nav {
+		display: flex;
+		flex-direction: row;
+		position: relative;
+	}
+	
+	.ux-tabs__item {
+		padding: 0 20px;
+		height: 40px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		position: relative;
+		cursor: pointer;
+	}
+	
+	.ux-tabs__item-text {
+		font-size: 14px;
+		color: #303133;
+		line-height: 40px;
+	}
+	
+	.is-active-text {
+		color: #409eff;
+		font-weight: 500;
+	}
+	
+	.is-disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	
+	.ux-tabs__active-bar {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		height: 2px;
+		background-color: #409eff;
+		z-index: 1;
+		width: 100%; 
+	}
+	
+	.ux-tabs__content {
+		padding: 15px;
+		flex: 1; /* Grow to fill remaining space */
+		display: flex;
+		flex-direction: column;
+	}
+</style>

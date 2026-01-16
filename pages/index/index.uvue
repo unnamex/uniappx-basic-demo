@@ -24,22 +24,41 @@
 		<!-- Main Top Area (Default Slot) -->
 		<view class="main-content-top">
 			<text class="title">Detail View (Top)</text>
-			<view class="info-box">
-				<text v-if="selectedRow != null">Selected Name: {{ selectedRow?.['name'] }}</text>
-				<text v-else>Please select a row from the left.</text>
-			</view>
+			<ux-tabs v-model="activeTab">
+				<ux-tab-pane label="Main Info" name="main">
+					<view class="info-box">
+						<text v-if="selectedRow != null">Selected Name: {{ selectedRow?.['name'] }}</text>
+						<text v-else>Please select a row from the left.</text>
+					</view>
+				</ux-tab-pane>
+				<ux-tab-pane label="Details" name="details">
+					<view class="info-box">
+						<text v-if="selectedRow != null">ID: {{ selectedRow?.['id'] }} | Date: {{ selectedRow?.['date'] }}</text>
+						<text v-else>No details available.</text>
+					</view>
+				</ux-tab-pane>
+			</ux-tabs>
 		</view>
 		
 		<!-- Main Bottom Area -->
 		<template #main-bottom>
 			<view class="main-content-bottom">
-				<text class="title">Related Info (Bottom)</text>
-				<view class="info-box-bottom">
-					<text v-if="selectedRow != null">Selected Address: {{ selectedRow?.['address'] }}</text>
-					<text v-else>No selection.</text>
-					<text class="subtitle">System Logs:</text>
-					<text class="log-text" v-for="(log, index) in logs" :key="index">{{ log }}</text>
-				</view>
+				<text class="title">Bottom Panel</text>
+				<ux-tabs v-model="activeBottomTab">
+					<ux-tab-pane label="Contact Info" name="contact">
+						<view class="info-box-bottom">
+							<text v-if="selectedRow != null">Address: {{ selectedRow?.['address'] }}</text>
+							<text v-else>Select a row to see contact info.</text>
+						</view>
+					</ux-tab-pane>
+					<ux-tab-pane label="Event History" name="history">
+						<view class="info-box-bottom">
+							<scroll-view scroll-y="true" style="height: 150px;">
+								<text class="log-text" v-for="(log, index) in logs" :key="index">{{ log }}</text>
+							</scroll-view>
+						</view>
+					</ux-tab-pane>
+				</ux-tabs>
 			</view>
 		</template>
 
@@ -65,6 +84,9 @@
 
 <script setup lang="uts">
 	
+	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
+	import UxTabPane from '@/components/ux-tab-pane/ux-tab-pane.uvue'
+
 	const tableData = ref([
 		{
 			id: 1,
@@ -117,6 +139,8 @@
 	] as UTSJSONObject[])
 
 	const selectedRow = ref(null as UTSJSONObject | null)
+	const activeTab = ref('main')
+	const activeBottomTab = ref('contact')
 	const logs = ref<string[]>([])
 
 	const handleRowClick = (row : UTSJSONObject) => {

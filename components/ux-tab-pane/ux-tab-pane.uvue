@@ -1,0 +1,82 @@
+<template>
+	<view class="ux-tab-pane" v-show="active">
+		<slot></slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	
+	/**
+	 * ux-tab-pane
+	 * Child component for ux-tabs
+	 */
+	
+	const props = defineProps({
+		label: {
+			type: String,
+			default: ''
+		},
+		name: {
+			type: [String, Number],
+			default: ''
+		},
+		disabled: {
+			type: Boolean,
+			default: false
+		}
+	})
+	
+	// Inject Context
+	const tabsContext = inject('uxTabsContext') as UTSJSONObject | null
+	
+	const active = ref(false)
+	
+	const paneConfig = reactive({
+		label: props.label,
+		name: props.name,
+		disabled: props.disabled,
+		uid: Math.random().toString()
+	})
+	
+	// Watch props to update config
+	watch(() => props.label, (val) => { paneConfig['label'] = val })
+	watch(() => props.name, (val) => { paneConfig['name'] = val })
+	watch(() => props.disabled, (val) => { paneConfig['disabled'] = val })
+	
+	// Setup lifecycle
+	onMounted(() => {
+		if (tabsContext != null) {
+			const register = tabsContext['registerPane'] as ((p: UTSJSONObject) => void) | null
+			if (register != null) {
+				register(paneConfig)
+			}
+			
+			// Setup watch on the context's currentName
+			const ctxNameRef = tabsContext['currentName'] as Ref<any> | null
+			if (ctxNameRef != null) {
+				watch(ctxNameRef, (newVal) => {
+					active.value = (newVal == props.name)
+				}, { immediate: true })
+			}
+		}
+	})
+	
+	onUnmounted(() => {
+		if (tabsContext != null) {
+			const unregister = tabsContext['unregisterPane'] as ((p: UTSJSONObject) => void) | null
+			if (unregister != null) {
+				unregister(paneConfig)
+			}
+		}
+	})
+
+</script>
+
+<style>
+	.ux-tab-pane {
+		width: 100%;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+</style>
