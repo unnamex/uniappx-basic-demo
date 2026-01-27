@@ -3,13 +3,10 @@
 		<template #header>
 			<view class="header-container">
 				<view class="header-logo">
-					<text class="header-text">LOGO</text>
-				</view>
-				<view class="header-content">
-					<text class="header-placeholder-text">Header Placeholder (Breadcrumbs / Search)</text>
+					<text class="header-text">工艺预览</text>
 				</view>
 				<view class="header-actions">
-					<text class="header-text">User</text>
+					<button size="mini" @click="resetData">重置数据</button>
 				</view>
 			</view>
 		</template>
@@ -21,92 +18,146 @@
 			</view>
 		</template>
 		
-		<!-- Main Top Area (Default Slot) -->
+		<!-- Main Top Area (Dynamic) -->
 		<view class="main-content-top">
-			<text class="title">Detail View (Top)</text>
-			<ux-tabs v-model="activeTab">
-				<ux-tab-pane label="Main Info" name="main">
-					<view class="info-box">
-						<text v-if="selectedRow != null">Selected Name: {{ selectedRow?.['name'] }}</text>
-						<text v-else>Please select a row from the left.</text>
-					</view>
-				</ux-tab-pane>
-				<ux-tab-pane label="Details" name="details">
-					<view class="info-box">
-						<text v-if="selectedRow != null">ID: {{ selectedRow?.['id'] }} | Date: {{ selectedRow?.['date'] }}</text>
-						<text v-else>No details available.</text>
-					</view>
-				</ux-tab-pane>
-			</ux-tabs>
-		</view>
-		
-		<!-- Main Bottom Area -->
-		<template #main-bottom>
-			<view class="main-content-bottom">
-				<text class="title">Bottom Panel</text>
-				<ux-tabs v-model="activeBottomTab">
-					<ux-tab-pane label="Contact Info" name="contact">
-						<view class="info-box-bottom">
-							<text v-if="selectedRow != null">Address: {{ selectedRow?.['address'] }}</text>
-							<text v-else>Select a row to see contact info.</text>
-						</view>
-					</ux-tab-pane>
-					<ux-tab-pane label="Event History" name="history">
-						<view class="info-box-bottom">
-							<scroll-view scroll-y="true" style="height: 150px;">
-								<text class="log-text" v-for="(log, index) in logs" :key="index">{{ log }}</text>
-							</scroll-view>
-						</view>
+			<view v-if="topGroup != null" style="height: 100%; display: flex; flex-direction: column;">
+				<text class="title">{{ topGroup?.name }}</text>
+				<ux-tabs :modelValue="activeTabs.get(topGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(topGroup?.id ?? '', $event)">
+					<ux-tab-pane v-for="tab in topGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
+						<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
+							<view class="tab-content-wrap">
+								<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
+									<text class="comp-title">{{ comp.title }}</text>
+									
+									<!-- Table Component -->
+									<view v-if="comp.type == 'table'" style="min-height: 200px;">
+										<ux-table 
+											:columns="getColumns(comp)" 
+											:data="comp.data"
+										></ux-table>
+									</view>
+									
+									<!-- Collapse Component -->
+									<view v-else-if="comp.type == 'collapse'">
+										<ux-collapse :accordion="getCollapseConfig(comp)['accordion'] == true">
+											<ux-collapse-item 
+												v-for="(item, idx) in comp.data" 
+												:key="idx" 
+												:title="getString(item, 'title')" 
+												:name="idx"
+											>
+												<view class="collapse-content">
+													<text v-for="(val, key) in item" :key="key" class="kv-row">
+														{{key}}: {{val}}
+													</text>
+												</view>
+											</ux-collapse-item>
+										</ux-collapse>
+									</view>
+								</view>
+							</view>
+						</scroll-view>
 					</ux-tab-pane>
 				</ux-tabs>
+			</view>
+			<view v-else class="loading-state">
+				<text>Loading Top Group...</text>
+			</view>
+		</view>
+		
+		<!-- Main Bottom Area (Dynamic) -->
+		<template #main-bottom>
+			<view class="main-content-bottom">
+				<view v-if="bottomGroup != null" style="height: 100%; display: flex; flex-direction: column;">
+					<text class="title">{{ bottomGroup?.name }}</text>
+					<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
+						<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
+							<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
+								<view class="tab-content-wrap">
+									<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
+										<text class="comp-title">{{ comp.title }}</text>
+										
+										<!-- Table -->
+										<view v-if="comp.type == 'table'" style="min-height: 150px;">
+											<ux-table :columns="getColumns(comp)" :data="comp.data"></ux-table>
+										</view>
+										
+										<!-- Collapse -->
+										<view v-else-if="comp.type == 'collapse'">
+											<ux-collapse>
+												<ux-collapse-item v-for="(item, idx) in comp.data" :key="idx" :title="getString(item, 'title')" :name="idx">
+													<text>{{ JSON.stringify(item) }}</text>
+												</ux-collapse-item>
+											</ux-collapse>
+										</view>
+									</view>
+								</view>
+							</scroll-view>
+						</ux-tab-pane>
+					</ux-tabs>
+				</view>
+				<view v-else class="loading-state">
+					<text>Loading Bottom Group...</text>
+				</view>
 			</view>
 		</template>
 
 		<!-- Right Sidebar Top Area -->
 		<template #right>
 			<view class="right-panel">
-				<!-- ux-tabs handles the title bar effectively now via tabs -->
-				<ux-tabs v-model="activeRightTab">
-					<ux-tab-pane label="Properties" name="props">
-						<view class="right-content">
-							<view v-if="selectedRow != null" class="prop-list">
-								<text class="prop-item">ID: {{ selectedRow?.['id'] }}</text>
-								<text class="prop-item">Name: {{ selectedRow?.['name'] }}</text>
-								<text class="prop-item">Date: {{ selectedRow?.['date'] }}</text>
-							</view>
-							<view v-else class="empty-state">
-								<text>Select an item to view properties</text>
-							</view>
-							
-							<view v-if="lastRightLogClicked != ''" class="interaction-feedback">
-								<text class="subtitle">Last Log Clicked:</text>
-								<text class="feedback-text">{{ lastRightLogClicked }}</text>
-							</view>
-						</view>
-					</ux-tab-pane>
-				</ux-tabs>
+				<view class="right-content">
+					<text>Right Panel (Static)</text>
+				</view>
 			</view>
 		</template>
 		
 		<!-- Right Sidebar Bottom Area -->
 		<template #right-bottom>
 			<view class="right-panel-bottom">
-				<text class="title-small">Right Logs (Click me)</text>
-				<scroll-view scroll-y="true" style="height: 100%; flex: 1;">
-					<view v-for="(log, index) in rightLogs" :key="index" @click="handleRightLogClick(log)" class="log-item-clickable">
-						<text class="log-text">{{ log }}</text>
-					</view>
-				</scroll-view>
+				<text>Right Bottom (Static)</text>
 			</view>
 		</template>
 	</outsider-layout>
 </template>
 
 <script setup lang="uts">
-	
+	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
+	import { PackageImporter } from '@/services/package-importer.uts'
+	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
 	import UxTabPane from '@/components/ux-tab-pane/ux-tab-pane.uvue'
+	import UxTable from '@/components/ux-table/ux-table.uvue'
+	import UxCollapse from '@/components/ux-collapse/ux-collapse.uvue'
+	import UxCollapseItem from '@/components/ux-collapse-item/ux-collapse-item.uvue'
 
+	// Define ViewModels
+	type ComponentVM = {
+		id: string
+		type: string
+		title: string
+		config: any // Config can be Array (for table) or Object (for collapse)
+		data: UTSJSONObject[]
+	}
+	
+	type TabVM = {
+		id: string
+		title: string
+		components: ComponentVM[]
+	}
+	
+	type GroupVM = {
+		id: string
+		name: string
+		tabs: TabVM[]
+	}
+
+	// State
+	const topGroup = ref<GroupVM | null>(null)
+	const bottomGroup = ref<GroupVM | null>(null)
+	// Use reactive Map for Map mutations to be observed
+	const activeTabs = reactive(new Map<string, string>())
+	
+	// Left panel static data
 	const tableData = ref([
 		{
 			id: 1,
@@ -157,30 +208,145 @@
 		{ label: 'Date', prop: 'date', width: 140 }, // Width adjusted for sidebar
 		{ label: 'Name', prop: 'name', width: 160 }
 	] as UTSJSONObject[])
-
+	
+	// Placeholder for selection
 	const selectedRow = ref(null as UTSJSONObject | null)
-	const activeTab = ref('main')
-	const activeBottomTab = ref('contact')
-	const activeRightTab = ref('props')
-	const logs = ref<string[]>([])
-	const rightLogs = ref<string[]>([])
-	const lastRightLogClicked = ref('')
 
-	const handleRowClick = (row : UTSJSONObject) => {
-		console.log('Row clicked:', row)
-		selectedRow.value = row
-		// Add a log entry demonstrating interaction propagation
-		const now = new Date().toLocaleTimeString()
-		logs.value.unshift(`[${now}] Clicked row: ${row['name']}`)
+	onLoad(async () => {
+		console.log('Page Load')
+		await initData()
+	})
+	
+	const initData = async () => {
+		// 1. Init DB
+		await initDatabase()
 		
-		// Also update right bottom logs
-		rightLogs.value.unshift(`[${now}] Row selected: ${row['id']}`)
+		// 2. Import if needed
+		const hasData = await PackageImporter.hasData()
+		if (!hasData) {
+			console.log('No data found, importing...')
+			const success = await PackageImporter.importPackage('/static/test_package.json')
+			if (!success) {
+				console.error('Import failed')
+				uni.showToast({ title: 'Import Failed', icon: 'none' })
+				return
+			}
+		}
+		
+		// 3. Load Groups
+		// Hardcoded mapping for demo: main_process_group -> top, aux_info_group -> bottom
+		topGroup.value = await loadGroup('main_process_group')
+		bottomGroup.value = await loadGroup('aux_info_group')
+		
+		// Set default active tabs
+		if (topGroup.value != null && topGroup.value!.tabs.length > 0) {
+			activeTabs.set(topGroup.value!.id, topGroup.value!.tabs[0].id)
+		}
+		if (bottomGroup.value != null && bottomGroup.value!.tabs.length > 0) {
+			activeTabs.set(bottomGroup.value!.id, bottomGroup.value!.tabs[0].id)
+		}
 	}
 	
-	const handleRightLogClick = (log: string) => {
-		lastRightLogClicked.value = log
-		// Switch to props tab to see effect if needed, or just show in props
-		activeRightTab.value = 'props'
+	const loadGroup = async (groupId: string): Promise<GroupVM | null> => {
+		const groups = await querySQL("SELECT * FROM meta_tab_groups WHERE id = ?", [groupId])
+		if (groups.length == 0) return null
+		
+		const groupRow = groups[0]
+		const groupVM: GroupVM = {
+			id: groupRow['id'] as string,
+			name: groupRow['name'] as string,
+			tabs: []
+		}
+		
+		// Load Tabs
+		const tabs = await querySQL("SELECT * FROM meta_tabs WHERE group_id = ? ORDER BY sort_order", [groupId])
+		
+		for (let i = 0; i < tabs.length; i++) {
+			const t = tabs[i]
+			const tabId = t['id'] as string
+			const tabVM: TabVM = {
+				id: tabId,
+				title: t['title'] as string,
+				components: []
+			}
+			
+			// Load Components
+			const comps = await querySQL("SELECT * FROM meta_components WHERE tab_id = ? ORDER BY sort_order", [tabId])
+			for (let j = 0; j < comps.length; j++) {
+				const c = comps[j]
+				const compId = c['id'] as string
+				
+				// Parse config
+				let config: any = null
+				const configStr = c['config_json'] as string
+				if (configStr != '') {
+					try {
+						config = JSON.parse(configStr)
+					} catch (e) { console.error('Config parse error', e) }
+				}
+				
+				const compVM: ComponentVM = {
+					id: compId,
+					type: c['type'] as string,
+					title: c['title'] as string,
+					config: config,
+					data: []
+				}
+				
+				// Load Data
+				const records = await querySQL("SELECT data_json FROM data_records WHERE component_id = ?", [compId])
+				compVM.data = records.map((r): UTSJSONObject => {
+					const jsonStr = r['data_json'] as string
+					try {
+						return JSON.parse(jsonStr) as UTSJSONObject
+					} catch (e) { return {} }
+				})
+				
+				// Check visibility condition? (Not fully implemented yet, assuming if component exists it's shown)
+				tabVM.components.push(compVM)
+			}
+			
+			// If tab has 'visible_condition' == 'has_data' and no data in any component, maybe hide?
+			// Simplified: always show for now
+			groupVM.tabs.push(tabVM)
+		}
+		
+		return groupVM
+	}
+	
+	const onTabChange = (groupId: string, tabId: any) => {
+		activeTabs.value.set(groupId, tabId as string)
+	}
+	
+	const getColumns = (comp: ComponentVM): UTSJSONObject[] => {
+		// Assuming config is array of columns for table
+		if (Array.isArray(comp.config)) {
+			return comp.config as UTSJSONObject[]
+		}
+		// Or if config is object with columns key
+		return []
+	}
+	
+	const getCollapseConfig = (comp: ComponentVM): UTSJSONObject => {
+		return comp.config
+	}
+	
+	const getString = (obj: UTSJSONObject, key: string): string => {
+		return obj[key]?.toString() ?? ''
+	}
+	
+	const handleRowClick = (row: UTSJSONObject) => {
+		// Placeholder
+	}
+	
+	const resetData = async () => {
+		await executeSQL("DELETE FROM meta_tab_groups")
+		await executeSQL("DELETE FROM meta_tabs")
+		await executeSQL("DELETE FROM meta_components")
+		await executeSQL("DELETE FROM data_records")
+		uni.showToast({ title: 'Data cleared, reload to import' })
+		// Reload logic...
+		await initData()
 	}
 
 </script>

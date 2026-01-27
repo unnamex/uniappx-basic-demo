@@ -1,0 +1,115 @@
+<template>
+	<view class="ux-collapse-item" :class="{ 'is-active': isActive }">
+		<view class="ux-collapse-item__header" @click="handleHeaderClick" :class="{ 'is-active': isActive }">
+			<view class="ux-collapse-item__title">
+				<slot name="title">{{ title }}</slot>
+			</view>
+			<view class="ux-collapse-item__arrow" :class="{ 'is-active': isActive }">
+				<text class="arrow-icon">></text>
+			</view>
+		</view>
+		<view class="ux-collapse-item__wrap" v-if="isActive">
+			<view class="ux-collapse-item__content">
+				<slot></slot>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { PropType, Ref } from 'vue'
+
+	const props = defineProps({
+		title: {
+			type: String,
+			default: ''
+		},
+		name: {
+			type: [String, Number],
+			required: true,
+			default: ''
+		}
+	})
+	
+	// Correctly type the injected context
+	type CollapseContext = {
+		activeNames: Ref<any[]>
+		handleItemClick: (name: any) => void
+	}
+	
+	const collapseContext = inject<CollapseContext>('uxCollapseContext')
+	
+	const isActive = computed(() : boolean => {
+		if (collapseContext == null) return false
+		const names = collapseContext.activeNames.value
+		return names.includes(props.name)
+	})
+	
+	const handleHeaderClick = () => {
+		if (collapseContext != null) {
+			collapseContext.handleItemClick(props.name)
+		}
+	}
+
+</script>
+
+<style>
+	.ux-collapse-item {
+		width: 100%;
+		border-bottom: 1px solid #EBEEF5;
+	}
+	
+	.ux-collapse-item:last-child {
+		border-bottom: 0;
+	}
+	
+	.ux-collapse-item__header {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		height: 48px;
+		background-color: #fff;
+		color: #303133;
+		cursor: pointer;
+		border-bottom: 1px solid #EBEEF5;
+		padding: 0 10px;
+		justify-content: space-between;
+	}
+	
+	.ux-collapse-item__header.is-active {
+		border-bottom-color: transparent;
+	}
+	
+	.ux-collapse-item__title {
+		flex: 1;
+		font-size: 14px;
+	}
+	
+	.ux-collapse-item__arrow {
+		margin-left: 8px;
+		transform: rotate(0deg);
+		transition-property: transform;
+		transition-duration: 0.3s;
+	}
+	
+	.ux-collapse-item__arrow.is-active {
+		transform: rotate(90deg);
+	}
+	
+	.arrow-icon {
+		color: #909399;
+		font-size: 12px;
+	}
+	
+	.ux-collapse-item__wrap {
+		background-color: #fff;
+		border-bottom: 1px solid #EBEEF5;
+	}
+	
+	.ux-collapse-item__content {
+		padding: 10px;
+		font-size: 13px;
+		color: #606266;
+		line-height: 1.5;
+	}
+</style>

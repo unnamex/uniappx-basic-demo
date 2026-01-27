@@ -1,0 +1,207 @@
+{
+  "project_info": {
+    "version": "1.0",
+    "name": "Full Feature Test Package"
+  },
+  "groups": [
+    {
+      "id": "main_process_group",
+      "name": "生产详情区",
+      "description": "顶部主要操作区域",
+      "sort_order": 1
+    },
+    {
+      "id": "aux_info_group",
+      "name": "辅助查询区",
+      "description": "底部信息查询区域",
+      "sort_order": 2
+    }
+  ],
+  "tabs": [
+    {
+      "id": "tab_material_list",
+      "group_id": "main_process_group",
+      "title": "物料明细",
+      "sort_order": 1,
+      "visible_condition": "has_data"
+    },
+    {
+      "id": "tab_process_params",
+      "group_id": "main_process_group",
+      "title": "工艺参数",
+      "sort_order": 2,
+      "visible_condition": null
+    },
+    {
+      "id": "tab_quality_check",
+      "group_id": "aux_info_group",
+      "title": "质检记录",
+      "sort_order": 1,
+      "visible_condition": null
+    },
+    {
+      "id": "tab_hidden_empty",
+      "group_id": "main_process_group",
+      "title": "隐藏Tab(无数据)",
+      "sort_order": 3,
+      "visible_condition": "has_data"
+    }
+  ],
+  "components": [
+    {
+      "id": "comp_steel_table",
+      "tab_id": "tab_material_list",
+      "type": "table",
+      "title": "钢材用量表",
+      "config": [
+        {
+          "prop": "material_name",
+          "label": "材料名称",
+          "width": 180
+        },
+        {
+          "prop": "model",
+          "label": "规格型号",
+          "width": 200
+        },
+        {
+          "prop": "unit",
+          "label": "单位",
+          "width": 80
+        },
+        {
+          "prop": "quantity",
+          "label": "计划量",
+          "width": 100
+        }
+      ],
+      "sort_order": 1
+    },
+    {
+      "id": "comp_welding_params",
+      "tab_id": "tab_process_params",
+      "type": "collapse",
+      "title": "焊接参数设置",
+      "config": {
+        "accordion": true,
+        "default_active": "0"
+      },
+      "sort_order": 1
+    },
+    {
+      "id": "comp_qa_table",
+      "tab_id": "tab_quality_check",
+      "type": "table",
+      "title": "首检记录",
+      "config": [
+        {
+          "prop": "check_item",
+          "label": "检查项目",
+          "width": 200
+        },
+        {
+          "prop": "standard",
+          "label": "标准值",
+          "width": 150
+        },
+        {
+          "prop": "actual",
+          "label": "实测值",
+          "width": 150
+        },
+        {
+          "prop": "result",
+          "label": "判定",
+          "width": 100
+        }
+      ],
+      "sort_order": 1
+    },
+    {
+      "id": "comp_empty_table",
+      "tab_id": "tab_hidden_empty",
+      "type": "table",
+      "title": "不会显示的表格",
+      "config": [
+        {
+          "prop": "col1",
+          "label": "列1",
+          "width": 100
+        }
+      ],
+      "sort_order": 1
+    }
+  ],
+  "records": [
+    {
+      "record_id": "rec_steel_001",
+      "component_id": "comp_steel_table",
+      "data": {
+        "material_name": "Q345B钢板",
+        "model": "δ=12mm",
+        "unit": "kg",
+        "quantity": "1250"
+      }
+    },
+    {
+      "record_id": "rec_steel_002",
+      "component_id": "comp_steel_table",
+      "data": {
+        "material_name": "无缝钢管",
+        "model": "φ219*6",
+        "unit": "m",
+        "quantity": "45"
+      }
+    },
+    {
+      "record_id": "rec_welding_001",
+      "component_id": "comp_welding_params",
+      "data": {
+        "title": "打底焊道",
+        "current": "120A",
+        "voltage": "22V",
+        "speed": "15cm/min"
+      }
+    },
+    {
+      "record_id": "rec_welding_002",
+      "component_id": "comp_welding_params",
+      "data": {
+        "title": "填充焊道",
+        "current": "180A",
+        "voltage": "26V",
+        "speed": "20cm/min"
+      }
+    },
+    {
+      "record_id": "rec_welding_003",
+      "component_id": "comp_welding_params",
+      "data": {
+        "title": "盖面焊道",
+        "current": "160A",
+        "voltage": "24V",
+        "speed": "18cm/min"
+      }
+    },
+    {
+      "record_id": "rec_qa_001",
+      "component_id": "comp_qa_table",
+      "data": {
+        "check_item": "焊缝外观",
+        "standard": "无裂纹气孔",
+        "actual": "良好",
+        "result": "OK"
+      }
+    },
+    {
+      "record_id": "rec_qa_002",
+      "component_id": "comp_qa_table",
+      "data": {
+        "check_item": "焊脚尺寸",
+        "standard": "8mm (+1/-0)",
+        "actual": "8.5mm",
+        "result": "OK"
+      }
+    }
+  ]
+}

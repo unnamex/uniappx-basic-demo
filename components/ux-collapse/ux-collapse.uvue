@@ -1,0 +1,78 @@
+<template>
+	<view class="ux-collapse">
+		<slot></slot>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * ux-collapse 折叠面板
+	 * @description 用于折叠/展开内容
+	 * @property {String | Array} modelValue 当前激活的面板 name，手风琴模式下为 String，否则为 Array
+	 * @property {Boolean} accordion 是否开启手风琴模式
+	 */
+	
+	const props = defineProps({
+		modelValue: {
+			type: [String, Array],
+			default: ''
+		},
+		accordion: {
+			type: Boolean,
+			default: false
+		}
+	})
+	
+	const emit = defineEmits(['update:modelValue', 'change'])
+	
+	// Internal active names state
+	const activeNames = ref<any[]>(['']) // Using any[] to hold strings or numbers
+	
+	watch(() => props.modelValue, (val) => {
+		// Sync internal state
+		if (Array.isArray(val)) {
+			activeNames.value = val as any[]
+		} else {
+			activeNames.value = [val]
+		}
+	}, { immediate: true })
+	
+	
+	const handleItemClick = (name: string) => {
+		if (props.accordion) {
+			// Accordion mode: toggle single item
+			const isActive = activeNames.value.includes(name)
+			const newActiveNames = isActive ? [] : [name]
+			
+			activeNames.value = newActiveNames
+			emit('update:modelValue', isActive ? '' : name)
+			emit('change', isActive ? '' : name)
+		} else {
+			// Normal mode: toggle item in array
+			const index = activeNames.value.indexOf(name)
+			if (index > -1) {
+				activeNames.value.splice(index, 1)
+			} else {
+				activeNames.value.push(name)
+			}
+			emit('update:modelValue', activeNames.value)
+			emit('change', activeNames.value)
+		}
+	}
+	
+	provide('uxCollapseContext', {
+		activeNames: activeNames,
+		handleItemClick: handleItemClick
+	})
+
+</script>
+
+<style>
+	.ux-collapse {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		border-top: 1px solid #EBEEF5;
+		border-bottom: 1px solid #EBEEF5;
+	}
+</style>

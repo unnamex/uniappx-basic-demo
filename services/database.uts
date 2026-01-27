@@ -145,6 +145,47 @@ function createTables(): Promise<void> {
 			)
 		`
 		
+		const createTabGroupsTableSQL = `
+			CREATE TABLE IF NOT EXISTS meta_tab_groups (
+				id TEXT PRIMARY KEY,
+				name TEXT,
+				description TEXT,
+				sort_order INTEGER
+			)
+		`
+		
+		const createTabsTableSQL = `
+			CREATE TABLE IF NOT EXISTS meta_tabs (
+				id TEXT PRIMARY KEY,
+				group_id TEXT,
+				title TEXT,
+				app_id TEXT,
+				sort_order INTEGER,
+				visible_condition TEXT
+			)
+		`
+		// Note: indices should be created separately or after table creation
+		
+		const createComponentsTableSQL = `
+			CREATE TABLE IF NOT EXISTS meta_components (
+				id TEXT PRIMARY KEY,
+				tab_id TEXT,
+				type TEXT,
+				title TEXT,
+				config_json TEXT,
+				sort_order INTEGER
+			)
+		`
+		
+		const createDataRecordsTableSQL = `
+			CREATE TABLE IF NOT EXISTS data_records (
+				record_id TEXT PRIMARY KEY,
+				component_id TEXT,
+				data_json TEXT,
+				created_at INTEGER
+			)
+		`
+		
 		const createPackageTableSQL = `
 			CREATE TABLE IF NOT EXISTS t_import_package (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,6 +205,16 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL(createStepTableSQL)
 				dbInstance!.execSQL(createAttachmentTableSQL)
 				dbInstance!.execSQL(createPackageTableSQL)
+				
+				// Dynamic Tab System Tables
+				dbInstance!.execSQL(createTabGroupsTableSQL)
+				dbInstance!.execSQL(createTabsTableSQL)
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)")
+				dbInstance!.execSQL(createComponentsTableSQL)
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)")
+				dbInstance!.execSQL(createDataRecordsTableSQL)
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)")
+
 				console.log('数据表创建成功')
 				resolve()
 			} catch(e: any) {
@@ -298,6 +349,39 @@ export function closeDatabase(): void {
 		} catch (e: any) {
 			console.error('数据库关闭失败：', e)
 		}
+	}
+	// #endif
+}
+
+/**
+ * 开启事务
+ */
+export function beginTransaction(): void {
+	// #ifdef APP-ANDROID
+	if (dbInstance != null) {
+		dbInstance!.beginTransaction()
+	}
+	// #endif
+}
+
+/**
+ * 标记事务成功
+ */
+export function setTransactionSuccessful(): void {
+	// #ifdef APP-ANDROID
+	if (dbInstance != null) {
+		dbInstance!.setTransactionSuccessful()
+	}
+	// #endif
+}
+
+/**
+ * 结束事务
+ */
+export function endTransaction(): void {
+	// #ifdef APP-ANDROID
+	if (dbInstance != null) {
+		dbInstance!.endTransaction()
 	}
 	// #endif
 }

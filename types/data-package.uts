@@ -1,0 +1,67 @@
+/**
+ * 离线数据包类型定义
+ */
+
+/**
+ * 整个数据包的 JSON 结构
+ */
+export type DataPackage = {
+	groups: TabGroup[]
+	tabs: TabConfig[]
+	// 简单起见，数据包中可以按 tab_id 或 component_id 组织组件配置，
+	// 或者直接扁平化列表。这里采用扁平化列表方便导入。
+	components: ComponentConfig[] 
+	// 数据记录，建议按 component_id 分组或直接扁平化
+	records: DataRecord[]
+}
+
+/**
+ * Tab 分组 (对应 meta_tab_groups 表)
+ */
+export type TabGroup = {
+	id: string
+	name: string
+	description: string
+	sort_order: number
+}
+
+/**
+ * Tab 配置 (对应 meta_tabs 表)
+ */
+export type TabConfig = {
+	id: string
+	group_id: string
+	title: string
+	sort_order: number
+	visible_condition: string | null
+}
+
+/**
+ * 组件配置 (对应 meta_components 表)
+ */
+export type ComponentConfig = {
+	id: string
+	tab_id: string
+	type: string // 'table' | 'collapse'
+	title: string
+	config: any // Original JSON object/array, to be stringified
+	sort_order: number
+}
+
+/**
+ * 数据记录 (对应 data_records 表)
+ */
+export type DataRecord = {
+	record_id: string
+	component_id: string
+	data: any // Original JSON object, to be stringified
+}
+
+/**
+ * 表格列定义 (用于 ComponentConfig.config_json 解析)
+ */
+export type TableColumn = {
+	prop: string
+	label: string
+	width: number
+}
