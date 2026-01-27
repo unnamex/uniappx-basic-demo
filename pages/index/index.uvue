@@ -155,7 +155,7 @@
 
 	const columns = ref([
 		{ label: 'Date', prop: 'date', width: 140 }, // Width adjusted for sidebar
-		{ label: 'Name', prop: 'name', width: 120 }
+		{ label: 'Name', prop: 'name', width: 160 }
 	] as UTSJSONObject[])
 
 	const selectedRow = ref(null as UTSJSONObject | null)

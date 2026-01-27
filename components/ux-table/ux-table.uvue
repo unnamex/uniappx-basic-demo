@@ -3,15 +3,38 @@
 		<view class="header">
 			<view class="header-row">
 				<view v-for="(col, index) in columns" :key="index" class="header-cell"
-					:style="{ flex: col['width'] == null ? 1 : 'none', width: col['width'] == null ? '' : col['width'] + 'rpx' }">
+					:style="{ flex: getColFlex(index), width: getColWidth(index) }">
 					<text class="header-text">{{ col['label'] }}</text>
+					
+					<!-- #ifdef H5 -->
+					<view class="resize-handle" 
+						@touchstart.stop.prevent="onResizeStart(index, $event)" 
+						@touchmove.stop.prevent="onResizeMove" 
+						@touchend="onResizeEnd"
+						@mousedown.stop.prevent="onResizeStartMouse(index, $event)">
+						<view class="separator-line"></view>
+					</view>
+					<!-- #endif -->
+					<!-- #ifndef H5 -->
+					<view class="resize-handle" 
+						@touchstart.stop.prevent="onResizeStart(index, $event)" 
+						@touchmove.stop.prevent="onResizeMove" 
+						@touchend="onResizeEnd">
+						<view class="separator-line"></view>
+					</view>
+					<!-- #endif -->
 				</view>
+			</view>
+			
+			<!-- Header Action: Expand/Collapse All (Floating on right) -->
+			<view class="header-action" @click="toggleAll" hover-class="header-action-hover">
+				<text class="action-text">{{ isAllExpanded ? '收起' : '展开' }}</text>
 			</view>
 		</view>
 		<view class="body">
 			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex" class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
 				<view v-for="(col, colIndex) in columns" :key="colIndex" class="cell"
-					:style="{ flex: col['width'] == null ? 1 : 'none', width: col['width'] == null ? '' : col['width'] + 'rpx' }">
+					:style="{ flex: getColFlex(colIndex), width: getColWidth(colIndex) }">
 					
 					<view v-if="colIndex === 0" class="cell-content-wrapper">
 						<view :style="{ width: (row.level * 40) + 'rpx' }"></view>
@@ -44,6 +67,12 @@
 		// 方便计算显示
 		isShow : boolean
 	}
+	
+	type DragState = {
+		startX : number
+		startWidth : number
+		columnIndex : number
+	}
 
 	export default {
 		name: "ux-table",
@@ -60,7 +89,14 @@
 		data() {
 			return {
 				allRows: [] as TableRow[],
-				selectedRowId: null as string | null
+				selectedRowId: null as string | null,
+				columnWidths: [] as number[], // -1 indicates flex, >0 indicates rpx width
+				dragState: {
+					startX: 0,
+					startWidth: 0,
+					columnIndex: -1
+				} as DragState,
+				isAllExpanded: true
 			}
 		},
 		computed: {
@@ -77,9 +113,36 @@
 				},
 				deep: true,
 				immediate: true
+			},
+			columns: {
+				handler(newCols : UTSJSONObject[]) {
+					this.initColumns(newCols)
+				},
+				deep: true,
+				immediate: true
 			}
 		},
 		methods: {
+			getColFlex(index: number): string {
+				const w = this.columnWidths[index]
+				if (w <= 0) return '1'
+				return 'none'
+			},
+			getColWidth(index: number): string {
+				const w = this.columnWidths[index]
+				if (w <= 0) return ''
+				return w + 'rpx'
+			},
+			initColumns(cols: UTSJSONObject[]) {
+				this.columnWidths = cols.map((col): number => {
+					const w = col['width']
+					if (w != null) {
+						// Ensure it is a number. col['width'] from JSON could be various types, assume number
+						return Number(w)
+					}
+					return -1 // Flag for flex
+				})
+			},
 			getStringValue(data : UTSJSONObject, key : string) : string {
 				const val = data[key]
 				if (val == null) return ''
@@ -88,13 +151,22 @@
 			initTableData(treeData : UTSJSONObject[]) {
 				this.allRows = []
 				this.flatten(treeData, 0, null)
+				// Re-apply current allExpanded state logic if needed, 
+				// or just respect the flatten defaults (currently expands all by default)
+				// If we want consistency with isAllExpanded flag:
+				if (!this.isAllExpanded) {
+					// Collapse all if global state is collapsed
+					this.allRows.forEach(row => { 
+						if(row.hasChildren) row.expanded = false 
+					})
+					this.refreshVisibility()
+				}
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
 				list.forEach((item, index) => {
-					// 假设 item 有唯一 id，如果没有，生成一个
 					let id = item["id"]
 					if (id == null) {
-						id = `${parentId}_${index}` // 简易ID生成
+						id = `${parentId}_${index}`
 					}
 					
 					const children = item["children"] as UTSJSONObject[] | null
@@ -103,12 +175,11 @@
 					const row : TableRow = {
 						id: id.toString(),
 						level: level,
-						expanded: true, // 默认全部展开
+						expanded: true, // Default to expanded
 						hasChildren: hasChildren,
 						parentId: parentId,
 						originData: item,
-						isShow: true // 默认根据父级计算，这里初始化时先全部设为 true (如果是全部展开)
-						// 如果要支持默认折叠，需要调整逻辑
+						isShow: true
 					}
 					
 					this.allRows.push(row)
@@ -120,30 +191,52 @@
 			},
 			toggleExpand(row : TableRow) {
 				if (!row.hasChildren) return
-				
 				row.expanded = !row.expanded
-				
-				// 更新子孙节点的 isShow
 				this.updateChildrenVisibility(row)
+				
+				// Optional: Check if all are expanded/collapsed to update isAllExpanded
+				// For performance, we might skip this or just let it desync slightly.
+				// Or simplistic: if any collapsed, isAllExpanded = false.
+			},
+			toggleAll() {
+				this.isAllExpanded = !this.isAllExpanded
+				this.allRows.forEach(row => {
+					if (row.hasChildren) {
+						row.expanded = this.isAllExpanded
+					}
+				})
+				this.refreshVisibility()
+			},
+			refreshVisibility() {
+				// Full refresh of visibility
+				// Using Map for faster lookup
+				const idMap = new Map<string, TableRow>()
+				this.allRows.forEach(r => idMap.set(r.id, r))
+				
+				this.allRows.forEach(row => {
+					if (row.level == 0) {
+						row.isShow = true
+					} else {
+						const parent = idMap.get(row.parentId!)
+						if (parent != null && parent.expanded && parent.isShow) {
+							row.isShow = true
+						} else {
+							row.isShow = false
+						}
+					}
+				})
 			},
 			updateChildrenVisibility(parentRow : TableRow) {
-				// 找到 parentRow 在 allRows 中的 index
 				const startIndex = this.allRows.findIndex((r: TableRow) : boolean => r.id == parentRow.id)
 				if (startIndex == -1) return
 				
 				for (let i = startIndex + 1; i < this.allRows.length; i++) {
 					const child = this.allRows[i]
-					// 如果遇到同级或更高级别的节点，说明子孙节点结束
 					if (child.level <= parentRow.level) {
 						break
 					}
 					
 					if (parentRow.expanded) {
-						// 展开操作
-						// 只有当 child 的直接父级是 expanded 时，child 才显示
-						// 这是一个递归依赖。
-						// 我们可以查看 child 的 parentId 对应的 row 是否 expanded
-						
 						const pRow = this.findRowById(child.parentId)
 						if (pRow != null && pRow.expanded && pRow.isShow) {
 							child.isShow = true
@@ -151,20 +244,95 @@
 							child.isShow = false
 						}
 					} else {
-						// 折叠操作：所有子孙都隐藏
 						child.isShow = false
 					}
 				}
 			},
 			findRowById(id : string | null) : TableRow | null {
 				if (id == null) return null
-				// 这里可以用 Map 优化
 				return this.allRows.find((r: TableRow) : boolean => r.id == id) || null
 			},
 			handleRowClick(row : TableRow) {
 				this.selectedRowId = row.id
 				this.$emit('row-click', row.originData)
+			},
+			// Drag / Resize Methods
+			onResizeStart(index: number, e: TouchEvent) {
+				// console.log('Resize Start', index)
+				if (e.touches.length == 0) return
+				const touch = e.touches[0]
+				this.dragState.startX = touch.clientX
+				this.dragState.columnIndex = index
+				
+				let currentW = this.columnWidths[index]
+				if (currentW <= 0) {
+					// Default start width for flex columns
+					currentW = 150
+				}
+				this.dragState.startWidth = currentW
+			},
+			onResizeMove(e: TouchEvent) {
+				if (this.dragState.columnIndex < 0) return
+				if (e.touches.length == 0) return
+				
+				const touch = e.touches[0]
+				const deltaPx = touch.clientX - this.dragState.startX
+				
+				// Use uni.rpx2px to get the accurate conversion factor
+				// 750rpx corresponds to how many pixels currently?
+				const screenWidthPx = uni.rpx2px(750)
+				const factor = 750 / screenWidthPx
+				
+				const deltaRpx = deltaPx * factor
+				
+				// console.log(`Resize Move: deltaPx=${deltaPx}, factor=${factor}, deltaRpx=${deltaRpx}`)
+				
+				let newWidth = this.dragState.startWidth + deltaRpx
+				if (newWidth < 50) newWidth = 50 // Minimum width
+				
+				// Update
+				this.columnWidths[this.dragState.columnIndex] = newWidth
+			},
+			onResizeEnd() {
+				this.dragState.columnIndex = -1
+			},
+			// #ifdef H5
+			onResizeStartMouse(index: number, e: MouseEvent) {
+				const startX = e.clientX
+				this.dragState.startX = startX
+				this.dragState.columnIndex = index
+				
+				let currentW = this.columnWidths[index]
+				if (currentW <= 0) {
+					currentW = 150
+				}
+				this.dragState.startWidth = currentW
+				
+				// Bind global listeners
+				document.addEventListener('mousemove', this.onResizeMoveMouse)
+				document.addEventListener('mouseup', this.onResizeEndMouse)
+			},
+			onResizeMoveMouse(e: MouseEvent) {
+				if (this.dragState.columnIndex < 0) return
+				
+				const deltaPx = e.clientX - this.dragState.startX
+				
+				// Use uni.rpx2px to get the accurate conversion factor
+				const screenWidthPx = uni.rpx2px(750)
+				const factor = 750 / screenWidthPx
+				const deltaRpx = deltaPx * factor
+				
+				let newWidth = this.dragState.startWidth + deltaRpx
+				if (newWidth < 50) newWidth = 50
+				
+				this.columnWidths[this.dragState.columnIndex] = newWidth
+			},
+			onResizeEndMouse() {
+				this.dragState.columnIndex = -1
+				document.removeEventListener('mousemove', this.onResizeMoveMouse)
+				document.removeEventListener('mouseup', this.onResizeEndMouse)
 			}
+			// #endif
 		}
 	}
 </script>
@@ -184,24 +352,84 @@
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
 		border-bottom-color: #EBEEF5;
+		position: relative; /* Context for absolute positioning */
 	}
 
 	.header-row {
 		display: flex;
 		flex-direction: row;
-		padding: 20rpx;
+		/* padding: 20rpx; */ /* Clean up padding to make separators full height */
+		height: 80rpx;
+		align-items: stretch;
 	}
 
 	.header-cell {
-		justify-content: center;
-		padding-left: 10rpx;
-		padding-right: 10rpx;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding-left: 20rpx;
+		padding-right: 40rpx; /* Ensure text stops before the separator line (approx 30rpx from right) */
+		position: relative;
+		justify-content: flex-start; /* Default align */
+		overflow: hidden; /* Clip anything else */
 	}
 
 	.header-text {
 		font-size: 28rpx;
 		font-weight: bold;
 		color: #909399;
+		flex: 1;
+		lines: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+	
+	.resize-handle {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		width: 60rpx; /* Increased hit area */
+		display: flex;
+		flex-direction: row;
+		justify-content: center; /* Center the line within the handle area */
+		align-items: center;
+		cursor: col-resize;
+		z-index: 10;
+		/* background-color: rgba(255, 0, 0, 0.1); */ /* Debug: visualize hit area */
+	}
+	
+	.separator-line {
+		width: 1px;
+		height: 40rpx; /* Visible line height */
+		background-color: #dcdfe6;
+		margin-right: 2px;
+	}
+
+	.header-action {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		width: 120rpx;
+		justify-content: center;
+		align-items: center;
+		background-color: #F5F7FA; /* Match header background to handle transparency overlaps */
+		/* border-left-width: 1px;
+		border-left-style: solid;
+		border-left-color: #EBEEF5; */ /* Optional: Remove border if desired for floating look, keeping it for separation */
+		z-index: 20;
+		/* Add shadow or border to distinguish if no border-left */
+		border-left: 1px solid #EBEEF5; 
+	}
+	
+	.header-action-hover {
+		background-color: #E6E8EB;
+	}
+	
+	.action-text {
+		font-size: 26rpx;
+		color: #409EFF;
 	}
 
 	.body {
@@ -216,26 +444,34 @@
 		border-bottom-style: solid;
 		border-bottom-color: #EBEEF5;
 		background-color: #ffffff;
-		padding: 20rpx;
+		padding-top: 20rpx;
+		padding-bottom: 20rpx;
 	}
 
 	.cell {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		padding-left: 10rpx;
-		padding-right: 10rpx;
+		padding-left: 20rpx;
+		padding-right: 40rpx; /* Align with header */
+		overflow: hidden;
 	}
 	
 	.cell-content-wrapper {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
+		flex: 1; /* Allow content to fill and truncate */
+		overflow: hidden;
 	}
 
 	.cell-text {
 		font-size: 28rpx;
 		color: #606266;
+		lines: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		flex: 1; /* Ensure text takes space to ellipsis */
 	}
 
 	.expand-icon {
@@ -244,8 +480,6 @@
 		justify-content: center;
 		align-items: center;
 		margin-right: 10rpx;
-		/* background-color: #f0f0f0; */
-		border-radius: 4px;
 	}
 	
 	.icon-text {
