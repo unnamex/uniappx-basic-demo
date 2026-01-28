@@ -1,0 +1,43 @@
+{
+  "id": "proc_002",
+  "code": "TST-TRANS-8AT",
+  "name": "8-Speed Transmission QC Test",
+  "version": "0.9.5",
+  "status": "Draft",
+  "product": {
+    "id": "prod_trans_8at",
+    "name": "8AT Gearbox",
+    "model": "8AT-Sport"
+  },
+  "steps": [
+    {
+      "stepNo": 1,
+      "name": "Fluid Fill",
+      "description": "Fill transmission fluid to recommended level.",
+      "duration": 8,
+      "tools": [
+        "Fluid Dispenser"
+      ],
+      "materials": [
+        "ATF Type-IV"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 2,
+      "name": "Pressure Test",
+      "description": "Run hydraulic pressure test sequence.",
+      "duration": 20,
+      "tools": [
+        "Diagnostic Computer"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    }
+  ],
+  "attachments": [],
+  "createdAt": "2024-06-01T09:00:00.000Z",
+  "updatedAt": "2024-06-05T11:20:00.000Z"
+}

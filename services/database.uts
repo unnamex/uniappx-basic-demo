@@ -387,13 +387,16 @@ export function endTransaction(): void {
 }
 
 // #ifdef WEB
+// Web 端数据库版本，变更需增加版本号
+const WEB_DB_VERSION: number = 2
+
 /**
  * 初始化 IndexedDB（Web端）
  */
 function initIndexedDB(): Promise<void> {
 	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
 		try {
-			const request = indexedDB.open(DB_NAME, DB_VERSION)
+			const request = indexedDB.open(DB_NAME, WEB_DB_VERSION)
 			
 			request.onerror = (_event: Event) => {
 				reject(new Error('IndexedDB 打开失败'))
@@ -408,17 +411,190 @@ function initIndexedDB(): Promise<void> {
 			request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
 				const db = (event.target as IDBOpenDBRequest).result
 				
-				// 创建工艺表
-				if (!db.objectStoreNames.contains('processes')) {
-					const processStore = db.createObjectStore('processes', { keyPath: 'id' })
+				// 工艺数据表
+				if (!db.objectStoreNames.contains('t_process')) {
+					const processStore = db.createObjectStore('t_process', { keyPath: 'id' })
 					processStore.createIndex('code', 'code', { unique: false })
 					processStore.createIndex('name', 'name', { unique: false })
 				}
 				
-				// 创建导入记录表
-				if (!db.objectStoreNames.contains('importRecords')) {
-					db.createObjectStore('importRecords', { keyPath: 'id', autoIncrement: true })
+				// 工艺步骤表
+				if (!db.objectStoreNames.contains('t_process_step')) {
+					const stepStore = db.createObjectStore('t_process_step', { keyPath: 'id', autoIncrement: true })
+					stepStore.createIndex('process_id', 'process_id', { unique: false })
 				}
+				
+				// 工艺附件表
+				if (!db.objectStoreNames.contains('t_process_attachment')) {
+					const attachStore = db.createObjectStore('t_process_attachment', { keyPath: 'id', autoIncrement: true })
+					attachStore.createIndex('process_id', 'process_id', { unique: false })
+				}
+				
+				// UI 分组表
+				if (!db.objectStoreNames.contains('meta_tab_groups')) {
+					db.createObjectStore('meta_tab_groups', { keyPath: 'id' })
+				}
+				
+				// UI Tab表
+				if (!db.objectStoreNames.contains('meta_tabs')) {
+					const tabStore = db.createObjectStore('meta_tabs', { keyPath: 'id' })
+					tabStore.createIndex('group_id', 'group_id', { unique: false })
+				}
+				
+				// UI 组件表
+				if (!db.objectStoreNames.contains('meta_components')) {
+					const compStore = db.createObjectStore('meta_components', { keyPath: 'id' })
+					compStore.createIndex('tab_id', 'tab_id', { unique: false })
+				}
+				
+				// 数据记录表
+				if (!db.objectStoreNames.contains('data_records')) {
+					const recordStore = db.createObjectStore('data_records', { keyPath: 'record_id' })
+					recordStore.createIndex('component_id', 'component_id', { unique: false })
+				}
+				
+				// 导入记录表
+				if (!db.objectStoreNames.contains('t_import_package')) {
+					db.createObjectStore('t_import_package', { keyPath: 'id', autoIncrement: true })
+				}
+				
+				console.log('IndexedDB Object Stores 创建/更新完成')
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * Web 端保存数据到 IndexedDB
+ */
+export function webPutData(storeName: string, data: any): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		if (dbInstance == null) {
+			reject(new Error('IndexedDB 未初始化'))
+			return
+		}
+		
+		try {
+			const transaction = dbInstance.transaction([storeName], 'readwrite')
+			const store = transaction.objectStore(storeName)
+			const request = store.put(data)
+			
+			request.onsuccess = () => {
+				resolve()
+			}
+			request.onerror = () => {
+				reject(new Error('IndexedDB put 失败: ' + storeName))
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * Web 端从 IndexedDB 查询所有数据
+ */
+export function webGetAll(storeName: string): Promise<any[]> {
+	return new Promise((resolve: (value: any[]) => void, reject: (reason: Error) => void) => {
+		if (dbInstance == null) {
+			reject(new Error('IndexedDB 未初始化'))
+			return
+		}
+		
+		try {
+			const transaction = dbInstance.transaction([storeName], 'readonly')
+			const store = transaction.objectStore(storeName)
+			const request = store.getAll()
+			
+			request.onsuccess = () => {
+				resolve(request.result || [])
+			}
+			request.onerror = () => {
+				reject(new Error('IndexedDB getAll 失败: ' + storeName))
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * Web 端按索引查询数据
+ */
+export function webGetByIndex(storeName: string, indexName: string, value: any): Promise<any[]> {
+	return new Promise((resolve: (value: any[]) => void, reject: (reason: Error) => void) => {
+		if (dbInstance == null) {
+			reject(new Error('IndexedDB 未初始化'))
+			return
+		}
+		
+		try {
+			const transaction = dbInstance.transaction([storeName], 'readonly')
+			const store = transaction.objectStore(storeName)
+			const index = store.index(indexName)
+			const request = index.getAll(value)
+			
+			request.onsuccess = () => {
+				resolve(request.result || [])
+			}
+			request.onerror = () => {
+				reject(new Error('IndexedDB getByIndex 失败'))
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * Web 端清空 Store
+ */
+export function webClearStore(storeName: string): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		if (dbInstance == null) {
+			reject(new Error('IndexedDB 未初始化'))
+			return
+		}
+		
+		try {
+			const transaction = dbInstance.transaction([storeName], 'readwrite')
+			const store = transaction.objectStore(storeName)
+			const request = store.clear()
+			
+			request.onsuccess = () => {
+				resolve()
+			}
+			request.onerror = () => {
+				reject(new Error('IndexedDB clear 失败: ' + storeName))
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * Web 端获取记录数
+ */
+export function webGetCount(storeName: string): Promise<number> {
+	return new Promise((resolve: (value: number) => void, reject: (reason: Error) => void) => {
+		if (dbInstance == null) {
+			reject(new Error('IndexedDB 未初始化'))
+			return
+		}
+		
+		try {
+			const transaction = dbInstance.transaction([storeName], 'readonly')
+			const store = transaction.objectStore(storeName)
+			const request = store.count()
+			
+			request.onsuccess = () => {
+				resolve(request.result)
+			}
+			request.onerror = () => {
+				reject(new Error('IndexedDB count 失败: ' + storeName))
 			}
 		} catch (e: any) {
 			reject(new Error(e.toString()))
@@ -426,3 +602,4 @@ function initIndexedDB(): Promise<void> {
 	})
 }
 // #endif
+

@@ -1,12 +1,11 @@
-/**
- * MPM 工艺预览系统 - 数据包解析服务
- * @description 处理数据包的选择、解密、解压和导入
- */
-
-import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/dataPackage'
+import { ComponentConfig, DataRecord, ImportProgress, ImportResult, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ProcessInfo } from '@/types/process'
-import { decryptPackage, verifyChecksum } from '@/utils/crypto'
-import { executeSQL } from '@/services/database'
+import { decryptPackage } from '@/utils/crypto'
+import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
+// #ifdef WEB
+import { webPutData } from '@/services/database'
+// #endif
+
 
 /**
  * 导入状态回调类型
@@ -53,7 +52,7 @@ function selectFileAndroid(
 	try {
 		uni.chooseFile({
 			count: 1,
-			extension: ['.mpm'],
+			extension: ['.srd'],
 			success: (res: UniChooseFileSuccessCallbackResult) => {
 				if (res.tempFilePaths.length > 0) {
 					const filePath = res.tempFilePaths[0]
@@ -100,7 +99,7 @@ function selectFileHarmony(
 	try {
 		uni.chooseFile({
 			count: 1,
-			extension: ['.mpm'],
+			extension: ['.srd'],
 			success: (res: UniChooseFileSuccessCallbackResult) => {
 				if (res.tempFilePaths.length > 0) {
 					const filePath = res.tempFilePaths[0]
@@ -146,7 +145,7 @@ function selectFileWeb(
 	try {
 		const input = document.createElement('input')
 		input.type = 'file'
-		input.accept = '.mpm'
+		input.accept = '.srd'
 		
 		input.onchange = (event: Event) => {
 			const target = event.target as HTMLInputElement
@@ -186,19 +185,25 @@ function getFileName(filePath: string): string {
  * @param filePath - 文件路径
  * @returns Promise<PackageManifest> 数据包清单
  */
-export function validatePackage(filePath: string): Promise<PackageManifest> {
+export function validatePackage(filePath: string = selectedFilePath): Promise<PackageManifest> {
+	const actualPath = filePath != '' ? filePath : selectedFilePath
+	console.log('validatePackage using path:', actualPath)
 	return new Promise((resolve: (value: PackageManifest) => void, reject: (reason: Error) => void) => {
-		readFileAsArrayBuffer(filePath)
+		if (actualPath == '') {
+			reject(new Error('未选择数据包文件'))
+			return
+		}
+		readFileAsArrayBuffer(actualPath)
 			.then((encryptedData: ArrayBuffer) => {
-				// 解密数据包
+				// 尝试解密，如果失败则假设为未加密的ZIP
+				let zipData = encryptedData
 				const decryptResult = decryptPackage(encryptedData)
-				if (!decryptResult.success || decryptResult.data == null) {
-					reject(new Error(decryptResult.errorMessage))
-					return
+				if (decryptResult.success && decryptResult.data != null) {
+					zipData = decryptResult.data!
 				}
 				
 				// 解压并读取清单文件
-				parseManifestFromZip(decryptResult.data)
+				parseManifestFromZip(zipData)
 					.then((manifest: PackageManifest) => {
 						resolve(manifest)
 					})
@@ -223,80 +228,79 @@ export function importPackage(
 	onProgress: ImportProgressCallback | null = null
 ): Promise<ImportResult> {
 	const startTime = Date.now()
+	const actualPath = filePath != '' ? filePath : selectedFilePath
+	console.log('importPackage using path:', actualPath)
 	
 	return new Promise((resolve: (value: ImportResult) => void, reject: (reason: Error) => void) => {
-		if (filePath == '') {
+		if (actualPath == '') {
 			reject(new Error('未选择数据包文件'))
 			return
 		}
 		
 		// 更新进度：开始读取文件
+		if (onProgress != null) {
+			onProgress({
+				current: 0,
+				total: 100,
+				currentFile: '读取数据包...',
+				status: 'reading'
+			})
+		}
+		
+		readFileAsArrayBuffer(actualPath)
+
+			.then((encryptedData: ArrayBuffer) => {
+				// 更新进度：解密中
 				if (onProgress != null) {
 					onProgress({
-						current: 0,
+						current: 20,
 						total: 100,
-						currentFile: '读取数据包...',
-						status: 'reading'
+						currentFile: '解密数据包...',
+						status: 'decrypting'
 					})
 				}
 				
-				readFileAsArrayBuffer(filePath)
-					.then((encryptedData: ArrayBuffer) => {
-						// 更新进度：解密中
+				let zipData = encryptedData
+				const decryptResult = decryptPackage(encryptedData)
+				if (decryptResult.success && decryptResult.data != null) {
+					zipData = decryptResult.data!
+				}
+				
+				// 尝试作为普通 JSON 解析 (单文件数据包)
+				
+				// 更新进度：解压中
+				if (onProgress != null) {
+					onProgress({
+						current: 40,
+						total: 100,
+						currentFile: '解压数据包...',
+						status: 'extracting'
+					})
+				}
+				
+				// 解压并解析数据
+				extractAndParsePackage(zipData, onProgress)
+					.then((res: ImportResult) => {
+						// 更新进度：完成
 						if (onProgress != null) {
 							onProgress({
-								current: 20,
+								current: 100,
 								total: 100,
-								currentFile: '解密数据包...',
-								status: 'decrypting'
+								currentFile: '导入完成',
+								status: 'completed'
 							})
 						}
 						
-						const decryptResult = decryptPackage(encryptedData)
-						if (!decryptResult.success || decryptResult.data == null) {
-							reject(new Error(decryptResult.errorMessage))
-							return
-						}
-						
-						// 更新进度：解压中
-						if (onProgress != null) {
-							onProgress({
-								current: 40,
-								total: 100,
-								currentFile: '解压数据包...',
-								status: 'extracting'
-							})
-						}
-						
-						// 解压并解析数据
-						extractAndParsePackage(decryptResult.data, onProgress)
-							.then((processCount: number) => {
-								const importTime = Date.now() - startTime
-								
-								// 更新进度：完成
-								if (onProgress != null) {
-									onProgress({
-										current: 100,
-										total: 100,
-										currentFile: '导入完成',
-										status: 'completed'
-									})
-								}
-								
-								resolve({
-									success: true,
-									message: '导入成功',
-									processCount: processCount,
-									importTime: importTime
-								})
-							})
-							.catch((e: any) => {
-								reject(new Error(JSON.stringify(e)))
-							})
+						res.importTime = Date.now() - startTime
+						resolve(res)
 					})
 					.catch((e: any) => {
 						reject(new Error(JSON.stringify(e)))
 					})
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
 	})
 }
 
@@ -405,13 +409,40 @@ function parseManifestHarmony(
 // #endif
 
 // #ifdef WEB
+import JSZip from 'jszip'
+
 function parseManifestWeb(
 	zipData: ArrayBuffer,
 	resolve: (value: PackageManifest) => void,
 	reject: (reason: Error) => void
 ): void {
-	// Web 端可使用 JSZip 库
-	reject(new Error('Web ZIP 解析待实现'))
+	console.log('Web: Loading ZIP for manifest parsing, size:', zipData.byteLength);
+	JSZip.loadAsync(zipData).then((zip: JSZip) => {
+		console.log('Web: ZIP loaded successfully. Files:', Object.keys(zip.files));
+		const manifestFile = zip.file("manifest.json")
+		if (manifestFile != null) {
+			manifestFile.async("string").then((content: string) => {
+				console.log('Web: manifest.json read, length:', content.length);
+				try {
+					const manifest = JSON.parse(content) as PackageManifest
+					console.log('Web: Manifest parsed successfully:', manifest.version);
+					resolve(manifest)
+				} catch (e: any) {
+					console.error('Web: Manifest JSON parse error:', e);
+					reject(new Error("清单文件解析失败: " + e.message))
+				}
+			}).catch((e: any) => {
+				console.error('Web: Manifest file read error:', e);
+				reject(new Error("读取清单文件失败: " + e.message))
+			})
+		} else {
+			console.error('Web: manifest.json not found in ZIP');
+			reject(new Error("数据包中未找到 manifest.json"))
+		}
+	}).catch((e: any) => {
+		console.error('Web: ZIP load failed:', e);
+		reject(new Error("ZIP 加载失败: " + e.message))
+	})
 }
 // #endif
 
@@ -421,8 +452,8 @@ function parseManifestWeb(
 function extractAndParsePackage(
 	zipData: ArrayBuffer, 
 	onProgress: ImportProgressCallback | null
-): Promise<number> {
-	return new Promise((resolve: (value: number) => void, reject: (reason: Error) => void) => {
+): Promise<ImportResult> {
+	return new Promise((resolve: (value: ImportResult) => void, reject: (reason: Error) => void) => {
 		// #ifdef APP-ANDROID
 		extractAndParseAndroid(zipData, onProgress, resolve, reject)
 		// #endif
@@ -441,7 +472,7 @@ function extractAndParsePackage(
 function extractAndParseAndroid(
 	zipData: ArrayBuffer,
 	onProgress: ImportProgressCallback | null,
-	resolve: (value: number) => void,
+	resolve: (value: ImportResult) => void,
 	reject: (reason: Error) => void
 ): void {
 	try {
@@ -449,13 +480,23 @@ function extractAndParseAndroid(
 		const zipStream = new ZipInputStream(inputStream)
 		
 		const processes: ProcessInfo[] = []
+		let manifest: PackageManifest | null = null
+		
 		let entry = zipStream.getNextEntry()
+		
+		// 第一遍：寻找 manifest.json
+		// 注意：ZipInputStream 只能顺序读取，如果不重置流，需要一次性读完。
+		// 这里优化为：边读边存，如果是manifest先解析。
+		// 但由于流只能过一遍，我们可能需要先遍历一遍找 manifest (如果是必要的配置)，或者假定 manifest 在前。
+		// 更稳健的做法：读取所有 entry，根据名字分发。
+		
+		const entryMap = new Map<string, string>() // 暂存小文件的内容
 		
 		while (entry != null) {
 			const entryName = entry.getName()
 			
-			// 解析工艺 JSON 文件
-			if (entryName.startsWith('processes/') && entryName.endsWith('.json')) {
+			// 只读取 json 文件到内存，大文件(如果有)另行处理
+			if (entryName.endsWith('.json')) {
 				const outputStream = new ByteArrayOutputStream()
 				const buffer = new ByteArray(1024)
 				let len = zipStream.read(buffer)
@@ -463,19 +504,13 @@ function extractAndParseAndroid(
 					outputStream.write(buffer, 0, len)
 					len = zipStream.read(buffer)
 				}
+				const content = outputStream.toString('UTF-8')
 				
-				const processJson = outputStream.toString('UTF-8')
-				const processInfo = JSON.parse(processJson) as ProcessInfo
-				processes.push(processInfo)
-				
-				// 更新进度
-				if (onProgress != null) {
-					onProgress({
-						current: 40 + (processes.length * 40 / 10), // 假设最多10个工艺
-						total: 100,
-						currentFile: '导入工艺：' + processInfo.name,
-						status: 'importing'
-					})
+				if (entryName == 'manifest.json') {
+					manifest = JSON.parse(content) as PackageManifest
+				} else if (entryName.startsWith('processes/')) {
+					const processInfo = JSON.parse(content) as ProcessInfo
+					processes.push(processInfo)
 				}
 			}
 			
@@ -484,14 +519,39 @@ function extractAndParseAndroid(
 		
 		zipStream.close()
 		
-		// 保存到数据库
-		saveProcessesToDatabase(processes)
-			.then(() => {
-				resolve(processes.length)
-			})
-			.catch((e: any) => {
-				reject(new Error(e.toString()))
-			})
+		// 开始事务
+		beginTransaction()
+		
+		try {
+			// 保存 UI 配置
+			let uiConfigCount = 0
+			if (manifest != null) {
+				uiConfigCount = saveUiConfigurationToDatabase(manifest)
+			}
+			
+			// 保存工艺数据
+			saveProcessesToDatabase(processes)
+				.then(() => {
+					setTransactionSuccessful()
+					resolve({
+						success: true,
+						message: '导入成功',
+						processCount: processes.length,
+						uiConfigCount: uiConfigCount,
+						importTime: 0
+					})
+				})
+				.catch((e: any) => {
+					throw e
+				})
+				.finally(() => {
+					endTransaction()
+				})
+				
+		} catch (e: any) {
+			endTransaction()
+			reject(new Error('数据库保存失败: ' + e.toString()))
+		}
 			
 	} catch (e: any) {
 		reject(new Error('解析数据包失败：' + e.toString()))
@@ -503,7 +563,7 @@ function extractAndParseAndroid(
 function extractAndParseHarmony(
 	zipData: ArrayBuffer,
 	onProgress: ImportProgressCallback | null,
-	resolve: (value: number) => void,
+	resolve: (value: ImportResult) => void,
 	reject: (reason: Error) => void
 ): void {
 	reject(new Error('HarmonyOS 解析待实现'))
@@ -514,12 +574,174 @@ function extractAndParseHarmony(
 function extractAndParseWeb(
 	zipData: ArrayBuffer,
 	onProgress: ImportProgressCallback | null,
-	resolve: (value: number) => void,
+	resolve: (value: ImportResult) => void,
 	reject: (reason: Error) => void
 ): void {
-	reject(new Error('Web 解析待实现'))
+	console.log('Web: Starting extraction, size:', zipData.byteLength);
+	JSZip.loadAsync(zipData).then(async (zip: JSZip) => {
+		try {
+			// 1. 解析 manifest
+			let manifest: PackageManifest | null = null
+			const manifestFile = zip.file("manifest.json")
+			if (manifestFile != null) {
+				console.log('Web: manifest.json found');
+				const content = await manifestFile.async("string")
+				manifest = JSON.parse(content) as PackageManifest
+			} else {
+				console.warn('Web: manifest.json NOT found');
+			}
+			
+			// 2. 解析 processes - 遍历所有文件查找 processes 目录下的 JSON 文件
+			const processes: ProcessInfo[] = []
+			const allFiles = Object.keys(zip.files)
+			console.log('Web: All files in ZIP:', allFiles);
+			
+			// 查找 processes 目录下的文件（兼容正斜杠和反斜杠）
+			const processFileNames = allFiles.filter((name) => {
+				const normalized = name.replace(/\\/g, '/')
+				return normalized.startsWith('processes/') && normalized.endsWith('.json')
+			})
+			console.log('Web: Found process files count:', processFileNames.length);
+			
+			for (const fileName of processFileNames) {
+				const file = zip.file(fileName)
+				if (file != null && !file.dir) {
+					const content = await file.async("string")
+					try {
+						const process = JSON.parse(content) as ProcessInfo
+						processes.push(process)
+						console.log('Web: Parsed process:', process.id);
+					} catch(e) {
+						console.error('Web: Failed to parse process file:', fileName, e);
+					}
+				}
+			}
+			
+			// 3. 保存到数据库 (Web 使用 IndexedDB)
+			console.log('Web: Saving to database via IndexedDB...');
+			
+			try {
+				let uiConfigCount = 0
+				
+				// 保存 UI 分组
+				if (manifest != null && manifest.groups != null) {
+					for (const g of manifest.groups) {
+						await webPutData('meta_tab_groups', g)
+						uiConfigCount++
+					}
+				}
+				
+				// 保存 Tabs
+				if (manifest != null && manifest.tabs != null) {
+					for (const t of manifest.tabs) {
+						await webPutData('meta_tabs', t)
+						uiConfigCount++
+					}
+				}
+				
+				// 保存组件
+				if (manifest != null && manifest.components != null) {
+					for (const c of manifest.components) {
+						await webPutData('meta_components', c)
+						uiConfigCount++
+					}
+				}
+				
+				// 保存数据记录
+				if (manifest != null && manifest.records != null) {
+					for (const r of manifest.records) {
+						await webPutData('data_records', r)
+						uiConfigCount++
+					}
+				}
+				
+				// 保存工艺数据
+				for (const p of processes) {
+					await webPutData('t_process', p)
+				}
+				
+				console.log('Web: DB Save success, UI configs:', uiConfigCount, ', Processes:', processes.length);
+				
+				resolve({
+					success: true,
+					message: '导入成功',
+					processCount: processes.length,
+					uiConfigCount: uiConfigCount,
+					importTime: 0
+				})
+			} catch (e: any) {
+				console.error('Web: DB Save failed', e);
+				reject(new Error('数据库保存失败: ' + e.message))
+			}
+			
+		} catch (e: any) {
+			console.error('Web: Extraction error', e);
+			reject(new Error("Web 导入处理失败: " + e.message))
+		}
+	}).catch((e: any) => {
+		console.error('Web: ZIP load failed in extraction', e);
+		reject(new Error("ZIP 加载失败: " + e.message))
+	})
 }
 // #endif
+
+
+/**
+ * 保存 UI 配置到数据库
+ */
+function saveUiConfigurationToDatabase(manifest: PackageManifest): number {
+	let count = 0
+	
+	// 导入分组
+	const groups = manifest.groups
+	for (let i = 0; i < groups.length; i++) {
+		const g = groups[i]
+		executeSQL(
+			"INSERT OR REPLACE INTO meta_tab_groups (id, name, description, sort_order) VALUES (?, ?, ?, ?)",
+			[g.id, g.name, g.description, g.sort_order]
+		)
+		count++
+	}
+	
+	// 导入 Tab
+	const tabs = manifest.tabs
+	for (let i = 0; i < tabs.length; i++) {
+		const t = tabs[i]
+		executeSQL(
+			"INSERT OR REPLACE INTO meta_tabs (id, group_id, title, sort_order, visible_condition) VALUES (?, ?, ?, ?, ?)",
+			[t.id, t.group_id, t.title, t.sort_order, t.visible_condition]
+		)
+		count++
+	}
+	
+	// 导入组件
+	const components = manifest.components
+	for (let i = 0; i < components.length; i++) {
+		const c = components[i]
+		const configJson = c.config != null ? JSON.stringify(c.config) : ''
+		
+		executeSQL(
+			"INSERT OR REPLACE INTO meta_components (id, tab_id, type, title, config_json, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+			[c.id, c.tab_id, c.type, c.title, configJson, c.sort_order]
+		)
+		count++
+	}
+	
+	// 导入数据记录
+	const records = manifest.records
+	for (let i = 0; i < records.length; i++) {
+		const r = records[i]
+		const dataJson = r.data != null ? JSON.stringify(r.data) : ''
+		
+		executeSQL(
+			"INSERT OR REPLACE INTO data_records (record_id, component_id, data_json, created_at) VALUES (?, ?, ?, ?)",
+			[r.record_id, r.component_id, dataJson, Date.now()]
+		)
+		count++
+	}
+	
+	return count
+}
 
 /**
  * 保存工艺数据到数据库
@@ -601,7 +823,6 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 		
 		Promise.all(savePromises)
 			.then(() => {
-				console.log('工艺数据保存成功，共 ' + processes.length.toString() + ' 条')
 				resolve()
 			})
 			.catch((e: any) => {
@@ -609,3 +830,4 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 			})
 	})
 }
+

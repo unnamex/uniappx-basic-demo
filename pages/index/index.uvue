@@ -3,10 +3,10 @@
 		<template #header>
 			<view class="header-container">
 				<view class="header-logo">
-					<text class="header-text">工艺预览</text>
+					<text class="header-text">工艺预览 (Unified System)</text>
 				</view>
 				<view class="header-actions">
-					<button size="mini" @click="resetData">重置数据</button>
+					<button size="mini" @click="resetData">重置并生成测试数据</button>
 				</view>
 			</view>
 		</template>
@@ -61,44 +61,14 @@
 				</ux-tabs>
 			</view>
 			<view v-else class="loading-state">
-				<text>Loading Top Group...</text>
+				<text>No Configuration Loaded</text>
 			</view>
 		</view>
 		
 		<!-- Main Bottom Area (Dynamic) -->
 		<template #main-bottom>
 			<view class="main-content-bottom">
-				<view v-if="bottomGroup != null" style="height: 100%; display: flex; flex-direction: column;">
-					<text class="title">{{ bottomGroup?.name }}</text>
-					<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
-						<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
-							<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
-								<view class="tab-content-wrap">
-									<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
-										<text class="comp-title">{{ comp.title }}</text>
-										
-										<!-- Table -->
-										<view v-if="comp.type == 'table'" style="min-height: 150px;">
-											<ux-table :columns="getColumns(comp)" :data="comp.data"></ux-table>
-										</view>
-										
-										<!-- Collapse -->
-										<view v-else-if="comp.type == 'collapse'">
-											<ux-collapse>
-												<ux-collapse-item v-for="(item, idx) in comp.data" :key="idx" :title="getString(item, 'title')" :name="idx">
-													<text>{{ JSON.stringify(item) }}</text>
-												</ux-collapse-item>
-											</ux-collapse>
-										</view>
-									</view>
-								</view>
-							</scroll-view>
-						</ux-tab-pane>
-					</ux-tabs>
-				</view>
-				<view v-else class="loading-state">
-					<text>Loading Bottom Group...</text>
-				</view>
+				<text>Bottom Area (Check Tabs above for details)</text>
 			</view>
 		</template>
 
@@ -106,7 +76,7 @@
 		<template #right>
 			<view class="right-panel">
 				<view class="right-content">
-					<text>Right Panel (Static)</text>
+					<text>Right Panel</text>
 				</view>
 			</view>
 		</template>
@@ -114,7 +84,7 @@
 		<!-- Right Sidebar Bottom Area -->
 		<template #right-bottom>
 			<view class="right-panel-bottom">
-				<text>Right Bottom (Static)</text>
+				<text>Statues: {{ statusMessage }}</text>
 			</view>
 		</template>
 	</outsider-layout>
@@ -122,7 +92,12 @@
 
 <script setup lang="uts">
 	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
-	import { PackageImporter } from '@/services/package-importer.uts'
+	// #ifdef WEB
+	import { webGetAll, webGetByIndex, webGetCount } from '@/services/database.uts'
+	// #endif
+	import { importPackage } from '@/services/dataPackage.uts'
+	import { clearAllProcesses } from '@/services/processService.uts'
+
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
 	import UxTabPane from '@/components/ux-tab-pane/ux-tab-pane.uvue'
@@ -154,62 +129,20 @@
 	// State
 	const topGroup = ref<GroupVM | null>(null)
 	const bottomGroup = ref<GroupVM | null>(null)
-	// Use reactive Map for Map mutations to be observed
 	const activeTabs = reactive(new Map<string, string>())
+	const statusMessage = ref('Ready')
 	
 	// Left panel static data
 	const tableData = ref([
-		{
-			id: 1,
-			date: '2016-05-02',
-			name: 'wangxiaohu',
-			address: 'No. 189, Grove St, Los Angeles'
-		},
-		{
-			id: 2,
-			date: '2016-05-04',
-			name: 'wangxiaohu',
-			address: 'No. 189, Grove St, Los Angeles'
-		},
-		{
-			id: 3,
-			date: '2016-05-01',
-			name: 'wangxiaohu',
-			address: 'No. 189, Grove St, Los Angeles',
-			children: [{
-				id: 31,
-				date: '2016-05-01',
-				name: 'wangxiaohu',
-				address: 'No. 189, Grove St, Los Angeles'
-			}, {
-				id: 32,
-				date: '2016-05-01',
-				name: 'wangxiaohu',
-				address: 'No. 189, Grove St, Los Angeles',
-				children: [
-					{
-						id: 321,
-						date: '2016-05-01',
-						name: 'wangxiaohu',
-						address: 'No. 189, Grove St, Los Angeles'
-					}
-				]
-			}]
-		},
-		{
-			id: 4,
-			date: '2016-05-03',
-			name: 'wangxiaohu',
-			address: 'No. 189, Grove St, Los Angeles'
-		}
+		{ id: 1, name: 'Sample Item 1', status: 'Active' },
+		{ id: 2, name: 'Sample Item 2', status: 'Pending' }
 	] as UTSJSONObject[])
 
 	const columns = ref([
-		{ label: 'Date', prop: 'date', width: 140 }, // Width adjusted for sidebar
-		{ label: 'Name', prop: 'name', width: 160 }
+		{ label: 'Name', prop: 'name', width: 160 },
+		{ label: 'Status', prop: 'status', width: 100 }
 	] as UTSJSONObject[])
 	
-	// Placeholder for selection
 	const selectedRow = ref(null as UTSJSONObject | null)
 
 	onLoad(async () => {
@@ -221,33 +154,120 @@
 		// 1. Init DB
 		await initDatabase()
 		
-		// 2. Import if needed
-		const hasData = await PackageImporter.hasData()
-		if (!hasData) {
-			console.log('No data found, importing...')
-			const success = await PackageImporter.importPackage('/static/test_package.json')
-			if (!success) {
-				console.error('Import failed')
-				uni.showToast({ title: 'Import Failed', icon: 'none' })
-				return
-			}
+		// 2. Check if data exists
+		let count = 0
+		// #ifdef WEB
+		try {
+			count = await webGetCount('meta_tab_groups')
+			console.log('Web: meta_tab_groups count =', count)
+		} catch (e) {
+			console.error('Web count error', e)
 		}
+		// #endif
+		// #ifndef WEB
+		const res = await querySQL("SELECT count(*) as count FROM meta_tab_groups")
+		if (res.length > 0) {
+			count = res[0]['count'] as number
+		}
+		// #endif
 		
-		// 3. Load Groups
-		// Hardcoded mapping for demo: main_process_group -> top, aux_info_group -> bottom
-		topGroup.value = await loadGroup('main_process_group')
-		bottomGroup.value = await loadGroup('aux_info_group')
+		if (count == 0) {
+			statusMessage.value = 'No data found'
+		} else {
+			statusMessage.value = 'Data loaded from DB'
+			await loadUiGroups()
+		}
+	}
+
+	
+	const loadUiGroups = async () => {
+		// Load the group defined in generator: 'group_process_mgmt'
+		topGroup.value = await loadGroup('group_process_mgmt')
 		
-		// Set default active tabs
 		if (topGroup.value != null && topGroup.value!.tabs.length > 0) {
 			activeTabs.set(topGroup.value!.id, topGroup.value!.tabs[0].id)
-		}
-		if (bottomGroup.value != null && bottomGroup.value!.tabs.length > 0) {
-			activeTabs.set(bottomGroup.value!.id, bottomGroup.value!.tabs[0].id)
 		}
 	}
 	
 	const loadGroup = async (groupId: string): Promise<GroupVM | null> => {
+		// #ifdef WEB
+		return await loadGroupWeb(groupId)
+		// #endif
+		// #ifndef WEB
+		return await loadGroupSQL(groupId)
+		// #endif
+	}
+	
+	// #ifdef WEB
+	const loadGroupWeb = async (groupId: string): Promise<GroupVM | null> => {
+		try {
+			const allGroups = await webGetAll('meta_tab_groups')
+			const groups = allGroups.filter((g: any) => g.id == groupId)
+			if (groups.length == 0) {
+				console.log('Web: Group not found:', groupId)
+				return null
+			}
+			
+			const groupRow = groups[0]
+			const groupVM: GroupVM = {
+				id: groupRow.id as string,
+				name: groupRow.name as string,
+				tabs: []
+			}
+			
+			// Load Tabs
+			const allTabs = await webGetByIndex('meta_tabs', 'group_id', groupId)
+			const tabs = allTabs.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+			console.log('Web: Found tabs:', tabs.length)
+			
+			for (let i = 0; i < tabs.length; i++) {
+				const t = tabs[i] as any
+				const tabId = t.id as string
+				const tabVM: TabVM = {
+					id: tabId,
+					title: t.title as string,
+					components: []
+				}
+				
+				// Load Components
+				const allComps = await webGetByIndex('meta_components', 'tab_id', tabId)
+				const comps = allComps.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+				
+				for (let j = 0; j < comps.length; j++) {
+					const c = comps[j] as any
+					const compId = c.id as string
+					
+					const compVM: ComponentVM = {
+						id: compId,
+						type: c.type as string,
+						title: c.title as string,
+						config: c.config,  // Object already parsed in IndexedDB
+						data: []
+					}
+					
+					// Load Data
+					const records = await webGetByIndex('data_records', 'component_id', compId)
+					compVM.data = records.map((r: any): UTSJSONObject => {
+						return r.data as UTSJSONObject || {}
+					})
+					
+					tabVM.components.push(compVM)
+				}
+				
+				groupVM.tabs.push(tabVM)
+			}
+			
+			console.log('Web: Group loaded:', groupVM.name, 'with', groupVM.tabs.length, 'tabs')
+			return groupVM
+		} catch (e) {
+			console.error('Web loadGroup error:', e)
+			return null
+		}
+	}
+	// #endif
+	
+	// #ifndef WEB
+	const loadGroupSQL = async (groupId: string): Promise<GroupVM | null> => {
 		const groups = await querySQL("SELECT * FROM meta_tab_groups WHERE id = ?", [groupId])
 		if (groups.length == 0) return null
 		
@@ -302,33 +322,30 @@
 					} catch (e) { return {} }
 				})
 				
-				// Check visibility condition? (Not fully implemented yet, assuming if component exists it's shown)
 				tabVM.components.push(compVM)
 			}
 			
-			// If tab has 'visible_condition' == 'has_data' and no data in any component, maybe hide?
-			// Simplified: always show for now
 			groupVM.tabs.push(tabVM)
 		}
 		
 		return groupVM
 	}
+	// #endif
+
 	
 	const onTabChange = (groupId: string, tabId: any) => {
-		activeTabs.value.set(groupId, tabId as string)
+		activeTabs.set(groupId, tabId as string)
 	}
 	
 	const getColumns = (comp: ComponentVM): UTSJSONObject[] => {
-		// Assuming config is array of columns for table
 		if (Array.isArray(comp.config)) {
 			return comp.config as UTSJSONObject[]
 		}
-		// Or if config is object with columns key
 		return []
 	}
 	
 	const getCollapseConfig = (comp: ComponentVM): UTSJSONObject => {
-		return comp.config
+		return comp.config as UTSJSONObject
 	}
 	
 	const getString = (obj: UTSJSONObject, key: string): string => {
@@ -336,16 +353,26 @@
 	}
 	
 	const handleRowClick = (row: UTSJSONObject) => {
-		// Placeholder
+		selectedRow.value = row
 	}
 	
 	const resetData = async () => {
+		statusMessage.value = 'Resetting...'
+		
+		// 1. Clear UI tables
 		await executeSQL("DELETE FROM meta_tab_groups")
 		await executeSQL("DELETE FROM meta_tabs")
 		await executeSQL("DELETE FROM meta_components")
 		await executeSQL("DELETE FROM data_records")
-		uni.showToast({ title: 'Data cleared, reload to import' })
-		// Reload logic...
+		
+		// 2. Clear Process tables
+		await clearAllProcesses()
+		
+		uni.showToast({ title: 'Data cleared' })
+		topGroup.value = null
+		bottomGroup.value = null
+		
+		// 3. Re-init to trigger generation
 		await initData()
 	}
 
@@ -371,17 +398,10 @@
 	
 	.header-actions {
 		padding: 5px 10px;
-		background-color: #f0f0f0;
-		border-radius: 4px;
 	}
 	
 	.header-text {
 		font-weight: bold;
-		font-size: 14px;
-	}
-	
-	.header-placeholder-text {
-		color: #999;
 		font-size: 14px;
 	}
 
@@ -403,6 +423,7 @@
 		padding: 20px;
 		display: flex;
 		flex-direction: column;
+		flex: 1;
 	}
 	
 	.main-content-bottom {
@@ -410,39 +431,13 @@
 		display: flex;
 		flex-direction: column;
 		background-color: #fafafa;
-		height: 100%;
+		height: 100px; /* Fixed height for bottom area demo */
 	}
 
 	.title {
 		font-size: 24px;
 		font-weight: bold;
 		margin-bottom: 20px;
-	}
-	
-	.info-box {
-		padding: 20px;
-		background-color: #f9f9f9;
-		border-radius: 8px;
-		border: 1px solid #eee;
-	}
-	
-	.info-box-bottom {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-	}
-	
-	.subtitle {
-		margin-top: 15px;
-		margin-bottom: 5px;
-		font-weight: bold;
-		color: #555;
-	}
-	
-	.log-text {
-		font-size: 12px;
-		color: #666;
-		margin-bottom: 2px;
 	}
 
 	.right-panel {
@@ -459,33 +454,6 @@
 		display: flex;
 		flex-direction: column;
 	}
-
-	.right-placeholder {
-		font-size: 14px;
-		color: #999;
-		margin-bottom: 15px;
-		font-style: italic;
-	}
-
-	.prop-list {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.prop-item {
-		font-size: 14px;
-		color: #333;
-		padding: 8px;
-		background-color: #f5f5f5;
-		border-radius: 4px;
-	}
-
-	.empty-state {
-		padding: 20px 0;
-		align-items: center;
-		justify-content: center;
-	}
 	
 	.right-panel-bottom {
 		padding: 10px;
@@ -495,30 +463,36 @@
 		height: 100%;
 	}
 	
-	.title-small {
-		font-size: 14px;
+	.tab-content-wrap {
+		padding: 10px 0;
+	}
+	
+	.component-wrapper {
+		margin-bottom: 20px;
+		padding: 10px;
+		border: 1px solid #eee;
+		border-radius: 6rpx;
+	}
+	
+	.comp-title {
 		font-weight: bold;
+		margin-bottom: 10px;
+		font-size: 16px;
+		display: block;
+	}
+	
+	.kv-row {
+		display: block;
 		margin-bottom: 5px;
+		font-size: 14px;
 		color: #555;
 	}
 	
-	.log-item-clickable {
-		padding: 5px;
-		border-bottom: 1px solid #eee;
-		/* cursor: pointer; */ /* Pointer not always applicable in native, handled by click */
-	}
-	
-	.interaction-feedback {
-		margin-top: 20px;
-		padding: 10px;
-		background-color: #e6f7ff;
-		border: 1px solid #91d5ff;
-		border-radius: 4px;
-	}
-	
-	.feedback-text {
-		color: #0050b3;
-		font-size: 12px;
+	.loading-state {
+		display: flex;
+		justify-content: center;
+		padding: 20px;
+		color: #999;
 	}
 </style>
 

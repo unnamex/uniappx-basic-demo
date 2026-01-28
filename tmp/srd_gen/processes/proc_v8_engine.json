@@ -1,0 +1,160 @@
+{
+  "id": "proc_v8_engine",
+  "code": "ASM-ENG-V8",
+  "name": "V8发动机总装工艺",
+  "version": "2.1.0",
+  "status": "Released",
+  "product": {
+    "id": "prod_v8",
+    "name": "V8涡轮增压发动机",
+    "model": "V8-T-2024"
+  },
+  "steps": [
+    {
+      "stepNo": 1,
+      "name": "缸体预处理",
+      "description": "清洁缸体表面，使用专用清洁剂去除油污和杂质，使用放大镜检查铸造缺陷。",
+      "duration": 5,
+      "tools": [
+        "清洁剂",
+        "放大镜",
+        "手电筒",
+        "无尘布"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 2,
+      "name": "活塞安装",
+      "description": "安装活塞环到活塞槽内，注意活塞环开口位置错开120度。使用活塞环压缩器将活塞组件装入气缸。",
+      "duration": 15,
+      "tools": [
+        "活塞环压缩器",
+        "橡皮锤",
+        "引导套筒"
+      ],
+      "materials": [
+        "活塞组件",
+        "活塞环",
+        "活塞销卡环"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 3,
+      "name": "曲轴安装",
+      "description": "安装主轴承瓦，涂抹装配油脂，将曲轴放入曲轴箱。安装主轴承盖，按规定扭矩分三次紧固。",
+      "duration": 20,
+      "tools": [
+        "扭力扳手",
+        "轴承座定位工具",
+        "塞尺"
+      ],
+      "materials": [
+        "曲轴",
+        "主轴承瓦",
+        "推力轴承"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 4,
+      "name": "连杆安装",
+      "description": "将连杆大端与曲轴连杆轴颈对齐，安装连杆盖，按规定扭矩紧固连杆螺栓。",
+      "duration": 25,
+      "tools": [
+        "扭力扳手",
+        "角度规"
+      ],
+      "materials": [
+        "连杆螺栓",
+        "连杆轴承瓦"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 5,
+      "name": "缸盖安装",
+      "description": "放置新缸垫，注意缸垫正反方向。安装缸盖，按对角线顺序分三次紧固螺栓，最终扭矩95Nm+90°。",
+      "duration": 25,
+      "tools": [
+        "扭力扳手",
+        "角度扳手",
+        "缸盖定位销"
+      ],
+      "materials": [
+        "缸垫",
+        "缸盖螺栓"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 6,
+      "name": "配气机构安装",
+      "description": "安装凸轮轴、气门摇臂、液压挺柱等配气系统零件，调整气门间隙。",
+      "duration": 30,
+      "tools": [
+        "凸轮轴锁止工具",
+        "塞尺"
+      ],
+      "materials": [
+        "凸轮轴",
+        "气门摇臂组件",
+        "液压挺柱"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 7,
+      "name": "正时系统安装",
+      "description": "安装正时链条和链轮，确保正时标记对齐。安装链条张紧器。",
+      "duration": 20,
+      "tools": [
+        "正时工具套装",
+        "链条安装工具"
+      ],
+      "materials": [
+        "正时链条",
+        "链轮",
+        "张紧器"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 8,
+      "name": "最终检测",
+      "description": "进行发动机转动阻力测试、气密性测试、外观检查，填写装配记录卡。",
+      "duration": 15,
+      "tools": [
+        "电动扳手",
+        "气密测试仪",
+        "检测记录表"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    }
+  ],
+  "attachments": [
+    {
+      "type": "document",
+      "name": "V8发动机装配规范",
+      "path": "docs/v8_assembly_spec.pdf"
+    },
+    {
+      "type": "document",
+      "name": "扭矩参数表",
+      "path": "docs/torque_spec.pdf"
+    }
+  ],
+  "createdAt": "2024-01-15T08:00:00.000Z",
+  "updatedAt": "2024-06-10T14:30:00.000Z"
+}

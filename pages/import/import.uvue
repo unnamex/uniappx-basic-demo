@@ -2,104 +2,98 @@
 	<!-- #ifdef APP -->
 	<scroll-view class="page-container">
 	<!-- #endif -->
-		<view class="import-page">
-			<!-- 页面头部 -->
-			<view class="page-header">
-				<text class="page-title">数据包导入</text>
-				<text class="page-subtitle">从 MPM 系统导出的工艺数据包</text>
+	<view class="import-page">
+		<!-- 页面头部 -->
+		<view class="page-header">
+			<text class="page-title">数据包导入</text>
+			<text class="page-subtitle">从 SRD 系统导出的工艺数据包</text>
+		</view>
+		
+		<!-- 文件选择区域 -->
+		<view class="file-picker" @click="handleSelectFile">
+			<view class="file-picker-content" v-if="!packageInfo.fileName">
+				<text class="file-picker-icon">📦</text>
+				<text class="file-picker-text">点击选择 .srd 数据包文件</text>
+				<text class="file-picker-hint">支持从设备存储中选择文件</text>
 			</view>
-			
-			<!-- 文件选择区域 -->
-			<view class="file-picker" @click="handleSelectFile">
-				<view class="file-picker-content" v-if="!packageInfo.fileName">
-					<text class="file-picker-icon">📦</text>
-					<text class="file-picker-text">点击选择 .mpm 数据包文件</text>
-					<text class="file-picker-hint">支持从设备存储中选择文件</text>
-				</view>
-				<view class="file-info" v-else>
-					<text class="file-name">{{ packageInfo.fileName }}</text>
-					<text class="file-size">{{ formatFileSize(packageInfo.fileSize) }}</text>
-					<text class="file-change-btn">重新选择</text>
-				</view>
-			</view>
-			
-			<!-- 数据包信息预览 -->
-			<view class="package-info" v-if="manifest != null">
-				<view class="info-header">
-					<text class="info-title">数据包信息</text>
-				</view>
-				<view class="info-item">
-					<text class="info-label">来源系统</text>
-					<text class="info-value">{{ manifest.source }}</text>
-				</view>
-				<view class="info-item">
-					<text class="info-label">导出时间</text>
-					<text class="info-value">{{ formatTime(manifest.exportTime) }}</text>
-				</view>
-				<view class="info-item">
-					<text class="info-label">工艺数量</text>
-					<text class="info-value">{{ manifest.processCount }} 条</text>
-				</view>
-				<view class="info-item">
-					<text class="info-label">版本</text>
-					<text class="info-value">{{ manifest.version }}</text>
-				</view>
-			</view>
-			
-			<!-- 测试功能 -->
-			<view class="test-section" style="margin-top: 20px; align-items: center;">
-				<button size="mini" type="warn" @click="handleGenerateMockData">生成测试数据</button>
-			</view>
-
-			<!-- 导入进度 -->
-			<view class="progress-section" v-if="isImporting">
-				<text class="progress-label">{{ importProgress.currentFile }}</text>
-				<view class="progress-bar-container">
-					<view class="progress-bar" :style="{ width: importProgress.current + '%' }"></view>
-				</view>
-				<text class="progress-percent">{{ importProgress.current }}%</text>
-			</view>
-			
-			<!-- 导入结果 -->
-			<view class="result-section" v-if="importResult != null">
-				<view class="result-icon-container" :class="importResult.success ? 'success' : 'error'">
-					<text class="result-icon">{{ importResult.success ? '✓' : '✕' }}</text>
-				</view>
-				<text class="result-message">{{ importResult.message }}</text>
-				<text class="result-detail" v-if="importResult.success">
-					成功导入 {{ importResult.processCount }} 条工艺数据，耗时 {{ importResult.importTime }} ms
-				</text>
-			</view>
-			
-			<!-- 操作按钮 -->
-			<view class="action-buttons">
-				<button 
-					:class="packageInfo.fileName == '' || isImporting ? 'btn-import btn-import-disabled' : 'btn-import'" 
-					:disabled="packageInfo.fileName == '' || isImporting"
-					@click="handleImport"
-				>
-					<text class="btn-text">{{ isImporting ? '导入中...' : '开始导入' }}</text>
-				</button>
-				
-				<button 
-					class="btn-view" 
-					v-if="importResult != null && importResult.success"
-					@click="handleViewProcess"
-				>
-					<text class="btn-text">查看工艺列表</text>
-				</button>
+			<view class="file-info" v-else>
+				<text class="file-name">{{ packageInfo.fileName }}</text>
+				<text class="file-size">{{ formatFileSize(packageInfo.fileSize) }}</text>
+				<text class="file-change-btn">重新选择</text>
 			</view>
 		</view>
-	<!-- #ifdef APP -->
-	</scroll-view>
-	<!-- #endif -->
+		
+		<!-- 数据包信息预览 -->
+		<view class="package-info" v-if="manifest != null">
+			<view class="info-header">
+				<text class="info-title">数据包信息</text>
+			</view>
+			<view class="info-item">
+				<text class="info-label">来源系统</text>
+				<text class="info-value">{{ manifest.source }}</text>
+			</view>
+			<view class="info-item">
+				<text class="info-label">导出时间</text>
+				<text class="info-value">{{ formatTime(manifest.exportTime) }}</text>
+			</view>
+			<view class="info-item">
+				<text class="info-label">工艺数量</text>
+				<text class="info-value">{{ manifest.processCount }} 条</text>
+			</view>
+			<view class="info-item">
+				<text class="info-label">版本</text>
+				<text class="info-value">{{ manifest.version }}</text>
+			</view>
+		</view>
+		
+	/* 导入进度 */
+	.progress-section {
+		background-color: #ffffff;
+		border-radius: 12px;
+		padding: 20px;
+		margin-bottom: 20px;
+		align-items: center;
+	}
+		
+		<!-- 导入结果 -->
+		<view class="result-section" v-if="importResult != null">
+			<view class="result-icon-container" :class="importResult.success ? 'success' : 'error'">
+				<text class="result-icon">{{ importResult.success ? '✓' : '✕' }}</text>
+			</view>
+			<text class="result-message">{{ importResult.message }}</text>
+			<text class="result-detail" v-if="importResult.success">
+				成功导入 {{ importResult.processCount }} 条工艺数据，耗时 {{ importResult.importTime }} ms
+			</text>
+		</view>
+		
+		<!-- 操作按钮 -->
+		<view class="action-buttons">
+			<button 
+				:class="packageInfo.fileName == '' || isImporting ? 'btn-import btn-import-disabled' : 'btn-import'" 
+				:disabled="packageInfo.fileName == '' || isImporting"
+				@click="handleImport"
+			>
+				<text class="btn-text">{{ isImporting ? '导入中...' : '开始导入' }}</text>
+			</button>
+			
+			<button 
+				class="btn-view" 
+				v-if="importResult != null && importResult.success"
+				@click="handleViewProcess"
+			>
+				<text class="btn-text">查看工艺列表</text>
+			</button>
+		</view>
+	</view>
+<!-- #ifdef APP -->
+</scroll-view>
+<!-- #endif -->
 </template>
 
 <script lang="uts">
-	import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/dataPackage'
-	import { selectPackageFile, validatePackage, importPackage, ImportProgressCallback } from '@/services/dataPackage'
-	import { initDatabase } from '@/services/database'
-	import { generateMockData } from '@/services/processService'
+	import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/data-package.uts'
+	import { selectPackageFile, validatePackage, importPackage, ImportProgressCallback } from '@/services/dataPackage.uts'
+	import { initDatabase } from '@/services/database.uts'
 	
 	export default {
 		data() {
@@ -156,32 +150,6 @@
 							title: '数据库初始化失败',
 							icon: 'none'
 						})
-					})
-			},
-			
-			/**
-			 * 生成测试数据
-			 */
-			handleGenerateMockData() {
-				uni.showLoading({ title: '生成数据中...' })
-				initDatabase()
-					.then(() => {
-						return generateMockData()
-					})
-					.then(() => {
-						uni.hideLoading()
-						uni.showToast({
-							title: '测试数据已生成',
-							icon: 'success'
-						})
-					})
-					.catch((e: any) => {
-						uni.hideLoading()
-						uni.showToast({
-							title: '生成失败',
-							icon: 'none'
-						})
-						console.error(e)
 					})
 			},
 			
@@ -271,6 +239,7 @@
 							success: false,
 							message: e.message,
 							processCount: 0,
+							uiConfigCount: 0,
 							importTime: 0
 						}
 						

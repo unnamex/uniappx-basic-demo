@@ -1,18 +1,30 @@
+import { ProcessInfo } from '@/types/process'
+
 /**
- * 离线数据包类型定义
+ * 统一数据包类型定义
  */
 
 /**
- * 整个数据包的 JSON 结构
+ * 数据包清单 (manifest.json)
  */
-export type DataPackage = {
+export type PackageManifest = {
+	version: string
+	exportTime: string
+	source: string
+	description: string
+	
+	// UI 配置数据
 	groups: TabGroup[]
 	tabs: TabConfig[]
-	// 简单起见，数据包中可以按 tab_id 或 component_id 组织组件配置，
-	// 或者直接扁平化列表。这里采用扁平化列表方便导入。
 	components: ComponentConfig[] 
-	// 数据记录，建议按 component_id 分组或直接扁平化
+	
+	// 通用数据记录
 	records: DataRecord[]
+	
+	// 工艺数据 (仅引用文件名或包含简要信息，详细信息在独立文件中)
+	processFiles: string[] 
+	
+	checksum: string
 }
 
 /**
@@ -42,9 +54,9 @@ export type TabConfig = {
 export type ComponentConfig = {
 	id: string
 	tab_id: string
-	type: string // 'table' | 'collapse'
+	type: string // 'table' | 'collapse' | 'process-tree'
 	title: string
-	config: any // Original JSON object/array, to be stringified
+	config: any // Original JSON object/array
 	sort_order: number
 }
 
@@ -54,14 +66,37 @@ export type ComponentConfig = {
 export type DataRecord = {
 	record_id: string
 	component_id: string
-	data: any // Original JSON object, to be stringified
+	data: any // Original JSON object
 }
 
 /**
- * 表格列定义 (用于 ComponentConfig.config_json 解析)
+ * 导入进度类型
  */
-export type TableColumn = {
-	prop: string
-	label: string
-	width: number
+export type ImportProgress = {
+	current: number
+	total: number
+	currentFile: string
+	status: string
+}
+
+/**
+ * 导入结果类型
+ */
+export type ImportResult = {
+	success: boolean
+	message: string
+	processCount: number
+	uiConfigCount: number
+	importTime: number
+}
+
+/**
+ * 数据包文件信息
+ */
+export type PackageInfo = {
+	fileName: string
+	fileSize: number
+	manifest: PackageManifest | null
+	isValid: boolean
+	errorMessage: string
 }

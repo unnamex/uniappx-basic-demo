@@ -1,0 +1,103 @@
+{
+  "id": "proc_8at_trans",
+  "code": "TST-TRANS-8AT",
+  "name": "8AT变速箱测试工艺",
+  "version": "1.5.0",
+  "status": "Released",
+  "product": {
+    "id": "prod_trans_8at",
+    "name": "8速自动变速箱",
+    "model": "8AT-Sport"
+  },
+  "steps": [
+    {
+      "stepNo": 1,
+      "name": "外观检查",
+      "description": "检查变速箱壳体外观，确认无磕碰、划伤、锈蚀等缺陷。检查各接口是否完好。",
+      "duration": 5,
+      "tools": [
+        "手电筒",
+        "检查镜"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 2,
+      "name": "油液加注",
+      "description": "加注指定型号ATF变速箱油至标准液位，检查油液颜色和气味。",
+      "duration": 10,
+      "tools": [
+        "油液加注机",
+        "液位检测棒"
+      ],
+      "materials": [
+        "ATF变速箱油 Type-IV"
+      ],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 3,
+      "name": "静态密封测试",
+      "description": "对变速箱进行静态气压测试，检测各结合面和油封密封性。",
+      "duration": 15,
+      "tools": [
+        "气密测试台",
+        "压力表"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 4,
+      "name": "换挡功能测试",
+      "description": "在测试台上模拟各档位换挡，检测换挡响应时间和平顺性。",
+      "duration": 20,
+      "tools": [
+        "变速箱测试台",
+        "诊断电脑"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 5,
+      "name": "液压系统测试",
+      "description": "测试各档位下的油压值，确保在规定范围内。",
+      "duration": 15,
+      "tools": [
+        "液压测试仪",
+        "压力传感器"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    },
+    {
+      "stepNo": 6,
+      "name": "噪音振动测试",
+      "description": "在各转速下测试变速箱运转噪音和振动水平。",
+      "duration": 10,
+      "tools": [
+        "噪音计",
+        "振动分析仪"
+      ],
+      "materials": [],
+      "images": [],
+      "videos": []
+    }
+  ],
+  "attachments": [
+    {
+      "type": "document",
+      "name": "8AT测试规范",
+      "path": "docs/8at_test_spec.pdf"
+    }
+  ],
+  "createdAt": "2024-02-20T09:00:00.000Z",
+  "updatedAt": "2024-05-15T11:20:00.000Z"
+}
