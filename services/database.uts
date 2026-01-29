@@ -198,6 +198,23 @@ function createTables(): Promise<void> {
 			)
 		`
 		
+		const createAssetsTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_assets (
+				id TEXT PRIMARY KEY,
+				type TEXT,
+				data TEXT,
+				mime_type TEXT
+			)
+		`
+		
+		const createIconConfigTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_icon_config (
+				node_type TEXT PRIMARY KEY,
+				asset_id TEXT,
+				fallback TEXT
+			)
+		`
+		
 		// #ifdef APP-ANDROID
 		if (dbInstance != null) {
 			try {
@@ -205,6 +222,10 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL(createStepTableSQL)
 				dbInstance!.execSQL(createAttachmentTableSQL)
 				dbInstance!.execSQL(createPackageTableSQL)
+				
+				// Assets and Icon Config Tables
+				dbInstance!.execSQL(createAssetsTableSQL)
+				dbInstance!.execSQL(createIconConfigTableSQL)
 				
 				// Dynamic Tab System Tables
 				dbInstance!.execSQL(createTabGroupsTableSQL)
@@ -388,7 +409,7 @@ export function endTransaction(): void {
 
 // #ifdef WEB
 // Web 端数据库版本，变更需增加版本号
-const WEB_DB_VERSION: number = 2
+const WEB_DB_VERSION: number = 3
 
 /**
  * 初始化 IndexedDB（Web端）
@@ -456,6 +477,16 @@ function initIndexedDB(): Promise<void> {
 				// 导入记录表
 				if (!db.objectStoreNames.contains('t_import_package')) {
 					db.createObjectStore('t_import_package', { keyPath: 'id', autoIncrement: true })
+				}
+				
+				// 静态资源表 (V3)
+				if (!db.objectStoreNames.contains('t_assets')) {
+					db.createObjectStore('t_assets', { keyPath: 'id' })
+				}
+				
+				// 图标配置表 (V3)
+				if (!db.objectStoreNames.contains('t_icon_config')) {
+					db.createObjectStore('t_icon_config', { keyPath: 'node_type' })
 				}
 				
 				console.log('IndexedDB Object Stores 创建/更新完成')

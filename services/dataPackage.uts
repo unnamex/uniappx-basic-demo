@@ -676,6 +676,7 @@ function extractAndParseWeb(
 			let tabs: TabConfig[] = []
 			let components: ComponentConfig[] = []
 			let records: DataRecord[] = []
+			let iconConfig: UTSJSONObject | null = null
 			
 			if (isV2 && manifest.files != null) {
 				// V2: 从分离文件中读取
@@ -736,6 +737,16 @@ function extractAndParseWeb(
 						console.log('Web: Loaded records:', records.length);
 					} else {
 						console.warn('Web: records file not found:', files.records)
+					}
+				}
+				
+				// 加载图标配置（图标文件在 static/icons/ 目录，数据包只存配置）
+				if (files.icons != null) {
+					const iconsFile = findZipFile(files.icons)
+					if (iconsFile != null) {
+						const content = await iconsFile.async("string")
+						iconConfig = JSON.parse(content) as UTSJSONObject
+						console.log('Web: Loaded icons config');
 					}
 				}
 			} else {
@@ -805,6 +816,7 @@ function extractAndParseWeb(
 				await webClearStore('meta_components')
 				await webClearStore('data_records')
 				await webClearStore('t_process')
+				await webClearStore('t_icon_config')
 				console.log('Web: Old data cleared');
 				
 				let uiConfigCount = 0
@@ -831,6 +843,22 @@ function extractAndParseWeb(
 				for (const r of records) {
 					await webPutData('data_records', r)
 					uiConfigCount++
+				}
+				
+				// 保存图标配置（只存配置，图标文件在 static/icons/）
+				if (iconConfig != null) {
+					const nodeIcons = iconConfig['nodeIcons'] as UTSJSONObject
+					if (nodeIcons != null) {
+						for (const nodeType of Object.keys(nodeIcons)) {
+							const cfg = nodeIcons[nodeType] as UTSJSONObject
+							await webPutData('t_icon_config', {
+								node_type: nodeType,
+								icon_name: cfg['icon'] ?? nodeType,
+								fallback: cfg['fallback'] ?? ''
+							})
+						}
+					}
+					console.log('Web: Saved icon config');
 				}
 				
 				// 保存工艺数据

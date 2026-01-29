@@ -152,7 +152,7 @@
 <script setup lang="uts">
 	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
 	// #ifdef WEB
-	import { webGetAll, webGetByIndex, webGetCount } from '@/services/database.uts'
+	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database.uts'
 	// #endif
 	import { importPackage } from '@/services/dataPackage.uts'
 	import { clearAllProcesses } from '@/services/processService.uts'
@@ -207,6 +207,12 @@
 		await initData()
 	})
 	
+	onShow(async () => {
+		// 每次页面显示时检查并刷新数据
+		// console.log('Page Show')
+		await initData()
+	})
+	
 	const initData = async () => {
 		// #ifdef WEB
 		// Web: Check if data exists in IndexedDB
@@ -230,12 +236,64 @@
 		}
 	}
 	
+	// 重置数据 - 只清空数据库存储
+	const resetData = async () => {
+		try {
+			uni.showLoading({ title: '重置中...' })
+			
+			// #ifdef WEB
+			console.log('Resetting all data...')
+			await webClearStore('meta_tab_groups')
+			await webClearStore('meta_tabs')
+			await webClearStore('meta_components')
+			await webClearStore('data_records')
+			await webClearStore('t_process')
+			await webClearStore('t_icon_config')
+			console.log('All data cleared')
+			// #endif
+			
+			// #ifndef WEB
+			await executeSQL('DELETE FROM meta_tab_groups')
+			await executeSQL('DELETE FROM meta_tabs')
+			await executeSQL('DELETE FROM meta_components')
+			await executeSQL('DELETE FROM data_records')
+			await executeSQL('DELETE FROM t_process')
+			await executeSQL('DELETE FROM t_icon_config')
+			// #endif
+			
+			// 清空 UI 状态
+			leftGroup.value = null
+			topGroup.value = null
+			bottomGroup.value = null
+			tableData.value = []
+			selectedRow.value = null
+			iconConfigs.clear()
+			activeTabs.clear()
+			
+			uni.hideLoading()
+			uni.showToast({
+				title: '数据已清空',
+				icon: 'success'
+			})
+		} catch (e) {
+			uni.hideLoading()
+			console.error('Reset failed:', e)
+			uni.showToast({
+				title: '重置失败',
+				icon: 'none'
+			})
+		}
+	}
+	
 	const loadLeftPanel = async () => {
 		// Load the "Management" group for the left panel
 		// Based on groups.json, id is 'group_process_mgmt'
 		const group = await loadGroup('group_process_mgmt')
 		if (group != null) {
 			leftGroup.value = group
+			
+			// Load icon configurations first
+			await loadIconConfigs()
 			
 			// Load initial data for components in this group (e.g. the Tree)
 			await loadDataForGroup(group)
@@ -311,21 +369,55 @@
 		return data
 	}
 	
+	// 图标配置缓存 (node_type -> { icon_name, fallback })
+	const iconConfigs = reactive(new Map<string, UTSJSONObject>())
+	
+	// 加载图标配置
+	const loadIconConfigs = async () => {
+		// #ifdef WEB
+		try {
+			const configs = await webGetAll('t_icon_config')
+			for (const cfg of configs) {
+				const nodeType = cfg['node_type'] as string
+				iconConfigs.set(nodeType, cfg as UTSJSONObject)
+			}
+			console.log('Loaded icon configs:', iconConfigs.size)
+		} catch (e) {
+			console.error('Failed to load icon configs:', e)
+		}
+		// #endif
+	}
+	
+	// 获取图标路径（基于 static/icons/ 目录）
+	const getIconPath = (iconName: string): string => {
+		return `/static/icons/${iconName}.svg`
+	}
+	
 	// 为节点添加显示字段（图标+名称，资源计数标签）
 	const enrichNodeForDisplay = (node: UTSJSONObject): UTSJSONObject => {
-		// 获取图标，默认根据类型设置
-		let icon = node['icon'] as string | null
-		if (icon == null) {
-			const nodeType = node['type'] as string
-			if (nodeType == 'process') icon = '📋'
-			else if (nodeType == 'procedure') icon = '🔧'
-			else if (nodeType == 'step') icon = '⚙️'
-			else icon = '📄'
+		// 获取图标配置
+		let fallbackEmoji = '📄'
+		let iconName = 'default'
+		
+		const nodeType = node['type'] as string
+		const cfg = iconConfigs.get(nodeType) ?? iconConfigs.get('default')
+		
+		if (cfg != null) {
+			iconName = cfg['icon_name'] as string ?? nodeType
+			fallbackEmoji = cfg['fallback'] as string ?? '📄'
+		} else {
+			// 默认配置
+			if (nodeType == 'process') { iconName = 'process'; fallbackEmoji = '📋' }
+			else if (nodeType == 'procedure') { iconName = 'procedure'; fallbackEmoji = '🔧' }
+			else if (nodeType == 'step') { iconName = 'step'; fallbackEmoji = '⚙️' }
 		}
 		
-		// 生成显示名称: 图标 + 名称
+		// 存储图标路径（用于需要显示图片的场景）
+		node['iconPath'] = getIconPath(iconName)
+		
+		// 生成显示名称: emoji + 名称（表格文本列使用）
 		const name = node['name'] as string
-		node['displayName'] = `${icon} ${name}`
+		node['displayName'] = `${fallbackEmoji} ${name}`
 		
 		// 生成资源计数标签: #(数量)
 		const resourceCount = node['resourceCount']
@@ -655,26 +747,6 @@
 		*/
 	}
 	
-	const resetData = async () => {
-		statusMessage.value = 'Resetting...'
-		
-		// 1. Clear UI tables
-		await executeSQL("DELETE FROM meta_tab_groups")
-		await executeSQL("DELETE FROM meta_tabs")
-		await executeSQL("DELETE FROM meta_components")
-		await executeSQL("DELETE FROM data_records")
-		
-		// 2. Clear Process tables
-		await clearAllProcesses()
-		
-		uni.showToast({ title: 'Data cleared' })
-		topGroup.value = null
-		bottomGroup.value = null
-		
-		// 3. Re-init to trigger generation
-		await initData()
-	}
-
 </script>
 
 <style>

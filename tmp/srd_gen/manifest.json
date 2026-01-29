@@ -1,16 +1,15 @@
 {
+  "name": "SRD Data Package",
   "version": "2.0",
-  "exportTime": "2024-06-29T10:00:00.000Z",
-  "source": "SRD-Standard-Generator",
-  "description": "工艺树联动示例数据包 - 单工艺树表结构",
+  "description": "Standard Resource Data package with UI config and process data",
   "files": {
     "groups": "ui/groups.json",
     "tabs": "ui/tabs.json",
     "components": "ui/components.json",
+    "icons": "ui/icons.json",
     "records": "data/records.json",
     "processes": [
       "processes/proc_v8_engine.json"
     ]
-  },
-  "checksum": "sha256-v2-single-process"
+  }
 }
