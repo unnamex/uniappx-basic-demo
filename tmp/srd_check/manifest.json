@@ -2,15 +2,16 @@
   "version": "2.0",
   "exportTime": "2024-06-29T10:00:00.000Z",
   "source": "SRD-Standard-Generator",
-  "description": "工艺树联动示例数据包 - 单工艺树表结构",
+  "description": "工艺树联动示例数据包 - 配置与数据分离架构",
   "files": {
     "groups": "ui/groups.json",
     "tabs": "ui/tabs.json",
     "components": "ui/components.json",
     "records": "data/records.json",
     "processes": [
-      "processes/proc_v8_engine.json"
+      "processes/proc_v8_engine.json",
+      "processes/proc_8at_trans.json"
     ]
   },
-  "checksum": "sha256-v2-single-process"
+  "checksum": "sha256-v2-separated"
 }

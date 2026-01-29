@@ -169,7 +169,11 @@
 						id = `${parentId}_${index}`
 					}
 					
-					const children = item["children"] as UTSJSONObject[] | null
+					const childrenRaw = item["children"]
+					let children: UTSJSONObject[] | null = null
+					if (childrenRaw != null && Array.isArray(childrenRaw)) {
+						children = childrenRaw as UTSJSONObject[]
+					}
 					const hasChildren = children != null && children.length > 0
 					
 					const row : TableRow = {
@@ -414,13 +418,10 @@
 		width: 120rpx;
 		justify-content: center;
 		align-items: center;
-		background-color: #F5F7FA; /* Match header background to handle transparency overlaps */
-		/* border-left-width: 1px;
-		border-left-style: solid;
-		border-left-color: #EBEEF5; */ /* Optional: Remove border if desired for floating look, keeping it for separation */
-		z-index: 20;
-		/* Add shadow or border to distinguish if no border-left */
-		border-left: 1px solid #EBEEF5; 
+		background-color: #F5F7FA;
+		z-index: 100;
+		border-left: 1px solid #dcdfe6;
+		box-shadow: -2px 0 5px rgba(0,0,0,0.05);
 	}
 	
 	.header-action-hover {
@@ -455,6 +456,7 @@
 		padding-left: 20rpx;
 		padding-right: 40rpx; /* Align with header */
 		overflow: hidden;
+		flex-shrink: 0; 
 	}
 	
 	.cell-content-wrapper {

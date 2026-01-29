@@ -9,22 +9,37 @@ import { ProcessInfo } from '@/types/process'
  */
 export type PackageManifest = {
 	version: string
-	exportTime: string
-	source: string
-	description: string
+	exportTime?: string
+	source?: string
+	description?: string
 	
-	// UI 配置数据
-	groups: TabGroup[]
-	tabs: TabConfig[]
-	components: ComponentConfig[] 
+	// === V2 模式: 分离文件引用 ===
+	files?: ManifestFileRefs
+	
+	// === V1 兼容模式: 内联数据 ===
+	// UI 配置数据 (V1内联 或 从文件加载后填充)
+	groups?: TabGroup[]
+	tabs?: TabConfig[]
+	components?: ComponentConfig[] 
 	
 	// 通用数据记录
-	records: DataRecord[]
+	records?: DataRecord[]
 	
-	// 工艺数据 (仅引用文件名或包含简要信息，详细信息在独立文件中)
-	processFiles: string[] 
+	// 工艺数据文件引用
+	processFiles?: string[] 
 	
-	checksum: string
+	checksum?: string
+}
+
+/**
+ * V2 分离文件引用
+ */
+export type ManifestFileRefs = {
+	groups?: string      // ui/groups.json
+	tabs?: string        // ui/tabs.json
+	components?: string  // ui/components.json
+	records?: string     // data/records.json
+	processes?: string[] // processes/*.json
 }
 
 /**

@@ -1,0 +1,190 @@
+[
+  {
+    "record_id": "rec_proc_1",
+    "component_id": "comp_process_table",
+    "data": {
+      "code": "ASM-ENG-V8",
+      "name": "V8发动机总装工艺",
+      "version": "2.1.0",
+      "status": "已发布",
+      "productModel": "V8-T-2024"
+    }
+  },
+  {
+    "record_id": "rec_proc_2",
+    "component_id": "comp_process_table",
+    "data": {
+      "code": "TST-TRANS-8AT",
+      "name": "8AT变速箱测试工艺",
+      "version": "1.5.0",
+      "status": "已发布",
+      "productModel": "8AT-Sport"
+    }
+  },
+  {
+    "record_id": "rec_proc_3",
+    "component_id": "comp_process_table",
+    "data": {
+      "code": "INSP-CHASSIS",
+      "name": "底盘检测工艺",
+      "version": "1.0.0",
+      "status": "审批中",
+      "productModel": "CHS-2024"
+    }
+  },
+  {
+    "record_id": "rec_step_1",
+    "component_id": "comp_process_steps",
+    "data": {
+      "title": "步骤1: 缸体预处理",
+      "工序编号": "S001",
+      "描述": "清洁缸体表面，检查铸造缺陷",
+      "标准工时": "5分钟",
+      "所需工具": "清洁剂、放大镜、手电筒"
+    }
+  },
+  {
+    "record_id": "rec_step_2",
+    "component_id": "comp_process_steps",
+    "data": {
+      "title": "步骤2: 活塞安装",
+      "工序编号": "S002",
+      "描述": "按顺序安装活塞环和活塞",
+      "标准工时": "15分钟",
+      "所需工具": "活塞环压缩器、橡皮锤"
+    }
+  },
+  {
+    "record_id": "rec_step_3",
+    "component_id": "comp_process_steps",
+    "data": {
+      "title": "步骤3: 曲轴安装",
+      "工序编号": "S003",
+      "描述": "安装主轴承盖，按规定扭矩紧固",
+      "标准工时": "20分钟",
+      "所需工具": "扭力扳手、轴承座定位工具"
+    }
+  },
+  {
+    "record_id": "rec_step_4",
+    "component_id": "comp_process_steps",
+    "data": {
+      "title": "步骤4: 缸盖安装",
+      "工序编号": "S004",
+      "描述": "安装缸垫和缸盖，按对角线顺序分三次紧固",
+      "标准工时": "25分钟",
+      "所需工具": "扭力扳手、缸盖定位销"
+    }
+  },
+  {
+    "record_id": "rec_info_1",
+    "component_id": "comp_process_info",
+    "data": {
+      "title": "工艺基本信息",
+      "工艺代码": "ASM-ENG-V8",
+      "工艺名称": "V8发动机总装工艺",
+      "版本号": "2.1.0",
+      "创建日期": "2024-01-15",
+      "最后更新": "2024-06-10"
+    }
+  },
+  {
+    "record_id": "rec_info_2",
+    "component_id": "comp_process_info",
+    "data": {
+      "title": "产品信息",
+      "产品型号": "V8-T-2024",
+      "产品名称": "V8涡轮增压发动机",
+      "适用车型": "豪华轿车系列",
+      "设计功率": "400HP"
+    }
+  },
+  {
+    "record_id": "rec_mat_1",
+    "component_id": "comp_materials_table",
+    "data": {
+      "materialCode": "MAT-001",
+      "materialName": "活塞组件",
+      "spec": "Φ86mm",
+      "unit": "套",
+      "quantity": "8"
+    }
+  },
+  {
+    "record_id": "rec_mat_2",
+    "component_id": "comp_materials_table",
+    "data": {
+      "materialCode": "MAT-002",
+      "materialName": "缸垫",
+      "spec": "V8专用",
+      "unit": "片",
+      "quantity": "2"
+    }
+  },
+  {
+    "record_id": "rec_mat_3",
+    "component_id": "comp_materials_table",
+    "data": {
+      "materialCode": "MAT-003",
+      "materialName": "主轴承",
+      "spec": "标准尺寸",
+      "unit": "套",
+      "quantity": "5"
+    }
+  },
+  {
+    "record_id": "rec_mat_4",
+    "component_id": "comp_materials_table",
+    "data": {
+      "materialCode": "MAT-004",
+      "materialName": "连杆螺栓",
+      "spec": "M10x1.25",
+      "unit": "个",
+      "quantity": "16"
+    }
+  },
+  {
+    "record_id": "rec_mat_5",
+    "component_id": "comp_materials_table",
+    "data": {
+      "materialCode": "MAT-005",
+      "materialName": "机油",
+      "spec": "5W-40",
+      "unit": "升",
+      "quantity": "8"
+    }
+  },
+  {
+    "record_id": "rec_qa_1",
+    "component_id": "comp_qa_collapse",
+    "data": {
+      "title": "外观检查",
+      "检测项目": "表面质量",
+      "检测方法": "目视检查",
+      "合格标准": "无裂纹、划痕、毛刺",
+      "检测频次": "100%"
+    }
+  },
+  {
+    "record_id": "rec_qa_2",
+    "component_id": "comp_qa_collapse",
+    "data": {
+      "title": "尺寸检测",
+      "检测项目": "关键尺寸",
+      "检测方法": "三坐标测量",
+      "合格标准": "公差±0.02mm",
+      "检测频次": "首件+抽检"
+    }
+  },
+  {
+    "record_id": "rec_qa_3",
+    "component_id": "comp_qa_collapse",
+    "data": {
+      "title": "气密性测试",
+      "检测项目": "密封性能",
+      "检测方法": "氦质谱检漏",
+      "合格标准": "泄漏率<1×10⁻⁶ Pa·m³/s",
+      "检测频次": "100%"
+    }
+  }
+]

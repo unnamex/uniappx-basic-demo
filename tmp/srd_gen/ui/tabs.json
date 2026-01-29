@@ -1,0 +1,68 @@
+[
+  {
+    "id": "left_panel",
+    "group_id": "group_process_mgmt",
+    "title": "工艺结构树",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_process_list",
+    "group_id": "group_process_mgmt",
+    "title": "工艺列表",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_proc_info",
+    "group_id": "group_process_view",
+    "title": "基本信息",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_proc_children",
+    "group_id": "group_process_view",
+    "title": "工序列表",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_procedure_info",
+    "group_id": "group_procedure_view",
+    "title": "工序详情",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_procedure_children",
+    "group_id": "group_procedure_view",
+    "title": "工步列表",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_step_info",
+    "group_id": "group_step_view",
+    "title": "操作说明",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_step_resources",
+    "group_id": "group_step_view",
+    "title": "资源列表",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_bottom_proc_ov",
+    "group_id": "group_bottom_proc",
+    "title": "概览",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_bottom_op_ov",
+    "group_id": "group_bottom_op",
+    "title": "概览",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_bottom_step_ov",
+    "group_id": "group_bottom_step",
+    "title": "说明",
+    "sort_order": 0
+  }
+]

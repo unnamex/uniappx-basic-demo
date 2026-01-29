@@ -1,0 +1,14 @@
+[
+  {
+    "id": "group_process_mgmt",
+    "name": "工艺管理",
+    "description": "工艺流程管理与监控",
+    "sort_order": 1
+  },
+  {
+    "id": "group_quality",
+    "name": "质量控制",
+    "description": "质检流程与标准",
+    "sort_order": 2
+  }
+]

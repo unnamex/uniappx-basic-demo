@@ -1,24 +1,27 @@
 <template>
-	<outsider-layout>
+	<outsider-layout 
+		:initLeftWidth="340" 
+		:minLeftWidth="50" 
+		:maxLeftWidth="800"
+		:initRightWidth="300"
+	>
 		<template #header>
 			<view class="header-container">
 				<view class="header-logo">
 					<text class="header-text">工艺预览 (Unified System)</text>
 				</view>
 				<view class="header-actions">
-					<button size="mini" @click="resetData">重置并生成测试数据</button>
+					<button size="mini" @click="resetData">重置</button>
 				</view>
 			</view>
 		</template>
 
 		<template #left>
 			<view class="left-panel">
-				<text class="panel-title">Data List</text>
 				<ux-table :data="tableData" :columns="columns" @row-click="handleRowClick"></ux-table>
 			</view>
 		</template>
-		
-		<!-- Main Top Area (Dynamic) -->
+		<!-- Main Top Area (Dynamic Group) -->
 		<view class="main-content-top">
 			<view v-if="topGroup != null" style="height: 100%; display: flex; flex-direction: column;">
 				<text class="title">{{ topGroup?.name }}</text>
@@ -32,43 +35,77 @@
 									<!-- Table Component -->
 									<view v-if="comp.type == 'table'" style="min-height: 200px;">
 										<ux-table 
-											:columns="getColumns(comp)" 
+											:columns="getColumnsFromConfig(comp.config)" 
 											:data="comp.data"
 										></ux-table>
 									</view>
 									
-									<!-- Collapse Component -->
-									<view v-else-if="comp.type == 'collapse'">
-										<ux-collapse :accordion="getCollapseConfig(comp)['accordion'] == true">
-											<ux-collapse-item 
-												v-for="(item, idx) in comp.data" 
-												:key="idx" 
-												:title="getString(item, 'title')" 
-												:name="idx"
-											>
-												<view class="collapse-content">
-													<text v-for="(val, key) in item" :key="key" class="kv-row">
-														{{key}}: {{val}}
-													</text>
-												</view>
-											</ux-collapse-item>
-										</ux-collapse>
+									<!-- Key-Value Component (Info Panel) -->
+									<view v-else-if="comp.type == 'key-value'" class="node-info-panel">
+										<text v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-row">
+											{{ field['label'] }}: {{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}
+										</text>
 									</view>
+									
+									<!-- Text Block Component -->
+									<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
+										<text class="info-desc">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无描述' }}</text>
+									</view>
+									
+									<!-- List Component -->
+									<view v-else-if="comp.type == 'list'" class="list-panel">
+										<view v-for="(item, idx) in comp.data" :key="idx" class="list-item-simple">
+											<text class="list-item-name">{{ item['text'] }}</text>
+										</view>
+										<text v-if="comp.data.length == 0" class="empty-hint">暂无数据</text>
+									</view>
+									
 								</view>
 							</view>
 						</scroll-view>
 					</ux-tab-pane>
 				</ux-tabs>
 			</view>
+			
 			<view v-else class="loading-state">
-				<text>No Configuration Loaded</text>
+				<text>请在左侧工艺树中选择节点查看详情</text>
 			</view>
 		</view>
 		
-		<!-- Main Bottom Area (Dynamic) -->
+		<!-- Main Bottom Area (Dynamic Group) -->
 		<template #main-bottom>
 			<view class="main-content-bottom">
-				<text>Bottom Area (Check Tabs above for details)</text>
+				<view v-if="bottomGroup != null" style="height: 100%; display: flex; flex-direction: column;">
+					<!-- 底部使用 Tabs 可选，或者直接显示第一个 Tab 的内容 -->
+					<view class="bottom-header">
+						<text class="bottom-title">{{ bottomGroup?.name }}</text>
+					</view>
+					
+					<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
+						<view v-if="bottomGroup!.tabs.length > 0" class="bottom-content">
+							<!-- 暂时只显示第一个 Tab 的所有组件 -->
+							<view v-for="comp in bottomGroup!.tabs[0].components" :key="comp.id" class="component-wrapper-simple">
+								<text class="comp-title-small" v-if="comp.title != ''">{{ comp.title }}</text>
+								
+								<!-- Key-Value Component -->
+								<view v-if="comp.type == 'key-value'" class="info-grid">
+									<view v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-item-small">
+										<text class="info-label-small">{{ field['label'] }}:</text>
+										<text class="info-val-small">{{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}</text>
+									</view>
+								</view>
+								
+								<!-- Text Block Component -->
+								<view v-else-if="comp.type == 'text-block'" class="text-block">
+									<text class="info-desc-small">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无内容' }}</text>
+								</view>
+							</view>
+						</view>
+					</scroll-view>
+				</view>
+				<view v-else class="no-selection">
+					<text>选择节点查看概览</text>
+				</view>
 			</view>
 		</template>
 
@@ -81,10 +118,32 @@
 			</view>
 		</template>
 		
-		<!-- Right Sidebar Bottom Area -->
+		<!-- Right Sidebar Bottom Area - 选中节点详情 -->
 		<template #right-bottom>
 			<view class="right-panel-bottom">
-				<text>Statues: {{ statusMessage }}</text>
+				<view v-if="selectedRow != null" class="selected-info">
+					<text class="info-title">{{ selectedRow['name'] }}</text>
+					<text class="info-type">类型: {{ getNodeTypeLabel(selectedRow['type'] as string) }}</text>
+					<text class="info-code">代码: {{ selectedRow['code'] }}</text>
+					
+					<view v-if="selectedRow['type'] == 'process'" class="info-details">
+						<text class="info-item">版本: {{ selectedRow['version'] }}</text>
+						<text class="info-item">状态: {{ selectedRow['status'] }}</text>
+					</view>
+					
+					<view v-else-if="selectedRow['type'] == 'procedure'" class="info-details">
+						<text class="info-item">工时: {{ selectedRow['duration'] }} 分钟</text>
+					</view>
+					
+					<view v-else-if="selectedRow['type'] == 'step'" class="info-details">
+						<text class="info-item">工时: {{ selectedRow['duration'] }} 分钟</text>
+						<text class="info-item desc-label">操作说明:</text>
+						<text class="info-desc">{{ selectedRow['description'] }}</text>
+					</view>
+				</view>
+				<view v-else class="no-selection">
+					<text>请在左侧工艺树中选择节点</text>
+				</view>
 			</view>
 		</template>
 	</outsider-layout>
@@ -127,66 +186,165 @@
 	}
 
 	// State
+	const leftGroup = ref<GroupVM | null>(null)
 	const topGroup = ref<GroupVM | null>(null)
 	const bottomGroup = ref<GroupVM | null>(null)
+	
 	const activeTabs = reactive(new Map<string, string>())
 	const statusMessage = ref('Ready')
 	
-	// Left panel static data
-	const tableData = ref([
-		{ id: 1, name: 'Sample Item 1', status: 'Active' },
-		{ id: 2, name: 'Sample Item 2', status: 'Pending' }
-	] as UTSJSONObject[])
-
+	// Left panel Tree Data (Ref to data in leftGroup for template compatibility)
+	const tableData = ref([] as UTSJSONObject[])
+	// 树表列配置 - 将从数据包中加载，此处为默认值
 	const columns = ref([
-		{ label: 'Name', prop: 'name', width: 160 },
-		{ label: 'Status', prop: 'status', width: 100 }
+		{ label: '名称', prop: 'displayName', width: 200 },
+		{ label: '资源', prop: 'resourceLabel', width: 220 }
 	] as UTSJSONObject[])
-	
 	const selectedRow = ref(null as UTSJSONObject | null)
 
 	onLoad(async () => {
-		console.log('Page Load')
+		// console.log('Page Load')
 		await initData()
 	})
 	
 	const initData = async () => {
-		// 1. Init DB
-		await initDatabase()
-		
-		// 2. Check if data exists
-		let count = 0
 		// #ifdef WEB
-		try {
-			count = await webGetCount('meta_tab_groups')
-			console.log('Web: meta_tab_groups count =', count)
-		} catch (e) {
-			console.error('Web count error', e)
-		}
+		// Web: Check if data exists in IndexedDB
+		await initDatabase()
+		const count = await webGetCount('meta_tab_groups')
 		// #endif
+		
 		// #ifndef WEB
+		// SQL: Check meta_tab_groups table
+		await initDatabase()
 		const res = await querySQL("SELECT count(*) as count FROM meta_tab_groups")
-		if (res.length > 0) {
-			count = res[0]['count'] as number
-		}
+		const count = res[0]['count'] as number
 		// #endif
 		
 		if (count == 0) {
-			statusMessage.value = 'No data found'
+			statusMessage.value = 'No data found. Please Reset & Import.'
+			// console.log('No data found, attempting to load default package if available...')
 		} else {
 			statusMessage.value = 'Data loaded from DB'
-			await loadUiGroups()
+			await loadLeftPanel()
 		}
 	}
-
 	
-	const loadUiGroups = async () => {
-		// Load the group defined in generator: 'group_process_mgmt'
-		topGroup.value = await loadGroup('group_process_mgmt')
-		
-		if (topGroup.value != null && topGroup.value!.tabs.length > 0) {
-			activeTabs.set(topGroup.value!.id, topGroup.value!.tabs[0].id)
+	const loadLeftPanel = async () => {
+		// Load the "Management" group for the left panel
+		// Based on groups.json, id is 'group_process_mgmt'
+		const group = await loadGroup('group_process_mgmt')
+		if (group != null) {
+			leftGroup.value = group
+			
+			// Load initial data for components in this group (e.g. the Tree)
+			await loadDataForGroup(group)
+			
+			// Bind to template refs for compatibility
+			if (group.tabs.length > 0 && group.tabs[0].components.length > 0) {
+				const treeComp = group.tabs[0].components[0]
+				if (treeComp.type == 'process-tree') {
+					tableData.value = treeComp.data
+					columns.value = getColumnsFromConfig(treeComp.config)
+					// console.log('Left panel tree loaded:', tableData.value.length, 'nodes')
+				}
+			}
 		}
+	}
+	
+	// 通用：为 Group 中的组件加载初始数据 (用于 static data sources 如全量表)
+	const loadDataForGroup = async (group: GroupVM) => {
+		for (const tab of group.tabs) {
+			for (const comp of tab.components) {
+				const config = comp.config as UTSJSONObject
+				const dataSource = config['dataSource']
+				
+				// 检查是否配置了数据源
+				if (dataSource != null) {
+					// Case: { "type": "table", "name": "t_process" }
+					if (typeof dataSource == 'object') {
+						const dsObj = dataSource as UTSJSONObject
+						const dsType = dsObj['type'] as string
+						const dsName = dsObj['name'] as string
+						
+						if (dsType == 'table' && dsName != '') {
+							comp.data = await loadTableData(dsName)
+							
+							// 特殊处理：如果是工艺树，需要 enrichment
+							if (comp.type == 'process-tree') {
+								comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// 加载整表数据
+	const loadTableData = async (tableName: string): Promise<UTSJSONObject[]> => {
+		let data: UTSJSONObject[] = []
+		// #ifdef WEB
+		try {
+			const rows = await webGetAll(tableName)
+			// Web 存储的是对象，直接转换
+			data = rows.map((p: any): UTSJSONObject => p as UTSJSONObject)
+		} catch (e) { /* console.error('Web load table failed:', tableName, e) */ }
+		// #endif
+		
+		// #ifndef WEB
+		try {
+			const rows = await querySQL(`SELECT * FROM ${tableName}`)
+			data = rows.map((p: UTSJSONObject): UTSJSONObject => {
+				// SQL 中 children/data 等字段可能是字符串，需要尝试解析
+				const content = p['data']
+				if (content != null && typeof content == 'string') {
+					try {
+						return JSON.parse(content as string) as UTSJSONObject
+					} catch(e) { return p }
+				}
+				return p
+			})
+		} catch (e) { console.error('SQL load table failed:', tableName, e) }
+		// #endif
+		
+		return data
+	}
+	
+	// 为节点添加显示字段（图标+名称，资源计数标签）
+	const enrichNodeForDisplay = (node: UTSJSONObject): UTSJSONObject => {
+		// 获取图标，默认根据类型设置
+		let icon = node['icon'] as string | null
+		if (icon == null) {
+			const nodeType = node['type'] as string
+			if (nodeType == 'process') icon = '📋'
+			else if (nodeType == 'procedure') icon = '🔧'
+			else if (nodeType == 'step') icon = '⚙️'
+			else icon = '📄'
+		}
+		
+		// 生成显示名称: 图标 + 名称
+		const name = node['name'] as string
+		node['displayName'] = `${icon} ${name}`
+		
+		// 生成资源计数标签: #(数量)
+		const resourceCount = node['resourceCount']
+		if (resourceCount != null) {
+			node['resourceLabel'] = `#(${resourceCount})`
+		} else {
+			node['resourceLabel'] = ''
+		}
+		
+		// 递归处理子节点
+		const children = node['children']
+		if (children != null && Array.isArray(children)) {
+			const childList = children as UTSJSONObject[]
+			for (let i = 0; i < childList.length; i++) {
+				enrichNodeForDisplay(childList[i])
+			}
+		}
+		
+		return node
 	}
 	
 	const loadGroup = async (groupId: string): Promise<GroupVM | null> => {
@@ -348,12 +506,153 @@
 		return comp.config as UTSJSONObject
 	}
 	
-	const getString = (obj: UTSJSONObject, key: string): string => {
+	// Helper to get string safely
+	const getString = (obj: UTSJSONObject | null, key: string): string => {
+		if (obj == null) return ''
 		return obj[key]?.toString() ?? ''
 	}
 	
-	const handleRowClick = (row: UTSJSONObject) => {
+	const handleRowClick = async (row: UTSJSONObject) => {
 		selectedRow.value = row
+		// console.log('Row clicked:', row['id'], row['type'], row['name'])
+		
+		statusMessage.value = `选中: ${row['name']} (${row['type']})`
+		updateSelectedNodeInfo(row)
+		
+		// 根据节点类型动态加载对应的 Tab Group
+		const nodeType = row['type'] as string
+		let groupId = ''
+		if (nodeType == 'process') groupId = 'group_process_view'
+		else if (nodeType == 'procedure') groupId = 'group_procedure_view'
+		else if (nodeType == 'step') groupId = 'group_step_view'
+		
+		if (groupId != '') {
+			const group = await loadGroup(groupId)
+			if (group != null) {
+				// 将当前节点数据绑定到 Group 的组件中
+				bindDataToGroup(group, row)
+				topGroup.value = group
+				
+				// 默认选中第一个 Tab
+				if (!activeTabs.has(group.id) && group.tabs.length > 0) {
+					activeTabs.set(group.id, group.tabs[0].id)
+				}
+			}
+		}
+		
+		// 加载底部详情
+		let bottomGroupId = ''
+		if (nodeType == 'process') bottomGroupId = 'group_bottom_proc'
+		else if (nodeType == 'procedure') bottomGroupId = 'group_bottom_op'
+		else if (nodeType == 'step') bottomGroupId = 'group_bottom_step'
+		
+		if (bottomGroupId != '') {
+			const group = await loadGroup(bottomGroupId)
+			if (group != null) {
+				bindDataToGroup(group, row)
+				bottomGroup.value = group
+			}
+		}
+	}
+	
+	// 将节点数据绑定到 Group 中的各个组件
+	const bindDataToGroup = (group: GroupVM, node: UTSJSONObject) => {
+		for (let i = 0; i < group.tabs.length; i++) {
+			const tab = group.tabs[i]
+			for (let j = 0; j < tab.components.length; j++) {
+				const comp = tab.components[j]
+				const config = comp.config as UTSJSONObject
+				const dataSource = config['dataSource'] as string
+				
+				// 根据 dataSource 填充 comp.data
+				comp.data = [] // Reset
+				
+				if (dataSource == 'self') {
+					// 自身数据，作为单条记录放入数组
+					comp.data.push(node)
+				} else if (dataSource == 'children') {
+					// 子节点列表
+					const children = node['children']
+					if (children != null && Array.isArray(children)) {
+						const list = children as UTSJSONObject[]
+						// 确保子节点也有显示用字段
+						comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
+					}
+				} else if (dataSource == 'description') {
+					// 描述文本，包装成对象
+					const desc = node['description']
+					if (desc != null) {
+						const item = { text: desc }
+						comp.data.push(item)
+					}
+				} else if (dataSource == 'tools') {
+					// 工具列表
+					const tools = node['tools']
+					if (tools != null && Array.isArray(tools)) {
+						const list = tools as string[]
+						comp.data = list.map((t: string): UTSJSONObject => {
+							return { text: t }
+						})
+					}
+				} else if (dataSource == 'materials') {
+					// 物料列表
+					const materials = node['materials']
+					if (materials != null && Array.isArray(materials)) {
+						const list = materials as string[]
+						comp.data = list.map((m: string): UTSJSONObject => {
+							return { text: m }
+						})
+					}
+				}
+			}
+		}
+	}
+	
+	// 从 config 中提取 columns (用于表格)
+	const getColumnsFromConfig = (config: any): UTSJSONObject[] => {
+		if (config == null) return []
+		const confObj = config as UTSJSONObject
+		// 检查是否有 columns 字段 (新的结构)
+		if (confObj['columns'] != null) {
+			const cols = confObj['columns']
+			if (Array.isArray(cols)) return cols as UTSJSONObject[]
+		}
+		// 兼容旧结构 (config本身就是数组)
+		if (Array.isArray(config)) return config as UTSJSONObject[]
+		return []
+	}
+	
+	// 从 config 中提取 fields (用于 Key-Value)
+	const getFieldsFromConfig = (config: any): UTSJSONObject[] => {
+		if (config == null) return []
+		const confObj = config as UTSJSONObject
+		if (confObj['fields'] != null) {
+			const fields = confObj['fields']
+			if (Array.isArray(fields)) return fields as UTSJSONObject[]
+		}
+		return []
+	}
+	
+	// 获取节点类型的中文标签
+	const getNodeTypeLabel = (nodeType: string): string => {
+		if (nodeType == 'process') return '工艺'
+		if (nodeType == 'procedure') return '工序'
+		if (nodeType == 'step') return '工步'
+		return nodeType
+	}
+	
+	// 更新选中节点的详细信息 (仅用于日志)
+	const updateSelectedNodeInfo = (node: UTSJSONObject) => {
+		/*
+		const nodeType = node['type'] as string
+		if (nodeType == 'process') {
+			console.log('Selected process:', node['name'])
+		} else if (nodeType == 'procedure') {
+			console.log('Selected procedure:', node['name'])
+		} else if (nodeType == 'step') {
+			console.log('Selected step:', node['name'])
+		}
+		*/
 	}
 	
 	const resetData = async () => {
@@ -411,14 +710,9 @@
 		flex-direction: column;
 		height: 100%;
 		background-color: #fff;
+		min-width: 0;
 	}
 	
-	.panel-title {
-		padding: 10px;
-		font-weight: bold;
-		border-bottom: 1px solid #f0f0f0;
-	}
-
 	.main-content-top {
 		padding: 20px;
 		display: flex;
@@ -493,6 +787,188 @@
 		justify-content: center;
 		padding: 20px;
 		color: #999;
+	}
+	
+	/* 选中节点详情样式 */
+	.selected-info {
+		padding: 15px;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.info-title {
+		font-size: 18px;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 10px;
+	}
+	
+	.info-type {
+		font-size: 14px;
+		color: #666;
+		margin-bottom: 5px;
+	}
+	
+	.info-code {
+		font-size: 14px;
+		color: #888;
+		margin-bottom: 10px;
+	}
+	
+	.info-details {
+		padding-top: 10px;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #eee;
+	}
+	
+	.info-item {
+		font-size: 14px;
+		color: #555;
+		margin-bottom: 5px;
+	}
+	
+	.desc-label {
+		color: #666;
+		margin-top: 10px;
+	}
+	
+	.info-desc {
+		font-size: 14px;
+		color: #333;
+		line-height: 1.5;
+	}
+	
+	.no-selection {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 100%;
+		color: #999;
+		font-size: 14px;
+	}
+	
+	/* 中间区域节点信息样式 */
+	.node-info-panel {
+		padding: 15px;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.info-row {
+		font-size: 14px;
+		color: #333;
+		margin-bottom: 8px;
+	}
+	
+	.info-label {
+		font-size: 14px;
+		color: #666;
+		margin-top: 15px;
+		margin-bottom: 5px;
+	}
+	
+	/* 底部区域样式 */
+	.bottom-header {
+		padding-bottom: 5px;
+		border-bottom: 1px solid #eee;
+		margin-bottom: 5px;
+	}
+	
+	.bottom-title {
+		font-size: 16px;
+		font-weight: bold;
+		color: #333;
+	}
+	
+	.component-wrapper-simple {
+		padding: 5px 0;
+	}
+	
+	.comp-title-small {
+		font-size: 13px;
+		color: #999;
+		margin-bottom: 5px;
+	}
+	
+	.info-grid {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	
+	.info-item-small {
+		display: flex;
+		flex-direction: row;
+		margin-right: 20px;
+		margin-bottom: 5px;
+		align-items: center;
+	}
+	
+	.info-label-small {
+		font-size: 13px;
+		color: #888;
+		margin-right: 5px;
+	}
+	
+	.info-val-small {
+		font-size: 14px;
+		color: #333;
+		font-weight: 500;
+	}
+	
+	.info-desc-small {
+		font-size: 13px;
+		color: #666;
+		line-height: 1.4;
+	}
+	
+	/* 列表面板样式 */
+	.list-panel {
+		padding: 10px;
+	}
+	
+	.list-item {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 12px 15px;
+		background-color: #fff;
+		border-radius: 6px;
+		margin-bottom: 8px;
+		border: 1px solid #e8e8e8;
+	}
+	
+	.list-item-code {
+		font-size: 13px;
+		color: #888;
+		width: 120px;
+	}
+	
+	.list-item-name {
+		font-size: 14px;
+		color: #333;
+		flex: 1;
+	}
+	
+	.list-item-duration {
+		font-size: 13px;
+		color: #666;
+		width: 80px;
+	}
+	
+	.list-item-simple {
+		padding: 10px 15px;
+		background-color: #f9f9f9;
+		border-radius: 4px;
+		margin-bottom: 6px;
+	}
+	
+	.empty-hint {
+		text-align: center;
+		color: #999;
+		font-size: 14px;
+		padding: 20px;
 	}
 </style>
 

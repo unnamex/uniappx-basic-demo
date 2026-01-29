@@ -1,0 +1,100 @@
+[
+  {
+    "id": "comp_process_table",
+    "tab_id": "tab_process_list",
+    "type": "table",
+    "title": "工艺总览表",
+    "sort_order": 1,
+    "config": [
+      {
+        "label": "工艺代码",
+        "prop": "code",
+        "width": 120
+      },
+      {
+        "label": "工艺名称",
+        "prop": "name",
+        "width": 200
+      },
+      {
+        "label": "版本",
+        "prop": "version",
+        "width": 80
+      },
+      {
+        "label": "状态",
+        "prop": "status",
+        "width": 100
+      },
+      {
+        "label": "产品型号",
+        "prop": "productModel",
+        "width": 150
+      }
+    ]
+  },
+  {
+    "id": "comp_process_steps",
+    "tab_id": "tab_process_detail",
+    "type": "collapse",
+    "title": "工艺步骤详情",
+    "sort_order": 1,
+    "config": {
+      "accordion": true
+    }
+  },
+  {
+    "id": "comp_process_info",
+    "tab_id": "tab_process_detail",
+    "type": "collapse",
+    "title": "基本信息",
+    "sort_order": 2,
+    "config": {
+      "accordion": false
+    }
+  },
+  {
+    "id": "comp_materials_table",
+    "tab_id": "tab_materials",
+    "type": "table",
+    "title": "物料需求清单",
+    "sort_order": 1,
+    "config": [
+      {
+        "label": "物料编码",
+        "prop": "materialCode",
+        "width": 120
+      },
+      {
+        "label": "物料名称",
+        "prop": "materialName",
+        "width": 180
+      },
+      {
+        "label": "规格",
+        "prop": "spec",
+        "width": 120
+      },
+      {
+        "label": "单位",
+        "prop": "unit",
+        "width": 60
+      },
+      {
+        "label": "用量",
+        "prop": "quantity",
+        "width": 80
+      }
+    ]
+  },
+  {
+    "id": "comp_qa_collapse",
+    "tab_id": "tab_qa_standards",
+    "type": "collapse",
+    "title": "质检标准项",
+    "sort_order": 1,
+    "config": {
+      "accordion": true
+    }
+  }
+]

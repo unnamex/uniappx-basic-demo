@@ -1,0 +1,267 @@
+[
+  {
+    "id": "comp_process_tree",
+    "tab_id": "left_panel",
+    "type": "process-tree",
+    "title": "工艺树",
+    "sort_order": 0,
+    "config": {
+      "dataSource": {
+        "type": "table",
+        "name": "t_process"
+      },
+      "columns": [
+        {
+          "label": "名称",
+          "prop": "displayName",
+          "width": 400
+        },
+        {
+          "label": "资源",
+          "prop": "resourceLabel",
+          "width": 150
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_process_table",
+    "tab_id": "tab_process_list",
+    "type": "table",
+    "title": "工艺总览表",
+    "sort_order": 0,
+    "config": {
+      "dataSource": {
+        "type": "table",
+        "name": "t_process"
+      },
+      "columns": [
+        {
+          "label": "工艺代码",
+          "prop": "code",
+          "width": 200
+        },
+        {
+          "label": "工艺名称",
+          "prop": "name",
+          "width": 300
+        },
+        {
+          "label": "版本",
+          "prop": "version",
+          "width": 150
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_proc_info",
+    "tab_id": "tab_proc_info",
+    "type": "key-value",
+    "title": "工艺基本信息",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "self",
+      "fields": [
+        {
+          "key": "code",
+          "label": "工艺代码"
+        },
+        {
+          "key": "name",
+          "label": "工艺名称"
+        },
+        {
+          "key": "version",
+          "label": "版本"
+        },
+        {
+          "key": "status",
+          "label": "状态"
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_proc_list",
+    "tab_id": "tab_proc_children",
+    "type": "table",
+    "title": "工序列表",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "children",
+      "columns": [
+        {
+          "label": "代码",
+          "prop": "code",
+          "width": 150
+        },
+        {
+          "label": "名称",
+          "prop": "name",
+          "width": 300
+        },
+        {
+          "label": "时长(min)",
+          "prop": "duration",
+          "width": 150
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_procedure_info",
+    "tab_id": "tab_procedure_info",
+    "type": "key-value",
+    "title": "工序详情",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "self",
+      "fields": [
+        {
+          "key": "code",
+          "label": "工序代码"
+        },
+        {
+          "key": "name",
+          "label": "工序名称"
+        },
+        {
+          "key": "duration",
+          "label": "预计工时(min)"
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_procedure_list",
+    "tab_id": "tab_procedure_children",
+    "type": "table",
+    "title": "工步列表",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "children",
+      "columns": [
+        {
+          "label": "代码",
+          "prop": "code",
+          "width": 150
+        },
+        {
+          "label": "名称",
+          "prop": "name",
+          "width": 300
+        },
+        {
+          "label": "时长(min)",
+          "prop": "duration",
+          "width": 150
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_step_basic",
+    "tab_id": "tab_step_info",
+    "type": "key-value",
+    "title": "基本信息",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "self",
+      "fields": [
+        {
+          "key": "code",
+          "label": "工步代码"
+        },
+        {
+          "key": "name",
+          "label": "工步名称"
+        },
+        {
+          "key": "duration",
+          "label": "预计工时(min)"
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_step_desc",
+    "tab_id": "tab_step_info",
+    "type": "text-block",
+    "title": "操作描述",
+    "sort_order": 1,
+    "config": {
+      "dataSource": "description"
+    }
+  },
+  {
+    "id": "comp_step_tools",
+    "tab_id": "tab_step_resources",
+    "type": "list",
+    "title": "工具清单",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "tools"
+    }
+  },
+  {
+    "id": "comp_step_materials",
+    "tab_id": "tab_step_resources",
+    "type": "list",
+    "title": "物料清单",
+    "sort_order": 1,
+    "config": {
+      "dataSource": "materials"
+    }
+  },
+  {
+    "id": "comp_bottom_proc_info",
+    "tab_id": "tab_bottom_proc_ov",
+    "type": "key-value",
+    "title": "工艺概览",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "self",
+      "fields": [
+        {
+          "key": "name",
+          "label": "当前工艺"
+        },
+        {
+          "key": "status",
+          "label": "状态"
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_bottom_op_info",
+    "tab_id": "tab_bottom_op_ov",
+    "type": "key-value",
+    "title": "工序概览",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "self",
+      "fields": [
+        {
+          "key": "name",
+          "label": "当前工序"
+        },
+        {
+          "key": "duration",
+          "label": "时长"
+        }
+      ]
+    }
+  },
+  {
+    "id": "comp_bottom_step_info",
+    "tab_id": "tab_bottom_step_ov",
+    "type": "text-block",
+    "title": "工步说明",
+    "sort_order": 0,
+    "config": {
+      "dataSource": "description"
+    }
+  }
+]

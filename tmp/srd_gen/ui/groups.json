@@ -1,0 +1,44 @@
+[
+  {
+    "id": "group_process_mgmt",
+    "name": "工艺管理",
+    "type": "tab-group",
+    "description": "Left Panel Group"
+  },
+  {
+    "id": "group_process_view",
+    "name": "工艺视图",
+    "type": "tab-group",
+    "description": "Selected Process View (Middle)"
+  },
+  {
+    "id": "group_procedure_view",
+    "name": "工序视图",
+    "type": "tab-group",
+    "description": "Selected Procedure View (Middle)"
+  },
+  {
+    "id": "group_step_view",
+    "name": "工步视图",
+    "type": "tab-group",
+    "description": "Selected Step View (Middle)"
+  },
+  {
+    "id": "group_bottom_proc",
+    "name": "工艺详情",
+    "type": "tab-group",
+    "description": "Selected Process Details (Bottom)"
+  },
+  {
+    "id": "group_bottom_op",
+    "name": "工序详情",
+    "type": "tab-group",
+    "description": "Selected Procedure Details (Bottom)"
+  },
+  {
+    "id": "group_bottom_step",
+    "name": "工步详情",
+    "type": "tab-group",
+    "description": "Selected Step Details (Bottom)"
+  }
+]

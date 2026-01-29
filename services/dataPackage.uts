@@ -1,9 +1,9 @@
-import { ComponentConfig, DataRecord, ImportProgress, ImportResult, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
+import { ComponentConfig, DataRecord, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ProcessInfo } from '@/types/process'
 import { decryptPackage } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
 // #ifdef WEB
-import { webPutData } from '@/services/database'
+import { webPutData, webClearStore } from '@/services/database'
 // #endif
 
 
@@ -482,20 +482,15 @@ function extractAndParseAndroid(
 		const processes: ProcessInfo[] = []
 		let manifest: PackageManifest | null = null
 		
+		// 存储所有 JSON 文件内容，用于 V2 分离文件格式
+		const jsonFiles = new Map<string, string>()
+		
 		let entry = zipStream.getNextEntry()
-		
-		// 第一遍：寻找 manifest.json
-		// 注意：ZipInputStream 只能顺序读取，如果不重置流，需要一次性读完。
-		// 这里优化为：边读边存，如果是manifest先解析。
-		// 但由于流只能过一遍，我们可能需要先遍历一遍找 manifest (如果是必要的配置)，或者假定 manifest 在前。
-		// 更稳健的做法：读取所有 entry，根据名字分发。
-		
-		const entryMap = new Map<string, string>() // 暂存小文件的内容
 		
 		while (entry != null) {
 			const entryName = entry.getName()
 			
-			// 只读取 json 文件到内存，大文件(如果有)另行处理
+			// 只读取 json 文件到内存
 			if (entryName.endsWith('.json')) {
 				const outputStream = new ByteArrayOutputStream()
 				const buffer = new ByteArray(1024)
@@ -505,13 +500,7 @@ function extractAndParseAndroid(
 					len = zipStream.read(buffer)
 				}
 				const content = outputStream.toString('UTF-8')
-				
-				if (entryName == 'manifest.json') {
-					manifest = JSON.parse(content) as PackageManifest
-				} else if (entryName.startsWith('processes/')) {
-					const processInfo = JSON.parse(content) as ProcessInfo
-					processes.push(processInfo)
-				}
+				jsonFiles.set(entryName, content)
 			}
 			
 			entry = zipStream.getNextEntry()
@@ -519,15 +508,99 @@ function extractAndParseAndroid(
 		
 		zipStream.close()
 		
+		// 解析 manifest
+		const manifestContent = jsonFiles.get('manifest.json')
+		if (manifestContent != null) {
+			manifest = JSON.parse(manifestContent) as PackageManifest
+		}
+		
+		if (manifest == null) {
+			reject(new Error('数据包中未找到 manifest.json'))
+			return
+		}
+		
+		// 检测是 V2 (分离文件) 还是 V1 (内联) 格式
+		const isV2 = manifest.files != null
+		
+		// 解析 UI 配置
+		let groups: TabGroup[] = []
+		let tabs: TabConfig[] = []
+		let components: ComponentConfig[] = []
+		let records: DataRecord[] = []
+		
+		if (isV2 && manifest.files != null) {
+			// V2: 从分离文件中读取
+			const files = manifest.files
+			
+			if (files.groups != null) {
+				const content = jsonFiles.get(files.groups)
+				if (content != null) {
+					groups = JSON.parse(content) as TabGroup[]
+				}
+			}
+			
+			if (files.tabs != null) {
+				const content = jsonFiles.get(files.tabs)
+				if (content != null) {
+					tabs = JSON.parse(content) as TabConfig[]
+				}
+			}
+			
+			if (files.components != null) {
+				const content = jsonFiles.get(files.components)
+				if (content != null) {
+					components = JSON.parse(content) as ComponentConfig[]
+				}
+			}
+			
+			if (files.records != null) {
+				const content = jsonFiles.get(files.records)
+				if (content != null) {
+					records = JSON.parse(content) as DataRecord[]
+				}
+			}
+			
+			// 解析工艺文件
+			if (files.processes != null) {
+				for (const processPath of files.processes) {
+					const content = jsonFiles.get(processPath)
+					if (content != null) {
+						const processInfo = JSON.parse(content) as ProcessInfo
+						processes.push(processInfo)
+					}
+				}
+			}
+		} else {
+			// V1: 从 manifest 内联数据读取
+			groups = manifest.groups ?? []
+			tabs = manifest.tabs ?? []
+			components = manifest.components ?? []
+			records = manifest.records ?? []
+			
+			// V1: 解析 processes 目录下的文件
+			for (const [fileName, content] of jsonFiles) {
+				if (fileName.startsWith('processes/')) {
+					const processInfo = JSON.parse(content) as ProcessInfo
+					processes.push(processInfo)
+				}
+			}
+		}
+		
+		// 构建临时 manifest 用于保存 (兼容现有 saveUiConfigurationToDatabase)
+		const fullManifest: PackageManifest = {
+			version: manifest.version,
+			groups: groups,
+			tabs: tabs,
+			components: components,
+			records: records
+		}
+		
 		// 开始事务
 		beginTransaction()
 		
 		try {
 			// 保存 UI 配置
-			let uiConfigCount = 0
-			if (manifest != null) {
-				uiConfigCount = saveUiConfigurationToDatabase(manifest)
-			}
+			let uiConfigCount = saveUiConfigurationToDatabase(fullManifest)
 			
 			// 保存工艺数据
 			saveProcessesToDatabase(processes)
@@ -587,24 +660,126 @@ function extractAndParseWeb(
 				console.log('Web: manifest.json found');
 				const content = await manifestFile.async("string")
 				manifest = JSON.parse(content) as PackageManifest
+				console.log('Web: Manifest version:', manifest.version);
 			} else {
 				console.warn('Web: manifest.json NOT found');
+				reject(new Error("数据包中未找到 manifest.json"))
+				return
 			}
 			
-			// 2. 解析 processes - 遍历所有文件查找 processes 目录下的 JSON 文件
+			// 2. 检测是 V2 (分离文件) 还是 V1 (内联) 格式
+			const isV2 = manifest.files != null
+			console.log('Web: Package format:', isV2 ? 'V2 (separated)' : 'V1 (inline)');
+			
+			// 3. 读取 UI 配置
+			let groups: TabGroup[] = []
+			let tabs: TabConfig[] = []
+			let components: ComponentConfig[] = []
+			let records: DataRecord[] = []
+			
+			if (isV2 && manifest.files != null) {
+				// V2: 从分离文件中读取
+				const files = manifest.files
+				
+				// 辅助函数：从 ZIP 中查找文件（兼容正斜杠和反斜杠）
+				const findZipFile = (path: string): any => {
+					// 先尝试原路径
+					let file = zip.file(path)
+					if (file != null) return file
+					// 尝试替换斜杠
+					const altPath = path.replace(/\//g, '\\')
+					file = zip.file(altPath)
+					if (file != null) return file
+					// 尝试另一种替换
+					const altPath2 = path.replace(/\\/g, '/')
+					return zip.file(altPath2)
+				}
+				
+				if (files.groups != null) {
+					const groupsFile = findZipFile(files.groups)
+					if (groupsFile != null) {
+						const content = await groupsFile.async("string")
+						groups = JSON.parse(content) as TabGroup[]
+						console.log('Web: Loaded groups:', groups.length);
+					} else {
+						console.warn('Web: groups file not found:', files.groups)
+					}
+				}
+				
+				if (files.tabs != null) {
+					const tabsFile = findZipFile(files.tabs)
+					if (tabsFile != null) {
+						const content = await tabsFile.async("string")
+						tabs = JSON.parse(content) as TabConfig[]
+						console.log('Web: Loaded tabs:', tabs.length);
+					} else {
+						console.warn('Web: tabs file not found:', files.tabs)
+					}
+				}
+				
+				if (files.components != null) {
+					const componentsFile = findZipFile(files.components)
+					if (componentsFile != null) {
+						const content = await componentsFile.async("string")
+						components = JSON.parse(content) as ComponentConfig[]
+						console.log('Web: Loaded components:', components.length);
+					} else {
+						console.warn('Web: components file not found:', files.components)
+					}
+				}
+				
+				if (files.records != null) {
+					const recordsFile = findZipFile(files.records)
+					if (recordsFile != null) {
+						const content = await recordsFile.async("string")
+						records = JSON.parse(content) as DataRecord[]
+						console.log('Web: Loaded records:', records.length);
+					} else {
+						console.warn('Web: records file not found:', files.records)
+					}
+				}
+			} else {
+				// V1: 从 manifest 内联数据读取
+				groups = manifest.groups ?? []
+				tabs = manifest.tabs ?? []
+				components = manifest.components ?? []
+				records = manifest.records ?? []
+			}
+			
+			// 4. 解析 processes - 支持 V1 和 V2 两种路径来源
 			const processes: ProcessInfo[] = []
-			const allFiles = Object.keys(zip.files)
-			console.log('Web: All files in ZIP:', allFiles);
+			let processFilePaths: string[] = []
 			
-			// 查找 processes 目录下的文件（兼容正斜杠和反斜杠）
-			const processFileNames = allFiles.filter((name) => {
-				const normalized = name.replace(/\\/g, '/')
-				return normalized.startsWith('processes/') && normalized.endsWith('.json')
-			})
-			console.log('Web: Found process files count:', processFileNames.length);
+			if (isV2 && manifest.files != null && manifest.files.processes != null) {
+				processFilePaths = manifest.files.processes
+			} else if (manifest.processFiles != null) {
+				processFilePaths = manifest.processFiles
+			} else {
+				// 兼容：遍历 ZIP 查找 processes 目录
+				const allFiles = Object.keys(zip.files)
+				processFilePaths = allFiles.filter((name) => {
+					const normalized = name.replace(/\\/g, '/')
+					return normalized.startsWith('processes/') && normalized.endsWith('.json')
+				})
+			}
 			
-			for (const fileName of processFileNames) {
-				const file = zip.file(fileName)
+			console.log('Web: Process files to load:', processFilePaths.length, processFilePaths);
+			console.log('Web: All ZIP files:', Object.keys(zip.files));
+			
+			// 辅助函数：从 ZIP 中查找文件（兼容正斜杠和反斜杠） - 如在 isV2 块外需要，重新定义
+			const findProcessFile = (path: string): any => {
+				let file = zip.file(path)
+				if (file != null) return file
+				const altPath = path.replace(/\//g, '\\')
+				file = zip.file(altPath)
+				if (file != null) return file
+				const altPath2 = path.replace(/\\/g, '/')
+				return zip.file(altPath2)
+			}
+			
+			for (const filePath of processFilePaths) {
+				console.log('Web: Trying to load process file:', filePath);
+				const file = findProcessFile(filePath)
 				if (file != null && !file.dir) {
 					const content = await file.async("string")
 					try {
@@ -612,47 +787,50 @@ function extractAndParseWeb(
 						processes.push(process)
 						console.log('Web: Parsed process:', process.id);
 					} catch(e) {
-						console.error('Web: Failed to parse process file:', fileName, e);
+						console.error('Web: Failed to parse process file:', filePath, e);
 					}
+				} else {
+					console.warn('Web: Process file not found in ZIP:', filePath);
 				}
 			}
 			
-			// 3. 保存到数据库 (Web 使用 IndexedDB)
+			// 5. 保存到数据库 (Web 使用 IndexedDB)
 			console.log('Web: Saving to database via IndexedDB...');
 			
 			try {
+				// 先清空旧数据
+				console.log('Web: Clearing old data...');
+				await webClearStore('meta_tab_groups')
+				await webClearStore('meta_tabs')
+				await webClearStore('meta_components')
+				await webClearStore('data_records')
+				await webClearStore('t_process')
+				console.log('Web: Old data cleared');
+				
 				let uiConfigCount = 0
 				
 				// 保存 UI 分组
-				if (manifest != null && manifest.groups != null) {
-					for (const g of manifest.groups) {
-						await webPutData('meta_tab_groups', g)
-						uiConfigCount++
-					}
+				for (const g of groups) {
+					await webPutData('meta_tab_groups', g)
+					uiConfigCount++
 				}
 				
 				// 保存 Tabs
-				if (manifest != null && manifest.tabs != null) {
-					for (const t of manifest.tabs) {
-						await webPutData('meta_tabs', t)
-						uiConfigCount++
-					}
+				for (const t of tabs) {
+					await webPutData('meta_tabs', t)
+					uiConfigCount++
 				}
 				
 				// 保存组件
-				if (manifest != null && manifest.components != null) {
-					for (const c of manifest.components) {
-						await webPutData('meta_components', c)
-						uiConfigCount++
-					}
+				for (const c of components) {
+					await webPutData('meta_components', c)
+					uiConfigCount++
 				}
 				
 				// 保存数据记录
-				if (manifest != null && manifest.records != null) {
-					for (const r of manifest.records) {
-						await webPutData('data_records', r)
-						uiConfigCount++
-					}
+				for (const r of records) {
+					await webPutData('data_records', r)
+					uiConfigCount++
 				}
 				
 				// 保存工艺数据
@@ -694,50 +872,58 @@ function saveUiConfigurationToDatabase(manifest: PackageManifest): number {
 	
 	// 导入分组
 	const groups = manifest.groups
-	for (let i = 0; i < groups.length; i++) {
-		const g = groups[i]
-		executeSQL(
-			"INSERT OR REPLACE INTO meta_tab_groups (id, name, description, sort_order) VALUES (?, ?, ?, ?)",
-			[g.id, g.name, g.description, g.sort_order]
-		)
-		count++
+	if (groups != null) {
+		for (let i = 0; i < groups.length; i++) {
+			const g = groups[i]
+			executeSQL(
+				"INSERT OR REPLACE INTO meta_tab_groups (id, name, description, sort_order) VALUES (?, ?, ?, ?)",
+				[g.id, g.name, g.description, g.sort_order]
+			)
+			count++
+		}
 	}
 	
 	// 导入 Tab
 	const tabs = manifest.tabs
-	for (let i = 0; i < tabs.length; i++) {
-		const t = tabs[i]
-		executeSQL(
-			"INSERT OR REPLACE INTO meta_tabs (id, group_id, title, sort_order, visible_condition) VALUES (?, ?, ?, ?, ?)",
-			[t.id, t.group_id, t.title, t.sort_order, t.visible_condition]
-		)
-		count++
+	if (tabs != null) {
+		for (let i = 0; i < tabs.length; i++) {
+			const t = tabs[i]
+			executeSQL(
+				"INSERT OR REPLACE INTO meta_tabs (id, group_id, title, sort_order, visible_condition) VALUES (?, ?, ?, ?, ?)",
+				[t.id, t.group_id, t.title, t.sort_order, t.visible_condition]
+			)
+			count++
+		}
 	}
 	
 	// 导入组件
 	const components = manifest.components
-	for (let i = 0; i < components.length; i++) {
-		const c = components[i]
-		const configJson = c.config != null ? JSON.stringify(c.config) : ''
-		
-		executeSQL(
-			"INSERT OR REPLACE INTO meta_components (id, tab_id, type, title, config_json, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
-			[c.id, c.tab_id, c.type, c.title, configJson, c.sort_order]
-		)
-		count++
+	if (components != null) {
+		for (let i = 0; i < components.length; i++) {
+			const c = components[i]
+			const configJson = c.config != null ? JSON.stringify(c.config) : ''
+			
+			executeSQL(
+				"INSERT OR REPLACE INTO meta_components (id, tab_id, type, title, config_json, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+				[c.id, c.tab_id, c.type, c.title, configJson, c.sort_order]
+			)
+			count++
+		}
 	}
 	
 	// 导入数据记录
 	const records = manifest.records
-	for (let i = 0; i < records.length; i++) {
-		const r = records[i]
-		const dataJson = r.data != null ? JSON.stringify(r.data) : ''
-		
-		executeSQL(
-			"INSERT OR REPLACE INTO data_records (record_id, component_id, data_json, created_at) VALUES (?, ?, ?, ?)",
-			[r.record_id, r.component_id, dataJson, Date.now()]
-		)
-		count++
+	if (records != null) {
+		for (let i = 0; i < records.length; i++) {
+			const r = records[i]
+			const dataJson = r.data != null ? JSON.stringify(r.data) : ''
+			
+			executeSQL(
+				"INSERT OR REPLACE INTO data_records (record_id, component_id, data_json, created_at) VALUES (?, ?, ?, ?)",
+				[r.record_id, r.component_id, dataJson, Date.now()]
+			)
+			count++
+		}
 	}
 	
 	return count

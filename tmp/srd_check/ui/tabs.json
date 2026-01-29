@@ -1,0 +1,30 @@
+[
+  {
+    "id": "tab_process_list",
+    "group_id": "group_process_mgmt",
+    "title": "工艺列表",
+    "sort_order": 1,
+    "visible_condition": null
+  },
+  {
+    "id": "tab_process_detail",
+    "group_id": "group_process_mgmt",
+    "title": "工艺详情",
+    "sort_order": 2,
+    "visible_condition": null
+  },
+  {
+    "id": "tab_materials",
+    "group_id": "group_process_mgmt",
+    "title": "物料清单",
+    "sort_order": 3,
+    "visible_condition": null
+  },
+  {
+    "id": "tab_qa_standards",
+    "group_id": "group_quality",
+    "title": "质检标准",
+    "sort_order": 1,
+    "visible_condition": null
+  }
+]
