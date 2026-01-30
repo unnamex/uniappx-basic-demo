@@ -543,6 +543,7 @@
 	.outsider-right-top {
 		flex: none;
 		overflow: hidden;
+		width: 100%;
 	}
 	
 	.outsider-right-divider-horizontal {
@@ -556,11 +557,13 @@
 		flex: none;
 		border-top: 1px solid #ddd;
 		border-bottom: 1px solid #ddd;
+		width: 100%;
 	}
 	
 	.outsider-right-bottom {
 		flex: 1;
 		overflow: hidden;
+		width: 100%;
 	}
 	
 	.outsider-right-content-full {

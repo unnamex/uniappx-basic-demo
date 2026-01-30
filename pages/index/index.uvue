@@ -4,7 +4,7 @@
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
 		:initRightWidth="300"
-		:initRightTopHeight="400"
+		:initRightTopHeight="500"
 		:minRightTopHeight="200"
 	>
 		<template #header>
@@ -256,6 +256,7 @@
 </template>
 
 <script setup lang="uts">
+	import { onLoad, onShow } from '@dcloudio/uni-app'
 	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
 	// #ifdef WEB
 	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database.uts'
@@ -1048,9 +1049,20 @@
 	/**
 	 * 全屏图片加载完成
 	 */
-	const onFullscreenImageLoad = () => {
+	const onFullscreenImageLoad = (e: UniImageLoadEvent) => {
 		// 图片加载完成时可以进行尺寸适配等操作
-		// console.log('Fullscreen image loaded')
+		const width = e.detail.width
+		const height = e.detail.height
+		
+		if (width > 0 && height > 0) {
+			const ratio = width / height
+			// 如果是竖图 (高大于宽)，在宽屏/横屏显示模式下 aspectFit 会导致显示过小
+			// 自动放大以便看得更清楚，让宽度尽可能撑满
+			// 阈值设为 0.8 (即 height > 1.25 * width)
+			if (ratio < 0.8) {
+				imageScale.value = 1.5
+			}
+		}
 	}
 	
 	/**
@@ -1131,15 +1143,53 @@
 		font-weight: bold;
 		margin-bottom: 20px;
 	}
+	
+	/* 右侧面板顶部区域 - 确保充满容器 */
+	.right-panel-top {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		background-color: #fff;
+	}
+	
+	.right-header {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 8px 10px;
+		border-bottom: 1px solid #f0f0f0;
+		width: 100%;
+		box-sizing: border-box; /* 确保 padding 不会撑出容器 */
+	}
+	
+	.right-header-title {
+		font-size: 14px;
+		font-weight: 600;
+		color: #333;
+	}
+	
+	.right-header-btn {
+		padding: 4px;
+		border-radius: 4px;
+		background-color: #f5f5f5;
+		cursor: pointer;
+	}
+	
+	.btn-icon {
+		font-size: 14px;
+		color: #555;
+	}
 
 	.right-panel {
-		width: 300px;
+		width: 100%;
 		height: 100%;
-		border-left: 1px solid #e0e0e0;
 		background-color: #fff;
 		display: flex;
 		flex-direction: column;
 		padding: 10px;
+		box-sizing: border-box;
 	}
 
 	.right-content {
@@ -1149,11 +1199,11 @@
 	}
 	
 	.right-panel-bottom {
-		padding: 8px;
+		padding: 6px;
 		background-color: #f8f9fa;
 		display: flex;
 		flex-direction: column;
-		height: 140px;
+		height: 100px;
 		border-top: 1px solid #e0e0e0;
 	}
 	
@@ -1492,7 +1542,7 @@
 		flex: 1;
 		display: flex;
 		flex-direction: row;
-		padding: 16px;
+		padding: 8px;
 	}
 	
 	.fullscreen-preview {

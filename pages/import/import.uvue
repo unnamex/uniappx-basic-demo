@@ -240,6 +240,7 @@
 							message: e.message,
 							processCount: 0,
 							uiConfigCount: 0,
+							resourceCount: 0,
 							importTime: 0
 						}
 						
