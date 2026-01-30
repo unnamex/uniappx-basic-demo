@@ -1,7 +1,8 @@
 {
-  "name": "SRD Data Package",
-  "version": "2.0",
-  "description": "Standard Resource Data package with UI config and process data",
+  "name": "V8发动机装配工艺包",
+  "version": "3.0",
+  "description": "包含工艺数据、UI配置和多媒体资源的标准数据包",
+  "exportTime": "2026-01-30T10:00:00+08:00",
   "files": {
     "groups": "ui/groups.json",
     "tabs": "ui/tabs.json",
@@ -10,6 +11,7 @@
     "records": "data/records.json",
     "processes": [
       "processes/proc_v8_engine.json"
-    ]
+    ],
+    "assets": "assets/"
   }
 }

@@ -1,9 +1,15 @@
 import { ComponentConfig, DataRecord, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ProcessInfo } from '@/types/process'
+import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
+import { saveResource, extractResourcesFromNode, getAssetsBasePath } from '@/services/resourceService'
+// #ifdef APP-ANDROID
+import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
+// #endif
 // #ifdef WEB
 import { webPutData, webClearStore } from '@/services/database'
+import { storeBlobAndGetUrl, clearBlobUrls } from '@/services/resourceService'
 // #endif
 
 
@@ -485,12 +491,19 @@ function extractAndParseAndroid(
 		// 存储所有 JSON 文件内容，用于 V2 分离文件格式
 		const jsonFiles = new Map<string, string>()
 		
+		// V3: 资源文件保存路径映射（原始路径 -> 本地路径）
+		const savedAssetPaths = new Map<string, string>()
+		const assetsBasePath = getAssetsBasePath()
+		
+		// 确保资源目录存在
+		ensureDirectory(assetsBasePath)
+		
 		let entry = zipStream.getNextEntry()
 		
 		while (entry != null) {
 			const entryName = entry.getName()
 			
-			// 只读取 json 文件到内存
+			// 读取 json 文件到内存
 			if (entryName.endsWith('.json')) {
 				const outputStream = new ByteArrayOutputStream()
 				const buffer = new ByteArray(1024)
@@ -501,6 +514,33 @@ function extractAndParseAndroid(
 				}
 				const content = outputStream.toString('UTF-8')
 				jsonFiles.set(entryName, content)
+			}
+			// V3: 保存资源文件到沙盒
+			else if (isAssetFile(entryName)) {
+				try {
+					// 读取文件内容
+					const outputStream = new ByteArrayOutputStream()
+					const buffer = new ByteArray(4096)
+					let len = zipStream.read(buffer)
+					while (len > 0) {
+						outputStream.write(buffer, 0, len)
+						len = zipStream.read(buffer)
+					}
+					const fileBytes = outputStream.toByteArray()
+					
+					// 确定本地保存路径
+					const localPath = assetsBasePath + '/' + getRelativeAssetPath(entryName)
+					
+					// 写入文件
+					if (writeFileBytes(localPath, fileBytes)) {
+						savedAssetPaths.set(entryName, localPath)
+						console.log('Android: Saved asset:', entryName, '->', localPath)
+					} else {
+						console.warn('Android: Failed to save asset:', entryName)
+					}
+				} catch (e) {
+					console.error('Android: Error saving asset:', entryName, e)
+				}
 			}
 			
 			entry = zipStream.getNextEntry()
@@ -602,15 +642,69 @@ function extractAndParseAndroid(
 			// 保存 UI 配置
 			let uiConfigCount = saveUiConfigurationToDatabase(fullManifest)
 			
+		// V3: 从工艺数据中提取资源元数据
+			let resourceCount = 0
+			const allResources: ResourceItem[] = []
+			
+			for (const process of processes) {
+				const processObj = process as UTSJSONObject
+				const extractedResources = extractResourcesFromNode(processObj)
+				
+				for (const res of extractedResources) {
+					// 使用保存的路径映射来更新资源的本地路径
+					const originalPath = res.originalPath
+					const localPath = savedAssetPaths.get(originalPath)
+					
+					if (localPath != null) {
+						res.path = localPath
+					} else {
+						// 尝试使用替换斜杠的路径查找
+						const altPath = originalPath.replace(/\//g, '\\')
+						const altLocalPath = savedAssetPaths.get(altPath)
+						if (altLocalPath != null) {
+							res.path = altLocalPath
+						} else {
+							// 如果找不到已保存的文件，跳过该资源
+							console.warn('Android: Resource file not saved:', originalPath)
+							continue
+						}
+					}
+					
+					// 处理缩略图路径
+					if (res.thumbnail != '') {
+						const thumbPath = savedAssetPaths.get(res.thumbnail)
+						if (thumbPath != null) {
+							res.thumbnail = thumbPath
+						} else {
+							res.thumbnail = ''  // 缩略图未保存，清空
+						}
+					}
+					
+					allResources.push(res)
+				}
+			}
+			
 			// 保存工艺数据
 			saveProcessesToDatabase(processes)
-				.then(() => {
+				.then(async () => {
+					// 保存资源元数据
+					try {
+						for (const res of allResources) {
+							await saveResource(res)
+							resourceCount++
+						}
+						console.log('Android: Saved resources:', resourceCount)
+					} catch (e) {
+						console.error('Android: Save resources failed:', e)
+					}
+					
 					setTransactionSuccessful()
 					resolve({
 						success: true,
 						message: '导入成功',
 						processCount: processes.length,
 						uiConfigCount: uiConfigCount,
+						resourceCount: resourceCount,
 						importTime: 0
 					})
 				})
@@ -629,6 +723,55 @@ function extractAndParseAndroid(
 	} catch (e: any) {
 		reject(new Error('解析数据包失败：' + e.toString()))
 	}
+}
+
+/**
+ * 判断是否为资源文件
+ * @param entryName ZIP 条目名称
+ */
+function isAssetFile(entryName: string): boolean {
+	const normalized = entryName.toLowerCase().replace(/\\/g, '/')
+	
+	// 检查是否在 assets 目录下
+	if (!normalized.startsWith('assets/')) {
+		return false
+	}
+	
+	// 排除 icons 目录（图标使用项目静态资源）
+	if (normalized.includes('/icons/')) {
+		return false
+	}
+	
+	// 检查扩展名
+	const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
+	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv']
+	const audioExts = ['.mp3', '.wav', '.aac', '.ogg', '.m4a']
+	const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
+	
+	const allExts = imageExts.concat(videoExts).concat(audioExts).concat(docExts)
+	
+	for (const ext of allExts) {
+		if (normalized.endsWith(ext)) {
+			return true
+		}
+	}
+	
+	return false
+}
+
+/**
+ * 获取相对资源路径（去除 assets/ 前缀）
+ * @param entryName ZIP 条目名称
+ */
+function getRelativeAssetPath(entryName: string): string {
+	const normalized = entryName.replace(/\\/g, '/')
+	
+	// 移除 assets/ 前缀
+	if (normalized.startsWith('assets/')) {
+		return normalized.substring(7)
+	}
+	
+	return normalized
 }
 // #endif
 
@@ -866,13 +1009,88 @@ function extractAndParseWeb(
 					await webPutData('t_process', p)
 				}
 				
-				console.log('Web: DB Save success, UI configs:', uiConfigCount, ', Processes:', processes.length);
+				// V3: 提取并保存资源
+				let resourceCount = 0
+				
+				// 判断是否有 assets 目录配置
+				const hasAssets = isV2 && manifest.files != null && manifest.files.assets != null
+				const assetsPrefix = hasAssets ? (manifest.files!.assets ?? 'assets/') : 'assets/'
+				
+				// 清空旧的资源记录
+				await webClearStore('t_resources')
+				clearBlobUrls()
+				
+				// 从工艺数据中提取资源引用并处理
+				for (const process of processes) {
+					const processObj = process as UTSJSONObject
+					const extractedResources = extractResourcesFromNode(processObj)
+					
+					for (const res of extractedResources) {
+						// 在 ZIP 中查找资源文件
+						const resourcePath = res.originalPath
+						if (resourcePath == '') continue
+						
+						const resourceFile = findProcessFile(resourcePath)
+						if (resourceFile != null && !resourceFile.dir) {
+							try {
+								// 读取资源为 Blob
+								const blob = await resourceFile.async("blob")
+								
+								// 创建 Blob URL 作为本地路径 (当前会话有效)
+								const blobUrl = storeBlobAndGetUrl(res.id, blob)
+								res.path = blobUrl
+								
+								let thumbBlobData: Blob | null = null
+								
+								// 处理缩略图
+								if (res.thumbnail != '') {
+									const thumbFile = findProcessFile(res.thumbnail)
+									if (thumbFile != null) {
+										const thumbBlob = await thumbFile.async("blob")
+										const thumbUrl = storeBlobAndGetUrl(res.id + '_thumb', thumbBlob)
+										res.thumbnail = thumbUrl
+										thumbBlobData = thumbBlob
+									}
+								}
+								
+								// 保存资源元数据到数据库
+								// Web环境：同时保存 Blob 数据以实现持久化
+								await webPutData('t_resources', {
+									id: res.id,
+									node_id: res.nodeId,
+									type: res.type,
+									name: res.name,
+									path: res.path,
+									original_path: res.originalPath,
+									thumbnail: res.thumbnail,
+									duration: res.duration,
+									size: res.size,
+									description: res.description,
+									sort_order: res.sortOrder,
+									// 存储 Blob 数据，确保刷新后可用
+									blob_data: blob,
+									thumbnail_blob: thumbBlobData
+								})
+								
+								resourceCount++
+								console.log('Web: Extracted resource:', res.name);
+							} catch (e) {
+								console.warn('Web: Failed to extract resource:', resourcePath, e);
+							}
+						} else {
+							console.warn('Web: Resource file not found in ZIP:', resourcePath);
+						}
+					}
+				}
+				
+				console.log('Web: DB Save success, UI configs:', uiConfigCount, ', Processes:', processes.length, ', Resources:', resourceCount);
 				
 				resolve({
 					success: true,
 					message: '导入成功',
 					processCount: processes.length,
 					uiConfigCount: uiConfigCount,
+					resourceCount: resourceCount,
 					importTime: 0
 				})
 			} catch (e: any) {

@@ -1,0 +1,452 @@
+/**
+ * 资源服务
+ * @description 处理静态资源的存储、加载和管理
+ */
+
+import { ResourceItem, inferResourceType } from '@/types/resource'
+import { executeSQL, querySQL } from '@/services/database'
+// #ifdef WEB
+import { webPutData, webGetByIndex, webGetAll, webClearStore } from '@/services/database'
+// #endif
+
+/**
+ * 资源存储根目录名
+ */
+const ASSETS_DIR = 'assets'
+
+/**
+ * 获取应用资源存储基础路径
+ */
+export function getAssetsBasePath(): string {
+	// #ifdef APP-ANDROID
+	const context = UTSAndroid.getAppContext()
+	if (context != null) {
+		return context.getFilesDir().getAbsolutePath() + '/' + ASSETS_DIR
+	}
+	return ''
+	// #endif
+	
+	// #ifdef APP-HARMONY
+	// HarmonyOS 使用应用沙盒目录
+	return '/data/storage/el2/base/haps/entry/files/' + ASSETS_DIR
+	// #endif
+	
+	// #ifdef WEB
+	// Web 平台返回虚拟路径前缀，实际使用 Blob URL
+	return 'blob:assets'
+	// #endif
+}
+
+/**
+ * 初始化资源数据库表
+ */
+export async function initResourceTable(): Promise<void> {
+	// #ifndef WEB
+	await executeSQL(`
+		CREATE TABLE IF NOT EXISTS t_resources (
+			id TEXT PRIMARY KEY,
+			node_id TEXT NOT NULL,
+			type TEXT NOT NULL,
+			name TEXT NOT NULL,
+			path TEXT NOT NULL,
+			original_path TEXT,
+			thumbnail TEXT,
+			duration INTEGER DEFAULT 0,
+			size INTEGER DEFAULT 0,
+			description TEXT,
+			sort_order INTEGER DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	await executeSQL('CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)')
+	// #endif
+	
+	// Web 平台使用 IndexedDB，表在 database.uts 中初始化
+}
+
+/**
+ * 保存资源记录到数据库
+ * @param resource 资源项
+ */
+export async function saveResource(resource: ResourceItem): Promise<void> {
+	// #ifdef WEB
+	await webPutData('t_resources', {
+		id: resource.id,
+		node_id: resource.nodeId,
+		type: resource.type,
+		name: resource.name,
+		path: resource.path,
+		original_path: resource.originalPath,
+		thumbnail: resource.thumbnail,
+		duration: resource.duration,
+		size: resource.size,
+		description: resource.description,
+		sort_order: resource.sortOrder
+	})
+	// #endif
+	
+	// #ifndef WEB
+	await executeSQL(`
+		INSERT OR REPLACE INTO t_resources 
+		(id, node_id, type, name, path, original_path, thumbnail, duration, size, description, sort_order)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, [
+		resource.id,
+		resource.nodeId,
+		resource.type,
+		resource.name,
+		resource.path,
+		resource.originalPath,
+		resource.thumbnail,
+		resource.duration,
+		resource.size,
+		resource.description,
+		resource.sortOrder
+	])
+	// #endif
+}
+
+/**
+ * 批量保存资源记录
+ * @param resources 资源列表
+ */
+export async function saveResources(resources: ResourceItem[]): Promise<void> {
+	for (const res of resources) {
+		await saveResource(res)
+	}
+}
+
+/**
+ * 获取节点关联的资源列表
+ * @param nodeId 节点ID
+ * @returns 资源列表
+ */
+export async function getResourcesByNodeId(nodeId: string): Promise<ResourceItem[]> {
+	let result: ResourceItem[] = []
+	
+	// #ifdef WEB
+	try {
+		// Web 端使用 IndexedDB
+		// 暂时没有直接的索引查询封装，先获取全部再过滤（Web端数据量通常不大）
+		const allRows = await webGetAll('t_resources')
+		const rows = allRows.filter((r: any): boolean => r.node_id == nodeId)
+		
+		// 排序
+		rows.sort((a: any, b: any): number => {
+			const sa = a.sort_order as number ?? 0
+			const sb = b.sort_order as number ?? 0
+			return sa - sb
+		})
+		
+		result = rows.map((r: any): ResourceItem => {
+			let path = r.path as string
+			let thumbnail = r.thumbnail as string ?? ''
+			
+			// 如果有 Blob 数据，重新生成 URL (解决刷新后失效问题)
+			const blobData = r.blob_data
+			if (blobData != null && blobData instanceof Blob) {
+				path = storeBlobAndGetUrl(r.id as string, blobData as Blob)
+			}
+			
+			const thumbBlob = r.thumbnail_blob
+			if (thumbBlob != null && thumbBlob instanceof Blob && thumbnail != '') {
+				thumbnail = storeBlobAndGetUrl((r.id as string) + '_thumb', thumbBlob as Blob)
+			}
+			
+			return {
+				id: r.id as string,
+				type: r.type as string,
+				name: r.name as string,
+				path: path,
+				originalPath: r.original_path as string ?? '',
+				thumbnail: thumbnail,
+				duration: r.duration as number ?? 0,
+				size: r.size as number ?? 0,
+				description: r.description as string ?? '',
+				nodeId: r.node_id as string,
+				sortOrder: r.sort_order as number ?? 0
+			}
+		})
+	} catch (e) {
+		console.error('getResourcesByNodeId Web error:', e)
+	}
+	// #endif
+	
+	// #ifndef WEB
+	try {
+		const rows = await querySQL(
+			'SELECT * FROM t_resources WHERE node_id = ? ORDER BY sort_order',
+			[nodeId]
+		)
+		result = rows.map((r: UTSJSONObject): ResourceItem => {
+			return {
+				id: r['id'] as string,
+				type: r['type'] as string,
+				name: r['name'] as string,
+				path: r['path'] as string,
+				originalPath: r['original_path'] as string ?? '',
+				thumbnail: r['thumbnail'] as string ?? '',
+				duration: r['duration'] as number ?? 0,
+				size: r['size'] as number ?? 0,
+				description: r['description'] as string ?? '',
+				nodeId: r['node_id'] as string,
+				sortOrder: r['sort_order'] as number ?? 0
+			}
+		})
+	} catch (e) {
+		console.error('getResourcesByNodeId SQL error:', e)
+	}
+	// #endif
+	
+	return result
+}
+
+/**
+ * 获取所有资源记录
+ */
+export async function getAllResources(): Promise<ResourceItem[]> {
+	let result: ResourceItem[] = []
+	
+	// #ifdef WEB
+	try {
+		const rows = await webGetAll('t_resources')
+		result = rows.map((r: any): ResourceItem => {
+			let path = r.path as string
+			let thumbnail = r.thumbnail as string ?? ''
+			
+			// 如果有 Blob 数据，重新生成 URL
+			const blobData = r.blob_data
+			if (blobData != null && blobData instanceof Blob) {
+				path = storeBlobAndGetUrl(r.id as string, blobData as Blob)
+			}
+			
+			const thumbBlob = r.thumbnail_blob
+			if (thumbBlob != null && thumbBlob instanceof Blob && thumbnail != '') {
+				thumbnail = storeBlobAndGetUrl((r.id as string) + '_thumb', thumbBlob as Blob)
+			}
+			
+			return {
+				id: r.id as string,
+				type: r.type as string,
+				name: r.name as string,
+				path: path,
+				originalPath: r.original_path as string ?? '',
+				thumbnail: thumbnail,
+				duration: r.duration as number ?? 0,
+				size: r.size as number ?? 0,
+				description: r.description as string ?? '',
+				nodeId: r.node_id as string,
+				sortOrder: r.sort_order as number ?? 0
+			}
+		})
+	} catch (e) {
+		console.error('getAllResources error:', e)
+	}
+	// #endif
+	
+	// #ifndef WEB
+	try {
+		const rows = await querySQL('SELECT * FROM t_resources ORDER BY node_id, sort_order')
+		result = rows.map((r: UTSJSONObject): ResourceItem => {
+			return {
+				id: r['id'] as string,
+				type: r['type'] as string,
+				name: r['name'] as string,
+				path: r['path'] as string,
+				originalPath: r['original_path'] as string ?? '',
+				thumbnail: r['thumbnail'] as string ?? '',
+				duration: r['duration'] as number ?? 0,
+				size: r['size'] as number ?? 0,
+				description: r['description'] as string ?? '',
+				nodeId: r['node_id'] as string,
+				sortOrder: r['sort_order'] as number ?? 0
+			}
+		})
+	} catch (e) {
+		console.error('getAllResources SQL error:', e)
+	}
+	// #endif
+	
+	return result
+}
+
+/**
+ * 清空所有资源记录
+ */
+export async function clearAllResources(): Promise<void> {
+	// #ifdef WEB
+	await webClearStore('t_resources')
+	// #endif
+	
+	// #ifndef WEB
+	await executeSQL('DELETE FROM t_resources')
+	// #endif
+	
+	// 清理本地文件
+	await clearAssetFiles()
+}
+
+/**
+ * 清理本地资源文件
+ */
+async function clearAssetFiles(): Promise<void> {
+	// #ifdef APP-ANDROID
+	try {
+		const basePath = getAssetsBasePath()
+		const file = new java.io.File(basePath)
+		if (file.exists()) {
+			deleteRecursive(file)
+		}
+	} catch (e) {
+		console.error('clearAssetFiles error:', e)
+	}
+	// #endif
+}
+
+// #ifdef APP-ANDROID
+import File from 'java.io.File'
+
+/**
+ * 递归删除文件/目录
+ */
+function deleteRecursive(file: File): void {
+	if (file.isDirectory()) {
+		const children = file.listFiles()
+		if (children != null) {
+			for (const child of children) {
+				deleteRecursive(child)
+			}
+		}
+	}
+	file.delete()
+}
+
+/**
+ * 确保目录存在
+ */
+export function ensureDirectory(path: string): boolean {
+	const dir = new File(path)
+	if (!dir.exists()) {
+		return dir.mkdirs()
+	}
+	return true
+}
+
+/**
+ * 将数据写入文件
+ */
+export function writeFileBytes(path: string, data: ByteArray): boolean {
+	try {
+		// 确保父目录存在
+		const file = new File(path)
+		const parent = file.getParentFile()
+		if (parent != null && !parent.exists()) {
+			parent.mkdirs()
+		}
+		
+		const fos = new java.io.FileOutputStream(file)
+		fos.write(data)
+		fos.close()
+		return true
+	} catch (e) {
+		console.error('writeFileBytes error:', e)
+		return false
+	}
+}
+// #endif
+
+// #ifdef WEB
+/**
+ * Web 平台资源 Blob 缓存
+ */
+const blobUrlCache = new Map<string, string>()
+
+/**
+ * 存储资源 Blob 并返回 URL
+ * @param resourceId 资源ID
+ * @param blob Blob 数据
+ * @returns Blob URL
+ */
+export function storeBlobAndGetUrl(resourceId: string, blob: Blob): string {
+	// 释放旧的 URL
+	const oldUrl = blobUrlCache.get(resourceId)
+	if (oldUrl != null) {
+		URL.revokeObjectURL(oldUrl)
+	}
+	
+	const url = URL.createObjectURL(blob)
+	blobUrlCache.set(resourceId, url)
+	return url
+}
+
+/**
+ * 获取资源的 Blob URL
+ */
+export function getBlobUrl(resourceId: string): string | null {
+	return blobUrlCache.get(resourceId) ?? null
+}
+
+/**
+ * 清理所有 Blob URL
+ */
+export function clearBlobUrls(): void {
+	for (const url of blobUrlCache.values()) {
+		URL.revokeObjectURL(url)
+	}
+	blobUrlCache.clear()
+}
+// #endif
+
+/**
+ * 从工艺节点数据中提取资源列表
+ * @param node 工艺节点（递归包含子节点）
+ * @returns 资源列表（扁平化）
+ */
+export function extractResourcesFromNode(node: UTSJSONObject): ResourceItem[] {
+	const resources: ResourceItem[] = []
+	
+	extractResourcesRecursive(node, resources)
+	
+	return resources
+}
+
+/**
+ * 递归提取资源
+ */
+function extractResourcesRecursive(node: UTSJSONObject, resources: ResourceItem[]): void {
+	const nodeId = node['id'] as string
+	const nodeResources = node['resources']
+	
+	if (nodeResources != null && Array.isArray(nodeResources)) {
+		const resList = nodeResources as UTSJSONObject[]
+		let sortOrder = 0
+		
+		for (const res of resList) {
+			const item: ResourceItem = {
+				id: res['id'] as string ?? `res_${nodeId}_${sortOrder}`,
+				type: res['type'] as string ?? inferResourceType(res['path'] as string ?? ''),
+				name: res['name'] as string ?? '未命名资源',
+				path: '',  // 导入时更新为本地路径
+				originalPath: res['path'] as string ?? '',
+				thumbnail: res['thumbnail'] as string ?? '',
+				duration: res['duration'] as number ?? 0,
+				size: res['size'] as number ?? 0,
+				description: res['description'] as string ?? '',
+				nodeId: nodeId,
+				sortOrder: sortOrder
+			}
+			
+			resources.push(item)
+			sortOrder++
+		}
+	}
+	
+	// 递归处理子节点
+	const children = node['children']
+	if (children != null && Array.isArray(children)) {
+		const childList = children as UTSJSONObject[]
+		for (const child of childList) {
+			extractResourcesRecursive(child, resources)
+		}
+	}
+}

@@ -4,6 +4,8 @@
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
 		:initRightWidth="300"
+		:initRightTopHeight="400"
+		:minRightTopHeight="200"
 	>
 		<template #header>
 			<view class="header-container">
@@ -109,44 +111,148 @@
 			</view>
 		</template>
 
-		<!-- Right Sidebar Top Area -->
+		<!-- Right Sidebar Top Area - 资源预览 -->
 		<template #right>
 			<view class="right-panel">
-				<view class="right-content">
-					<text>Right Panel</text>
+				<!-- 右侧区域头部 -->
+				<view class="right-header">
+					<text class="right-header-title">查看器</text>
+					<view class="right-header-btn" @click="toggleResourceMaximize">
+						<text class="btn-icon">{{ isResourceMaximized ? '⤡' : '⤢' }}</text>
+					</view>
 				</view>
+				<resource-preview :resource="previewResource" @error="onPreviewError" />
 			</view>
 		</template>
 		
-		<!-- Right Sidebar Bottom Area - 选中节点详情 -->
+		<!-- Right Sidebar Bottom Area - 资源列表 -->
 		<template #right-bottom>
 			<view class="right-panel-bottom">
-				<view v-if="selectedRow != null" class="selected-info">
-					<text class="info-title">{{ selectedRow['name'] }}</text>
-					<text class="info-type">类型: {{ getNodeTypeLabel(selectedRow['type'] as string) }}</text>
-					<text class="info-code">代码: {{ selectedRow['code'] }}</text>
-					
-					<view v-if="selectedRow['type'] == 'process'" class="info-details">
-						<text class="info-item">版本: {{ selectedRow['version'] }}</text>
-						<text class="info-item">状态: {{ selectedRow['status'] }}</text>
-					</view>
-					
-					<view v-else-if="selectedRow['type'] == 'procedure'" class="info-details">
-						<text class="info-item">工时: {{ selectedRow['duration'] }} 分钟</text>
-					</view>
-					
-					<view v-else-if="selectedRow['type'] == 'step'" class="info-details">
-						<text class="info-item">工时: {{ selectedRow['duration'] }} 分钟</text>
-						<text class="info-item desc-label">操作说明:</text>
-						<text class="info-desc">{{ selectedRow['description'] }}</text>
-					</view>
-				</view>
-				<view v-else class="no-selection">
-					<text>请在左侧工艺树中选择节点</text>
-				</view>
+				<resource-list 
+					:title="nodeResourcesTitle"
+					:resources="nodeResources"
+					:selectedId="previewResource != null ? previewResource.id : ''"
+					@select="onResourceSelect"
+				/>
 			</view>
 		</template>
 	</outsider-layout>
+	
+	<!-- 全屏资源预览覆盖层 -->
+	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
+		<view class="fullscreen-container">
+			<!-- 头部工具栏 -->
+			<view class="fullscreen-header">
+				<view class="header-left">
+					<text class="fullscreen-title">{{ nodeResourcesTitle }}</text>
+					<text v-if="nodeResources.length > 0" class="resource-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
+				</view>
+				<view class="header-actions">
+					<!-- 列表显示/隐藏按钮 -->
+					<view class="header-btn" @click="toggleFullscreenList">
+						<text class="header-btn-icon">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
+					</view>
+					<!-- 关闭按钮 -->
+					<view class="fullscreen-close" @click="toggleResourceMaximize">
+						<text class="close-icon">✕</text>
+					</view>
+				</view>
+			</view>
+			
+			<!-- 内容区域 -->
+			<view class="fullscreen-content">
+				<!-- 预览区（可占满或与列表共存） -->
+				<view class="fullscreen-preview" :class="{ 'preview-full': !isFullscreenListVisible }">
+					<!-- 上一个/下一个导航按钮 -->
+					<view v-if="nodeResources.length > 1" class="nav-btn nav-prev" @click="goPrevResource">
+						<text class="nav-icon">‹</text>
+					</view>
+					
+					<!-- 图片类型：自定义可变换预览 -->
+					<view v-if="previewResource != null && previewResource.type == 'image'" class="image-viewer-container">
+						<scroll-view 
+							scroll-x="true" 
+							scroll-y="true" 
+							class="image-scroll-view"
+						>
+							<view class="image-transform-wrapper" :style="imageTransformStyle">
+								<image 
+									class="fullscreen-image" 
+									:src="previewResource.path" 
+									mode="aspectFit"
+									@load="onFullscreenImageLoad"
+								/>
+							</view>
+						</scroll-view>
+						
+						<!-- 图片操作工具栏 -->
+						<view class="image-toolbar">
+							<view class="toolbar-btn" @click="imageZoomOut">
+								<text class="toolbar-icon">−</text>
+								<text class="toolbar-label">缩小</text>
+							</view>
+							<view class="toolbar-info">
+								<text class="zoom-percentage">{{ Math.round(imageScale * 100) }}%</text>
+							</view>
+							<view class="toolbar-btn" @click="imageZoomIn">
+								<text class="toolbar-icon">+</text>
+								<text class="toolbar-label">放大</text>
+							</view>
+							<view class="toolbar-divider"></view>
+							<view class="toolbar-btn" @click="imageRotateLeft">
+								<text class="toolbar-icon">↺</text>
+								<text class="toolbar-label">左旋</text>
+							</view>
+							<view class="toolbar-btn" @click="imageRotateRight">
+								<text class="toolbar-icon">↻</text>
+								<text class="toolbar-label">右旋</text>
+							</view>
+							<view class="toolbar-divider"></view>
+							<view class="toolbar-btn" @click="imageReset">
+								<text class="toolbar-icon">⟲</text>
+								<text class="toolbar-label">重置</text>
+							</view>
+						</view>
+					</view>
+					
+					<!-- 非图片类型：使用原组件 -->
+					<resource-preview v-else :resource="previewResource" @error="onPreviewError" />
+					
+					<view v-if="nodeResources.length > 1" class="nav-btn nav-next" @click="goNextResource">
+						<text class="nav-icon">›</text>
+					</view>
+				</view>
+				
+				<!-- 右侧缩略图列表（可隐藏） -->
+				<view v-if="isFullscreenListVisible" class="fullscreen-list">
+					<scroll-view scroll-y="true" style="flex: 1;">
+						<view class="fullscreen-list-inner">
+							<view 
+								v-for="(item, index) in nodeResources" 
+								:key="item.id"
+								class="fullscreen-thumb-item"
+								:class="{ 'selected': previewResource != null && previewResource.id == item.id }"
+								@click="onResourceSelect(item)"
+							>
+								<view class="thumb-wrapper">
+									<image 
+										v-if="item.type == 'image'" 
+										class="thumb-img"
+										:src="item.thumbnail != '' ? item.thumbnail : item.path"
+										mode="aspectFill"
+									/>
+									<text v-else-if="item.type == 'video'" class="thumb-icon">🎬</text>
+									<text v-else-if="item.type == 'audio'" class="thumb-icon">🎵</text>
+									<text v-else class="thumb-icon">📄</text>
+								</view>
+								<text class="thumb-name" :numberOfLines="1">{{ item.name }}</text>
+							</view>
+						</view>
+					</scroll-view>
+				</view>
+			</view>
+		</view>
+	</view>
 </template>
 
 <script setup lang="uts">
@@ -156,6 +262,8 @@
 	// #endif
 	import { importPackage } from '@/services/dataPackage.uts'
 	import { clearAllProcesses } from '@/services/processService.uts'
+	import { ResourceItem } from '@/types/resource'
+	import { getResourcesByNodeId, clearAllResources } from '@/services/resourceService.uts'
 
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
@@ -163,6 +271,8 @@
 	import UxTable from '@/components/ux-table/ux-table.uvue'
 	import UxCollapse from '@/components/ux-collapse/ux-collapse.uvue'
 	import UxCollapseItem from '@/components/ux-collapse-item/ux-collapse-item.uvue'
+	import ResourcePreview from '@/components/resource-preview/resource-preview.uvue'
+	import ResourceList from '@/components/resource-list/resource-list.uvue'
 
 	// Define ViewModels
 	type ComponentVM = {
@@ -196,11 +306,31 @@
 	// Left panel Tree Data (Ref to data in leftGroup for template compatibility)
 	const tableData = ref([] as UTSJSONObject[])
 	// 树表列配置 - 将从数据包中加载，此处为默认值
-	const columns = ref([
-		{ label: '名称', prop: 'displayName', width: 200 },
-		{ label: '资源', prop: 'resourceLabel', width: 220 }
-	] as UTSJSONObject[])
+	const columns = ref([] as UTSJSONObject[])
 	const selectedRow = ref(null as UTSJSONObject | null)
+	
+	// 资源预览相关状态
+	const nodeResources = ref([] as ResourceItem[])
+	const nodeResourcesTitle = ref('资源列表')
+	const previewResource = ref(null as ResourceItem | null)
+	const isResourceMaximized = ref(false)
+	const isFullscreenListVisible = ref(true)
+	
+	// 当前资源索引
+	const currentResourceIndex = computed((): number => {
+		if (previewResource.value == null) return 0
+		const idx = nodeResources.value.findIndex((r: ResourceItem): boolean => r.id == previewResource.value!.id)
+		return idx >= 0 ? idx : 0
+	})
+	
+	// 图片变换状态
+	const imageScale = ref(1)
+	const imageRotation = ref(0)
+	
+	// 图片变换样式
+	const imageTransformStyle = computed((): string => {
+		return `transform: scale(${imageScale.value}) rotate(${imageRotation.value}deg);`
+	})
 
 	onLoad(async () => {
 		// console.log('Page Load')
@@ -249,6 +379,7 @@
 			await webClearStore('data_records')
 			await webClearStore('t_process')
 			await webClearStore('t_icon_config')
+			await webClearStore('t_resources')  // V3: 清空资源表
 			console.log('All data cleared')
 			// #endif
 			
@@ -259,7 +390,11 @@
 			await executeSQL('DELETE FROM data_records')
 			await executeSQL('DELETE FROM t_process')
 			await executeSQL('DELETE FROM t_icon_config')
+			await executeSQL('DELETE FROM t_resources')  // V3: 清空资源表
 			// #endif
+			
+			// 清理资源文件（仅 App 端）
+			await clearAllResources()
 			
 			// 清空 UI 状态
 			leftGroup.value = null
@@ -269,6 +404,11 @@
 			selectedRow.value = null
 			iconConfigs.clear()
 			activeTabs.clear()
+			
+			// 清空资源状态
+			nodeResources.value = []
+			nodeResourcesTitle.value = '资源列表'
+			previewResource.value = null
 			
 			uni.hideLoading()
 			uni.showToast({
@@ -305,6 +445,15 @@
 					tableData.value = treeComp.data
 					columns.value = getColumnsFromConfig(treeComp.config)
 					// console.log('Left panel tree loaded:', tableData.value.length, 'nodes')
+					
+					// 自动选中第一个根节点（工艺节点）
+					if (tableData.value.length > 0) {
+						const firstRow = tableData.value[0]
+						// 延迟执行确保 UI 渲染完成
+						setTimeout(() => {
+							handleRowClick(firstRow)
+						}, 100)
+					}
 				}
 			}
 		}
@@ -613,6 +762,9 @@
 		
 		// 根据节点类型动态加载对应的 Tab Group
 		const nodeType = row['type'] as string
+		const nodeId = row['id'] as string
+		const nodeName = row['name'] as string
+		
 		let groupId = ''
 		if (nodeType == 'process') groupId = 'group_process_view'
 		else if (nodeType == 'procedure') groupId = 'group_procedure_view'
@@ -645,6 +797,9 @@
 				bottomGroup.value = group
 			}
 		}
+		
+		// 加载节点关联的资源列表
+		await loadNodeResources(nodeId, nodeName, nodeType)
 	}
 	
 	// 将节点数据绑定到 Group 中的各个组件
@@ -747,6 +902,177 @@
 		*/
 	}
 	
+	// ============ 资源相关方法 ============
+	
+	/**
+	 * 加载节点关联的资源列表
+	 * @param nodeId 节点ID
+	 * @param nodeName 节点名称（用于显示标题）
+	 * @param nodeType 节点类型
+	 */
+	const loadNodeResources = async (nodeId: string, nodeName: string, nodeType: string) => {
+		try {
+			// 更新标题
+			const typeLabel = getNodeTypeLabel(nodeType)
+			nodeResourcesTitle.value = `${typeLabel}资源 - ${nodeName}`
+			
+			// 从数据库加载资源
+			const resources = await getResourcesByNodeId(nodeId)
+			nodeResources.value = resources
+			
+			// 清空预览状态
+			previewResource.value = null
+			
+			// 如果有资源，默认选中第一个
+			if (resources.length > 0) {
+				previewResource.value = resources[0]
+			}
+			
+			console.log(`Loaded ${resources.length} resources for node: ${nodeId}`)
+		} catch (e) {
+			console.error('loadNodeResources error:', e)
+			nodeResources.value = []
+			previewResource.value = null
+		}
+	}
+	
+	/**
+	 * 资源选择事件处理
+	 * @param item 选中的资源项
+	 */
+	const onResourceSelect = (item: ResourceItem) => {
+		previewResource.value = item
+		console.log('Resource selected:', item.name, item.type)
+	}
+	
+	/**
+	 * 资源预览错误处理
+	 * @param message 错误消息
+	 */
+	const onPreviewError = (message: string) => {
+		uni.showToast({
+			title: message,
+			icon: 'none'
+		})
+	}
+	
+	/**
+	 * 切换资源区域最大化
+	 */
+	const toggleResourceMaximize = () => {
+		isResourceMaximized.value = !isResourceMaximized.value
+		// 重置列表为可见状态
+		if (isResourceMaximized.value) {
+			isFullscreenListVisible.value = true
+		}
+	}
+	
+	/**
+	 * 切换全屏列表显示/隐藏
+	 */
+	const toggleFullscreenList = () => {
+		isFullscreenListVisible.value = !isFullscreenListVisible.value
+	}
+	
+	/**
+	 * 切换到上一个资源
+	 */
+	const goPrevResource = () => {
+		if (nodeResources.value.length <= 1) return
+		let idx = currentResourceIndex.value - 1
+		if (idx < 0) idx = nodeResources.value.length - 1
+		previewResource.value = nodeResources.value[idx]
+		// 切换资源时重置图片变换
+		resetImageTransform()
+	}
+	
+	/**
+	 * 切换到下一个资源
+	 */
+	const goNextResource = () => {
+		if (nodeResources.value.length <= 1) return
+		let idx = currentResourceIndex.value + 1
+		if (idx >= nodeResources.value.length) idx = 0
+		previewResource.value = nodeResources.value[idx]
+		// 切换资源时重置图片变换
+		resetImageTransform()
+	}
+	
+	/**
+	 * 重置图片变换状态
+	 */
+	const resetImageTransform = () => {
+		imageScale.value = 1
+		imageRotation.value = 0
+	}
+	
+	/**
+	 * 图片放大
+	 */
+	const imageZoomIn = () => {
+		if (imageScale.value < 5) {
+			imageScale.value = Math.min(5, imageScale.value + 0.25)
+		}
+	}
+	
+	/**
+	 * 图片缩小
+	 */
+	const imageZoomOut = () => {
+		if (imageScale.value > 0.25) {
+			imageScale.value = Math.max(0.25, imageScale.value - 0.25)
+		}
+	}
+	
+	/**
+	 * 图片左旋转 90 度
+	 */
+	const imageRotateLeft = () => {
+		imageRotation.value = (imageRotation.value - 90) % 360
+	}
+	
+	/**
+	 * 图片右旋转 90 度
+	 */
+	const imageRotateRight = () => {
+		imageRotation.value = (imageRotation.value + 90) % 360
+	}
+	
+	/**
+	 * 图片重置到原始状态
+	 */
+	const imageReset = () => {
+		resetImageTransform()
+	}
+	
+	/**
+	 * 全屏图片加载完成
+	 */
+	const onFullscreenImageLoad = () => {
+		// 图片加载完成时可以进行尺寸适配等操作
+		// console.log('Fullscreen image loaded')
+	}
+	
+	/**
+	 * 格式化时长
+	 */
+	const formatDuration = (seconds: number): string => {
+		const mins = Math.floor(seconds / 60)
+		const secs = seconds % 60
+		return `${mins}:${secs < 10 ? '0' : ''}${secs}`
+	}
+	
+	/**
+	 * 获取资源类型标签
+	 */
+	const getTypeLabel = (type: string): string => {
+		if (type == 'image') return '图片'
+		if (type == 'video') return '视频'
+		if (type == 'audio') return '音频'
+		if (type == 'document') return '文档'
+		return type
+	}
+	
 </script>
 
 <style>
@@ -807,12 +1133,13 @@
 	}
 
 	.right-panel {
-		width: 250px;
+		width: 300px;
 		height: 100%;
 		border-left: 1px solid #e0e0e0;
 		background-color: #fff;
 		display: flex;
 		flex-direction: column;
+		padding: 10px;
 	}
 
 	.right-content {
@@ -822,11 +1149,12 @@
 	}
 	
 	.right-panel-bottom {
-		padding: 10px;
-		background-color: #fafafa;
+		padding: 8px;
+		background-color: #f8f9fa;
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		height: 140px;
+		border-top: 1px solid #e0e0e0;
 	}
 	
 	.tab-content-wrap {
@@ -1042,5 +1370,321 @@
 		font-size: 14px;
 		padding: 20px;
 	}
+	
+	/* Right Header */
+	.right-header {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 8px 12px;
+		background-color: #f5f5f5;
+		border-bottom: 1px solid #e0e0e0;
+	}
+	
+	.right-header-title {
+		font-size: 14px;
+		color: #333;
+		font-weight: 500;
+	}
+	
+	.right-header-btn {
+		width: 28px;
+		height: 28px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgba(0, 0, 0, 0.08);
+		border-radius: 4px;
+	}
+	
+	.btn-icon {
+		font-size: 16px;
+		color: #333;
+	}
+	
+	/* Fullscreen Overlay */
+	.resource-fullscreen-overlay {
+		position: fixed;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(255, 255, 255, 0.98);
+		z-index: 9999;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.fullscreen-container {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		padding: 0;
+	}
+	
+	.fullscreen-header {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 24px;
+		background-color: #fff;
+		border-bottom: 1px solid #e0e0e0;
+	}
+	
+	.header-left {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	
+	.fullscreen-title {
+		font-size: 16px;
+		color: #333;
+		font-weight: 600;
+	}
+	
+	.resource-counter {
+		font-size: 14px;
+		color: #888;
+		margin-left: 12px;
+	}
+	
+	.header-actions {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+	
+	.header-btn {
+		width: 36px;
+		height: 36px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgba(0, 0, 0, 0.05);
+		border-radius: 6px;
+		margin-right: 12px;
+	}
+	
+	.header-btn-icon {
+		font-size: 18px;
+		color: #333;
+	}
+	
+	.fullscreen-close {
+		width: 36px;
+		height: 36px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgba(0, 0, 0, 0.08);
+		border-radius: 18px;
+	}
+	
+	.close-icon {
+		font-size: 18px;
+		color: #333;
+	}
+	
+	.fullscreen-content {
+		flex: 1;
+		display: flex;
+		flex-direction: row;
+		padding: 16px;
+	}
+	
+	.fullscreen-preview {
+		flex: 1;
+		display: flex;
+		flex-direction: row;
+		position: relative;
+		margin-right: 16px;
+		background-color: #fff;
+		border-radius: 8px;
+		overflow: hidden;
+		border: 1px solid #e0e0e0;
+	}
+	
+	.fullscreen-preview.preview-full {
+		margin-right: 0;
+	}
+	
+	/* 上/下一个导航按钮 */
+	.nav-btn {
+		position: absolute;
+		top: 50%;
+		width: 40px;
+		height: 80px;
+		margin-top: -40px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgba(0, 0, 0, 0.3);
+		z-index: 10;
+	}
+	
+	.nav-prev {
+		left: 0;
+		border-top-right-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+	
+	.nav-next {
+		right: 0;
+		border-top-left-radius: 8px;
+		border-bottom-left-radius: 8px;
+	}
+	
+	.nav-icon {
+		font-size: 32px;
+		color: #fff;
+		font-weight: bold;
+	}
+	
+	/* 右侧紧凑缩略图列表 */
+	.fullscreen-list {
+		width: 140px;
+		display: flex;
+		flex-direction: column;
+		background-color: #fff;
+		border-radius: 8px;
+		overflow: hidden;
+		border: 1px solid #e0e0e0;
+	}
+	
+	.fullscreen-list-inner {
+		padding: 8px;
+	}
+	
+	.fullscreen-thumb-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 8px;
+		margin-bottom: 8px;
+		background-color: #f8f9fa;
+		border-radius: 6px;
+		border: 2px solid transparent;
+	}
+	
+	.fullscreen-thumb-item.selected {
+		border-color: #4a90e2;
+		background-color: rgba(74, 144, 226, 0.1);
+	}
+	
+	.thumb-wrapper {
+		width: 100px;
+		height: 70px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: #e9ecef;
+		border-radius: 4px;
+		overflow: hidden;
+	}
+	
+	.thumb-wrapper .thumb-img {
+		width: 100%;
+		height: 100%;
+	}
+	
+	.thumb-wrapper .thumb-icon {
+		font-size: 28px;
+	}
+	
+	.thumb-name {
+		font-size: 11px;
+		color: #666;
+		margin-top: 6px;
+		text-align: center;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	
+	/* 图片查看器 */
+	.image-viewer-container {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	
+	.image-scroll-view {
+		flex: 1;
+		background-color: #f0f0f0;
+	}
+	
+	.image-transform-wrapper {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-width: 100%;
+		min-height: 100%;
+	}
+	
+	.fullscreen-image {
+		max-width: 100%;
+		max-height: 100%;
+	}
+	
+	/* 图片操作工具栏 */
+	.image-toolbar {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		padding: 12px 20px;
+		background-color: #fff;
+		border-top: 1px solid #e0e0e0;
+	}
+	
+	.toolbar-btn {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 8px 16px;
+		margin: 0 4px;
+		background-color: #f5f5f5;
+		border-radius: 6px;
+	}
+	
+	.toolbar-icon {
+		font-size: 20px;
+		color: #333;
+		font-weight: bold;
+	}
+	
+	.toolbar-label {
+		font-size: 10px;
+		color: #666;
+		margin-top: 2px;
+	}
+	
+	.toolbar-info {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 8px 16px;
+		margin: 0 8px;
+		background-color: #e9ecef;
+		border-radius: 6px;
+		min-width: 60px;
+	}
+	
+	.zoom-percentage {
+		font-size: 14px;
+		color: #333;
+		font-weight: 600;
+	}
+	
+	.toolbar-divider {
+		width: 1px;
+		height: 32px;
+		background-color: #ddd;
+		margin: 0 12px;
+	}
 </style>
+
 

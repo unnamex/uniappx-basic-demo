@@ -4,10 +4,35 @@
   "name": "V8发动机总装工艺",
   "icon": "📋",
   "type": "process",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "status": "Released",
-  "resourceCount": 15,
+  "resourceCount": 3,
   "expanded": true,
+  "resources": [
+    {
+      "id": "res_proc_001",
+      "type": "video",
+      "name": "工艺总览视频",
+      "path": "assets/videos/engine_overview.mp4",
+      "thumbnail": "assets/images/thumb_video_overview.jpg",
+      "duration": 180,
+      "description": "V8发动机总装工艺完整流程演示"
+    },
+    {
+      "id": "res_proc_002",
+      "type": "image",
+      "name": "发动机爆炸图",
+      "path": "assets/images/engine_exploded.png",
+      "description": "V8发动机零部件分解示意图"
+    },
+    {
+      "id": "res_proc_003",
+      "type": "document",
+      "name": "装配手册",
+      "path": "assets/docs/assembly_manual.pdf",
+      "description": "V8发动机装配技术手册"
+    }
+  ],
   "children": [
     {
       "id": "proc_v8_engine_op01",
@@ -16,8 +41,24 @@
       "icon": "🔧",
       "type": "procedure",
       "duration": 45,
-      "resourceCount": 8,
+      "resourceCount": 2,
       "expanded": false,
+      "resources": [
+        {
+          "id": "res_op01_001",
+          "type": "video",
+          "name": "缸体组装演示",
+          "path": "assets/videos/cylinder_assembly.mp4",
+          "thumbnail": "assets/images/thumb_cylinder.jpg",
+          "duration": 120
+        },
+        {
+          "id": "res_op01_002",
+          "type": "image",
+          "name": "缸体结构图",
+          "path": "assets/images/cylinder_structure.png"
+        }
+      ],
       "children": [
         {
           "id": "proc_v8_engine_op01_s01",
@@ -28,6 +69,30 @@
           "duration": 5,
           "resourceCount": 3,
           "description": "清洁缸体表面，使用专用清洁剂去除油污和杂质",
+          "resources": [
+            {
+              "id": "res_s01_001",
+              "type": "image",
+              "name": "清洁前状态",
+              "path": "assets/images/clean_before.jpg",
+              "description": "缸体清洁前的状态照片"
+            },
+            {
+              "id": "res_s01_002",
+              "type": "image",
+              "name": "清洁后状态",
+              "path": "assets/images/clean_after.jpg",
+              "description": "缸体清洁后的状态照片"
+            },
+            {
+              "id": "res_s01_003",
+              "type": "audio",
+              "name": "操作语音指导",
+              "path": "assets/audios/step_guide_s01.mp3",
+              "duration": 30,
+              "description": "缸体预处理操作语音指导"
+            }
+          ],
           "tools": [
             "清洁剂",
             "放大镜",
@@ -42,8 +107,23 @@
           "icon": "⚙️",
           "type": "step",
           "duration": 15,
-          "resourceCount": 4,
+          "resourceCount": 2,
           "description": "安装活塞环到活塞槽内，注意活塞环开口位置错开120度",
+          "resources": [
+            {
+              "id": "res_s02_001",
+              "type": "video",
+              "name": "活塞安装演示",
+              "path": "assets/videos/piston_install.mp4",
+              "duration": 60
+            },
+            {
+              "id": "res_s02_002",
+              "type": "image",
+              "name": "活塞环位置示意",
+              "path": "assets/images/piston_ring_position.png"
+            }
+          ],
           "tools": [
             "活塞环压缩器",
             "橡皮锤"
@@ -60,8 +140,17 @@
           "icon": "⚙️",
           "type": "step",
           "duration": 20,
-          "resourceCount": 4,
+          "resourceCount": 1,
           "description": "安装主轴承瓦，涂抹装配油脂，将曲轴放入曲轴箱",
+          "resources": [
+            {
+              "id": "res_s03_001",
+              "type": "video",
+              "name": "曲轴安装演示",
+              "path": "assets/videos/crankshaft_install.mp4",
+              "duration": 90
+            }
+          ],
           "tools": [
             "扭力扳手",
             "塞尺"
@@ -80,8 +169,17 @@
       "icon": "🔧",
       "type": "procedure",
       "duration": 55,
-      "resourceCount": 6,
+      "resourceCount": 1,
       "expanded": false,
+      "resources": [
+        {
+          "id": "res_op02_001",
+          "type": "video",
+          "name": "缸盖组装演示",
+          "path": "assets/videos/cylinder_head.mp4",
+          "duration": 150
+        }
+      ],
       "children": [
         {
           "id": "proc_v8_engine_op02_s01",
@@ -90,8 +188,23 @@
           "icon": "⚙️",
           "type": "step",
           "duration": 25,
-          "resourceCount": 3,
+          "resourceCount": 2,
           "description": "放置新缸垫，注意缸垫正反方向。安装缸盖",
+          "resources": [
+            {
+              "id": "res_op02_s01_001",
+              "type": "image",
+              "name": "缸垫放置示意",
+              "path": "assets/images/gasket_placement.png"
+            },
+            {
+              "id": "res_op02_s01_002",
+              "type": "video",
+              "name": "缸盖安装视频",
+              "path": "assets/videos/head_install.mp4",
+              "duration": 80
+            }
+          ],
           "tools": [
             "扭力扳手"
           ],
@@ -107,8 +220,16 @@
           "icon": "⚙️",
           "type": "step",
           "duration": 30,
-          "resourceCount": 3,
+          "resourceCount": 1,
           "description": "对齐凸轮轴正时标记，安装凸轮轴轴瓦和正时链条",
+          "resources": [
+            {
+              "id": "res_op02_s02_001",
+              "type": "image",
+              "name": "正时标记对齐图",
+              "path": "assets/images/timing_marks.png"
+            }
+          ],
           "tools": [
             "正时工具",
             "扭力扳手"
@@ -126,8 +247,9 @@
       "icon": "🔧",
       "type": "procedure",
       "duration": 40,
-      "resourceCount": 5,
+      "resourceCount": 0,
       "expanded": false,
+      "resources": [],
       "children": [
         {
           "id": "proc_v8_engine_op03_s01",
@@ -136,8 +258,17 @@
           "icon": "⚙️",
           "type": "step",
           "duration": 20,
-          "resourceCount": 3,
+          "resourceCount": 1,
           "description": "安装进气歧管和排气歧管，检查密封性能",
+          "resources": [
+            {
+              "id": "res_op03_s01_001",
+              "type": "video",
+              "name": "进排气安装",
+              "path": "assets/videos/intake_exhaust.mp4",
+              "duration": 70
+            }
+          ],
           "tools": [
             "扭力扳手",
             "密封检测仪"
@@ -153,8 +284,9 @@
           "icon": "⚙️",
           "type": "step",
           "duration": 15,
-          "resourceCount": 2,
+          "resourceCount": 0,
           "description": "连接发动机线束，安装传感器接头",
+          "resources": [],
           "tools": [
             "线束工具"
           ],

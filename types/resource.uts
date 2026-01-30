@@ -1,0 +1,135 @@
+/**
+ * 静态资源类型定义
+ * @description 定义工艺/工序/工步关联的多媒体资源类型
+ */
+
+/**
+ * 资源类型常量
+ */
+export const ResourceType = {
+	IMAGE: 'image',
+	VIDEO: 'video',
+	AUDIO: 'audio',
+	DOCUMENT: 'document'
+}
+
+/**
+ * 资源项类型
+ */
+export type ResourceItem = {
+	id: string              // 唯一ID: "res_001"
+	type: string            // 资源类型: image | video | audio | document
+	name: string            // 显示名称: "装配示意图"
+	path: string            // 本地存储路径（导入后更新）
+	originalPath: string    // 原始包内路径: "assets/images/img_001.jpg"
+	thumbnail: string       // 缩略图路径（图片可为空，视频/音频需要）
+	duration: number        // 时长（视频/音频，秒）, 0 表示无时长
+	size: number            // 文件大小（字节）, 0 表示未知
+	description: string     // 描述
+	nodeId: string          // 关联节点ID（工艺/工序/工步）
+	sortOrder: number       // 排序序号
+}
+
+/**
+ * 预览状态类型
+ */
+export type PreviewState = {
+	resource: ResourceItem | null  // 当前预览的资源
+	isPlaying: boolean             // 是否正在播放（视频/音频）
+	currentTime: number            // 当前播放时间（秒）
+	duration: number               // 总时长（秒）
+}
+
+/**
+ * 资源列表数据（按节点分组）
+ */
+export type NodeResources = {
+	nodeId: string           // 节点ID
+	nodeName: string         // 节点名称
+	nodeType: string         // 节点类型: process | procedure | step
+	resources: ResourceItem[] // 资源列表
+}
+
+/**
+ * 获取资源类型图标
+ * @param type 资源类型
+ * @returns 图标 emoji
+ */
+export function getResourceTypeIcon(type: string): string {
+	if (type == ResourceType.IMAGE) return '🖼️'
+	if (type == ResourceType.VIDEO) return '🎬'
+	if (type == ResourceType.AUDIO) return '🔊'
+	if (type == ResourceType.DOCUMENT) return '📄'
+	return '📎'
+}
+
+/**
+ * 获取资源类型标签
+ * @param type 资源类型
+ * @returns 类型中文名
+ */
+export function getResourceTypeLabel(type: string): string {
+	if (type == ResourceType.IMAGE) return '图片'
+	if (type == ResourceType.VIDEO) return '视频'
+	if (type == ResourceType.AUDIO) return '音频'
+	if (type == ResourceType.DOCUMENT) return '文档'
+	return '附件'
+}
+
+/**
+ * 格式化时长显示
+ * @param seconds 秒数
+ * @returns 格式化字符串 mm:ss
+ */
+export function formatDuration(seconds: number): string {
+	if (seconds <= 0) return ''
+	const mins = Math.floor(seconds / 60)
+	const secs = Math.floor(seconds % 60)
+	const minsStr = mins < 10 ? '0' + mins.toString() : mins.toString()
+	const secsStr = secs < 10 ? '0' + secs.toString() : secs.toString()
+	return `${minsStr}:${secsStr}`
+}
+
+/**
+ * 格式化文件大小
+ * @param bytes 字节数
+ * @returns 格式化字符串
+ */
+export function formatFileSize(bytes: number): string {
+	if (bytes <= 0) return ''
+	if (bytes < 1024) return bytes.toString() + ' B'
+	if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+	if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+	return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB'
+}
+
+/**
+ * 根据文件扩展名推断资源类型
+ * @param filename 文件名
+ * @returns 资源类型
+ */
+export function inferResourceType(filename: string): string {
+	const ext = filename.toLowerCase().split('.').pop() ?? ''
+	
+	// 图片格式
+	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].indexOf(ext) >= 0) {
+		return ResourceType.IMAGE
+	}
+	
+	// 视频格式
+	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].indexOf(ext) >= 0) {
+		return ResourceType.VIDEO
+	}
+	
+	// 音频格式
+	if (['mp3', 'wav', 'aac', 'ogg', 'm4a', 'flac'].indexOf(ext) >= 0) {
+		return ResourceType.AUDIO
+	}
+	
+	// 文档格式
+	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].indexOf(ext) >= 0) {
+		return ResourceType.DOCUMENT
+	}
+	
+	return 'unknown'
+}

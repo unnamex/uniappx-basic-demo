@@ -215,6 +215,24 @@ function createTables(): Promise<void> {
 			)
 		`
 		
+		// V3: 静态资源元数据表
+		const createResourcesTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_resources (
+				id TEXT PRIMARY KEY,
+				node_id TEXT NOT NULL,
+				type TEXT NOT NULL,
+				name TEXT NOT NULL,
+				path TEXT NOT NULL,
+				original_path TEXT,
+				thumbnail TEXT,
+				duration INTEGER DEFAULT 0,
+				size INTEGER DEFAULT 0,
+				description TEXT,
+				sort_order INTEGER DEFAULT 0,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		`
+		
 		// #ifdef APP-ANDROID
 		if (dbInstance != null) {
 			try {
@@ -235,6 +253,11 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)")
 				dbInstance!.execSQL(createDataRecordsTableSQL)
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)")
+				
+				// V3: 资源表
+				dbInstance!.execSQL(createResourcesTableSQL)
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_type ON t_resources(type)")
 
 				console.log('数据表创建成功')
 				resolve()
@@ -409,7 +432,7 @@ export function endTransaction(): void {
 
 // #ifdef WEB
 // Web 端数据库版本，变更需增加版本号
-const WEB_DB_VERSION: number = 3
+const WEB_DB_VERSION: number = 4
 
 /**
  * 初始化 IndexedDB（Web端）
@@ -487,6 +510,13 @@ function initIndexedDB(): Promise<void> {
 				// 图标配置表 (V3)
 				if (!db.objectStoreNames.contains('t_icon_config')) {
 					db.createObjectStore('t_icon_config', { keyPath: 'node_type' })
+				}
+				
+				// V3: 资源元数据表
+				if (!db.objectStoreNames.contains('t_resources')) {
+					const resourceStore = db.createObjectStore('t_resources', { keyPath: 'id' })
+					resourceStore.createIndex('node_id', 'node_id', { unique: false })
+					resourceStore.createIndex('type', 'type', { unique: false })
 				}
 				
 				console.log('IndexedDB Object Stores 创建/更新完成')

@@ -32,14 +32,16 @@ export type PackageManifest = {
 }
 
 /**
- * V2 分离文件引用
+ * V2/V3 分离文件引用
  */
 export type ManifestFileRefs = {
 	groups?: string      // ui/groups.json
 	tabs?: string        // ui/tabs.json
 	components?: string  // ui/components.json
+	icons?: string       // ui/icons.json
 	records?: string     // data/records.json
 	processes?: string[] // processes/*.json
+	assets?: string      // V3: 资源目录路径 "assets/"
 }
 
 /**
@@ -102,6 +104,7 @@ export type ImportResult = {
 	message: string
 	processCount: number
 	uiConfigCount: number
+	resourceCount: number  // V3: 资源导入数量
 	importTime: number
 }
 

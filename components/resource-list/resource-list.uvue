@@ -1,0 +1,367 @@
+<template>
+	<view class="resource-list">
+		<!-- 标题栏 -->
+		<view class="list-header">
+			<text class="header-title">{{ title }}</text>
+			<text v-if="resources.length > 0" class="header-count">({{ resources.length }})</text>
+		</view>
+		
+		<!-- 空状态 -->
+		<view v-if="resources.length == 0" class="empty-state">
+			<text class="empty-text">暂无资源</text>
+		</view>
+		
+		<scroll-view 
+			v-else
+			class="scroll-container"
+			scroll-x="true"
+			:show-scrollbar="false"
+			style="height: 100%;"
+			@scroll="onScroll"
+		>
+			<view class="list-content">
+				<view 
+					v-for="(item, index) in resources" 
+					:key="item.id"
+					class="resource-card"
+					:class="{ 'selected': selectedId == item.id }"
+					@click="onItemClick(item)"
+				>
+					<!-- 缩略图/图标区域 -->
+					<view class="card-thumbnail">
+						<!-- 图片类型直接显示缩略图 -->
+						<image 
+							v-if="item.type == 'image'" 
+							class="thumb-image"
+							:src="item.thumbnail != '' ? item.thumbnail : item.path"
+							mode="aspectFill"
+						/>
+						
+						<!-- 视频类型显示缩略图+播放图标 -->
+						<view v-else-if="item.type == 'video'" class="thumb-video">
+							<image 
+								v-if="item.thumbnail != ''"
+								class="thumb-image"
+								:src="item.thumbnail"
+								mode="aspectFill"
+							/>
+							<view v-else class="thumb-placeholder video-placeholder">
+								<text class="placeholder-icon">🎬</text>
+							</view>
+							<view class="play-overlay">
+								<text class="play-icon">▶</text>
+							</view>
+						</view>
+						
+						<!-- 音频类型显示音符图标 -->
+						<view v-else-if="item.type == 'audio'" class="thumb-placeholder audio-placeholder">
+							<text class="placeholder-icon">🎵</text>
+							<view class="audio-waves">
+								<view class="wave-line"></view>
+								<view class="wave-line"></view>
+								<view class="wave-line"></view>
+							</view>
+						</view>
+						
+						<!-- 文档类型显示文档图标 -->
+						<view v-else-if="item.type == 'document'" class="thumb-placeholder doc-placeholder">
+							<text class="placeholder-icon">📄</text>
+						</view>
+						
+						<!-- 未知类型 -->
+						<view v-else class="thumb-placeholder">
+							<text class="placeholder-icon">📎</text>
+						</view>
+						
+						<!-- 类型标签 -->
+						<view class="type-badge" :class="'badge-' + item.type">
+							<text class="badge-text">{{ getTypeLabel(item.type) }}</text>
+						</view>
+					</view>
+					
+					<!-- 信息区域 -->
+					<view class="card-info">
+						<text class="card-name" :numberOfLines="1">{{ item.name }}</text>
+						<text v-if="item.duration > 0" class="card-duration">{{ formatTime(item.duration) }}</text>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+		
+		<!-- 滚动指示器 -->
+		<view v-if="resources.length > 3" class="scroll-indicator">
+			<view class="indicator-track">
+				<view class="indicator-thumb" :style="{ left: scrollProgress + '%' }"></view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { ResourceItem, getResourceTypeLabel, formatDuration } from '@/types/resource'
+	
+	// Props
+	const props = defineProps<{
+		title: string
+		resources: ResourceItem[]
+		selectedId: string
+	}>()
+	
+	// Emits
+	const emit = defineEmits<{
+		(e: 'select', item: ResourceItem): void
+	}>()
+	
+	// 滚动进度
+	const scrollProgress = ref(0)
+	
+	// 获取类型标签
+	const getTypeLabel = (type: string): string => {
+		return getResourceTypeLabel(type)
+	}
+	
+	// 格式化时间
+	const formatTime = (seconds: number): string => {
+		return formatDuration(seconds)
+	}
+	
+	// 点击资源项
+	const onItemClick = (item: ResourceItem) => {
+		emit('select', item)
+	}
+	
+	// 滚动事件
+	const onScroll = (e: any) => {
+		const detail = e.detail
+		if (detail != null) {
+			const scrollLeft = detail.scrollLeft as number ?? 0
+			const scrollWidth = detail.scrollWidth as number ?? 1
+			const clientWidth = detail.clientWidth as number ?? 0
+			
+			if (scrollWidth > clientWidth) {
+				scrollProgress.value = (scrollLeft / (scrollWidth - clientWidth)) * 100
+			}
+		}
+	}
+</script>
+
+<style>
+	.resource-list {
+		display: flex;
+		flex-direction: column;
+		background-color: #fff;
+		border-radius: 6px;
+		padding: 8px;
+		height: 100%;
+		border: 1px solid #e0e0e0;
+	}
+	
+	/* 标题栏 */
+	.list-header {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 8px;
+	}
+	
+	.header-title {
+		font-size: 12px;
+		font-weight: 600;
+		color: #333;
+	}
+	
+	.header-count {
+		font-size: 11px;
+		color: #888;
+		margin-left: 4px;
+	}
+	
+	/* 空状态 */
+	.empty-state {
+		flex: 1;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+	
+	.empty-text {
+		font-size: 12px;
+		color: #666;
+	}
+	
+	/* 滚动容器 */
+	.scroll-container {
+		flex: 1;
+		width: 100%;
+	}
+	
+	.list-content {
+		display: flex;
+		flex-direction: row;
+		padding-bottom: 8px;
+	}
+	
+	/* 资源卡片 */
+	.resource-card {
+		width: 80px;
+		margin-right: 8px;
+		background-color: #f8f9fa;
+		border-radius: 6px;
+		overflow: hidden;
+		border: 2px solid #e0e0e0;
+	}
+	
+	.resource-card.selected {
+		border-color: #4a90e2;
+	}
+	
+	/* 缩略图区域 */
+	.card-thumbnail {
+		width: 80px;
+		height: 50px;
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.thumb-image {
+		width: 100%;
+		height: 100%;
+	}
+	
+	.thumb-video {
+		width: 100%;
+		height: 100%;
+		position: relative;
+	}
+	
+	.thumb-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		background-color: #e9ecef;
+	}
+	
+	.video-placeholder {
+		background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+	}
+	
+	.audio-placeholder {
+		background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+	}
+	
+	.doc-placeholder {
+		background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+	}
+	
+	.placeholder-icon {
+		font-size: 22px;
+	}
+	
+	/* 播放覆盖层 */
+	.play-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgba(0, 0, 0, 0.3);
+	}
+	
+	.play-icon {
+		font-size: 24px;
+		color: #fff;
+	}
+	
+	/* 音频波形 */
+	.audio-waves {
+		display: flex;
+		flex-direction: row;
+		margin-top: 8px;
+	}
+	
+	.wave-line {
+		width: 3px;
+		height: 12px;
+		background-color: #4a90e2;
+		margin: 0 2px;
+		border-radius: 2px;
+	}
+	
+	/* 类型标签 */
+	.type-badge {
+		position: absolute;
+		bottom: 4px;
+		right: 4px;
+		padding: 2px 6px;
+		border-radius: 4px;
+		background-color: rgba(0, 0, 0, 0.7);
+	}
+	
+	.badge-text {
+		font-size: 10px;
+		color: #fff;
+	}
+	
+	.badge-image {
+		background-color: rgba(74, 144, 226, 0.8);
+	}
+	
+	.badge-video {
+		background-color: rgba(255, 107, 107, 0.8);
+	}
+	
+	.badge-audio {
+		background-color: rgba(82, 196, 26, 0.8);
+	}
+	
+	.badge-document {
+		background-color: rgba(250, 173, 20, 0.8);
+	}
+	
+	/* 信息区域 */
+	.card-info {
+		padding: 4px 6px;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.card-name {
+		font-size: 10px;
+		color: #333;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	
+	.card-duration {
+		font-size: 9px;
+		color: #888;
+		margin-top: 2px;
+	}
+	
+	/* 滚动指示器 */
+	.scroll-indicator {
+		margin-top: 8px;
+		padding: 0 20px;
+	}
+	
+	.indicator-track {
+		height: 4px;
+		background-color: #e0e0e0;
+		border-radius: 2px;
+		position: relative;
+	}
+	
+	.indicator-thumb {
+		position: absolute;
+		width: 30px;
+		height: 4px;
+		background-color: #4a90e2;
+		border-radius: 2px;
+	}
+</style>
