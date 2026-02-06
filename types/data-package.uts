@@ -8,6 +8,7 @@ import { ProcessInfo } from '@/types/process'
  * 数据包清单 (manifest.json)
  */
 export type PackageManifest = {
+	name?: string
 	version: string
 	exportTime?: string
 	source?: string
@@ -27,7 +28,7 @@ export type PackageManifest = {
 	
 	// 工艺数据文件引用
 	processFiles?: string[] 
-	
+    processCount?: number
 	checksum?: string
 }
 

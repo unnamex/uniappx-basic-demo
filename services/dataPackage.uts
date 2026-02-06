@@ -211,6 +211,16 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 				// 解压并读取清单文件
 				parseManifestFromZip(zipData)
 					.then((manifest: PackageManifest) => {
+						// 自动填充工艺数量
+						if (manifest.processCount == null) {
+							if (manifest.files != null && manifest.files?.processes != null) {
+								manifest.processCount = manifest.files?.processes?.length
+							} else if (manifest.processFiles != null) {
+								manifest.processCount = manifest.processFiles?.length
+							} else {
+								manifest.processCount = 0
+							}
+						}
 						resolve(manifest)
 					})
 					.catch((e: any) => {
