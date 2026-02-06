@@ -45,26 +45,6 @@
 		"navigationBarBackgroundColor": "#FFFFFF",
 		"backgroundColor": "#F5F6F7"
 	},
-	"tabBar": {
-		"color": "#999999",
-		"selectedColor": "#007AFF",
-		"backgroundColor": "#FFFFFF",
-		"borderStyle": "black",
-		"list": [
-			{
-				"pagePath": "pages/index/index",
-				"text": "首页"
-			},
-			{
-				"pagePath": "pages/process/list",
-				"text": "工艺"
-			},
-			{
-				"pagePath": "pages/import/import",
-				"text": "导入"
-			}
-		]
-	},
 	"uniIdRouter": {
 		"loginPage": "",
 		"needLogin": []

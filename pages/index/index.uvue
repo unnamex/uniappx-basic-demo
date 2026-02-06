@@ -13,7 +13,8 @@
 					<text class="header-text">工艺预览 (Unified System)</text>
 				</view>
 				<view class="header-actions">
-					<button size="mini" @click="resetData">重置</button>
+					<!-- 设置按钮 -->
+					<button class="settings-btn" size="mini" plain="true" @click="toggleSettingsMenu">⚙</button>
 				</view>
 			</view>
 		</template>
@@ -137,6 +138,22 @@
 			</view>
 		</template>
 	</outsider-layout>
+	
+	<!-- 设置菜单遮罩层 -->
+	<view v-if="isSettingsMenuVisible" class="settings-overlay" @click="closeSettingsMenu"></view>
+	
+	<!-- 设置下拉菜单 (固定定位在右上角) -->
+	<view v-if="isSettingsMenuVisible" class="settings-dropdown">
+		<view class="menu-item" @click="handleImportData">
+			<text class="menu-item-icon">📦</text>
+			<text class="menu-item-text">导入数据包</text>
+		</view>
+		<view class="menu-divider"></view>
+		<view class="menu-item menu-item-danger" @click="handleResetData">
+			<text class="menu-item-icon">🔄</text>
+			<text class="menu-item-text">重置数据</text>
+		</view>
+	</view>
 	
 	<!-- 全屏资源预览覆盖层 -->
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
@@ -365,6 +382,42 @@
 			statusMessage.value = 'Data loaded from DB'
 			await loadLeftPanel()
 		}
+	}
+	
+	// 设置菜单显示状态
+	const isSettingsMenuVisible = ref(false)
+	
+	/**
+	 * 切换设置菜单显示状态
+	 */
+	const toggleSettingsMenu = () => {
+		isSettingsMenuVisible.value = !isSettingsMenuVisible.value
+	}
+	
+	/**
+	 * 关闭设置菜单
+	 */
+	const closeSettingsMenu = () => {
+		isSettingsMenuVisible.value = false
+	}
+	
+	/**
+	 * 处理导入数据包 - 跳转到导入页面
+	 */
+	const handleImportData = () => {
+		closeSettingsMenu()
+		uni.navigateTo({
+			url: '/pages/import/import'
+		})
+	}
+	
+	/**
+	 * 处理重置数据 - 直接执行重置
+	 */
+	const handleResetData = () => {
+		closeSettingsMenu()
+		// 直接执行重置，无需确认
+		resetData()
 	}
 	
 	// 重置数据 - 只清空数据库存储
@@ -1734,6 +1787,76 @@
 		height: 32px;
 		background-color: #ddd;
 		margin: 0 12px;
+	}
+	/* ========== 设置下拉菜单样式 ========== */
+	
+	.settings-btn {
+		font-size: 16px;
+		padding: 4px 8px;
+		border-radius: 6px;
+		background-color: #f0f0f0;
+		min-height: 28px;
+		line-height: 20px;
+	}
+	
+	.settings-dropdown {
+		position: fixed;
+		top: 50px;
+		right: 20px;
+		background-color: #ffffff;
+		border-radius: 10px;
+		padding: 6px 0;
+		min-width: 160px;
+		z-index: 2001;
+		flex-direction: column;
+		/* #ifdef WEB */
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+		/* #endif */
+		/* #ifndef WEB */
+		border-width: 1px;
+		border-style: solid;
+		border-color: #d0d0d0;
+		/* #endif */
+	}
+	
+	.menu-item {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 10px 14px;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+	}
+	
+	.menu-item-icon {
+		font-size: 16px;
+		margin-right: 10px;
+	}
+	
+	.menu-item-text {
+		font-size: 14px;
+		color: #333333;
+	}
+	
+	.menu-item-danger .menu-item-text {
+		color: #ff3b30;
+	}
+	
+	.menu-divider {
+		height: 1px;
+		background-color: #eeeeee;
+		margin: 4px 12px;
+	}
+	
+	.settings-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: transparent;
+		z-index: 1999;
 	}
 </style>
 
