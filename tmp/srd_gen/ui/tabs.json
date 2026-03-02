@@ -54,15 +54,51 @@
     "sort_order": 0
   },
   {
+    "id": "tab_bottom_proc_product",
+    "group_id": "group_bottom_proc",
+    "title": "产品信息",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_bottom_proc_quality",
+    "group_id": "group_bottom_proc",
+    "title": "质量要求",
+    "sort_order": 2
+  },
+  {
     "id": "tab_bottom_op_ov",
     "group_id": "group_bottom_op",
     "title": "概览",
     "sort_order": 0
   },
   {
+    "id": "tab_bottom_op_tools",
+    "group_id": "group_bottom_op",
+    "title": "工具清单",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_bottom_op_safety",
+    "group_id": "group_bottom_op",
+    "title": "安全规范",
+    "sort_order": 2
+  },
+  {
     "id": "tab_bottom_step_ov",
     "group_id": "group_bottom_step",
     "title": "说明",
     "sort_order": 0
+  },
+  {
+    "id": "tab_bottom_step_tools",
+    "group_id": "group_bottom_step",
+    "title": "工具/物料",
+    "sort_order": 1
+  },
+  {
+    "id": "tab_bottom_step_checklist",
+    "group_id": "group_bottom_step",
+    "title": "检查项",
+    "sort_order": 2
   }
 ]

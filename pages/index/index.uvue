@@ -79,32 +79,47 @@
 		<template #main-bottom>
 			<view class="main-content-bottom">
 				<view v-if="bottomGroup != null" style="height: 100%; display: flex; flex-direction: column;">
-					<!-- 底部使用 Tabs 可选，或者直接显示第一个 Tab 的内容 -->
-					<view class="bottom-header">
-						<text class="bottom-title">{{ bottomGroup?.name }}</text>
-					</view>
-					
-					<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
-						<view v-if="bottomGroup!.tabs.length > 0" class="bottom-content">
-							<!-- 暂时只显示第一个 Tab 的所有组件 -->
-							<view v-for="comp in bottomGroup!.tabs[0].components" :key="comp.id" class="component-wrapper-simple">
-								<text class="comp-title-small" v-if="comp.title != ''">{{ comp.title }}</text>
-								
-								<!-- Key-Value Component -->
-								<view v-if="comp.type == 'key-value'" class="info-grid">
-									<view v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-item-small">
-										<text class="info-label-small">{{ field['label'] }}:</text>
-										<text class="info-val-small">{{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}</text>
+					<text class="title">{{ bottomGroup?.name }}</text>
+					<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
+						<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
+							<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
+								<view class="tab-content-wrap">
+									<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
+										<text class="comp-title">{{ comp.title }}</text>
+										
+										<!-- Table Component -->
+										<view v-if="comp.type == 'table'" style="min-height: 200px;">
+											<ux-table 
+												:columns="getColumnsFromConfig(comp.config)" 
+												:data="comp.data"
+											></ux-table>
+										</view>
+										
+										<!-- Key-Value Component (Info Panel) -->
+										<view v-else-if="comp.type == 'key-value'" class="node-info-panel">
+											<text v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-row">
+												{{ field['label'] }}: {{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}
+											</text>
+										</view>
+										
+										<!-- Text Block Component -->
+										<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
+											<text class="info-desc">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无描述' }}</text>
+										</view>
+										
+										<!-- List Component -->
+										<view v-else-if="comp.type == 'list'" class="list-panel">
+											<view v-for="(item, idx) in comp.data" :key="idx" class="list-item-simple">
+												<text class="list-item-name">{{ item['text'] }}</text>
+											</view>
+											<text v-if="comp.data.length == 0" class="empty-hint">暂无数据</text>
+										</view>
+										
 									</view>
 								</view>
-								
-								<!-- Text Block Component -->
-								<view v-else-if="comp.type == 'text-block'" class="text-block">
-									<text class="info-desc-small">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无内容' }}</text>
-								</view>
-							</view>
-						</view>
-					</scroll-view>
+							</scroll-view>
+						</ux-tab-pane>
+					</ux-tabs>
 				</view>
 				<view v-else class="no-selection">
 					<text>选择节点查看概览</text>
@@ -848,6 +863,11 @@
 			if (group != null) {
 				bindDataToGroup(group, row)
 				bottomGroup.value = group
+				
+				// 默认选中第一个 Tab
+				if (!activeTabs.has(group.id) && group.tabs.length > 0) {
+					activeTabs.set(group.id, group.tabs[0].id)
+				}
 			}
 		}
 		
@@ -878,29 +898,20 @@
 						// 确保子节点也有显示用字段
 						comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 					}
-				} else if (dataSource == 'description') {
-					// 描述文本，包装成对象
-					const desc = node['description']
-					if (desc != null) {
-						const item = { text: desc }
+				} else if (dataSource == 'description' || dataSource == 'processDescription' || dataSource == 'safetyNotes' || dataSource == 'notes') {
+					// 文本型数据源，包装成 { text: value } 对象
+					const textVal = node[dataSource]
+					if (textVal != null) {
+						const item = { text: textVal }
 						comp.data.push(item)
 					}
-				} else if (dataSource == 'tools') {
-					// 工具列表
-					const tools = node['tools']
-					if (tools != null && Array.isArray(tools)) {
-						const list = tools as string[]
-						comp.data = list.map((t: string): UTSJSONObject => {
-							return { text: t }
-						})
-					}
-				} else if (dataSource == 'materials') {
-					// 物料列表
-					const materials = node['materials']
-					if (materials != null && Array.isArray(materials)) {
-						const list = materials as string[]
-						comp.data = list.map((m: string): UTSJSONObject => {
-							return { text: m }
+				} else if (dataSource == 'tools' || dataSource == 'materials' || dataSource == 'qualityChecks' || dataSource == 'safetyChecks' || dataSource == 'checklist') {
+					// 字符串数组型数据源，每个元素包装成 { text: value }
+					const arr = node[dataSource]
+					if (arr != null && Array.isArray(arr)) {
+						const list = arr as string[]
+						comp.data = list.map((item: string): UTSJSONObject => {
+							return { text: item }
 						})
 					}
 				}
@@ -1183,11 +1194,12 @@
 	}
 	
 	.main-content-bottom {
-		padding: 20px;
+		padding: 10px;
 		display: flex;
 		flex-direction: column;
 		background-color: #fafafa;
-		height: 100px; /* Fixed height for bottom area demo */
+		flex: 1;
+		height: 100%;
 	}
 
 	.title {

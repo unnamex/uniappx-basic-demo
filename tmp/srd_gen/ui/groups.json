@@ -3,42 +3,49 @@
     "id": "group_process_mgmt",
     "name": "工艺管理",
     "type": "tab-group",
-    "description": "Left Panel Group"
+    "description": "Left Panel Group",
+    "sort_order": 0
   },
   {
     "id": "group_process_view",
     "name": "工艺视图",
     "type": "tab-group",
-    "description": "Selected Process View (Middle)"
+    "description": "Selected Process View (Middle Top)",
+    "sort_order": 1
   },
   {
     "id": "group_procedure_view",
     "name": "工序视图",
     "type": "tab-group",
-    "description": "Selected Procedure View (Middle)"
+    "description": "Selected Procedure View (Middle Top)",
+    "sort_order": 2
   },
   {
     "id": "group_step_view",
     "name": "工步视图",
     "type": "tab-group",
-    "description": "Selected Step View (Middle)"
+    "description": "Selected Step View (Middle Top)",
+    "sort_order": 3
   },
   {
     "id": "group_bottom_proc",
     "name": "工艺详情",
     "type": "tab-group",
-    "description": "Selected Process Details (Bottom)"
+    "description": "Selected Process Details (Middle Bottom)",
+    "sort_order": 4
   },
   {
     "id": "group_bottom_op",
     "name": "工序详情",
     "type": "tab-group",
-    "description": "Selected Procedure Details (Bottom)"
+    "description": "Selected Procedure Details (Middle Bottom)",
+    "sort_order": 5
   },
   {
     "id": "group_bottom_step",
     "name": "工步详情",
     "type": "tab-group",
-    "description": "Selected Step Details (Bottom)"
+    "description": "Selected Step Details (Middle Bottom)",
+    "sort_order": 6
   }
 ]
