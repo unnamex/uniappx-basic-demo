@@ -1,10 +1,10 @@
 <template>
-	<view class="ux-collapse-item" :class="{ 'is-active': isActive }">
-		<view class="ux-collapse-item__header" @click="handleHeaderClick" :class="{ 'is-active': isActive }">
+	<view class="ux-collapse-item">
+		<view class="ux-collapse-item__header" @click="handleHeaderClick" :class="isActive ? 'ux-collapse-item__header-active' : ''">
 			<view class="ux-collapse-item__title">
 				<slot name="title">{{ title }}</slot>
 			</view>
-			<view class="ux-collapse-item__arrow" :class="{ 'is-active': isActive }">
+			<view :class="isActive ? 'ux-collapse-item__arrow-active' : 'ux-collapse-item__arrow'">
 				<text class="arrow-icon">></text>
 			</view>
 		</view>
@@ -56,11 +56,9 @@
 <style>
 	.ux-collapse-item {
 		width: 100%;
-		border-bottom: 1px solid #EBEEF5;
-	}
-	
-	.ux-collapse-item:last-child {
-		border-bottom: 0;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #EBEEF5;
 	}
 	
 	.ux-collapse-item__header {
@@ -69,15 +67,28 @@
 		align-items: center;
 		height: 48px;
 		background-color: #fff;
-		color: #303133;
+		/* #ifdef WEB */
 		cursor: pointer;
-		border-bottom: 1px solid #EBEEF5;
+		/* #endif */
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #EBEEF5;
 		padding: 0 10px;
 		justify-content: space-between;
 	}
 	
-	.ux-collapse-item__header.is-active {
+	.ux-collapse-item__header-active {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		height: 48px;
+		background-color: #fff;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
 		border-bottom-color: transparent;
+		padding: 0 10px;
+		justify-content: space-between;
 	}
 	
 	.ux-collapse-item__title {
@@ -92,8 +103,11 @@
 		transition-duration: 0.3s;
 	}
 	
-	.ux-collapse-item__arrow.is-active {
+	.ux-collapse-item__arrow-active {
+		margin-left: 8px;
 		transform: rotate(90deg);
+		transition-property: transform;
+		transition-duration: 0.3s;
 	}
 	
 	.arrow-icon {
@@ -103,13 +117,15 @@
 	
 	.ux-collapse-item__wrap {
 		background-color: #fff;
-		border-bottom: 1px solid #EBEEF5;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #EBEEF5;
 	}
 	
 	.ux-collapse-item__content {
 		padding: 10px;
 		font-size: 13px;
 		color: #606266;
-		line-height: 1.5;
+		line-height: 1.5em;
 	}
 </style>

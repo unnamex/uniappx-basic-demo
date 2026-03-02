@@ -67,7 +67,7 @@
 		<!-- 导入结果 -->
 		<view class="result-section" v-if="importResult != null">
 			<view class="result-card" :class="importResult!.success ? 'result-success' : 'result-error'">
-				<text class="result-icon-large">{{ importResult!.success ? '✓' : '✕' }}</text>
+				<text :class="importResult!.success ? 'result-icon-large' : 'result-error-icon-large'">{{ importResult!.success ? '✓' : '✕' }}</text>
 				<text class="result-title">{{ importResult!.success ? '导入完成' : '导入失败' }}</text>
 				<text class="result-desc">{{ importResult!.message }}</text>
 				<text class="result-stats" v-if="importResult!.success">
@@ -314,7 +314,14 @@
 		border-radius: 16px;
 		padding: 20px;
 		margin-bottom: 20px;
+		/* #ifdef WEB */
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+		/* #endif */
+		/* #ifndef WEB */
+		border-width: 1px;
+		border-style: solid;
+		border-color: #e8e8e8;
+		/* #endif */
 	}
 	
 	.card-title {
@@ -489,7 +496,9 @@
 	.progress-status {
 		font-size: 12px;
 		color: #8899a6;
+		/* #ifdef WEB */
 		text-align: center;
+		/* #endif */
 	}
 	
 	/* 结果展示 */
@@ -524,7 +533,9 @@
 		color: #16a34a; 
 	}
 	
-	.result-error .result-icon-large {
+	.result-error-icon-large {
+		font-size: 48px;
+		margin-bottom: 16px;
 		color: #dc2626;
 	}
 	
@@ -538,7 +549,9 @@
 	.result-desc {
 		font-size: 15px;
 		color: #4b5563;
+		/* #ifdef WEB */
 		text-align: center;
+		/* #endif */
 		margin-bottom: 16px;
 	}
 	
@@ -584,7 +597,9 @@
 	
 	.btn-hover {
 		opacity: 0.9;
+		/* #ifdef WEB */
 		transform: scale(0.98);
+		/* #endif */
 	}
 	
 	.btn-text {

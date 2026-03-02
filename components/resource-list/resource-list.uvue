@@ -23,8 +23,7 @@
 				<view 
 					v-for="(item, index) in resources" 
 					:key="item.id"
-					class="resource-card"
-					:class="{ 'selected': selectedId == item.id }"
+					:class="selectedId == item.id ? 'resource-card-selected' : 'resource-card'"
 					@click="onItemClick(item)"
 				>
 					<!-- 缩略图/图标区域 -->
@@ -211,7 +210,14 @@
 		border: 1px solid #e0e0e0;
 	}
 	
-	.resource-card.selected {
+	.resource-card-selected {
+		width: 60px;
+		margin-right: 6px;
+		background-color: #f8f9fa;
+		border-radius: 6px;
+		overflow: hidden;
+		border-width: 1px;
+		border-style: solid;
 		border-color: #4a90e2;
 	}
 	
@@ -245,15 +251,15 @@
 	}
 	
 	.video-placeholder {
-		background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+		background-color: #dee2e6;
 	}
 	
 	.audio-placeholder {
-		background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+		background-color: #c3e6cb;
 	}
 	
 	.doc-placeholder {
-		background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+		background-color: #ffeeba;
 	}
 	
 	.placeholder-icon {
@@ -335,7 +341,6 @@
 		font-size: 10px;
 		color: #333;
 		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 	
 	.card-duration {

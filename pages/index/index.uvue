@@ -166,7 +166,7 @@
 		<view class="menu-divider"></view>
 		<view class="menu-item menu-item-danger" @click="handleResetData">
 			<text class="menu-item-icon">🔄</text>
-			<text class="menu-item-text">重置数据</text>
+			<text class="menu-item-text-danger">重置数据</text>
 		</view>
 	</view>
 	
@@ -194,7 +194,7 @@
 			<!-- 内容区域 -->
 			<view class="fullscreen-content">
 				<!-- 预览区（可占满或与列表共存） -->
-				<view class="fullscreen-preview" :class="{ 'preview-full': !isFullscreenListVisible }">
+				<view :class="isFullscreenListVisible ? 'fullscreen-preview' : 'fullscreen-preview-full'">
 					<!-- 上一个/下一个导航按钮 -->
 					<view v-if="nodeResources.length > 1" class="nav-btn nav-prev" @click="goPrevResource">
 						<text class="nav-icon">‹</text>
@@ -262,20 +262,19 @@
 							<view 
 								v-for="(item, index) in nodeResources" 
 								:key="item.id"
-								class="fullscreen-thumb-item"
-								:class="{ 'selected': previewResource != null && previewResource.id == item.id }"
+								:class="(previewResource != null && previewResource.id == item.id) ? 'fullscreen-thumb-item-selected' : 'fullscreen-thumb-item'"
 								@click="onResourceSelect(item)"
 							>
 								<view class="thumb-wrapper">
 									<image 
 										v-if="item.type == 'image'" 
-										class="thumb-img"
+										class="fullscreen-thumb-img"
 										:src="item.thumbnail != '' ? item.thumbnail : item.path"
 										mode="aspectFill"
 									/>
-									<text v-else-if="item.type == 'video'" class="thumb-icon">🎬</text>
-									<text v-else-if="item.type == 'audio'" class="thumb-icon">🎵</text>
-									<text v-else class="thumb-icon">📄</text>
+									<text v-else-if="item.type == 'video'" class="fullscreen-thumb-icon">🎬</text>
+									<text v-else-if="item.type == 'audio'" class="fullscreen-thumb-icon">🎵</text>
+									<text v-else class="fullscreen-thumb-icon">📄</text>
 								</view>
 								<text class="thumb-name" :numberOfLines="1">{{ item.name }}</text>
 							</view>
@@ -292,8 +291,7 @@
 	// #ifdef WEB
 	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database.uts'
 	// #endif
-	import { importPackage } from '@/services/dataPackage.uts'
-	import { clearAllProcesses } from '@/services/processService.uts'
+
 	import { ResourceItem } from '@/types/resource'
 	import { getResourcesByNodeId, clearAllResources } from '@/services/resourceService.uts'
 
@@ -301,8 +299,7 @@
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
 	import UxTabPane from '@/components/ux-tab-pane/ux-tab-pane.uvue'
 	import UxTable from '@/components/ux-table/ux-table.uvue'
-	import UxCollapse from '@/components/ux-collapse/ux-collapse.uvue'
-	import UxCollapseItem from '@/components/ux-collapse-item/ux-collapse-item.uvue'
+
 	import ResourcePreview from '@/components/resource-preview/resource-preview.uvue'
 	import ResourceList from '@/components/resource-list/resource-list.uvue'
 
@@ -361,6 +358,7 @@
 	
 	// 图片变换样式
 	const imageTransformStyle = computed((): string => {
+		// transform 在 App 端可能不完全支持，但通过内联 style 设置通常可用
 		return `transform: scale(${imageScale.value}) rotate(${imageRotation.value}deg);`
 	})
 
@@ -804,16 +802,7 @@
 		activeTabs.set(groupId, tabId as string)
 	}
 	
-	const getColumns = (comp: ComponentVM): UTSJSONObject[] => {
-		if (Array.isArray(comp.config)) {
-			return comp.config as UTSJSONObject[]
-		}
-		return []
-	}
-	
-	const getCollapseConfig = (comp: ComponentVM): UTSJSONObject => {
-		return comp.config as UTSJSONObject
-	}
+
 	
 	// Helper to get string safely
 	const getString = (obj: UTSJSONObject | null, key: string): string => {
@@ -1128,25 +1117,7 @@
 		}
 	}
 	
-	/**
-	 * 格式化时长
-	 */
-	const formatDuration = (seconds: number): string => {
-		const mins = Math.floor(seconds / 60)
-		const secs = seconds % 60
-		return `${mins}:${secs < 10 ? '0' : ''}${secs}`
-	}
-	
-	/**
-	 * 获取资源类型标签
-	 */
-	const getTypeLabel = (type: string): string => {
-		if (type == 'image') return '图片'
-		if (type == 'video') return '视频'
-		if (type == 'audio') return '音频'
-		if (type == 'document') return '文档'
-		return type
-	}
+
 	
 </script>
 
@@ -1217,34 +1188,7 @@
 		background-color: #fff;
 	}
 	
-	.right-header {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
-		align-items: center;
-		padding: 8px 10px;
-		border-bottom: 1px solid #f0f0f0;
-		width: 100%;
-		box-sizing: border-box; /* 确保 padding 不会撑出容器 */
-	}
-	
-	.right-header-title {
-		font-size: 14px;
-		font-weight: 600;
-		color: #333;
-	}
-	
-	.right-header-btn {
-		padding: 4px;
-		border-radius: 4px;
-		background-color: #f5f5f5;
-		cursor: pointer;
-	}
-	
-	.btn-icon {
-		font-size: 14px;
-		color: #555;
-	}
+	/* 重复定义已移除，见下方 Right Header 区域 */
 
 	.right-panel {
 		width: 100%;
@@ -1253,7 +1197,6 @@
 		display: flex;
 		flex-direction: column;
 		padding: 10px;
-		box-sizing: border-box;
 	}
 
 	.right-content {
@@ -1350,7 +1293,7 @@
 	.info-desc {
 		font-size: 14px;
 		color: #333;
-		line-height: 1.5;
+		line-height: 1.5em;
 	}
 	
 	.no-selection {
@@ -1434,7 +1377,7 @@
 	.info-desc-small {
 		font-size: 13px;
 		color: #666;
-		line-height: 1.4;
+		line-height: 1.4em;
 	}
 	
 	/* 列表面板样式 */
@@ -1621,8 +1564,16 @@
 		border: 1px solid #e0e0e0;
 	}
 	
-	.fullscreen-preview.preview-full {
+	.fullscreen-preview-full {
+		flex: 1;
+		display: flex;
+		flex-direction: row;
+		position: relative;
 		margin-right: 0;
+		background-color: #fff;
+		border-radius: 8px;
+		overflow: hidden;
+		border: 1px solid #e0e0e0;
 	}
 	
 	/* 上/下一个导航按钮 */
@@ -1683,9 +1634,15 @@
 		border: 2px solid transparent;
 	}
 	
-	.fullscreen-thumb-item.selected {
-		border-color: #4a90e2;
+	.fullscreen-thumb-item-selected {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 8px;
+		margin-bottom: 8px;
 		background-color: rgba(74, 144, 226, 0.1);
+		border-radius: 6px;
+		border: 2px solid #4a90e2;
 	}
 	
 	.thumb-wrapper {
@@ -1699,12 +1656,12 @@
 		overflow: hidden;
 	}
 	
-	.thumb-wrapper .thumb-img {
+	.fullscreen-thumb-img {
 		width: 100%;
 		height: 100%;
 	}
 	
-	.thumb-wrapper .thumb-icon {
+	.fullscreen-thumb-icon {
 		font-size: 28px;
 	}
 	
@@ -1712,9 +1669,7 @@
 		font-size: 11px;
 		color: #666;
 		margin-top: 6px;
-		text-align: center;
 		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 	
 	/* 图片查看器 */
@@ -1850,7 +1805,8 @@
 		color: #333333;
 	}
 	
-	.menu-item-danger .menu-item-text {
+	.menu-item-text-danger {
+		font-size: 14px;
 		color: #ff3b30;
 	}
 	

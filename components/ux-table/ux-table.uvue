@@ -17,8 +17,8 @@
 					<!-- #endif -->
 					<!-- #ifndef H5 -->
 					<view class="resize-handle" 
-						@touchstart.stop.prevent="onResizeStart(index, $event)" 
-						@touchmove.stop.prevent="onResizeMove" 
+						@touchstart.stop="onResizeStart(index, $event)" 
+						@touchmove.stop="onResizeMove" 
 						@touchend="onResizeEnd">
 						<view class="separator-line"></view>
 					</view>
@@ -398,7 +398,9 @@
 		flex-direction: row;
 		justify-content: center; /* Center the line within the handle area */
 		align-items: center;
+		/* #ifdef WEB */
 		cursor: col-resize;
+		/* #endif */
 		z-index: 10;
 		/* background-color: rgba(255, 0, 0, 0.1); */ /* Debug: visualize hit area */
 	}
@@ -421,7 +423,9 @@
 		background-color: #F5F7FA;
 		z-index: 100;
 		border-left: 1px solid #dcdfe6;
+		/* #ifdef WEB */
 		box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+		/* #endif */
 	}
 	
 	.header-action-hover {
