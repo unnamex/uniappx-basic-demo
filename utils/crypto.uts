@@ -93,24 +93,71 @@ function decryptAndroid(encryptedData: ArrayBuffer): DecryptResult {
 // #endif
 
 // #ifdef APP-HARMONY
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
+import { buffer as harmonyBuffer } from '@kit.ArkTS';
+
 /**
  * HarmonyOS 平台解密实现
+ * @description 使用 @ohos.security.cryptoFramework 的 AES-256-CBC 解密
  */
 function decryptHarmony(encryptedData: ArrayBuffer): DecryptResult {
 	try {
-		// HarmonyOS 使用 @ohos.security.cryptoFramework
-		// 此处为占位实现，实际需要调用鸿蒙加密 API
-		console.log('HarmonyOS decrypt called')
-		return {
-			success: false,
-			data: null,
-			errorMessage: 'HarmonyOS 加密模块待实现'
+		const dataBytes = new Uint8Array(encryptedData)
+		
+		// 校验数据长度（至少包含 16 字节 IV）
+		if (dataBytes.length < 16) {
+			return {
+				success: false,
+				data: null,
+				errorMessage: '数据包格式错误：数据太短'
+			}
+		}
+		
+		// 提取 IV（前 16 字节）和加密数据
+		const ivBytes = dataBytes.slice(0, 16)
+		const cipherBytes = dataBytes.slice(16)
+		
+		// 构建密钥（截取前 32 字节）
+		const keyStr = PRESET_KEY.substring(0, 32)
+		const keyBuffer = harmonyBuffer.from(keyStr, 'utf-8')
+		
+		// 创建对称密钥
+		const symKeyBlob: cryptoFramework.DataBlob = { data: new Uint8Array(keyBuffer.buffer) }
+		const symKeyGenerator = cryptoFramework.createSymKeyGenerator('AES256')
+		const symKey = symKeyGenerator.convertKeySync(symKeyBlob)
+		
+		// 创建 IV 参数
+		const ivBlob: cryptoFramework.DataBlob = { data: ivBytes }
+		const ivParam: cryptoFramework.IvParamsSpec = {
+			algName: 'IvParamsSpec',
+			iv: ivBlob
+		}
+		
+		// 创建解密器并执行解密
+		const cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7')
+		cipher.initSync(cryptoFramework.CryptoMode.DECRYPT_MODE, symKey, ivParam)
+		
+		const cipherBlob: cryptoFramework.DataBlob = { data: cipherBytes }
+		const decryptedBlob = cipher.doFinalSync(cipherBlob)
+		
+		if (decryptedBlob != null && decryptedBlob.data != null) {
+			return {
+				success: true,
+				data: decryptedBlob.data.buffer as ArrayBuffer,
+				errorMessage: ''
+			}
+		} else {
+			return {
+				success: false,
+				data: null,
+				errorMessage: 'Harmony 解密结果为空'
+			}
 		}
 	} catch (e: any) {
 		return {
 			success: false,
 			data: null,
-			errorMessage: '解密失败：' + e.message
+			errorMessage: 'Harmony 解密失败：' + e.message
 		}
 	}
 }
@@ -189,10 +236,34 @@ function verifyChecksumAndroid(data: ArrayBuffer, expectedChecksum: string): boo
 // #endif
 
 // #ifdef APP-HARMONY
+/**
+ * HarmonyOS 平台 MD5 校验实现
+ * @description 使用 @ohos.security.cryptoFramework 计算 MD5 哈希
+ */
 function verifyChecksumHarmony(data: ArrayBuffer, expectedChecksum: string): boolean {
-	// HarmonyOS 实现
-	console.log('HarmonyOS checksum verification')
-	return true
+	try {
+		const md = cryptoFramework.createMd('MD5')
+		const dataBlob: cryptoFramework.DataBlob = { data: new Uint8Array(data) }
+		md.updateSync(dataBlob)
+		const digestBlob = md.digestSync()
+		
+		// 转换为十六进制字符串
+		let hexString = ''
+		if (digestBlob.data != null) {
+			for (let i = 0; i < digestBlob.data.length; i++) {
+				const hex = (digestBlob.data[i] & 0xFF).toString(16)
+				if (hex.length == 1) {
+					hexString += '0'
+				}
+				hexString += hex
+			}
+		}
+		
+		return hexString.toLowerCase() == expectedChecksum.toLowerCase()
+	} catch (e: any) {
+		console.error('Harmony MD5 校验失败：', e.message)
+		return false
+	}
 }
 // #endif
 

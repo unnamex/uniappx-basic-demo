@@ -6,12 +6,10 @@
 /**
  * 资源类型常量
  */
-export const ResourceType = {
-	IMAGE: 'image',
-	VIDEO: 'video',
-	AUDIO: 'audio',
-	DOCUMENT: 'document'
-}
+export const ResourceType_IMAGE = 'image'
+export const ResourceType_VIDEO = 'video'
+export const ResourceType_AUDIO = 'audio'
+export const ResourceType_DOCUMENT = 'document'
 
 /**
  * 资源项类型
@@ -56,10 +54,10 @@ export type NodeResources = {
  * @returns 图标 emoji
  */
 export function getResourceTypeIcon(type: string): string {
-	if (type == ResourceType.IMAGE) return '🖼️'
-	if (type == ResourceType.VIDEO) return '🎬'
-	if (type == ResourceType.AUDIO) return '🔊'
-	if (type == ResourceType.DOCUMENT) return '📄'
+	if (type == ResourceType_IMAGE) return '🖼️'
+	if (type == ResourceType_VIDEO) return '🎬'
+	if (type == ResourceType_AUDIO) return '🔊'
+	if (type == ResourceType_DOCUMENT) return '📄'
 	return '📎'
 }
 
@@ -69,10 +67,10 @@ export function getResourceTypeIcon(type: string): string {
  * @returns 类型中文名
  */
 export function getResourceTypeLabel(type: string): string {
-	if (type == ResourceType.IMAGE) return '图片'
-	if (type == ResourceType.VIDEO) return '视频'
-	if (type == ResourceType.AUDIO) return '音频'
-	if (type == ResourceType.DOCUMENT) return '文档'
+	if (type == ResourceType_IMAGE) return '图片'
+	if (type == ResourceType_VIDEO) return '视频'
+	if (type == ResourceType_AUDIO) return '音频'
+	if (type == ResourceType_DOCUMENT) return '文档'
 	return '附件'
 }
 
@@ -113,22 +111,22 @@ export function inferResourceType(filename: string): string {
 	
 	// 图片格式
 	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].indexOf(ext) >= 0) {
-		return ResourceType.IMAGE
+		return ResourceType_IMAGE
 	}
 	
 	// 视频格式
 	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].indexOf(ext) >= 0) {
-		return ResourceType.VIDEO
+		return ResourceType_VIDEO
 	}
 	
 	// 音频格式
 	if (['mp3', 'wav', 'aac', 'ogg', 'm4a', 'flac'].indexOf(ext) >= 0) {
-		return ResourceType.AUDIO
+		return ResourceType_AUDIO
 	}
 	
 	// 文档格式
 	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].indexOf(ext) >= 0) {
-		return ResourceType.DOCUMENT
+		return ResourceType_DOCUMENT
 	}
 	
 	return 'unknown'

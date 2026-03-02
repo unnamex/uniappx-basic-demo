@@ -39,4 +39,9 @@
 ## 注意事项
 
 * Web 端目前仅支持部分功能（数据包解压依赖浏览器 API，可能受限）。
-* HarmonyOS 端加解密功能暂为占位实现，需根据鸿蒙 SDK 补充。
+* HarmonyOS 端已完成以下功能适配：
+  * 数据库：使用 `@ohos.data.relationalStore` (RDB) 实现
+  * ZIP 解压：使用 `@ohos.zlib` 的 `decompressFile` 实现
+  * 加解密：使用 `@ohos.security.cryptoFramework` 实现 AES-256-CBC 解密和 MD5 校验
+  * 文件操作：使用 `uni.getFileSystemManager()` 跨平台 API
+  * 实际运行需在 HBuilderX 4.61+ 环境下编译到鸿蒙真机/模拟器验证

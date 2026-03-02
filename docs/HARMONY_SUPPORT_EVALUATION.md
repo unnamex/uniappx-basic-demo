@@ -5,193 +5,103 @@
 | 模块 | 支持状态 | 评分 | 备注 |
 |------|----------|------|------|
 | **UI 组件** | ✅ 良好 | 90% | uvue 组件跨平台兼容 |
-| **数据库服务** | ⚠️ 占位实现 | 20% | 需要接入鸿蒙 RDB |
-| **数据包导入** | ⚠️ 占位实现 | 30% | 需要实现 ZIP 解压 |
-| **文件服务** | ✅ 条件编译 | 70% | 已有 HARMONY 分支 |
-| **加密解密** | ✅ 条件编译 | 60% | 已有 HARMONY 分支 |
+| **数据库服务** | ✅ 已实现 | 90% | 使用鸿蒙 relationalStore RDB |
+| **数据包导入** | ✅ 已实现 | 85% | 使用 @ohos.zlib 解压 |
+| **文件服务** | ✅ 条件编译 | 80% | 已有 HARMONY 分支，运行时路径 |
+| **加密解密** | ✅ 已实现 | 85% | 使用 cryptoFramework |
 | **网络请求** | ✅ 插件支持 | 80% | kux-request 已适配 |
 
-**总体评分：约 50%** - 框架结构支持鸿蒙，但核心功能需要实现。
+**总体评分：约 85%** - 核心功能已实现，需在真机/模拟器验证。
 
 ---
 
-## 详细分析
+## 已完成适配清单
 
 ### 1. 数据库服务 (`services/database.uts`)
 
-**问题：鸿蒙代码块是空实现（占位符）**
+**状态：✅ 已实现**
 
-```typescript
-// #ifdef APP-HARMONY
-let dbInstance: any = null  // 类型未明确
-// #endif
-
-// 初始化数据库 - 鸿蒙直接返回 true，无实际实现
-// #ifdef APP-HARMONY
-resolve(true)  // ❌ 占位实现
-// #endif
-
-// 创建表 - 鸿蒙直接返回，无实际创建
-// #ifdef APP-HARMONY
-resolve()  // ❌ 占位实现
-// #endif
-```
-
-**需要实现**：
-
-- 使用 HarmonyOS 的 `@ohos.data.relationalStore` (RDB) API
-- 参考官方文档：[鸿蒙关系型数据库](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-data-relationalstore)
-
-**修复示例**：
-
-```typescript
-// #ifdef APP-HARMONY
-import relationalStore from '@ohos.data.relationalStore'
-
-const STORE_CONFIG: relationalStore.StoreConfig = {
-  name: 'mpm_offline.db',
-  securityLevel: relationalStore.SecurityLevel.S1
-}
-
-let rdbStore: relationalStore.RdbStore | null = null
-
-function initHarmonyDatabase(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    relationalStore.getRdbStore(getContext(), STORE_CONFIG)
-      .then((store) => {
-        rdbStore = store
-        resolve()
-      })
-      .catch(reject)
-  })
-}
-// #endif
-```
-
----
+- 使用 `@kit.ArkData` 的 `relationalStore` API
+- 实现了 `initHarmonyDatabase()` 初始化 RDB 数据库
+- 实现了 `createTables()` 鸿蒙分支建表
+- 实现了 `executeSQL()` 鸿蒙分支执行 SQL
+- 实现了 `querySQL()` 鸿蒙分支查询数据
+- 实现了 `closeDatabase()` 鸿蒙分支
+- 实现了事务管理（`beginTransaction/setTransactionSuccessful/endTransaction`）
 
 ### 2. 数据包导入 (`services/dataPackage.uts`)
 
-**问题：鸿蒙部分有框架但功能不完整**
+**状态：✅ 已实现**
 
-```typescript
-// #ifdef APP-HARMONY
-function selectFileHarmony(...) {
-  // 使用 uni.chooseFile ✅ 可用
-}
-// #endif
+- 使用 `@kit.BasicServicesKit` 的 `zlib.decompressFile` API
+- 实现了 `parseManifestHarmony()` 解析清单文件
+- 实现了 `extractAndParseHarmony()` 完整数据导入流程
+- 实现了 `processHarmonyExtractedFiles()` 处理解压后文件
+- 实现了 `copyAssetsRecursive()` 资源文件递归复制
+- 实现了 `cleanupTempFiles()` 临时文件清理
 
-// #ifdef APP-HARMONY
-async function extractAndParseHarmony(...) {
-  // ⚠️ 需要实现 ZIP 解压
-}
-// #endif
-```
+### 3. 加密解密 (`utils/crypto.uts`)
 
-**需要实现**：
+**状态：✅ 已实现**
 
-- 使用 `@ohos.zlib` API 解压 ZIP 文件
-- 或使用 uni-app x 提供的跨平台解压能力
+- 使用 `@kit.CryptoArchitectureKit` 的 `cryptoFramework` API
+- 实现了 AES-256-CBC 解密（`decryptHarmony`）
+- 实现了 MD5 校验（`verifyChecksumHarmony`）
 
----
+### 4. 文件/资源服务
 
-### 3. 文件服务 (`services/fileService.uts`)
+**状态：✅ 已优化**
 
-**状态：已有条件编译分支**
+- `fileService.uts`: 已有 `APP-ANDROID || APP-HARMONY` 条件编译
+- `resourceService.uts`:
+  - `getAssetsBasePath()` 改用 `uni.env.USER_DATA_PATH` 运行时路径
+  - 添加了鸿蒙端 `clearAssetFiles()` 实现
+  - 添加了鸿蒙端 `ensureDirectory()` 函数
 
-```typescript
-// #ifdef APP-ANDROID || APP-HARMONY
-// 部分功能已考虑鸿蒙，但需验证 API 兼容性
-// #endif
-```
+### 5. App 生命周期 (`App.uvue`)
 
----
+**状态：✅ 已优化**
 
-### 4. UI 组件
+- `onLastPageBackPress` 扩展为 `APP-ANDROID || APP-HARMONY`
 
-**状态：良好**
+### 6. 项目配置 (`manifest.json`)
 
-- `outsider-layout` - 纯 uvue 组件，跨平台兼容
-- `ux-table` - 纯 uvue 组件
-- `ux-tabs` - 纯 uvue 组件
-- CSS 样式 - 遵循 ucss 子集规范
+**状态：✅ 已添加**
 
-uvue/ucss 是 uni-app x 的跨平台基础，理论上在鸿蒙端可直接运行。
+- 添加了 `app-harmony` 配置段
 
 ---
 
-### 5. 第三方插件
+## 使用的鸿蒙原生 API 汇总
 
-| 插件 | 鸿蒙支持 |
-|------|----------|
-| `kux-request` | ✅ 已有 APP-HARMONY 条件编译 |
-| `jszip` (Web) | ❌ 仅 Web 端 |
-
----
-
-## 适配工作清单
-
-### 优先级 P0（必须）
-
-1. **实现鸿蒙数据库**
-   - 文件：`services/database.uts`
-   - 使用 `@ohos.data.relationalStore` API
-   - 实现 `initDatabase`, `executeSQL`, `querySQL` 等函数
-
-2. **实现鸿蒙 ZIP 解压**
-   - 文件：`services/dataPackage.uts`
-   - 使用 `@ohos.zlib` API
-   - 实现 `extractAndParseHarmony` 函数
-
-### 优先级 P1（重要）
-
-1. **验证文件操作 API**
-   - 确认 `uni.getFileSystemManager()` 在鸿蒙端的行为
-   - 测试文件读写功能
-
-2. **测试 UI 渲染**
-   - 在鸿蒙模拟器/真机上测试界面
-   - 确认 CSS 样式兼容性
-
-### 优先级 P2（可选）
-
-1. **加密解密优化**
-   - 验证 `crypto.uts` 中的鸿蒙实现
+| API 模块 | Kit 名称 | 具体 API | 用途 |
+|----------|----------|----------|------|
+| `relationalStore` | `@kit.ArkData` | `getRdbStore`, `executeSql`, `querySql` | 数据库操作 |
+| `zlib` | `@kit.BasicServicesKit` | `decompressFile` | ZIP 解压 |
+| `cryptoFramework` | `@kit.CryptoArchitectureKit` | `createCipher`, `createMd`, `createSymKeyGenerator` | 加解密和哈希 |
+| `buffer` | `@kit.ArkTS` | `from` | 字符串转 Buffer |
 
 ---
 
-## 建议的开发流程
+## 待验证项
 
-```
-1. 配置鸿蒙开发环境
-   └── 安装 DevEco Studio
-   └── 配置 HBuilderX 鸿蒙编译
-
-2. 实现核心占位代码
-   └── database.uts (RDB)
-   └── dataPackage.uts (ZIP)
-
-3. 编译测试
-   └── 先在模拟器验证
-   └── 再在真机测试
-
-4. 修复平台差异
-   └── 添加需要的条件编译
-```
+1. **编译验证** - 需在 HBuilderX 4.61+ 环境下编译到鸿蒙目标
+2. **运行时验证** - 需在鸿蒙模拟器/真机上测试完整导入流程
+3. **UI 渲染验证** - 确认 uvue/ucss 样式在鸿蒙端的兼容性
+4. **性能测试** - 验证大数据包在鸿蒙端的导入性能
 
 ---
 
 ## 总结
 
-项目已具备鸿蒙支持的**框架结构**：
+项目已完成鸿蒙支持的**核心功能实现**：
 
-- ✅ 条件编译分支已预留
+- ✅ 数据库操作（relationalStore）
+- ✅ ZIP 解压（zlib）
+- ✅ 加密解密（cryptoFramework）
+- ✅ 文件操作（uni.getFileSystemManager）
+- ✅ 条件编译分支完备
 - ✅ UI 组件跨平台设计
-- ✅ 第三方插件部分支持
+- ✅ 第三方插件兼容
 
-但**核心功能需要实现**：
-
-- ❌ 数据库操作（关键）
-- ❌ ZIP 解压（关键）
-
-预计适配工作量：**2-3 人天**（熟悉鸿蒙开发的前提下）
+**下一步：需在鸿蒙开发环境中编译运行验证。**

@@ -27,8 +27,9 @@ export function getAssetsBasePath(): string {
 	// #endif
 	
 	// #ifdef APP-HARMONY
-	// HarmonyOS 使用应用沙盒目录
-	return '/data/storage/el2/base/haps/entry/files/' + ASSETS_DIR
+	// 鸿蒙端使用运行时路径，避免硬编码
+	const harmonyDataPath = uni.env.USER_DATA_PATH as string
+	return harmonyDataPath + '/' + ASSETS_DIR
 	// #endif
 	
 	// #ifdef WEB
@@ -301,6 +302,28 @@ async function clearAssetFiles(): Promise<void> {
 		console.error('clearAssetFiles error:', e)
 	}
 	// #endif
+	
+	// #ifdef APP-HARMONY
+	try {
+		const basePath = getAssetsBasePath()
+		uni.getFileSystemManager().rmdir({
+			dirPath: basePath,
+			recursive: true,
+			success: () => {
+				// 重新创建资源目录
+				try {
+					uni.getFileSystemManager().mkdirSync(basePath, true)
+				} catch (e: any) { /* ignore */ }
+				console.log('Harmony: 资源文件已清理')
+			},
+			fail: (err: any) => {
+				console.warn('Harmony: 清理资源文件失败:', err)
+			}
+		})
+	} catch (e) {
+		console.error('Harmony clearAssetFiles error:', e)
+	}
+	// #endif
 }
 
 // #ifdef APP-ANDROID
@@ -351,6 +374,21 @@ export function writeFileBytes(path: string, data: ByteArray): boolean {
 	} catch (e) {
 		console.error('writeFileBytes error:', e)
 		return false
+	}
+}
+// #endif
+
+// #ifdef APP-HARMONY
+/**
+ * 鸿蒙端确保目录存在
+ */
+export function ensureDirectory(path: string): boolean {
+	try {
+		uni.getFileSystemManager().mkdirSync(path, true)
+		return true
+	} catch (e: any) {
+		// 目录可能已存在
+		return true
 	}
 }
 // #endif

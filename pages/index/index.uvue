@@ -273,7 +273,6 @@
 </template>
 
 <script setup lang="uts">
-	import { onLoad, onShow } from '@dcloudio/uni-app'
 	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
 	// #ifdef WEB
 	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database.uts'
@@ -355,7 +354,7 @@
 		await initData()
 	})
 	
-	onShow(async () => {
+	onPageShow(async () => {
 		// 每次页面显示时检查并刷新数据
 		// console.log('Page Show')
 		await initData()

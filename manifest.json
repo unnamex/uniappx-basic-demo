@@ -60,5 +60,12 @@
 			"icons": {},
 			"splashScreens": {}
 		}
+	},
+	"app-harmony": {
+		"distribute": {
+			"modules": {},
+			"icons": {},
+			"splashScreens": {}
+		}
 	}
 }

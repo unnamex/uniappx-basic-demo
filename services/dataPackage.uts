@@ -7,6 +7,10 @@ import { saveResource, extractResourcesFromNode, getAssetsBasePath } from '@/ser
 // #ifdef APP-ANDROID
 import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
 // #endif
+// #ifdef APP-HARMONY
+import { zlib } from '@kit.BasicServicesKit';
+import { ensureDirectory as ensureDirectoryHarmony } from '@/services/resourceService'
+// #endif
 // #ifdef WEB
 import { webPutData, webClearStore } from '@/services/database'
 import { storeBlobAndGetUrl, clearBlobUrls } from '@/services/resourceService'
@@ -414,13 +418,94 @@ function parseManifestAndroid(
 // #endif
 
 // #ifdef APP-HARMONY
+/**
+ * 鸿蒙端从 ZIP 数据中解析清单文件
+ * @description 先将 ZIP 数据写入临时文件，再使用 @ohos.zlib 解压，最后读取 manifest.json
+ */
 function parseManifestHarmony(
 	zipData: ArrayBuffer,
 	resolve: (value: PackageManifest) => void,
 	reject: (reason: Error) => void
 ): void {
-	// HarmonyOS 实现
-	reject(new Error('HarmonyOS ZIP 解析待实现'))
+	try {
+		const userDataPath = uni.env.USER_DATA_PATH as string
+		const tempZipPath = userDataPath + '/temp_manifest_' + Date.now() + '.zip'
+		const tempExtractDir = userDataPath + '/temp_extract_manifest_' + Date.now()
+		
+		// 将 ZIP 数据写入临时文件
+		uni.getFileSystemManager().writeFile({
+			filePath: tempZipPath,
+			data: zipData,
+			success: () => {
+				// 创建解压目录
+				try {
+					uni.getFileSystemManager().mkdirSync(tempExtractDir, true)
+				} catch (e: any) {
+					// 目录可能已存在
+				}
+				
+				// 使用鸿蒙 zlib 解压
+				zlib.decompressFile(tempZipPath, tempExtractDir)
+					.then(() => {
+						// 读取解压后的 manifest.json
+						const manifestPath = tempExtractDir + '/manifest.json'
+						
+						uni.getFileSystemManager().readFile({
+							filePath: manifestPath,
+							encoding: 'utf-8',
+							success: (res: ReadFileSuccessCallbackResult) => {
+								try {
+									const manifest = JSON.parse(res.data as string) as PackageManifest
+									
+									// 清理临时文件
+									cleanupTempFiles(tempZipPath, tempExtractDir)
+									
+									resolve(manifest)
+								} catch (parseErr: any) {
+									cleanupTempFiles(tempZipPath, tempExtractDir)
+									reject(new Error('解析清单文件失败：' + parseErr.toString()))
+								}
+							},
+							fail: (err: any) => {
+								cleanupTempFiles(tempZipPath, tempExtractDir)
+								reject(new Error('数据包中未找到清单文件'))
+							}
+						})
+					})
+					.catch((zlibErr: Error) => {
+						cleanupTempFiles(tempZipPath, tempExtractDir)
+						reject(new Error('ZIP 解压失败：' + zlibErr.message))
+					})
+			},
+			fail: (writeErr: any) => {
+				reject(new Error('写入临时 ZIP 文件失败'))
+			}
+		})
+	} catch (e: any) {
+		reject(new Error('Harmony 清单解析异常：' + e.toString()))
+	}
+}
+
+/**
+ * 清理临时文件和目录
+ */
+function cleanupTempFiles(zipPath: string, extractDir: string): void {
+	try {
+		uni.getFileSystemManager().unlink({
+			filePath: zipPath,
+			success: () => {},
+			fail: () => {}
+		})
+	} catch (e: any) { /* ignore */ }
+	
+	try {
+		uni.getFileSystemManager().rmdir({
+			dirPath: extractDir,
+			recursive: true,
+			success: () => {},
+			fail: () => {}
+		})
+	} catch (e: any) { /* ignore */ }
 }
 // #endif
 
@@ -786,13 +871,392 @@ function getRelativeAssetPath(entryName: string): string {
 // #endif
 
 // #ifdef APP-HARMONY
+/**
+ * 鸿蒙端解压并解析数据包内容
+ * @description 将 ZIP 写入临时文件 → 使用 zlib 解压 → 读取解压文件 → 保存到数据库
+ */
 function extractAndParseHarmony(
 	zipData: ArrayBuffer,
 	onProgress: ImportProgressCallback | null,
 	resolve: (value: ImportResult) => void,
 	reject: (reason: Error) => void
 ): void {
-	reject(new Error('HarmonyOS 解析待实现'))
+	try {
+		const userDataPath = uni.env.USER_DATA_PATH as string
+		const tempZipPath = userDataPath + '/temp_import_' + Date.now() + '.zip'
+		const tempExtractDir = userDataPath + '/temp_import_extract_' + Date.now()
+		
+		// 将 ZIP 数据写入临时文件
+		uni.getFileSystemManager().writeFile({
+			filePath: tempZipPath,
+			data: zipData,
+			success: () => {
+				// 创建解压目录
+				try {
+					uni.getFileSystemManager().mkdirSync(tempExtractDir, true)
+				} catch (e: any) { /* 目录可能已存在 */ }
+				
+				// 更新进度：解压中
+				if (onProgress != null) {
+					onProgress({
+						current: 45,
+						total: 100,
+						currentFile: 'Harmony: 解压中...',
+						status: 'extracting'
+					})
+				}
+				
+				// 使用鸿蒙 zlib 解压
+				zlib.decompressFile(tempZipPath, tempExtractDir)
+					.then(() => {
+						// 解压成功，开始解析文件
+						processHarmonyExtractedFiles(
+							tempExtractDir,
+							onProgress,
+							(result: ImportResult) => {
+								cleanupTempFiles(tempZipPath, tempExtractDir)
+								resolve(result)
+							},
+							(error: Error) => {
+								cleanupTempFiles(tempZipPath, tempExtractDir)
+								reject(error)
+							}
+						)
+					})
+					.catch((zlibErr: Error) => {
+						cleanupTempFiles(tempZipPath, tempExtractDir)
+						reject(new Error('Harmony ZIP 解压失败：' + zlibErr.message))
+					})
+			},
+			fail: (writeErr: any) => {
+				reject(new Error('Harmony: 写入临时 ZIP 文件失败'))
+			}
+		})
+	} catch (e: any) {
+		reject(new Error('Harmony 解析数据包异常：' + e.toString()))
+	}
+}
+
+/**
+ * 处理鸿蒙端解压后的文件
+ * @description 读取 manifest、解析 UI 配置、工艺数据和资源文件
+ */
+function processHarmonyExtractedFiles(
+	extractDir: string,
+	onProgress: ImportProgressCallback | null,
+	resolve: (value: ImportResult) => void,
+	reject: (reason: Error) => void
+): void {
+	try {
+		// 1. 读取 manifest.json
+		const manifestPath = extractDir + '/manifest.json'
+		const manifestData = uni.getFileSystemManager().readFileSync(manifestPath, 'utf-8') as string
+		const manifest = JSON.parse(manifestData) as PackageManifest
+		
+		if (onProgress != null) {
+			onProgress({
+				current: 55,
+				total: 100,
+				currentFile: '解析数据...',
+				status: 'extracting'
+			})
+		}
+		
+		// 2. 检测格式版本
+		const isV2 = manifest.files != null
+		
+		// 3. 读取 UI 配置
+		let groups: TabGroup[] = []
+		let tabs: TabConfig[] = []
+		let components: ComponentConfig[] = []
+		let records: DataRecord[] = []
+		
+		if (isV2 && manifest.files != null) {
+			const files = manifest.files
+			
+			if (files.groups != null) {
+				try {
+					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.groups, 'utf-8') as string
+					groups = JSON.parse(content) as TabGroup[]
+				} catch (e: any) {
+					console.warn('Harmony: groups 文件读取失败:', e)
+				}
+			}
+			
+			if (files.tabs != null) {
+				try {
+					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.tabs, 'utf-8') as string
+					tabs = JSON.parse(content) as TabConfig[]
+				} catch (e: any) {
+					console.warn('Harmony: tabs 文件读取失败:', e)
+				}
+			}
+			
+			if (files.components != null) {
+				try {
+					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.components, 'utf-8') as string
+					components = JSON.parse(content) as ComponentConfig[]
+				} catch (e: any) {
+					console.warn('Harmony: components 文件读取失败:', e)
+				}
+			}
+			
+			if (files.records != null) {
+				try {
+					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.records, 'utf-8') as string
+					records = JSON.parse(content) as DataRecord[]
+				} catch (e: any) {
+					console.warn('Harmony: records 文件读取失败:', e)
+				}
+			}
+		} else {
+			// V1: 从 manifest 内联数据读取
+			groups = manifest.groups ?? []
+			tabs = manifest.tabs ?? []
+			components = manifest.components ?? []
+			records = manifest.records ?? []
+		}
+		
+		// 4. 解析工艺文件
+		const processes: ProcessInfo[] = []
+		let processFilePaths: string[] = []
+		
+		if (isV2 && manifest.files != null && manifest.files?.processes != null) {
+			processFilePaths = manifest.files!.processes!
+		} else if (manifest.processFiles != null) {
+			processFilePaths = manifest.processFiles!
+		} else {
+			// 兼容：遍历解压目录查找 processes 目录
+			try {
+				const processDir = extractDir + '/processes'
+				const entries = uni.getFileSystemManager().readdirSync(processDir)
+				if (entries != null) {
+					for (const entry of entries) {
+						if (entry.endsWith('.json')) {
+							processFilePaths.push('processes/' + entry)
+						}
+					}
+				}
+			} catch (e: any) {
+				console.warn('Harmony: processes 目录读取失败:', e)
+			}
+		}
+		
+		for (const filePath of processFilePaths) {
+			try {
+				const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + filePath, 'utf-8') as string
+				const processInfo = JSON.parse(content) as ProcessInfo
+				processes.push(processInfo)
+			} catch (e: any) {
+				console.warn('Harmony: 工艺文件解析失败:', filePath, e)
+			}
+		}
+		
+		if (onProgress != null) {
+			onProgress({
+				current: 70,
+				total: 100,
+				currentFile: '保存数据...',
+				status: 'extracting'
+			})
+		}
+		
+		// 5. 处理资源文件（复制到应用沙箱）
+		const savedAssetPaths = new Map<string, string>()
+		const assetsBasePath = getAssetsBasePath()
+		
+		// 确保资源目录存在
+		try {
+			uni.getFileSystemManager().mkdirSync(assetsBasePath, true)
+		} catch (e: any) { /* 目录可能已存在 */ }
+		
+		// 复制解压出的资源文件到沙箱
+		try {
+			const assetsDir = extractDir + '/assets'
+			copyAssetsRecursive(assetsDir, assetsBasePath, '', savedAssetPaths)
+		} catch (e: any) {
+			console.warn('Harmony: 资源文件复制失败:', e)
+		}
+		
+		// 6. 构建 manifest 并保存到数据库
+		const fullManifest: PackageManifest = {
+			version: manifest.version,
+			groups: groups,
+			tabs: tabs,
+			components: components,
+			records: records
+		}
+		
+		// 开始事务
+		beginTransaction()
+		
+		try {
+			const uiConfigCount = saveUiConfigurationToDatabase(fullManifest)
+			
+			let resourceCount = 0
+			const allResources: ResourceItem[] = []
+			
+			for (const process of processes) {
+				const processObj = JSON.parse(JSON.stringify(process)) as UTSJSONObject
+				const extractedResources = extractResourcesFromNode(processObj)
+				
+				for (const res of extractedResources) {
+					const originalPath = res.originalPath
+					const localPath = savedAssetPaths.get(originalPath)
+					
+					if (localPath != null) {
+						res.path = localPath
+					} else {
+						const altPath = originalPath.replace(/\//g, '\\\\')
+						const altLocalPath = savedAssetPaths.get(altPath)
+						if (altLocalPath != null) {
+							res.path = altLocalPath
+						} else {
+							console.warn('Harmony: 资源文件未找到:', originalPath)
+							continue
+						}
+					}
+					
+					// 处理缩略图路径
+					if (res.thumbnail != '') {
+						const thumbPath = savedAssetPaths.get(res.thumbnail)
+						if (thumbPath != null) {
+							res.thumbnail = thumbPath
+						} else {
+							res.thumbnail = ''
+						}
+					}
+					
+					allResources.push(res)
+				}
+			}
+			
+			// 保存工艺数据
+			saveProcessesToDatabase(processes)
+				.then(async () => {
+					try {
+						for (const res of allResources) {
+							await saveResource(res)
+							resourceCount++
+						}
+						console.log('Harmony: 保存资源:', resourceCount)
+					} catch (e) {
+						console.error('Harmony: 保存资源失败:', e)
+					}
+					
+					setTransactionSuccessful()
+					resolve({
+						success: true,
+						message: '导入成功',
+						processCount: processes.length,
+						uiConfigCount: uiConfigCount,
+						resourceCount: resourceCount,
+						importTime: 0
+					})
+				})
+				.catch((e: any) => {
+					throw e
+				})
+				.finally(() => {
+					endTransaction()
+				})
+		} catch (e: any) {
+			endTransaction()
+			reject(new Error('Harmony: 数据库保存失败: ' + e.toString()))
+		}
+	} catch (e: any) {
+		reject(new Error('Harmony: 解析数据包失败：' + e.toString()))
+	}
+}
+
+/**
+ * 递归复制资源文件到应用沙箱
+ * @param sourceDir 源目录
+ * @param targetDir 目标目录
+ * @param relativePath 相对路径
+ * @param savedPaths 已保存路径映射
+ */
+function copyAssetsRecursive(
+	sourceDir: string, 
+	targetDir: string, 
+	relativePath: string, 
+	savedPaths: Map<string, string>
+): void {
+	try {
+		const entries = uni.getFileSystemManager().readdirSync(sourceDir)
+		if (entries == null) return
+		
+		for (const entry of entries) {
+			const sourcePath = sourceDir + '/' + entry
+			const entryRelPath = relativePath != '' ? relativePath + '/' + entry : entry
+			const targetPath = targetDir + '/' + entryRelPath
+			
+			try {
+				// 检查是否是目录
+				const stat = uni.getFileSystemManager().statSync(sourcePath, false)
+				if (stat.isDirectory()) {
+					// 确保目标目录存在
+					try {
+						uni.getFileSystemManager().mkdirSync(targetPath, true)
+					} catch (e: any) { /* 目录可能已存在 */ }
+					
+					// 递归复制子目录
+					copyAssetsRecursive(sourcePath, targetDir, entryRelPath, savedPaths)
+				} else {
+					// 检查是否是需要保存的资源文件
+					const fullEntryName = 'assets/' + entryRelPath
+					if (isAssetFileHarmony(fullEntryName)) {
+						// 确保父目录存在
+						const parentDir = targetPath.substring(0, targetPath.lastIndexOf('/'))
+						try {
+							uni.getFileSystemManager().mkdirSync(parentDir, true)
+						} catch (e: any) { /* 目录可能已存在 */ }
+						
+						// 复制文件
+						uni.getFileSystemManager().copyFileSync(sourcePath, targetPath)
+						savedPaths.set(fullEntryName, targetPath)
+						console.log('Harmony: 保存资源:', fullEntryName, '->', targetPath)
+					}
+				}
+			} catch (e: any) {
+				console.warn('Harmony: 处理文件失败:', entry, e)
+			}
+		}
+	} catch (e: any) {
+		// 目录可能不存在，忽略
+		console.warn('Harmony: 读取目录失败:', sourceDir, e)
+	}
+}
+
+/**
+ * Harmony 端判断是否为资源文件
+ */
+function isAssetFileHarmony(entryName: string): boolean {
+	const normalized = entryName.toLowerCase().replace(/\\\\/g, '/')
+	
+	if (!normalized.startsWith('assets/')) {
+		return false
+	}
+	
+	// 排除 icons 目录
+	if (normalized.includes('/icons/')) {
+		return false
+	}
+	
+	const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
+	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv']
+	const audioExts = ['.mp3', '.wav', '.aac', '.ogg', '.m4a']
+	const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
+	
+	const allExts = imageExts.concat(videoExts).concat(audioExts).concat(docExts)
+	
+	for (const ext of allExts) {
+		if (normalized.endsWith(ext)) {
+			return true
+		}
+	}
+	
+	return false
 }
 // #endif
 
@@ -1032,7 +1496,7 @@ function extractAndParseWeb(
 				
 				// 从工艺数据中提取资源引用并处理
 				for (const process of processes) {
-					const processObj = process as UTSJSONObject
+					const processObj = JSON.parse(JSON.stringify(process)) as UTSJSONObject
 					const extractedResources = extractResourcesFromNode(processObj)
 					
 					for (const res of extractedResources) {

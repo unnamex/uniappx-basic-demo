@@ -9,6 +9,10 @@ import SQLiteDatabase from 'android.database.sqlite.SQLiteDatabase';
 import Cursor from 'android.database.Cursor';
 // #endif
 
+// #ifdef APP-HARMONY
+import { relationalStore } from '@kit.ArkData';
+// #endif
+
 /**
  * 数据库名称
  */
@@ -29,7 +33,7 @@ let dbInstance: SQLiteDatabase | null = null
 let dbInstance: IDBDatabase | null = null
 // #endif
 // #ifdef APP-HARMONY
-let dbInstance: any = null
+let dbInstance: relationalStore.RdbStore | null = null
 // #endif
 
 
@@ -56,7 +60,19 @@ export function initDatabase(): Promise<boolean> {
 		// #endif
 		
 		// #ifdef APP-HARMONY
-		resolve(true)
+		initHarmonyDatabase()
+			.then(() => {
+				createTables()
+					.then(() => {
+						resolve(true)
+					})
+					.catch((e: any) => {
+						reject(new Error(JSON.stringify(e)))
+					})
+			})
+			.catch((e: any) => {
+				reject(new Error(JSON.stringify(e)))
+			})
 		// #endif
 		
 		// #ifdef WEB
@@ -90,6 +106,7 @@ function initSQLiteDatabase(): Promise<void> {
 			// #endif
 			
 			// #ifdef APP-HARMONY
+			// 鸿蒙端在 initHarmonyDatabase 中初始化，此处直接返回
 			resolve()
 			// #endif
 		} catch (e: any) {
@@ -97,6 +114,37 @@ function initSQLiteDatabase(): Promise<void> {
 		}
 	})
 }
+
+// #ifdef APP-HARMONY
+/**
+ * 初始化鸿蒙 RDB 数据库
+ * @description 使用 @ohos.data.relationalStore API 创建/打开数据库
+ */
+function initHarmonyDatabase(): Promise<void> {
+	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+		try {
+			const STORE_CONFIG: relationalStore.StoreConfig = {
+				name: DB_NAME,
+				securityLevel: relationalStore.SecurityLevel.S1
+			}
+			
+			// 获取鸿蒙应用上下文并初始化数据库
+			relationalStore.getRdbStore(getContext(), STORE_CONFIG)
+				.then((store: relationalStore.RdbStore) => {
+					dbInstance = store
+					console.log('Harmony: 数据库打开成功')
+					resolve()
+				})
+				.catch((err: Error) => {
+					console.error('Harmony: 数据库打开失败', err)
+					reject(new Error('Harmony 数据库初始化失败: ' + err.message))
+				})
+		} catch (e: any) {
+			reject(new Error('Harmony 数据库初始化异常: ' + e.toString()))
+		}
+	})
+}
+// #endif
 
 /**
  * 创建数据表
@@ -271,7 +319,41 @@ function createTables(): Promise<void> {
 		// #endif
 		
 		// #ifdef APP-HARMONY
-		resolve()
+		if (dbInstance != null) {
+			try {
+				// 鸿蒙端使用 executeSql 批量建表
+				dbInstance!.executeSql(createProcessTableSQL)
+				dbInstance!.executeSql(createStepTableSQL)
+				dbInstance!.executeSql(createAttachmentTableSQL)
+				dbInstance!.executeSql(createPackageTableSQL)
+				
+				// Assets and Icon Config Tables
+				dbInstance!.executeSql(createAssetsTableSQL)
+				dbInstance!.executeSql(createIconConfigTableSQL)
+				
+				// Dynamic Tab System Tables
+				dbInstance!.executeSql(createTabGroupsTableSQL)
+				dbInstance!.executeSql(createTabsTableSQL)
+				dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)")
+				dbInstance!.executeSql(createComponentsTableSQL)
+				dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)")
+				dbInstance!.executeSql(createDataRecordsTableSQL)
+				dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)")
+				
+				// V3: 资源表
+				dbInstance!.executeSql(createResourcesTableSQL)
+				dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
+				dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_resources_type ON t_resources(type)")
+				
+				console.log('Harmony: 数据表创建成功')
+				resolve()
+			} catch(e: any) {
+				console.error('Harmony: 数据表创建失败：', e)
+				reject(new Error(e.toString()))
+			}
+		} else {
+			resolve()
+		}
 		// #endif
 	})
 }
@@ -304,7 +386,26 @@ export function executeSQL(sql: string, params: any[] = []): Promise<any> {
 		// #endif
 		
 		// #ifdef APP-HARMONY
-		resolve(true)
+		if (dbInstance == null) {
+			reject(new Error('数据库未初始化'))
+			return
+		}
+		
+		try {
+			if (params.length > 0) {
+				const args = params.map((p: any): relationalStore.ValueType => {
+					if (p == null) return ''
+					return p.toString() as relationalStore.ValueType
+				})
+				dbInstance!.executeSql(sql, args)
+			} else {
+				dbInstance!.executeSql(sql)
+			}
+			resolve(true)
+		} catch (e: any) {
+			console.error('Harmony SQL 执行失败：', sql, e)
+			reject(new Error('SQL 执行失败: ' + e.toString()))
+		}
 		// #endif
 		
 		// #ifdef WEB
@@ -371,7 +472,50 @@ export function querySQL(sql: string, params: any[] = []): Promise<any[]> {
 		// #endif
 		
 		// #ifdef APP-HARMONY
-		resolve([] as any[])
+		if (dbInstance == null) {
+			reject(new Error('数据库未初始化'))
+			return
+		}
+		
+		try {
+			let args: relationalStore.ValueType[] = []
+			if (params.length > 0) {
+				args = params.map((p: any): relationalStore.ValueType => {
+					if (p == null) return ''
+					return p.toString() as relationalStore.ValueType
+				})
+			}
+			
+			const resultSet = dbInstance!.querySql(sql, args)
+			const result: any[] = []
+			
+			while (resultSet.goToNextRow()) {
+				const row: any = {}
+				const columnCount = resultSet.columnCount
+				for (let i = 0; i < columnCount; i++) {
+					const columnName = resultSet.getColumnName(i)
+					const columnType = resultSet.getColumnType(i)
+					
+					if (columnType == relationalStore.ColumnType.TYPE_STRING) {
+						row[columnName] = resultSet.getString(i)
+					} else if (columnType == relationalStore.ColumnType.TYPE_INTEGER) {
+						row[columnName] = resultSet.getLong(i)
+					} else if (columnType == relationalStore.ColumnType.TYPE_FLOAT) {
+						row[columnName] = resultSet.getDouble(i)
+					} else if (columnType == relationalStore.ColumnType.TYPE_NULL) {
+						row[columnName] = null
+					} else if (columnType == relationalStore.ColumnType.TYPE_BLOB) {
+						row[columnName] = null
+					}
+				}
+				result.push(row)
+			}
+			resultSet.close()
+			resolve(result)
+		} catch (e: any) {
+			console.error('Harmony 查询失败：', sql, e)
+			reject(new Error('查询失败: ' + e.toString()))
+		}
 		// #endif
 		
 		// #ifdef WEB
@@ -395,6 +539,13 @@ export function closeDatabase(): void {
 		}
 	}
 	// #endif
+	
+	// #ifdef APP-HARMONY
+	if (dbInstance != null) {
+		dbInstance = null
+		console.log('Harmony: 数据库引用已释放')
+	}
+	// #endif
 }
 
 /**
@@ -404,6 +555,17 @@ export function beginTransaction(): void {
 	// #ifdef APP-ANDROID
 	if (dbInstance != null) {
 		dbInstance!.beginTransaction()
+	}
+	// #endif
+	
+	// #ifdef APP-HARMONY
+	// 鸿蒙 RDB 通过 executeSql 执行 BEGIN TRANSACTION
+	if (dbInstance != null) {
+		try {
+			dbInstance!.executeSql('BEGIN TRANSACTION')
+		} catch (e: any) {
+			console.warn('Harmony: beginTransaction:', e)
+		}
 	}
 	// #endif
 }
@@ -417,6 +579,10 @@ export function setTransactionSuccessful(): void {
 		dbInstance!.setTransactionSuccessful()
 	}
 	// #endif
+	
+	// #ifdef APP-HARMONY
+	// 鸿蒙端事务提交在 endTransaction 中执行
+	// #endif
 }
 
 /**
@@ -426,6 +592,20 @@ export function endTransaction(): void {
 	// #ifdef APP-ANDROID
 	if (dbInstance != null) {
 		dbInstance!.endTransaction()
+	}
+	// #endif
+	
+	// #ifdef APP-HARMONY
+	if (dbInstance != null) {
+		try {
+			dbInstance!.executeSql('COMMIT')
+		} catch (e: any) {
+			try {
+				dbInstance!.executeSql('ROLLBACK')
+			} catch (rollbackErr: any) {
+				console.error('Harmony: rollback failed:', rollbackErr)
+			}
+		}
 	}
 	// #endif
 }

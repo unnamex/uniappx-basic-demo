@@ -10,7 +10,7 @@
 		onHide: function () {
 			console.log('App Hide')
 		},
-		// #ifdef APP-ANDROID
+		// #ifdef APP-ANDROID || APP-HARMONY
 		onLastPageBackPress: function () {
 			console.log('App LastPageBackPress')
 			if (firstBackTime == 0) {
