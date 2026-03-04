@@ -9,11 +9,25 @@
 	>
 		<template #header>
 			<view class="header-container">
-				<view class="header-logo">
-					<text class="header-text">工艺预览 (Unified System)</text>
+				<!-- 左侧：当前工艺大图标 -->
+				<view class="header-icon-area">
+					<view class="header-process-icon">
+						<text class="header-icon-text">{{ currentProcessIcon }}</text>
+					</view>
 				</view>
+				<!-- 右侧：面包屑区域（上下两行） -->
+				<view class="header-breadcrumb-area">
+					<!-- 上部分面包屑：部件信息 > 工艺信息 -->
+					<view class="header-breadcrumb-row">
+						<ux-breadcrumb :items="topBreadcrumbItems"></ux-breadcrumb>
+					</view>
+					<!-- 下部分面包屑：部件详情 > 工艺详情 -->
+					<view class="header-breadcrumb-row">
+						<ux-breadcrumb :items="bottomBreadcrumbItems"></ux-breadcrumb>
+					</view>
+				</view>
+				<!-- 设置按钮 -->
 				<view class="header-actions">
-					<!-- 设置按钮 -->
 					<button class="settings-btn" size="mini" plain="true" @click="toggleSettingsMenu">⚙</button>
 				</view>
 			</view>
@@ -40,6 +54,7 @@
 										<ux-table 
 											:columns="getColumnsFromConfig(comp.config)" 
 											:data="comp.data"
+											:showExpand="false"
 										></ux-table>
 									</view>
 									
@@ -92,6 +107,7 @@
 											<ux-table 
 												:columns="getColumnsFromConfig(comp.config)" 
 												:data="comp.data"
+												:showExpand="false"
 											></ux-table>
 										</view>
 										
@@ -302,6 +318,13 @@
 
 	import ResourcePreview from '@/components/resource-preview/resource-preview.uvue'
 	import ResourceList from '@/components/resource-list/resource-list.uvue'
+	import UxBreadcrumb from '@/components/ux-breadcrumb/ux-breadcrumb.uvue'
+
+	// 面包屑项类型
+	type BreadcrumbItem = {
+		label: string
+		value: string
+	}
 
 	// Define ViewModels
 	type ComponentVM = {
@@ -344,6 +367,14 @@
 	const previewResource = ref(null as ResourceItem | null)
 	const isResourceMaximized = ref(false)
 	const isFullscreenListVisible = ref(true)
+	
+	// ============ 面包屑相关状态 ============
+	// 当前工艺图标（左侧大图标）
+	const currentProcessIcon = ref('📋')
+	// 上部分面包屑：部件编号/名称/生命周期/版本 > 工艺编号/名称/生命周期/版本
+	const topBreadcrumbItems = ref([] as BreadcrumbItem[])
+	// 下部分面包屑：部件类型|用户|时间|位置|密级 > 工艺类型|用户|时间|位置|密级
+	const bottomBreadcrumbItems = ref([] as BreadcrumbItem[])
 	
 	// 当前资源索引
 	const currentResourceIndex = computed((): number => {
@@ -475,6 +506,11 @@
 			nodeResources.value = []
 			nodeResourcesTitle.value = '资源列表'
 			previewResource.value = null
+			
+			// 清空面包屑状态
+			currentProcessIcon.value = '📋'
+			topBreadcrumbItems.value = []
+			bottomBreadcrumbItems.value = []
 			
 			uni.hideLoading()
 			uni.showToast({
@@ -810,12 +846,101 @@
 		return obj[key]?.toString() ?? ''
 	}
 	
+	/**
+	 * 更新面包屑数据
+	 * 从当前选中节点中提取部件和工艺信息，填充上下两行面包屑
+	 * @param node 当前选中的节点数据
+	 */
+	const updateBreadcrumbs = (node: UTSJSONObject) => {
+		// 获取节点中的部件信息
+		const partCode = (node['partCode'] as string) ?? ''
+		const partName = (node['partName'] as string) ?? ''
+		const partLifecycle = (node['partLifecycle'] as string) ?? ''
+		const partVersion = (node['partVersion'] as string) ?? ''
+		const partType = (node['partType'] as string) ?? '部件'
+		const partCreator = (node['partCreator'] as string) ?? ''
+		const partCreateTime = (node['partCreateTime'] as string) ?? ''
+		const partLocation = (node['partLocation'] as string) ?? ''
+		const partSecurityLevel = (node['partSecurityLevel'] as string) ?? ''
+
+		// 获取节点中的工艺信息
+		const processCode = (node['code'] as string) ?? ''
+		const processName = (node['name'] as string) ?? ''
+		const processLifecycle = (node['processLifecycle'] as string) ?? (node['status'] as string) ?? ''
+		const processVersion = (node['processVersion'] as string) ?? (node['version'] as string) ?? ''
+		const processType = (node['processType'] as string) ?? '机加工艺'
+		const processCreator = (node['processCreator'] as string) ?? ''
+		const processCreateTime = (node['processCreateTime'] as string) ?? ''
+		const processLocation = (node['processLocation'] as string) ?? ''
+		const processSecurityLevel = (node['processSecurityLevel'] as string) ?? ''
+
+		// 获取图标
+		const icon = (node['icon'] as string) ?? '📋'
+		currentProcessIcon.value = icon
+
+		// === 上部分面包屑：部件编号/名称/生命周期/版本 > 工艺编号/名称/生命周期/版本 ===
+		const topItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
+
+		// 部件面包屑项
+		let partLabel = ''
+		if (partCode != '') {
+			partLabel = partCode
+			if (partName != '') partLabel = partLabel + '，' + partName
+			if (partLifecycle != '') partLabel = partLabel + ' ' + partLifecycle
+			if (partVersion != '') partLabel = partLabel + ' ' + partVersion
+		} else {
+			partLabel = '未关联部件'
+		}
+		topItems.push({ label: partLabel, value: 'part' } as BreadcrumbItem)
+
+		// 工艺面包屑项
+		let processLabel = ''
+		if (processCode != '') {
+			processLabel = processCode + '，' + processName
+			if (processLifecycle != '') processLabel = processLabel + ' ' + processLifecycle
+			if (processVersion != '') processLabel = processLabel + ' ' + processVersion
+		} else {
+			processLabel = processName
+		}
+		topItems.push({ label: processLabel, value: 'process' } as BreadcrumbItem)
+
+		topBreadcrumbItems.value = topItems
+
+		// === 下部分面包屑：部件详情 > 工艺详情 ===
+		const bottomItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
+
+		// 部件详情面包屑项（类型 | 用户 | 时间 | 位置 | 密级）
+		const partDetailParts: string[] = [] as string[]
+		if (partType != '') partDetailParts.push(partType)
+		if (partCreator != '') partDetailParts.push(partCreator)
+		if (partCreateTime != '') partDetailParts.push(partCreateTime)
+		if (partLocation != '') partDetailParts.push(partLocation)
+		if (partSecurityLevel != '') partDetailParts.push(partSecurityLevel)
+		const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
+		bottomItems.push({ label: partDetailLabel, value: 'part-detail' } as BreadcrumbItem)
+
+		// 工艺详情面包屑项（类型 | 用户 | 时间 | 位置 | 密级）
+		const processDetailParts: string[] = [] as string[]
+		if (processType != '') processDetailParts.push(processType)
+		if (processCreator != '') processDetailParts.push(processCreator)
+		if (processCreateTime != '') processDetailParts.push(processCreateTime)
+		if (processLocation != '') processDetailParts.push(processLocation)
+		if (processSecurityLevel != '') processDetailParts.push(processSecurityLevel)
+		const processDetailLabel = processDetailParts.length > 0 ? processDetailParts.join(' | ') : '无工艺详情'
+		bottomItems.push({ label: processDetailLabel, value: 'process-detail' } as BreadcrumbItem)
+
+		bottomBreadcrumbItems.value = bottomItems
+	}
+
 	const handleRowClick = async (row: UTSJSONObject) => {
 		selectedRow.value = row
 		// console.log('Row clicked:', row['id'], row['type'], row['name'])
 		
 		statusMessage.value = `选中: ${row['name']} (${row['type']})`
 		updateSelectedNodeInfo(row)
+		
+		// 更新面包屑
+		updateBreadcrumbs(row)
 		
 		// 根据节点类型动态加载对应的 Tab Group
 		const nodeType = row['type'] as string
@@ -1123,29 +1248,55 @@
 
 <style>
 	.header-container {
-		height: 60px;
+		height: 64px;
 		background-color: #fff;
 		border-bottom: 1px solid #e0e0e0;
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		padding: 0 20px;
-		justify-content: space-between;
+		padding: 0 16px;
 	}
-	
-	.header-logo {
-		padding: 5px 10px;
-		background-color: #f0f0f0;
-		border-radius: 4px;
+
+	/* 左侧图标区域 */
+	.header-icon-area {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-right: 12px;
 	}
-	
+
+	.header-process-icon {
+		width: 40px;
+		height: 40px;
+		border-radius: 8px;
+		background-color: #E8F0FE;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.header-icon-text {
+		font-size: 22px;
+	}
+
+	/* 面包屑区域 */
+	.header-breadcrumb-area {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	.header-breadcrumb-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 1px 0;
+	}
+
 	.header-actions {
 		padding: 5px 10px;
-	}
-	
-	.header-text {
-		font-weight: bold;
-		font-size: 14px;
 	}
 
 	.left-panel {

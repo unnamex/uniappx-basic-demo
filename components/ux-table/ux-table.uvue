@@ -27,7 +27,7 @@
 			</view>
 			
 			<!-- Header Action: Expand/Collapse All (Floating on right) -->
-			<view class="header-action" @click="toggleAll" hover-class="header-action-hover">
+			<view v-if="showExpand" class="header-action" @click="toggleAll" hover-class="header-action-hover">
 				<text class="action-text">{{ isAllExpanded ? '收起' : '展开' }}</text>
 			</view>
 		</view>
@@ -37,8 +37,9 @@
 					:style="{ flex: getColFlex(colIndex), width: getColWidth(colIndex) }">
 					
 					<view v-if="colIndex === 0" class="cell-content-wrapper">
-						<view :style="{ width: (row.level * 40) + 'rpx' }"></view>
-						<view class="expand-icon" @click.stop="toggleExpand(row)">
+						<!-- 仅树模式显示缩进和展开图标 -->
+						<view v-if="showExpand" :style="{ width: (row.level * 40) + 'rpx' }"></view>
+						<view v-if="showExpand" class="expand-icon" @click.stop="toggleExpand(row)">
 							<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
 							<text class="icon-text" v-else></text>
 						</view>
@@ -84,6 +85,11 @@
 			columns: {
 				type: Array as PropType<UTSJSONObject[]>,
 				default: () => [] as UTSJSONObject[]
+			},
+			/** 是否显示展开/收起功能（树模式），默认 true */
+			showExpand: {
+				type: Boolean,
+				default: true
 			}
 		},
 		data() {
