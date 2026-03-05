@@ -1309,27 +1309,28 @@
 	}
 	
 	.main-content-top {
-		padding: 20px;
+		padding: 8px 12px;
 		display: flex;
 		flex-direction: column;
 		flex: 1;
-		background-color: #FFFFFF;
+		background-color: #F8FAFC;
 	}
 	
 	.main-content-bottom {
-		padding: 10px;
+		padding: 8px 12px;
 		display: flex;
 		flex-direction: column;
-		background-color: #F5F7FA;
+		background-color: #F8FAFC;
 		flex: 1;
 		height: 100%;
 	}
 
 	.title {
-		font-size: 24px;
-		font-weight: bold;
-		margin-bottom: 20px;
-		color: #111827;
+		font-size: 18px;
+		font-weight: 600;
+		margin-bottom: 8px;
+		color: #0F172A;
+		letter-spacing: -0.01em;
 	}
 	
 	/* 右侧面板顶部区域 - 确保充满容器 */
@@ -1368,22 +1369,28 @@
 	}
 	
 	.tab-content-wrap {
-		padding: 10px 0;
+		padding: 8px 0;
 	}
 	
 	.component-wrapper {
-		margin-bottom: 20px;
-		padding: 10px;
-		border: 1px solid #E2E6ED;
-		border-radius: 6rpx;
+		margin-bottom: 12px;
+		padding: 12px 16px;
+		background-color: #FFFFFF;
+		border: 1px solid #E2E8F0;
+		border-radius: 8px;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+		transition-property: box-shadow;
+		transition-duration: 0.2s;
 	}
 	
 	.comp-title {
-		font-weight: bold;
-		margin-bottom: 10px;
-		font-size: 16px;
+		font-weight: 600;
+		margin-bottom: 8px;
+		font-size: 13px;
 		display: block;
-		color: #111827;
+		color: #64748B;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
 	}
 	
 	.kv-row {
@@ -1446,8 +1453,8 @@
 	
 	.info-desc {
 		font-size: 14px;
-		color: #374151;
-		line-height: 1.5em;
+		color: #475569;
+		line-height: 1.6em;
 	}
 	
 	.no-selection {
@@ -1461,22 +1468,23 @@
 	
 	/* 中间区域节点信息样式 */
 	.node-info-panel {
-		padding: 15px;
+		padding: 0px;
 		display: flex;
 		flex-direction: column;
 	}
 	
 	.info-row {
 		font-size: 14px;
-		color: #374151;
+		color: #334155;
 		margin-bottom: 8px;
+		line-height: 1.5;
 	}
 	
 	.info-label {
-		font-size: 14px;
-		color: #6B7280;
+		font-size: 13px;
+		color: #94A3B8;
 		margin-top: 15px;
-		margin-bottom: 5px;
+		margin-bottom: 4px;
 	}
 	
 	/* 底部区域样式 */
@@ -1536,50 +1544,56 @@
 	
 	/* 列表面板样式 */
 	.list-panel {
-		padding: 10px;
+		padding: 0px;
 	}
 	
 	.list-item {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		padding: 12px 15px;
+		padding: 12px 16px;
 		background-color: #FFFFFF;
-		border-radius: 6px;
+		border-radius: 8px;
 		margin-bottom: 8px;
-		border: 1px solid #E2E6ED;
+		border: 1px solid #F1F5F9;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 	}
 	
 	.list-item-code {
 		font-size: 13px;
-		color: #6B7280;
+		color: #94A3B8;
 		width: 120px;
 	}
 	
 	.list-item-name {
 		font-size: 14px;
-		color: #374151;
+		color: #334155;
 		flex: 1;
+		font-weight: 500;
 	}
 	
 	.list-item-duration {
 		font-size: 13px;
-		color: #6B7280;
+		color: #94A3B8;
 		width: 80px;
 	}
 	
 	.list-item-simple {
-		padding: 10px 15px;
-		background-color: #F5F7FA;
-		border-radius: 4px;
-		margin-bottom: 6px;
+		padding: 12px 16px;
+		background-color: #F8FAFC;
+		border-radius: 8px;
+		margin-bottom: 8px;
+		border: 1px solid transparent;
+		transition-property: background-color, border-color;
+		transition-duration: 0.2s;
 	}
 	
 	.empty-hint {
 		text-align: center;
-		color: #9CA3AF;
+		color: #CBD5E1;
 		font-size: 14px;
-		padding: 20px;
+		padding: 32px 0;
+		font-style: italic;
 	}
 	
 	/* Right Header */
@@ -1600,18 +1614,29 @@
 	}
 	
 	.right-header-btn {
-		width: 28px;
-		height: 28px;
+		width: 32px;
+		height: 32px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.05);
-		border-radius: 4px;
+		background-color: #FFFFFF;
+		border-radius: 8px;
+		border: 1px solid #E2E8F0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		transition-property: background-color, box-shadow, transform;
+		transition-duration: 0.15s;
+		cursor: pointer;
+	}
+	
+	.right-header-btn:active {
+		background-color: #F8FAFC;
+		box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+		transform: scale(0.95);
 	}
 	
 	.btn-icon {
 		font-size: 16px;
-		color: #374151;
+		color: #475569;
 	}
 	
 	/* Fullscreen Overlay */
@@ -1674,14 +1699,26 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #F0F2F5;
-		border-radius: 6px;
+		background-color: #FFFFFF;
+		border-radius: 10px;
+		border: 1px solid #E2E8F0;
 		margin-right: 12px;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+		transition-property: background-color, box-shadow, transform, border-color;
+		transition-duration: 0.15s;
+		cursor: pointer;
+	}
+	
+	.header-btn:active {
+		background-color: #F8FAFC;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+		transform: scale(0.95);
+		border-color: #CBD5E1;
 	}
 	
 	.header-btn-icon {
 		font-size: 18px;
-		color: #374151;
+		color: #334155;
 	}
 	
 	.fullscreen-close {
@@ -1690,13 +1727,26 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #F0F2F5;
+		background-color: #FFFFFF;
 		border-radius: 18px;
+		border: 1px solid #E2E8F0;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+		transition-property: background-color, box-shadow, transform, border-color;
+		transition-duration: 0.15s;
+		cursor: pointer;
+	}
+	
+	.fullscreen-close:active {
+		background-color: #FEF2F2;
+		border-color: #FCA5A5;
+		color: #EF4444;
+		box-shadow: 0 1px 2px rgba(239, 68, 68, 0.1);
+		transform: scale(0.95);
 	}
 	
 	.close-icon {
 		font-size: 18px;
-		color: #374151;
+		color: inherit;
 	}
 	
 	.fullscreen-content {
@@ -1734,32 +1784,47 @@
 	.nav-btn {
 		position: absolute;
 		top: 50%;
-		width: 40px;
+		width: 48px;
 		height: 80px;
 		margin-top: -40px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(17, 24, 39, 0.25);
+		background-color: rgba(15, 23, 42, 0.4);
+		backdrop-filter: blur(8px);
 		z-index: 10;
+		cursor: pointer;
+		transition-property: background-color, transform, width;
+		transition-duration: 0.2s;
+	}
+	
+	.nav-btn:active {
+		background-color: rgba(15, 23, 42, 0.6);
+		transform: scaleX(0.95);
 	}
 	
 	.nav-prev {
 		left: 0;
-		border-top-right-radius: 8px;
-		border-bottom-right-radius: 8px;
+		border-top-right-radius: 16px;
+		border-bottom-right-radius: 16px;
+		border-top-left-radius: 0;
+		border-bottom-left-radius: 0;
+		transform-origin: left center;
 	}
 	
 	.nav-next {
 		right: 0;
-		border-top-left-radius: 8px;
-		border-bottom-left-radius: 8px;
+		border-top-left-radius: 16px;
+		border-bottom-left-radius: 16px;
+		border-top-right-radius: 0;
+		border-bottom-right-radius: 0;
+		transform-origin: right center;
 	}
 	
 	.nav-icon {
 		font-size: 32px;
 		color: #FFFFFF;
-		font-weight: bold;
+		font-weight: 300;
 	}
 	
 	/* 右侧紧凑缩略图列表 */
@@ -1869,19 +1934,31 @@
 		align-items: center;
 		padding: 8px 16px;
 		margin: 0 4px;
-		background-color: #F0F2F5;
-		border-radius: 6px;
+		background-color: #FFFFFF;
+		border-radius: 8px;
+		border: 1px solid #E2E8F0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+		transition-property: background-color, transform, box-shadow, border-color;
+		transition-duration: 0.15s;
+		cursor: pointer;
+	}
+	
+	.toolbar-btn:active {
+		background-color: #F8FAFC;
+		transform: scale(0.95);
+		box-shadow: 0 0px 1px rgba(0, 0, 0, 0.01);
+		border-color: #CBD5E1;
 	}
 	
 	.toolbar-icon {
 		font-size: 20px;
-		color: #374151;
+		color: #334155;
 		font-weight: bold;
 	}
 	
 	.toolbar-label {
 		font-size: 10px;
-		color: #6B7280;
+		color: #64748B;
 		margin-top: 2px;
 	}
 	
@@ -1891,33 +1968,45 @@
 		align-items: center;
 		padding: 8px 16px;
 		margin: 0 8px;
-		background-color: #E2E6ED;
-		border-radius: 6px;
+		background-color: #F1F5F9;
+		border-radius: 8px;
+		border: 1px solid #E2E8F0;
 		min-width: 60px;
 	}
 	
 	.zoom-percentage {
 		font-size: 14px;
-		color: #111827;
+		color: #0F172A;
 		font-weight: 600;
 	}
 	
 	.toolbar-divider {
 		width: 1px;
 		height: 32px;
-		background-color: #D1D5DB;
+		background-color: #E2E8F0;
 		margin: 0 12px;
 	}
 	/* ========== 设置下拉菜单样式 ========== */
 	
 	.settings-btn {
 		font-size: 16px;
-		padding: 4px 8px;
-		border-radius: 6px;
-		background-color: #F0F2F5;
-		color: #6B7280;
+		padding: 4px 10px;
+		border-radius: 8px;
+		background-color: #FFFFFF;
+		color: #475569;
+		border: 1px solid #E2E8F0;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		transition-property: background-color, transform, box-shadow;
+		transition-duration: 0.15s;
 		min-height: 28px;
 		line-height: 20px;
+		cursor: pointer;
+	}
+	
+	.settings-btn:active {
+		background-color: #F8FAFC;
+		transform: scale(0.95);
+		box-shadow: 0 0 1px rgba(0, 0, 0, 0.02);
 	}
 	
 	.settings-dropdown {
