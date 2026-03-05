@@ -41,7 +41,7 @@
 		<!-- Main Top Area (Dynamic Group) -->
 		<view class="main-content-top">
 			<view v-if="topGroup != null" style="height: 100%; display: flex; flex-direction: column;">
-				<text class="title">{{ topGroup?.name }}</text>
+
 				<ux-tabs :modelValue="activeTabs.get(topGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(topGroup?.id ?? '', $event)">
 					<ux-tab-pane v-for="tab in topGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
 						<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
@@ -94,7 +94,7 @@
 		<template #main-bottom>
 			<view class="main-content-bottom">
 				<view v-if="bottomGroup != null" style="height: 100%; display: flex; flex-direction: column;">
-					<text class="title">{{ bottomGroup?.name }}</text>
+
 					<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
 						<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
 							<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
