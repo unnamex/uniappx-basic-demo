@@ -430,14 +430,14 @@
 	.outsider-left {
 		flex: none;
 		overflow: hidden;
-		border-right: 1px solid #eee;
+		border-right: 1px solid #E2E6ED;
 		display: flex;
 		flex-direction: column;
 	}
 
 	.outsider-divider {
 		width: 10px;
-		background-color: #f5f5f5;
+		background-color: #F0F2F5;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -445,21 +445,21 @@
 		cursor: col-resize;
 		position: relative;
 		flex: none;
-		border-left: 1px solid #ddd;
-		border-right: 1px solid #ddd;
+		border-left: 1px solid #E2E6ED;
+		border-right: 1px solid #E2E6ED;
 	}
 
 	.outsider-divider-line {
 		width: 2px;
 		height: 100%;
-		background-color: #ddd; /* Visual line center */
+		background-color: #E2E6ED; /* Visual line center */
 		display: none; /* simple background is enough usually, can enable for styling */
 	}
 
 	.outsider-toggle-btn {
 		width: 16px;
 		height: 30px;
-		background-color: #e0e0e0;
+		background-color: #E2E6ED;
 		border-radius: 4px;
 		display: flex;
 		align-items: center;
@@ -470,14 +470,14 @@
 	
 	.outsider-toggle-text {
 		font-size: 10px;
-		color: #666;
+		color: #6B7280;
 		font-weight: bold;
 	}
 
 	.outsider-main {
 		flex: 1;
 		overflow: hidden;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		display: flex;
 		flex-direction: column;
 	}
@@ -501,21 +501,21 @@
 	
 	.outsider-main-divider-horizontal {
 		height: 10px;
-		background-color: #f5f5f5;
+		background-color: #F0F2F5;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
 		flex: none;
-		border-top: 1px solid #ddd;
-		border-bottom: 1px solid #ddd;
+		border-top: 1px solid #E2E6ED;
+		border-bottom: 1px solid #E2E6ED;
 	}
 	
 	.outsider-divider-line-horizontal {
 		height: 2px;
 		width: 100%;
-		background-color: #ddd;
+		background-color: #E2E6ED;
 		display: none;
 	}
 	
@@ -527,7 +527,7 @@
 	.outsider-right {
 		flex: none;
 		overflow: hidden;
-		border-left: 1px solid #eee;
+		border-left: 1px solid #E2E6ED;
 		display: flex;
 		flex-direction: column;
 	}
@@ -548,15 +548,15 @@
 	
 	.outsider-right-divider-horizontal {
 		height: 10px;
-		background-color: #f5f5f5;
+		background-color: #F0F2F5;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
 		flex: none;
-		border-top: 1px solid #ddd;
-		border-bottom: 1px solid #ddd;
+		border-top: 1px solid #E2E6ED;
+		border-bottom: 1px solid #E2E6ED;
 		width: 100%;
 	}
 	

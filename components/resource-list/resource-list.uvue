@@ -145,14 +145,17 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — 资源列表 */
 	.resource-list {
 		display: flex;
 		flex-direction: column;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		border-radius: 6px;
 		padding: 6px;
 		height: 100%;
-		border: 1px solid #e0e0e0;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	/* 标题栏 */
@@ -166,12 +169,12 @@
 	.header-title {
 		font-size: 12px;
 		font-weight: 600;
-		color: #333;
+		color: #111827;
 	}
 	
 	.header-count {
 		font-size: 11px;
-		color: #888;
+		color: #6B7280;
 		margin-left: 4px;
 	}
 	
@@ -185,7 +188,7 @@
 	
 	.empty-text {
 		font-size: 12px;
-		color: #666;
+		color: #9CA3AF;
 	}
 	
 	/* 滚动容器 */
@@ -204,21 +207,23 @@
 	.resource-card {
 		width: 60px;
 		margin-right: 6px;
-		background-color: #f8f9fa;
+		background-color: #F3F4F6;
 		border-radius: 6px;
 		overflow: hidden;
-		border: 1px solid #e0e0e0;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	.resource-card-selected {
 		width: 60px;
 		margin-right: 6px;
-		background-color: #f8f9fa;
+		background-color: #ECFEFF;
 		border-radius: 6px;
 		overflow: hidden;
-		border-width: 1px;
+		border-width: 2px;
 		border-style: solid;
-		border-color: #4a90e2;
+		border-color: #0891B2;
 	}
 	
 	/* 缩略图区域 */
@@ -247,19 +252,19 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		background-color: #e9ecef;
+		background-color: #F0F2F5;
 	}
 	
 	.video-placeholder {
-		background-color: #dee2e6;
+		background-color: #E2E6ED;
 	}
 	
 	.audio-placeholder {
-		background-color: #c3e6cb;
+		background-color: #ECFDF5;
 	}
 	
 	.doc-placeholder {
-		background-color: #ffeeba;
+		background-color: #FFFBEB;
 	}
 	
 	.placeholder-icon {
@@ -276,12 +281,12 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.3);
+		background-color: rgba(17, 24, 39, 0.3);
 	}
 	
 	.play-icon {
 		font-size: 24px;
-		color: #fff;
+		color: #FFFFFF;
 	}
 	
 	/* 音频波形 */
@@ -294,7 +299,7 @@
 	.wave-line {
 		width: 3px;
 		height: 12px;
-		background-color: #4a90e2;
+		background-color: #0891B2;
 		margin: 0 2px;
 		border-radius: 2px;
 	}
@@ -306,28 +311,28 @@
 		right: 4px;
 		padding: 2px 6px;
 		border-radius: 4px;
-		background-color: rgba(0, 0, 0, 0.7);
+		background-color: rgba(17, 24, 39, 0.7);
 	}
 	
 	.badge-text {
 		font-size: 10px;
-		color: #fff;
+		color: #FFFFFF;
 	}
 	
 	.badge-image {
-		background-color: rgba(74, 144, 226, 0.8);
+		background-color: rgba(8, 145, 178, 0.8);
 	}
 	
 	.badge-video {
-		background-color: rgba(255, 107, 107, 0.8);
+		background-color: rgba(220, 38, 38, 0.8);
 	}
 	
 	.badge-audio {
-		background-color: rgba(82, 196, 26, 0.8);
+		background-color: rgba(5, 150, 105, 0.8);
 	}
 	
 	.badge-document {
-		background-color: rgba(250, 173, 20, 0.8);
+		background-color: rgba(217, 119, 6, 0.8);
 	}
 	
 	/* 信息区域 */
@@ -339,13 +344,13 @@
 	
 	.card-name {
 		font-size: 10px;
-		color: #333;
+		color: #374151;
 		overflow: hidden;
 	}
 	
 	.card-duration {
 		font-size: 9px;
-		color: #888;
+		color: #6B7280;
 		margin-top: 2px;
 	}
 	
@@ -357,7 +362,7 @@
 	
 	.indicator-track {
 		height: 4px;
-		background-color: #e0e0e0;
+		background-color: #E2E6ED;
 		border-radius: 2px;
 		position: relative;
 	}
@@ -366,7 +371,7 @@
 		position: absolute;
 		width: 30px;
 		height: 4px;
-		background-color: #4a90e2;
+		background-color: #0891B2;
 		border-radius: 2px;
 	}
 </style>

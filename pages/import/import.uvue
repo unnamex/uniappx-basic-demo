@@ -282,7 +282,7 @@
 <style>
 	.page-container {
 		flex: 1;
-		background-color: #f7f9fc;
+		background-color: #F5F7FA;
 	}
 	
 	.import-page {
@@ -299,19 +299,19 @@
 	.page-title {
 		font-size: 28px;
 		font-weight: 700;
-		color: #1a1a1a;
+		color: #111827;
 		margin-bottom: 8px;
 	}
 	
 	.page-subtitle {
 		font-size: 15px;
-		color: #8899a6;
+		color: #6B7280;
 	}
 	
 	/* 卡片通用样式 */
 	.card {
-		background-color: #ffffff;
-		border-radius: 16px;
+		background-color: #FFFFFF;
+		border-radius: 12px;
 		padding: 20px;
 		margin-bottom: 20px;
 		/* #ifdef WEB */
@@ -320,37 +320,37 @@
 		/* #ifndef WEB */
 		border-width: 1px;
 		border-style: solid;
-		border-color: #e8e8e8;
+		border-color: #E2E6ED;
 		/* #endif */
 	}
 	
 	.card-title {
 		font-size: 16px;
 		font-weight: 600;
-		color: #1a1a1a;
+		color: #111827;
 		margin-bottom: 16px;
 		padding-left: 8px;
 		border-left-width: 3px;
 		border-left-style: solid;
-		border-left-color: #007aff;
+		border-left-color: #0891B2;
 	}
 	
 	/* 文件选择器 */
 	.file-picker {
-		background-color: #ffffff;
-		border-radius: 20px;
+		background-color: #FFFFFF;
+		border-radius: 16px;
 		padding: 30px 20px;
 		margin-bottom: 24px;
 		border-width: 2px;
 		border-style: dashed;
-		border-color: #e1e4e8;
+		border-color: #D1D5DB;
 		transition-property: background-color, border-color;
 		transition-duration: 0.2s;
 	}
 	
 	.file-picker-hover {
-		background-color: #f0f7ff;
-		border-color: #007aff;
+		background-color: #ECFEFF;
+		border-color: #0891B2;
 	}
 	
 	.file-picker-content {
@@ -360,7 +360,7 @@
 	.icon-circle {
 		width: 64px;
 		height: 64px;
-		background-color: #f5f7fa;
+		background-color: #F0F2F5;
 		border-radius: 32px;
 		align-items: center;
 		justify-content: center;
@@ -374,13 +374,13 @@
 	.file-picker-title {
 		font-size: 17px;
 		font-weight: 600;
-		color: #333;
+		color: #111827;
 		margin-bottom: 6px;
 	}
 	
 	.file-picker-hint {
 		font-size: 13px;
-		color: #999;
+		color: #9CA3AF;
 	}
 	
 	/* 文件信息状态 */
@@ -393,7 +393,7 @@
 	.file-icon-wrapper {
 		width: 48px;
 		height: 48px;
-		background-color: #ebf5ff;
+		background-color: #ECFEFF;
 		border-radius: 12px;
 		align-items: center;
 		justify-content: center;
@@ -401,7 +401,7 @@
 	}
 	
 	.file-type-icon {
-		color: #007aff;
+		color: #0891B2;
 		font-size: 14px;
 		font-weight: 700;
 	}
@@ -413,20 +413,20 @@
 	
 	.file-name {
 		font-size: 16px;
-		color: #333;
+		color: #111827;
 		font-weight: 600;
 		margin-bottom: 4px;
 	}
 	
 	.file-size {
 		font-size: 13px;
-		color: #888;
+		color: #6B7280;
 	}
 	
 	.file-change-badge {
 		font-size: 12px;
-		color: #007aff;
-		background-color: #f0f7ff;
+		color: #0891B2;
+		background-color: #ECFEFF;
 		padding: 6px 12px;
 		border-radius: 100px;
 	}
@@ -442,16 +442,16 @@
 		padding: 12px 0;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #f5f7fa;
+		border-bottom-color: #F3F4F6;
 	}
 	
 	.info-label {
-		color: #666;
+		color: #6B7280;
 		font-size: 14px;
 	}
 	
 	.info-value {
-		color: #333;
+		color: #374151;
 		font-size: 14px;
 		font-weight: 500;
 	}
@@ -469,19 +469,19 @@
 	
 	.progress-title {
 		font-size: 14px;
-		color: #333;
+		color: #111827;
 		font-weight: 600;
 	}
 	
 	.progress-percent {
 		font-size: 14px;
-		color: #007aff;
+		color: #0891B2;
 		font-weight: 700;
 	}
 	
 	.progress-track {
 		height: 8px;
-		background-color: #eff3f6;
+		background-color: #E2E6ED;
 		border-radius: 100px;
 		overflow: hidden;
 		margin-bottom: 12px;
@@ -489,13 +489,13 @@
 	
 	.progress-fill {
 		height: 100%;
-		background-color: #007aff;
+		background-color: #0891B2;
 		border-radius: 100px;
 	}
 	
 	.progress-status {
 		font-size: 12px;
-		color: #8899a6;
+		color: #6B7280;
 		/* #ifdef WEB */
 		text-align: center;
 		/* #endif */
@@ -514,41 +514,41 @@
 	}
 	
 	.result-success {
-		background-color: #f0fdf4;
+		background-color: #ECFDF5;
 		border-width: 1px;
 		border-style: solid;
-		border-color: #dcfce7;
+		border-color: #D1FAE5;
 	}
 	
 	.result-error {
-		background-color: #fef2f2;
+		background-color: #FEF2F2;
 		border-width: 1px;
 		border-style: solid;
-		border-color: #fee2e2;
+		border-color: #FECACA;
 	}
 	
 	.result-icon-large {
 		font-size: 48px;
 		margin-bottom: 16px;
-		color: #16a34a; 
+		color: #059669; 
 	}
 	
 	.result-error-icon-large {
 		font-size: 48px;
 		margin-bottom: 16px;
-		color: #dc2626;
+		color: #DC2626;
 	}
 	
 	.result-title {
 		font-size: 20px;
 		font-weight: 700;
-		color: #1a1a1a;
+		color: #111827;
 		margin-bottom: 8px;
 	}
 	
 	.result-desc {
 		font-size: 15px;
-		color: #4b5563;
+		color: #374151;
 		/* #ifdef WEB */
 		text-align: center;
 		/* #endif */
@@ -557,7 +557,7 @@
 	
 	.result-stats {
 		font-size: 13px;
-		color: #6b7280;
+		color: #6B7280;
 		background-color: rgba(255,255,255,0.6);
 		padding: 8px 16px;
 		border-radius: 100px;
@@ -569,16 +569,16 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		background-color: #ffffff;
+		background-color: #FFFFFF;
 		padding: 16px 20px;
 		padding-bottom: 30px;
 		border-top-width: 1px;
 		border-top-style: solid;
-		border-top-color: #f0f0f0;
+		border-top-color: #E2E6ED;
 	}
 	
 	.btn-primary {
-		background-color: #007aff;
+		background-color: #0891B2;
 		border-radius: 50px;
 		height: 48px;
 		justify-content: center;
@@ -587,7 +587,7 @@
 	}
 	
 	.btn-success {
-		background-color: #10b981;
+		background-color: #059669;
 		border-radius: 50px;
 		height: 48px;
 		justify-content: center;
@@ -603,7 +603,7 @@
 	}
 	
 	.btn-text {
-		color: #fff;
+		color: #FFFFFF;
 		font-size: 16px;
 		font-weight: 600;
 	}

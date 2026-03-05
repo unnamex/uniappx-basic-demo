@@ -167,12 +167,16 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — 工艺步骤 */
 	.step-card {
-		background-color: #ffffff;
+		background-color: #FFFFFF;
 		border-radius: 12px;
 		padding: 16px;
 		margin-bottom: 8px;
 		flex-direction: column;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	.step-header {
@@ -180,11 +184,12 @@
 		align-items: center;
 	}
 	
+	/* 青碧圆形步骤号 */
 	.step-number {
 		width: 32px;
 		height: 32px;
 		border-radius: 16px;
-		background-color: #007aff;
+		background-color: #0891B2;
 		align-items: center;
 		justify-content: center;
 		margin-right: 12px;
@@ -193,7 +198,7 @@
 	.step-number-text {
 		font-size: 14px;
 		font-weight: bold;
-		color: #ffffff;
+		color: #FFFFFF;
 	}
 	
 	.step-info {
@@ -204,18 +209,18 @@
 	.step-name {
 		font-size: 15px;
 		font-weight: bold;
-		color: #333333;
+		color: #111827;
 	}
 	
 	.step-duration {
 		font-size: 12px;
-		color: #999999;
+		color: #9CA3AF;
 		margin-top: 2px;
 	}
 	
 	.step-arrow {
 		font-size: 12px;
-		color: #cccccc;
+		color: #D1D5DB;
 	}
 	
 	/* 步骤详情 */
@@ -224,7 +229,7 @@
 		padding-top: 16px;
 		border-top-width: 1px;
 		border-top-style: solid;
-		border-top-color: #f0f0f0;
+		border-top-color: #F3F4F6;
 		flex-direction: column;
 	}
 	
@@ -235,13 +240,13 @@
 	
 	.detail-label {
 		font-size: 13px;
-		color: #666666;
+		color: #6B7280;
 		margin-bottom: 8px;
 	}
 	
 	.detail-content {
 		font-size: 14px;
-		color: #333333;
+		color: #374151;
 		line-height: 22px;
 	}
 	
@@ -250,21 +255,23 @@
 		flex-wrap: wrap;
 	}
 	
+	/* 工具标签 — 浅信息蓝 */
 	.tag {
-		background-color: #e3f2fd;
+		background-color: #EFF6FF;
 		padding: 4px 10px;
 		border-radius: 4px;
 		margin-right: 8px;
 		margin-bottom: 8px;
 	}
 	
+	/* 材料标签 — 浅琥珀 */
 	.material-tag {
-		background-color: #fff3e0;
+		background-color: #FFFBEB;
 	}
 	
 	.tag-text {
 		font-size: 12px;
-		color: #333333;
+		color: #374151;
 	}
 	
 	.image-list {
@@ -288,7 +295,7 @@
 		flex-direction: row;
 		align-items: center;
 		padding: 10px;
-		background-color: #f5f5f5;
+		background-color: #F3F4F6;
 		border-radius: 8px;
 		margin-bottom: 8px;
 	}
@@ -300,6 +307,6 @@
 	
 	.video-name {
 		font-size: 14px;
-		color: #333333;
+		color: #374151;
 	}
 </style>

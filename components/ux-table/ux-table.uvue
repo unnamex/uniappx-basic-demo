@@ -348,21 +348,22 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — 表格组件 */
 	.ux-table {
 		display: flex;
 		flex-direction: column;
 		width: 100%;
 		border-width: 1px;
 		border-style: solid;
-		border-color: #EBEEF5;
+		border-color: #E2E6ED;
 	}
 
 	.header {
-		background-color: #F5F7FA;
+		background-color: #F0F2F5;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #EBEEF5;
-		position: relative; /* Context for absolute positioning */
+		border-bottom-color: #E2E6ED;
+		position: relative;
 	}
 
 	.header-row {
@@ -386,8 +387,8 @@
 
 	.header-text {
 		font-size: 28rpx;
-		font-weight: bold;
-		color: #909399;
+		font-weight: 600;
+		color: #6B7280;
 		flex: 1;
 		lines: 1;
 		text-overflow: ellipsis;
@@ -413,8 +414,8 @@
 	
 	.separator-line {
 		width: 1px;
-		height: 40rpx; /* Visible line height */
-		background-color: #dcdfe6;
+		height: 40rpx;
+		background-color: #D1D5DB;
 		margin-right: 2px;
 	}
 
@@ -426,21 +427,21 @@
 		width: 120rpx;
 		justify-content: center;
 		align-items: center;
-		background-color: #F5F7FA;
+		background-color: #F0F2F5;
 		z-index: 100;
-		border-left: 1px solid #dcdfe6;
+		border-left: 1px solid #D1D5DB;
 		/* #ifdef WEB */
 		box-shadow: -2px 0 5px rgba(0,0,0,0.05);
 		/* #endif */
 	}
 	
 	.header-action-hover {
-		background-color: #E6E8EB;
+		background-color: #E2E6ED;
 	}
 	
 	.action-text {
 		font-size: 26rpx;
-		color: #409EFF;
+		color: #0891B2;
 	}
 
 	.body {
@@ -453,8 +454,8 @@
 		flex-direction: row;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #EBEEF5;
-		background-color: #ffffff;
+		border-bottom-color: #F3F4F6;
+		background-color: #FFFFFF;
 		padding-top: 20rpx;
 		padding-bottom: 20rpx;
 	}
@@ -479,11 +480,11 @@
 
 	.cell-text {
 		font-size: 28rpx;
-		color: #606266;
+		color: #374151;
 		lines: 1;
 		text-overflow: ellipsis;
 		overflow: hidden;
-		flex: 1; /* Ensure text takes space to ellipsis */
+		flex: 1;
 	}
 
 	.expand-icon {
@@ -496,10 +497,11 @@
 	
 	.icon-text {
 		font-size: 24rpx;
-		color: #C0C4CC;
+		color: #9CA3AF;
 	}
 
+	/* 选中行 — 极浅青碧 */
 	.row-selected {
-		background-color: #f0f9eb !important;
+		background-color: #ECFEFF;
 	}
 </style>

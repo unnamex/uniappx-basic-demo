@@ -259,9 +259,10 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — 工艺详情页 */
 	.page-container {
 		flex: 1;
-		background-color: #f5f6f7;
+		background-color: #F5F7FA;
 	}
 	
 	.detail-page {
@@ -271,11 +272,14 @@
 	
 	/* 信息卡片 */
 	.info-card {
-		background-color: #ffffff;
+		background-color: #FFFFFF;
 		border-radius: 12px;
 		padding: 20px;
 		margin-bottom: 12px;
 		flex-direction: column;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	.card-header {
@@ -287,7 +291,7 @@
 	
 	.process-code {
 		font-size: 14px;
-		color: #666666;
+		color: #6B7280;
 	}
 	
 	.status-tag {
@@ -296,26 +300,27 @@
 	}
 	
 	.status-published {
-		background-color: #e8f5e9;
+		background-color: #ECFDF5;
 	}
 	
 	.status-draft {
-		background-color: #fff3e0;
+		background-color: #FFFBEB;
 	}
 	
 	.status-default {
-		background-color: #f5f5f5;
+		background-color: #F3F4F6;
 	}
 	
 	.status-text {
 		font-size: 12px;
-		color: #333333;
+		color: #374151;
+		font-weight: 500;
 	}
 	
 	.process-name {
 		font-size: 20px;
 		font-weight: bold;
-		color: #333333;
+		color: #111827;
 		margin-bottom: 16px;
 	}
 	
@@ -333,13 +338,13 @@
 	
 	.info-label {
 		font-size: 12px;
-		color: #999999;
+		color: #9CA3AF;
 		margin-bottom: 4px;
 	}
 	
 	.info-value {
 		font-size: 14px;
-		color: #333333;
+		color: #111827;
 	}
 	
 	.time-info {
@@ -347,13 +352,13 @@
 		justify-content: space-between;
 		border-top-width: 1px;
 		border-top-style: solid;
-		border-top-color: #f0f0f0;
+		border-top-color: #F3F4F6;
 		padding-top: 12px;
 	}
 	
 	.time-text {
 		font-size: 12px;
-		color: #999999;
+		color: #9CA3AF;
 	}
 	
 	/* 分区 */
@@ -371,12 +376,12 @@
 	.section-title {
 		font-size: 16px;
 		font-weight: bold;
-		color: #333333;
+		color: #111827;
 	}
 	
 	.section-count {
 		font-size: 12px;
-		color: #999999;
+		color: #9CA3AF;
 	}
 	
 	/* 步骤列表容器 */
@@ -386,9 +391,12 @@
 	
 	/* 附件列表 */
 	.attachment-list {
-		background-color: #ffffff;
+		background-color: #FFFFFF;
 		border-radius: 12px;
 		overflow: hidden;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	.attachment-item {
@@ -397,7 +405,7 @@
 		padding: 14px 16px;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #f0f0f0;
+		border-bottom-color: #F3F4F6;
 	}
 	
 	.attachment-icon {
@@ -408,11 +416,11 @@
 	.attachment-name {
 		flex: 1;
 		font-size: 14px;
-		color: #333333;
+		color: #111827;
 	}
 	
 	.attachment-arrow {
 		font-size: 14px;
-		color: #cccccc;
+		color: #0891B2;
 	}
 </style>

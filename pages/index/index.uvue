@@ -1249,8 +1249,8 @@
 <style>
 	.header-container {
 		height: 64px;
-		background-color: #fff;
-		border-bottom: 1px solid #e0e0e0;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E2E6ED;
 		display: flex;
 		flex-direction: row;
 		align-items: center;
@@ -1269,7 +1269,7 @@
 		width: 40px;
 		height: 40px;
 		border-radius: 8px;
-		background-color: #E8F0FE;
+		background-color: #ECFEFF;
 		display: flex;
 		flex-direction: row;
 		align-items: center;
@@ -1304,7 +1304,7 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		min-width: 0;
 	}
 	
@@ -1313,13 +1313,14 @@
 		display: flex;
 		flex-direction: column;
 		flex: 1;
+		background-color: #FFFFFF;
 	}
 	
 	.main-content-bottom {
 		padding: 10px;
 		display: flex;
 		flex-direction: column;
-		background-color: #fafafa;
+		background-color: #F5F7FA;
 		flex: 1;
 		height: 100%;
 	}
@@ -1328,6 +1329,7 @@
 		font-size: 24px;
 		font-weight: bold;
 		margin-bottom: 20px;
+		color: #111827;
 	}
 	
 	/* 右侧面板顶部区域 - 确保充满容器 */
@@ -1336,7 +1338,7 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		background-color: #fff;
+		background-color: #FFFFFF;
 	}
 	
 	/* 重复定义已移除，见下方 Right Header 区域 */
@@ -1344,7 +1346,7 @@
 	.right-panel {
 		width: 100%;
 		height: 100%;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		display: flex;
 		flex-direction: column;
 		padding: 10px;
@@ -1358,11 +1360,11 @@
 	
 	.right-panel-bottom {
 		padding: 6px;
-		background-color: #f8f9fa;
+		background-color: #F5F7FA;
 		display: flex;
 		flex-direction: column;
 		height: 100px;
-		border-top: 1px solid #e0e0e0;
+		border-top: 1px solid #E2E6ED;
 	}
 	
 	.tab-content-wrap {
@@ -1372,7 +1374,7 @@
 	.component-wrapper {
 		margin-bottom: 20px;
 		padding: 10px;
-		border: 1px solid #eee;
+		border: 1px solid #E2E6ED;
 		border-radius: 6rpx;
 	}
 	
@@ -1381,20 +1383,21 @@
 		margin-bottom: 10px;
 		font-size: 16px;
 		display: block;
+		color: #111827;
 	}
 	
 	.kv-row {
 		display: block;
 		margin-bottom: 5px;
 		font-size: 14px;
-		color: #555;
+		color: #374151;
 	}
 	
 	.loading-state {
 		display: flex;
 		justify-content: center;
 		padding: 20px;
-		color: #999;
+		color: #9CA3AF;
 	}
 	
 	/* 选中节点详情样式 */
@@ -1407,19 +1410,19 @@
 	.info-title {
 		font-size: 18px;
 		font-weight: bold;
-		color: #333;
+		color: #111827;
 		margin-bottom: 10px;
 	}
 	
 	.info-type {
 		font-size: 14px;
-		color: #666;
+		color: #6B7280;
 		margin-bottom: 5px;
 	}
 	
 	.info-code {
 		font-size: 14px;
-		color: #888;
+		color: #6B7280;
 		margin-bottom: 10px;
 	}
 	
@@ -1427,23 +1430,23 @@
 		padding-top: 10px;
 		border-top-width: 1px;
 		border-top-style: solid;
-		border-top-color: #eee;
+		border-top-color: #E2E6ED;
 	}
 	
 	.info-item {
 		font-size: 14px;
-		color: #555;
+		color: #374151;
 		margin-bottom: 5px;
 	}
 	
 	.desc-label {
-		color: #666;
+		color: #6B7280;
 		margin-top: 10px;
 	}
 	
 	.info-desc {
 		font-size: 14px;
-		color: #333;
+		color: #374151;
 		line-height: 1.5em;
 	}
 	
@@ -1452,7 +1455,7 @@
 		justify-content: center;
 		align-items: center;
 		height: 100%;
-		color: #999;
+		color: #9CA3AF;
 		font-size: 14px;
 	}
 	
@@ -1465,13 +1468,13 @@
 	
 	.info-row {
 		font-size: 14px;
-		color: #333;
+		color: #374151;
 		margin-bottom: 8px;
 	}
 	
 	.info-label {
 		font-size: 14px;
-		color: #666;
+		color: #6B7280;
 		margin-top: 15px;
 		margin-bottom: 5px;
 	}
@@ -1479,14 +1482,14 @@
 	/* 底部区域样式 */
 	.bottom-header {
 		padding-bottom: 5px;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid #E2E6ED;
 		margin-bottom: 5px;
 	}
 	
 	.bottom-title {
 		font-size: 16px;
 		font-weight: bold;
-		color: #333;
+		color: #111827;
 	}
 	
 	.component-wrapper-simple {
@@ -1495,7 +1498,7 @@
 	
 	.comp-title-small {
 		font-size: 13px;
-		color: #999;
+		color: #9CA3AF;
 		margin-bottom: 5px;
 	}
 	
@@ -1515,19 +1518,19 @@
 	
 	.info-label-small {
 		font-size: 13px;
-		color: #888;
+		color: #6B7280;
 		margin-right: 5px;
 	}
 	
 	.info-val-small {
 		font-size: 14px;
-		color: #333;
+		color: #111827;
 		font-weight: 500;
 	}
 	
 	.info-desc-small {
 		font-size: 13px;
-		color: #666;
+		color: #6B7280;
 		line-height: 1.4em;
 	}
 	
@@ -1541,40 +1544,40 @@
 		flex-direction: row;
 		align-items: center;
 		padding: 12px 15px;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		border-radius: 6px;
 		margin-bottom: 8px;
-		border: 1px solid #e8e8e8;
+		border: 1px solid #E2E6ED;
 	}
 	
 	.list-item-code {
 		font-size: 13px;
-		color: #888;
+		color: #6B7280;
 		width: 120px;
 	}
 	
 	.list-item-name {
 		font-size: 14px;
-		color: #333;
+		color: #374151;
 		flex: 1;
 	}
 	
 	.list-item-duration {
 		font-size: 13px;
-		color: #666;
+		color: #6B7280;
 		width: 80px;
 	}
 	
 	.list-item-simple {
 		padding: 10px 15px;
-		background-color: #f9f9f9;
+		background-color: #F5F7FA;
 		border-radius: 4px;
 		margin-bottom: 6px;
 	}
 	
 	.empty-hint {
 		text-align: center;
-		color: #999;
+		color: #9CA3AF;
 		font-size: 14px;
 		padding: 20px;
 	}
@@ -1586,13 +1589,13 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 8px 12px;
-		background-color: #f5f5f5;
-		border-bottom: 1px solid #e0e0e0;
+		background-color: #F0F2F5;
+		border-bottom: 1px solid #E2E6ED;
 	}
 	
 	.right-header-title {
 		font-size: 14px;
-		color: #333;
+		color: #111827;
 		font-weight: 500;
 	}
 	
@@ -1602,13 +1605,13 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.08);
+		background-color: rgba(0, 0, 0, 0.05);
 		border-radius: 4px;
 	}
 	
 	.btn-icon {
 		font-size: 16px;
-		color: #333;
+		color: #374151;
 	}
 	
 	/* Fullscreen Overlay */
@@ -1618,7 +1621,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		background-color: rgba(255, 255, 255, 0.98);
+		background-color: rgba(245, 247, 250, 0.98);
 		z-index: 9999;
 		display: flex;
 		flex-direction: column;
@@ -1637,8 +1640,8 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 12px 24px;
-		background-color: #fff;
-		border-bottom: 1px solid #e0e0e0;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E2E6ED;
 	}
 	
 	.header-left {
@@ -1649,13 +1652,13 @@
 	
 	.fullscreen-title {
 		font-size: 16px;
-		color: #333;
+		color: #111827;
 		font-weight: 600;
 	}
 	
 	.resource-counter {
 		font-size: 14px;
-		color: #888;
+		color: #6B7280;
 		margin-left: 12px;
 	}
 	
@@ -1671,14 +1674,14 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.05);
+		background-color: #F0F2F5;
 		border-radius: 6px;
 		margin-right: 12px;
 	}
 	
 	.header-btn-icon {
 		font-size: 18px;
-		color: #333;
+		color: #374151;
 	}
 	
 	.fullscreen-close {
@@ -1687,13 +1690,13 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.08);
+		background-color: #F0F2F5;
 		border-radius: 18px;
 	}
 	
 	.close-icon {
 		font-size: 18px;
-		color: #333;
+		color: #374151;
 	}
 	
 	.fullscreen-content {
@@ -1709,10 +1712,10 @@
 		flex-direction: row;
 		position: relative;
 		margin-right: 16px;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #e0e0e0;
+		border: 1px solid #E2E6ED;
 	}
 	
 	.fullscreen-preview-full {
@@ -1721,10 +1724,10 @@
 		flex-direction: row;
 		position: relative;
 		margin-right: 0;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #e0e0e0;
+		border: 1px solid #E2E6ED;
 	}
 	
 	/* 上/下一个导航按钮 */
@@ -1737,7 +1740,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.3);
+		background-color: rgba(17, 24, 39, 0.25);
 		z-index: 10;
 	}
 	
@@ -1755,7 +1758,7 @@
 	
 	.nav-icon {
 		font-size: 32px;
-		color: #fff;
+		color: #FFFFFF;
 		font-weight: bold;
 	}
 	
@@ -1764,10 +1767,10 @@
 		width: 140px;
 		display: flex;
 		flex-direction: column;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #e0e0e0;
+		border: 1px solid #E2E6ED;
 	}
 	
 	.fullscreen-list-inner {
@@ -1780,7 +1783,7 @@
 		align-items: center;
 		padding: 8px;
 		margin-bottom: 8px;
-		background-color: #f8f9fa;
+		background-color: #F3F4F6;
 		border-radius: 6px;
 		border: 2px solid transparent;
 	}
@@ -1791,9 +1794,9 @@
 		align-items: center;
 		padding: 8px;
 		margin-bottom: 8px;
-		background-color: rgba(74, 144, 226, 0.1);
+		background-color: #ECFEFF;
 		border-radius: 6px;
-		border: 2px solid #4a90e2;
+		border: 2px solid #0891B2;
 	}
 	
 	.thumb-wrapper {
@@ -1802,7 +1805,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #e9ecef;
+		background-color: #E2E6ED;
 		border-radius: 4px;
 		overflow: hidden;
 	}
@@ -1818,7 +1821,7 @@
 	
 	.thumb-name {
 		font-size: 11px;
-		color: #666;
+		color: #6B7280;
 		margin-top: 6px;
 		overflow: hidden;
 	}
@@ -1833,7 +1836,7 @@
 	
 	.image-scroll-view {
 		flex: 1;
-		background-color: #f0f0f0;
+		background-color: #F0F2F5;
 	}
 	
 	.image-transform-wrapper {
@@ -1856,8 +1859,8 @@
 		justify-content: center;
 		align-items: center;
 		padding: 12px 20px;
-		background-color: #fff;
-		border-top: 1px solid #e0e0e0;
+		background-color: #FFFFFF;
+		border-top: 1px solid #E2E6ED;
 	}
 	
 	.toolbar-btn {
@@ -1866,19 +1869,19 @@
 		align-items: center;
 		padding: 8px 16px;
 		margin: 0 4px;
-		background-color: #f5f5f5;
+		background-color: #F0F2F5;
 		border-radius: 6px;
 	}
 	
 	.toolbar-icon {
 		font-size: 20px;
-		color: #333;
+		color: #374151;
 		font-weight: bold;
 	}
 	
 	.toolbar-label {
 		font-size: 10px;
-		color: #666;
+		color: #6B7280;
 		margin-top: 2px;
 	}
 	
@@ -1888,21 +1891,21 @@
 		align-items: center;
 		padding: 8px 16px;
 		margin: 0 8px;
-		background-color: #e9ecef;
+		background-color: #E2E6ED;
 		border-radius: 6px;
 		min-width: 60px;
 	}
 	
 	.zoom-percentage {
 		font-size: 14px;
-		color: #333;
+		color: #111827;
 		font-weight: 600;
 	}
 	
 	.toolbar-divider {
 		width: 1px;
 		height: 32px;
-		background-color: #ddd;
+		background-color: #D1D5DB;
 		margin: 0 12px;
 	}
 	/* ========== 设置下拉菜单样式 ========== */
@@ -1911,7 +1914,8 @@
 		font-size: 16px;
 		padding: 4px 8px;
 		border-radius: 6px;
-		background-color: #f0f0f0;
+		background-color: #F0F2F5;
+		color: #6B7280;
 		min-height: 28px;
 		line-height: 20px;
 	}
@@ -1920,7 +1924,7 @@
 		position: fixed;
 		top: 50px;
 		right: 20px;
-		background-color: #ffffff;
+		background-color: #FFFFFF;
 		border-radius: 10px;
 		padding: 6px 0;
 		min-width: 160px;
@@ -1932,7 +1936,7 @@
 		/* #ifndef WEB */
 		border-width: 1px;
 		border-style: solid;
-		border-color: #d0d0d0;
+		border-color: #E2E6ED;
 		/* #endif */
 	}
 	
@@ -1953,17 +1957,17 @@
 	
 	.menu-item-text {
 		font-size: 14px;
-		color: #333333;
+		color: #111827;
 	}
 	
 	.menu-item-text-danger {
 		font-size: 14px;
-		color: #ff3b30;
+		color: #DC2626;
 	}
 	
 	.menu-divider {
 		height: 1px;
-		background-color: #eeeeee;
+		background-color: #F3F4F6;
 		margin: 4px 12px;
 	}
 	

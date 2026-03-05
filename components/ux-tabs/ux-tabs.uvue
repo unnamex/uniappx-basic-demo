@@ -103,12 +103,13 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — Tab 组件 */
 	.ux-tabs {
 		display: flex;
 		flex-direction: column;
 		width: 100%;
-		flex: 1; /* Allow filling parent */
-		background-color: #fff;
+		flex: 1;
+		background-color: #FFFFFF;
 		transition-property: all;
 		transition-duration: 0.3s;
 	}
@@ -124,11 +125,12 @@
 		width: 100%;
 	}
 	
+	/* ⭐ 浅蓝灰底色面板条 — 仪表面板感 */
 	.ux-tabs__header-row {
 		display: flex;
 		flex-direction: row;
-		border-bottom: 2px solid #e4e7ed;
-		background-color: #fff;
+		border-bottom: 2px solid #E2E6ED;
+		background-color: #EEF1F6;
 		flex-shrink: 0;
 		align-items: center;
 	}
@@ -145,12 +147,12 @@
 		justify-content: center;
 		align-items: center;
 		cursor: pointer;
-		border-left: 1px solid #f0f0f0;
+		border-left: 1px solid #E2E6ED;
 	}
 	
 	.ux-tabs__fullscreen-icon {
 		font-size: 18px;
-		color: #606266;
+		color: #6B7280;
 	}
 	
 	.ux-tabs__nav-wrap {
@@ -174,15 +176,17 @@
 		cursor: pointer;
 	}
 	
+	/* 未选中文字 — 灰色 */
 	.ux-tabs__item-text {
 		font-size: 14px;
-		color: #303133;
+		color: #6B7280;
 		line-height: 40px;
 	}
 	
+	/* 选中态文字 — 青碧品牌色 */
 	.is-active-text {
-		color: #409eff;
-		font-weight: 500;
+		color: #0891B2;
+		font-weight: 600;
 	}
 	
 	.is-disabled {
@@ -190,21 +194,22 @@
 		cursor: not-allowed;
 	}
 	
+	/* 选中指示条 — 青碧 */
 	.ux-tabs__active-bar {
 		position: absolute;
 		bottom: 0;
 		left: 0;
 		height: 2px;
-		background-color: #409eff;
+		background-color: #0891B2;
 		z-index: 1;
 		width: 100%; 
 	}
 	
 	.ux-tabs__content {
 		padding: 15px;
-		flex: 1; /* Grow to fill remaining space */
+		flex: 1;
 		display: flex;
 		flex-direction: column;
-		background-color: #fff;
+		background-color: #FFFFFF;
 	}
 </style>

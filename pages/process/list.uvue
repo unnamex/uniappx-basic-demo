@@ -222,9 +222,10 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — 工艺列表页 */
 	.page-container {
 		flex: 1;
-		background-color: #f5f6f7;
+		background-color: #F5F7FA;
 	}
 	
 	.list-page {
@@ -240,26 +241,30 @@
 	.search-input-container {
 		flex-direction: row;
 		align-items: center;
-		background-color: #ffffff;
+		background-color: #FFFFFF;
 		border-radius: 8px;
 		padding: 0 12px;
 		height: 44px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	.search-icon {
 		font-size: 16px;
+		color: #0891B2;
 		margin-right: 8px;
 	}
 	
 	.search-input {
 		flex: 1;
 		font-size: 14px;
-		color: #333333;
+		color: #111827;
 	}
 	
 	.search-clear {
 		font-size: 14px;
-		color: #999999;
+		color: #9CA3AF;
 		padding: 4px;
 	}
 	
@@ -270,7 +275,7 @@
 	
 	.stats-text {
 		font-size: 12px;
-		color: #999999;
+		color: #9CA3AF;
 	}
 	
 	/* 工艺卡片 */
@@ -293,24 +298,24 @@
 	
 	.empty-title {
 		font-size: 18px;
-		color: #333333;
+		color: #111827;
 		margin-bottom: 8px;
 	}
 	
 	.empty-desc {
 		font-size: 14px;
-		color: #999999;
+		color: #9CA3AF;
 		margin-bottom: 24px;
 	}
 	
 	.btn-import {
-		background-color: #007aff;
+		background-color: #0891B2;
 		border-radius: 8px;
 		padding: 12px 32px;
 	}
 	
 	.btn-text {
-		color: #ffffff;
+		color: #FFFFFF;
 		font-size: 14px;
 	}
 	
@@ -322,7 +327,7 @@
 	
 	.loading-text {
 		font-size: 14px;
-		color: #999999;
+		color: #9CA3AF;
 	}
 	
 	.load-end {
@@ -332,6 +337,6 @@
 	
 	.load-end-text {
 		font-size: 12px;
-		color: #cccccc;
+		color: #D1D5DB;
 	}
 </style>

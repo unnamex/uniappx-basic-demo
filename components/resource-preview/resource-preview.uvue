@@ -243,14 +243,17 @@
 </script>
 
 <style>
+	/* Cloud Atlas 云图白主题 — 资源预览 */
 	.resource-preview {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		background-color: #fff;
+		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #e0e0e0;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
 	}
 	
 	/* 空状态 */
@@ -269,7 +272,7 @@
 	
 	.empty-text {
 		font-size: 14px;
-		color: #666;
+		color: #9CA3AF;
 	}
 	
 	/* 预览容器 */
@@ -302,7 +305,7 @@
 		width: 100%;
 		height: 200px;
 		border-radius: 4px;
-		background-color: #000;
+		background-color: #111827;
 	}
 	
 	/* 音频预览 */
@@ -333,13 +336,13 @@
 	.wave-bar {
 		width: 6px;
 		height: 20px;
-		background-color: #4a90e2;
+		background-color: #0891B2;
 		margin: 0 3px;
 		border-radius: 3px;
 	}
 	
 	.wave-bar.playing {
-		background-color: #52c41a;
+		background-color: #059669;
 	}
 	
 	.audio-controls {
@@ -354,7 +357,7 @@
 		width: 48px;
 		height: 48px;
 		border-radius: 24px;
-		background-color: #4a90e2;
+		background-color: #0891B2;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -369,20 +372,20 @@
 	
 	.progress-bar {
 		height: 6px;
-		background-color: #333;
+		background-color: #E2E6ED;
 		border-radius: 3px;
 		overflow: hidden;
 	}
 	
 	.progress-fill {
 		height: 100%;
-		background-color: #4a90e2;
+		background-color: #0891B2;
 		border-radius: 3px;
 	}
 	
 	.time-text {
 		font-size: 12px;
-		color: #999;
+		color: #6B7280;
 		margin-top: 4px;
 	}
 	
@@ -402,20 +405,20 @@
 	
 	.resource-hint {
 		font-size: 12px;
-		color: #888;
+		color: #9CA3AF;
 		margin-top: 4px;
 	}
 	
 	.open-btn {
 		margin-top: 20px;
 		padding: 12px 32px;
-		background-color: #4a90e2;
-		border-radius: 6px;
+		background-color: #0891B2;
+		border-radius: 8px;
 	}
 	
 	.btn-text {
 		font-size: 14px;
-		color: #fff;
+		color: #FFFFFF;
 	}
 	
 	/* 未知类型 */
@@ -431,7 +434,7 @@
 	
 	.unknown-text {
 		font-size: 14px;
-		color: #888;
+		color: #9CA3AF;
 		margin-bottom: 8px;
 	}
 	
@@ -446,19 +449,19 @@
 	
 	.resource-name {
 		font-size: 14px;
-		color: #333;
+		color: #111827;
 		font-weight: 500;
 	}
 	
 	.resource-desc {
 		font-size: 12px;
-		color: #666;
+		color: #6B7280;
 		margin-top: 4px;
 	}
 	
 	.resource-duration {
 		font-size: 12px;
-		color: #4a90e2;
+		color: #0891B2;
 		margin-top: 4px;
 	}
 </style>
