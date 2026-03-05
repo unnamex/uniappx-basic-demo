@@ -11,15 +11,15 @@
 				</view>
 
 				<!-- Divider (Left-Main) -->
-				<view v-if="$slots.left" class="outsider-divider" 
+				<view v-if="$slots.left" :class="['outsider-divider', isDragging ? 'outsider-divider-drag' : '']" 
 					@touchstart="onTouchStart" 
 					@touchmove="onTouchMove" 
 					@touchend="onTouchEnd"
 					@mousedown="onMouseDown"
 					>
-					<view class="outsider-divider-line"></view>
+					<view :class="['outsider-divider-line', isDragging ? 'outsider-divider-line-drag' : '']"></view>
 					<view class="outsider-toggle-btn" @click.stop="toggleCollapse">
-						<text class="outsider-toggle-text">{{ isCollapsed ? '>' : '<' }}</text>
+						<text class="outsider-toggle-text">{{ isCollapsed ? '⟩' : '⟨' }}</text>
 					</view>
 				</view>
 
@@ -33,13 +33,13 @@
 						</scroll-view>
 
 						<!-- Horizontal Divider -->
-						<view class="outsider-main-divider-horizontal"
+						<view :class="['outsider-main-divider-horizontal', isDraggingMain ? 'outsider-divider-drag-horizontal' : '']"
 							@touchstart="onTouchStartMain"
 							@touchmove="onTouchMoveMain"
 							@touchend="onTouchEndMain"
 							@mousedown="onMouseDownMain"
 						>
-							<view class="outsider-divider-line-horizontal"></view>
+							<view :class="['outsider-divider-line-horizontal', isDraggingMain ? 'outsider-divider-line-drag-horizontal' : '']"></view>
 						</view>
 
 						<!-- Bottom Section -->
@@ -55,15 +55,15 @@
 				</view>
 
 				<!-- Divider (Main-Right) -->
-				<view v-if="$slots.right" class="outsider-divider" 
+				<view v-if="$slots.right" :class="['outsider-divider', isDraggingRight ? 'outsider-divider-drag' : '']" 
 					@touchstart="onTouchStartRight" 
 					@touchmove="onTouchMoveRight" 
 					@touchend="onTouchEndRight"
 					@mousedown="onMouseDownRight"
 					>
-					<view class="outsider-divider-line"></view>
+					<view :class="['outsider-divider-line', isDraggingRight ? 'outsider-divider-line-drag' : '']"></view>
 					<view class="outsider-toggle-btn" @click.stop="toggleRightCollapse">
-						<text class="outsider-toggle-text">{{ isRightCollapsed ? '<' : '>' }}</text>
+						<text class="outsider-toggle-text">{{ isRightCollapsed ? '⟨' : '⟩' }}</text>
 					</view>
 				</view>
 
@@ -78,13 +78,13 @@
 						</scroll-view>
 
 						<!-- Horizontal Divider -->
-						<view class="outsider-right-divider-horizontal"
+						<view :class="['outsider-right-divider-horizontal', isDraggingRightMain ? 'outsider-divider-drag-horizontal' : '']"
 							@touchstart="onTouchStartRightMain"
 							@touchmove="onTouchMoveRightMain"
 							@touchend="onTouchEndRightMain"
 							@mousedown="onMouseDownRightMain"
 						>
-							<view class="outsider-divider-line-horizontal"></view>
+							<view :class="['outsider-divider-line-horizontal', isDraggingRightMain ? 'outsider-divider-line-drag-horizontal' : '']"></view>
 						</view>
 
 						<!-- Right Bottom Section -->
@@ -430,14 +430,13 @@
 	.outsider-left {
 		flex: none;
 		overflow: hidden;
-		border-right: 1px solid #E2E6ED;
 		display: flex;
 		flex-direction: column;
 	}
 
 	.outsider-divider {
-		width: 10px;
-		background-color: #F0F2F5;
+		width: 8px;
+		background-color: transparent;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -445,39 +444,73 @@
 		cursor: col-resize;
 		position: relative;
 		flex: none;
-		border-left: 1px solid #E2E6ED;
-		border-right: 1px solid #E2E6ED;
+		z-index: 10;
+	}
+
+	.outsider-divider:active .outsider-divider-line,
+	.outsider-divider:active .outsider-divider-line-drag,
+	.outsider-divider-drag .outsider-divider-line,
+	.outsider-divider-drag .outsider-divider-line-drag {
+		width: 3px;
+		background-color: #007AFF;
+	}
+
+	.outsider-divider-drag {
 	}
 
 	.outsider-divider-line {
-		width: 2px;
+		width: 1px;
 		height: 100%;
-		background-color: #E2E6ED; /* Visual line center */
-		display: none; /* simple background is enough usually, can enable for styling */
+		background-color: var(--ui-border-color, #E2E6ED);
+		position: absolute;
+		transition-property: background-color, width;
+		transition-duration: 0.2s;
+	}
+
+	.outsider-divider-line-drag {
+		width: 3px;
+		background-color: #007AFF;
 	}
 
 	.outsider-toggle-btn {
-		width: 16px;
-		height: 30px;
-		background-color: #E2E6ED;
-		border-radius: 4px;
+		width: 28px;
+		height: 28px;
+		background-color: #FFFFFF;
+		border-radius: 14px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 10;
+		z-index: 11;
 		cursor: pointer;
+		position: absolute;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+		border: 1px solid #F1F5F9;
+		transition-property: background-color, box-shadow, border-color;
+		transition-duration: 0.2s;
+	}
+	
+	.outsider-divider:active .outsider-toggle-btn,
+	.outsider-divider-drag .outsider-toggle-btn {
+		box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
+		border-color: #E0F2FE;
+	}
+	
+	.outsider-toggle-btn:active {
+		background-color: #F8FAFC;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 	}
 	
 	.outsider-toggle-text {
-		font-size: 10px;
-		color: #6B7280;
-		font-weight: bold;
+		font-size: 15px;
+		color: #64748B;
+		line-height: 28px;
+		font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 	}
 
 	.outsider-main {
 		flex: 1;
 		overflow: hidden;
-		background-color: #FFFFFF;
+		background-color: var(--ui-background-primary, #FFFFFF);
 		display: flex;
 		flex-direction: column;
 	}
@@ -500,23 +533,41 @@
 	}
 	
 	.outsider-main-divider-horizontal {
-		height: 10px;
-		background-color: #F0F2F5;
+		height: 8px;
+		background-color: transparent;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
 		flex: none;
-		border-top: 1px solid #E2E6ED;
-		border-bottom: 1px solid #E2E6ED;
+		position: relative;
+		z-index: 10;
+	}
+
+	.outsider-main-divider-horizontal:active .outsider-divider-line-horizontal,
+	.outsider-main-divider-horizontal:active .outsider-divider-line-drag-horizontal,
+	.outsider-divider-drag-horizontal .outsider-divider-line-horizontal,
+	.outsider-divider-drag-horizontal .outsider-divider-line-drag-horizontal {
+		height: 3px;
+		background-color: #007AFF;
+	}
+
+	.outsider-divider-drag-horizontal {
 	}
 	
 	.outsider-divider-line-horizontal {
-		height: 2px;
+		height: 1px;
 		width: 100%;
-		background-color: #E2E6ED;
-		display: none;
+		background-color: var(--ui-border-color, #E2E6ED);
+		position: absolute;
+		transition-property: background-color, height;
+		transition-duration: 0.2s;
+	}
+
+	.outsider-divider-line-drag-horizontal {
+		height: 3px;
+		background-color: #007AFF;
 	}
 	
 	.outsider-main-bottom {
@@ -527,7 +578,6 @@
 	.outsider-right {
 		flex: none;
 		overflow: hidden;
-		border-left: 1px solid #E2E6ED;
 		display: flex;
 		flex-direction: column;
 	}
@@ -547,17 +597,23 @@
 	}
 	
 	.outsider-right-divider-horizontal {
-		height: 10px;
-		background-color: #F0F2F5;
+		height: 8px;
+		background-color: transparent;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		cursor: row-resize;
 		flex: none;
-		border-top: 1px solid #E2E6ED;
-		border-bottom: 1px solid #E2E6ED;
 		width: 100%;
+		position: relative;
+		z-index: 10;
+	}
+
+	.outsider-right-divider-horizontal:active .outsider-divider-line-horizontal,
+	.outsider-right-divider-horizontal:active .outsider-divider-line-drag-horizontal {
+		height: 3px;
+		background-color: #007AFF;
 	}
 	
 	.outsider-right-bottom {
