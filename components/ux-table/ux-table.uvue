@@ -90,6 +90,11 @@
 			showExpand: {
 				type: Boolean,
 				default: true
+			},
+			/** 选中的行ID，用于外部控制选中状态 */
+			selectedId: {
+				type: String as PropType<string | null>,
+				default: null
 			}
 		},
 		data() {
@@ -125,6 +130,14 @@
 					this.initColumns(newCols)
 				},
 				deep: true,
+				immediate: true
+			},
+			selectedId: {
+				handler(newId: string | null) {
+					if (newId !== undefined) {
+						this.selectedRowId = newId
+					}
+				},
 				immediate: true
 			}
 		},

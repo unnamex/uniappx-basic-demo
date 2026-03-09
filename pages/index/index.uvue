@@ -35,7 +35,7 @@
 
 		<template #left>
 			<view class="left-panel">
-				<ux-table :data="tableData" :columns="columns" @row-click="handleRowClick"></ux-table>
+				<ux-table :data="tableData" :columns="columns" :selectedId="selectedRowId" @row-click="handleRowClick"></ux-table>
 			</view>
 		</template>
 		<!-- Main Top Area (Dynamic Group) -->
@@ -92,53 +92,65 @@
 		
 		<!-- Main Bottom Area (Dynamic Group) -->
 		<template #main-bottom>
-			<view class="main-content-bottom">
-				<view v-if="bottomGroup != null" style="height: 100%; display: flex; flex-direction: column;">
+			<view class="main-bottom-wrapper">
+				<view class="main-content-bottom">
+					<view v-if="bottomGroup != null" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
 
-					<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
-						<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
-							<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
-								<view class="tab-content-wrap">
-									<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
-										<text class="comp-title">{{ comp.title }}</text>
-										
-										<!-- Table Component -->
-										<view v-if="comp.type == 'table'" style="min-height: 200px;">
-											<ux-table 
-												:columns="getColumnsFromConfig(comp.config)" 
-												:data="comp.data"
-												:showExpand="false"
-											></ux-table>
-										</view>
-										
-										<!-- Key-Value Component (Info Panel) -->
-										<view v-else-if="comp.type == 'key-value'" class="node-info-panel">
-											<text v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-row">
-												{{ field['label'] }}: {{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}
-											</text>
-										</view>
-										
-										<!-- Text Block Component -->
-										<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
-											<text class="info-desc">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无描述' }}</text>
-										</view>
-										
-										<!-- List Component -->
-										<view v-else-if="comp.type == 'list'" class="list-panel">
-											<view v-for="(item, idx) in comp.data" :key="idx" class="list-item-simple">
-												<text class="list-item-name">{{ item['text'] }}</text>
+						<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
+							<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
+								<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
+									<view class="tab-content-wrap">
+										<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
+											<text class="comp-title">{{ comp.title }}</text>
+											
+											<!-- Table Component -->
+											<view v-if="comp.type == 'table'" style="min-height: 200px;">
+												<ux-table 
+													:columns="getColumnsFromConfig(comp.config)" 
+													:data="comp.data"
+													:showExpand="false"
+												></ux-table>
 											</view>
-											<text v-if="comp.data.length == 0" class="empty-hint">暂无数据</text>
+											
+											<!-- Key-Value Component (Info Panel) -->
+											<view v-else-if="comp.type == 'key-value'" class="node-info-panel">
+												<text v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-row">
+													{{ field['label'] }}: {{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}
+												</text>
+											</view>
+											
+											<!-- Text Block Component -->
+											<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
+												<text class="info-desc">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无描述' }}</text>
+											</view>
+											
+											<!-- List Component -->
+											<view v-else-if="comp.type == 'list'" class="list-panel">
+												<view v-for="(item, idx) in comp.data" :key="idx" class="list-item-simple">
+													<text class="list-item-name">{{ item['text'] }}</text>
+												</view>
+												<text v-if="comp.data.length == 0" class="empty-hint">暂无数据</text>
+											</view>
+											
 										</view>
-										
 									</view>
-								</view>
-							</scroll-view>
-						</ux-tab-pane>
-					</ux-tabs>
+								</scroll-view>
+							</ux-tab-pane>
+						</ux-tabs>
+					</view>
+					<view v-else class="no-selection">
+						<text>选择节点查看概览</text>
+					</view>
 				</view>
-				<view v-else class="no-selection">
-					<text>选择节点查看概览</text>
+				
+				<!-- 底部节点导航区域 -->
+				<view class="main-nav-actions">
+					<view class="nav-action-btn" :class="{ 'btn-disabled': !hasPrevNode }" @click="goToPrevNode">
+						<text class="nav-action-text" :class="{ 'nav-text-disabled': !hasPrevNode }">上一步</text>
+					</view>
+					<view class="nav-action-btn nav-action-btn-primary" :class="{ 'btn-primary-disabled': !hasNextNode }" @click="goToNextNode">
+						<text class="nav-action-text-primary">下一步</text>
+					</view>
 				</view>
 			</view>
 		</template>
@@ -392,6 +404,64 @@
 		// transform 在 App 端可能不完全支持，但通过内联 style 设置通常可用
 		return `transform: scale(${imageScale.value}) rotate(${imageRotation.value}deg);`
 	})
+
+	// ====== 树节点扁平化及导航 ======
+	const flattenTree = (nodes: UTSJSONObject[]): UTSJSONObject[] => {
+		const result = [] as UTSJSONObject[]
+		for (let i = 0; i < nodes.length; i++) {
+			const node = nodes[i]
+			result.push(node)
+			const children = node['children']
+			if (children != null && Array.isArray(children)) {
+				const flatChildren = flattenTree(children as UTSJSONObject[])
+				for (let j = 0; j < flatChildren.length; j++) {
+					result.push(flatChildren[j])
+				}
+			}
+		}
+		return result
+	}
+
+	const flatNodes = computed((): UTSJSONObject[] => {
+		return flattenTree(tableData.value)
+	})
+
+	const hasPrevNode = computed((): boolean => {
+		if (selectedRow.value == null) return false
+		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		return index > 0
+	})
+
+	const hasNextNode = computed((): boolean => {
+		if (selectedRow.value == null) return false
+		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		return index >= 0 && index < flatNodes.value.length - 1
+	})
+
+	const selectedRowId = computed((): string | null => {
+		if (selectedRow.value == null) return null
+		return selectedRow.value!['id'] as string
+	})
+
+	const goToPrevNode = () => {
+		if (!hasPrevNode.value) return
+		const list = flatNodes.value
+		const index = list.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		if (index > 0) {
+			const prevNode = list[index - 1]
+			handleRowClick(prevNode)
+		}
+	}
+
+	const goToNextNode = () => {
+		if (!hasNextNode.value) return
+		const list = flatNodes.value
+		const index = list.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		if (index >= 0 && index < list.length - 1) {
+			const nextNode = list[index + 1]
+			handleRowClick(nextNode)
+		}
+	}
 
 	onLoad(async () => {
 		// console.log('Page Load')
@@ -1316,13 +1386,95 @@
 		background-color: #F8FAFC;
 	}
 	
+	.main-bottom-wrapper {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		height: 100%;
+		background-color: #F8FAFC;
+	}
+	
 	.main-content-bottom {
 		padding: 8px 12px;
 		display: flex;
 		flex-direction: column;
-		background-color: #F8FAFC;
 		flex: 1;
-		height: 100%;
+		overflow: hidden;
+	}
+	
+	.main-nav-actions {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		padding: 12px 20px;
+		background-color: #FFFFFF;
+		border-top: 1px solid #E2E8F0;
+		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
+	}
+	
+	.nav-action-btn {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding: 8px 24px;
+		margin: 0 10px;
+		background-color: #FFFFFF;
+		border: 1px solid #CBD5E1;
+		border-radius: 6px;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+		transition-property: background-color, border-color, opacity;
+		transition-duration: 0.2s;
+	}
+	
+	.nav-action-btn:active {
+		background-color: #F8FAFC;
+	}
+	
+	.nav-action-btn-primary {
+		background-color: #0F172A;
+		border-color: #0F172A;
+	}
+	
+	.nav-action-btn-primary:active {
+		background-color: #1E293B;
+	}
+	
+	.nav-action-text {
+		color: #334155;
+		font-size: 14px;
+		font-weight: 500;
+	}
+	
+	.nav-action-text-primary {
+		color: #FFFFFF;
+		font-size: 14px;
+		font-weight: 500;
+	}
+	
+	.btn-disabled {
+		opacity: 0.5;
+		background-color: #F1F5F9;
+		border-color: #E2E8F0;
+		/* #ifdef WEB */
+		pointer-events: none;
+		/* #endif */
+	}
+	
+	.btn-primary-disabled {
+		opacity: 0.5;
+		background-color: #94A3B8;
+		border-color: #94A3B8;
+		/* #ifdef WEB */
+		pointer-events: none;
+		/* #endif */
+	}
+	
+	.nav-text-disabled {
+		color: #94A3B8;
 	}
 
 	.title {
