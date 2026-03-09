@@ -922,6 +922,10 @@
 	 * @param node 当前选中的节点数据
 	 */
 	const updateBreadcrumbs = (node: UTSJSONObject) => {
+		// 如果选中的不是底层工艺节点(process)，则不更新面包屑，始终保持顶部显示部件和工艺信息
+		const nodeType = node['type'] as string
+		if (nodeType != 'process') return
+		
 		// 获取节点中的部件信息
 		const partCode = (node['partCode'] as string) ?? ''
 		const partName = (node['partName'] as string) ?? ''
