@@ -1,0 +1,166 @@
+<template>
+	<!-- 富文本渲染组件：使用 iframe 完整支持所有 HTML 特性 -->
+	<view class="ux-richtext-container" :style="containerStyle">
+		<!-- #ifdef WEB -->
+		<view ref="richTextFrame" class="richtext-iframe-wrap"></view>
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		<rich-text :nodes="safeContent" class="richtext-fallback"></rich-text>
+		<!-- #endif -->
+	</view>
+</template>
+
+<script lang="uts">
+	export default {
+		name: 'ux-richtext',
+		props: {
+			/** 富文本 HTML 内容字符串 */
+			content: {
+				type: String,
+				default: ''
+			}
+		},
+		data() {
+			return {
+				containerHeight: 200 as number
+			}
+		},
+		computed: {
+			containerStyle(): string {
+				// #ifdef WEB
+				return `height: ${this.containerHeight}px; overflow: hidden;`
+				// #endif
+				// #ifndef WEB
+				return `width: 100%;`
+				// #endif
+			},
+			safeContent(): string {
+				// APP 端 rich-text 对 table 标签支持不佳，可能导致整个渲染空白
+				// 这里做保守的正则替换，将 table 降级渲染
+				let html = this.content
+				html = html.replace(/<table/g, '<div style="border:1px solid #dcdfe6;margin:8px 0;"')
+				html = html.replace(/<\/table>/g, '</div>')
+				html = html.replace(/<tr/g, '<div style="border-bottom:1px solid #dcdfe6;padding:4px;"')
+				html = html.replace(/<\/tr>/g, '</div>')
+				html = html.replace(/<th/g, '<span style="font-weight:bold;margin-right:8px;font-size:14px;"')
+				html = html.replace(/<\/th>/g, '</span>')
+				html = html.replace(/<td/g, '<span style="margin-right:8px;font-size:13px;"')
+				html = html.replace(/<\/td>/g, '</span>')
+				return html
+			}
+		},
+		// #ifdef WEB
+		watch: {
+			content: {
+				handler(_newVal: string) {
+					this.$nextTick(() => {
+						this.renderIframe()
+					})
+				},
+				immediate: false
+			}
+		},
+		// #endif
+		mounted() {
+			// #ifdef WEB
+			this.$nextTick(() => {
+				this.renderIframe()
+			})
+			// #endif
+		},
+		methods: {
+			// #ifdef WEB
+			/** 在 Web 端使用 iframe 渲染完整 HTML（支持表格、图片等） */
+			renderIframe() {
+				const wrapEl = this.$refs['richTextFrame'] as any
+				if (wrapEl == null) return
+				
+				// 获取宿主 DOM 元素：在 web 端，如果是原生 view 标签，ref 可能直接返回 DOM 元素
+				let hostEl = wrapEl.$el
+				if (hostEl == null) {
+					hostEl = wrapEl
+				}
+				if (hostEl == null) return
+				
+				// 清除之前的 iframe
+				hostEl.innerHTML = ''
+				
+				// 创建 iframe
+				const iframe = document.createElement('iframe') as any
+				iframe.style.width = '100%'
+				iframe.style.border = 'none'
+				iframe.style.overflow = 'hidden'
+				iframe.style.display = 'block'
+				iframe.setAttribute('scrolling', 'no')
+				
+				hostEl.appendChild(iframe)
+				
+				// 构建完整的 HTML 文档写入 iframe
+				const htmlContent = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'
+					+ 'body{margin:0;padding:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.6;color:#303133;overflow:hidden;}'
+					+ 'img{max-width:100%;height:auto;display:inline-block;vertical-align:middle;}'
+					+ 'table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px;}'
+					+ 'table th,table td{border:1px solid #dcdfe6;padding:6px 10px;text-align:left;}'
+					+ 'table th{background-color:#f0f2f5;color:#303133;font-weight:600;}'
+					+ 'table tr:nth-child(even){background-color:#fafafa;}'
+					+ 'h3,h4{margin:8px 0 4px;}'
+					+ 'p{margin:4px 0;}'
+					+ '</style></head><body>'
+					+ this.content
+					+ '<script>window.addEventListener("load",function(){var h=document.body.scrollHeight;parent.postMessage({type:"ux-richtext-height",height:h},"*");})</' + 'script>'
+					+ '</body></html>'
+				
+				const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
+				iframeDoc.open()
+				iframeDoc.write(htmlContent)
+				iframeDoc.close()
+				
+				// 监听 iframe 内容高度变化
+				const self = this
+				window.addEventListener('message', function handler(event: any) {
+					const data = event.data
+					if (data != null && data.type == 'ux-richtext-height') {
+						const h = data.height as number
+						if (h > 0) {
+							self.containerHeight = h + 16
+							iframe.style.height = h + 'px'
+						}
+						window.removeEventListener('message', handler)
+					}
+				})
+				
+				// 备用：延迟获取高度
+				setTimeout(() => {
+					try {
+						const bodyH = iframeDoc.body.scrollHeight as number
+						if (bodyH > 0) {
+							this.containerHeight = bodyH + 16
+							iframe.style.height = bodyH + 'px'
+						}
+					} catch (_e) {
+						// 跨域时无法访问
+					}
+				}, 300)
+			}
+			// #endif
+		}
+	}
+</script>
+
+<style>
+	.ux-richtext-container {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		overflow: hidden;
+	}
+
+	.richtext-iframe-wrap {
+		flex: 1;
+		width: 100%;
+	}
+
+	.richtext-fallback {
+		width: 100%;
+	}
+</style>

@@ -32,22 +32,54 @@
 			</view>
 		</view>
 		<view class="body">
-			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex" class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
-				<view v-for="(col, colIndex) in columns" :key="colIndex" class="cell"
-					:style="{ flex: getColFlex(colIndex), width: getColWidth(colIndex) }">
-					
-					<view v-if="colIndex === 0" class="cell-content-wrapper">
-						<!-- 仅树模式显示缩进和展开图标 -->
-						<view v-if="showExpand" :style="{ width: (row.level * 40) + 'rpx' }"></view>
-						<view v-if="showExpand" class="expand-icon" @click.stop="toggleExpand(row)">
-							<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
-							<text class="icon-text" v-else></text>
+			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex">
+				<!-- 行主体部分 -->
+				<view class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
+					<view v-for="(col, colIndex) in columns" :key="colIndex" class="cell"
+						:style="{ flex: getColFlex(colIndex), width: getColWidth(colIndex) }">
+						
+						<view v-if="colIndex === 0" class="cell-content-wrapper">
+							<!-- 仅树模式显示缩进和展开图标 -->
+							<view v-if="showExpand" :style="{ width: (row.level * 40) + 'rpx' }"></view>
+							<view v-if="showExpand" class="expand-icon" @click.stop="toggleExpand(row)">
+								<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
+								<text class="icon-text" v-else></text>
+							</view>
+							<text class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
 						</view>
-						<text class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+						
+						<view v-else class="cell-content-wrapper">
+							<!-- 富文本列：仅显示展开/收起按钮 -->
+							<view v-if="isRichTextCol(col)" class="richtext-cell">
+								<view class="richtext-toggle-btn" @click.stop="toggleRichText(row.id)">
+									<text class="richtext-toggle-icon">{{ isRichTextExpanded(row.id) ? '▲' : '▼' }}</text>
+									<text class="richtext-toggle-label">{{ isRichTextExpanded(row.id) ? '收起' : '展开' }}</text>
+								</view>
+							</view>
+							<!-- 普通文本列 -->
+							<text v-else class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+						</view>
 					</view>
-					
-					<view v-else class="cell-content-wrapper">
-						<text class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+				</view>
+				<!-- 富文本展开区域：如果该行有富文本列且已展开，则在行下方显示完整内容 -->
+				<view v-if="hasRichTextColumn && isRichTextExpanded(row.id)" class="richtext-expand-area">
+					<!-- 无内容时显示紧凑提示 -->
+					<view v-if="getRichTextContent(row) == ''" class="richtext-empty-hint">
+						<text class="richtext-empty-text">暂无内容</text>
+					</view>
+					<!-- 有内容时显示完整富文本 -->
+					<view v-else>
+						<view class="richtext-expand-header">
+							<text class="richtext-expand-title">内容详情</text>
+							<view class="richtext-close-btn" @click.stop="toggleRichText(row.id)">
+								<text class="richtext-close-icon">✕</text>
+							</view>
+						</view>
+						<scroll-view scroll-y="true" class="richtext-expand-scroll">
+							<view class="richtext-expand-content">
+								<ux-richtext :content="getRichTextContent(row)"></ux-richtext>
+							</view>
+						</scroll-view>
 					</view>
 				</view>
 			</view>
@@ -107,7 +139,9 @@
 					startWidth: 0,
 					columnIndex: -1
 				} as DragState,
-				isAllExpanded: true
+				isAllExpanded: true,
+				/** 存储展开了富文本的行ID列表 */
+				expandedRichTextIds: [] as string[]
 			}
 		},
 		computed: {
@@ -115,6 +149,18 @@
 				return this.allRows.filter((row: TableRow) : boolean => {
 					return row.isShow
 				})
+			},
+			/** 是否存在富文本列 */
+			hasRichTextColumn() : boolean {
+				return this.columns.some((col: UTSJSONObject): boolean => col['isRichText'] === true)
+			},
+			/** 获取第一个富文本列的prop名称 */
+			richTextProp() : string {
+				const col = this.columns.find((c: UTSJSONObject): boolean => c['isRichText'] === true)
+				if (col != null) {
+					return (col['prop'] as string) ?? ''
+				}
+				return ''
 			}
 		},
 		watch: {
@@ -167,18 +213,73 @@
 				if (val == null) return ''
 				return val.toString()
 			},
+			/** 判断列是否为富文本列 */
+			isRichTextCol(col: UTSJSONObject): boolean {
+				return col['isRichText'] === true
+			},
+			/** 从富文本HTML中提取纯文本摘要 */
+			getPlainText(data: UTSJSONObject, key: string): string {
+				const val = data[key]
+				if (val == null) return ''
+				let html = val.toString()
+				// 简单移除HTML标签，提取纯文本作为摘要
+				let result = ''
+				let inTag = false
+				for (let i = 0; i < html.length; i++) {
+					const ch = html.charAt(i)
+					if (ch == '<') {
+						inTag = true
+					} else if (ch == '>') {
+						inTag = false
+					} else if (!inTag) {
+						result = result + ch
+					}
+				}
+				// 截取前50个字符作为摘要
+				if (result.length > 50) {
+					return result.substring(0, 50) + '...'
+				}
+				return result
+			},
+			/** 切换行的富文本展开/收起状态 */
+			toggleRichText(rowId: string) {
+				const idx = this.expandedRichTextIds.indexOf(rowId)
+				if (idx >= 0) {
+					this.expandedRichTextIds.splice(idx, 1)
+				} else {
+					this.expandedRichTextIds.push(rowId)
+				}
+			},
+			/** 判断行的富文本是否展开 */
+			isRichTextExpanded(rowId: string): boolean {
+				return this.expandedRichTextIds.indexOf(rowId) >= 0
+			},
+			/** 获取行的富文本HTML内容 */
+			getRichTextContent(row: TableRow): string {
+				if (this.richTextProp == '') return ''
+				const val = row.originData[this.richTextProp]
+				if (val == null) return ''
+				return val.toString()
+			},
 			initTableData(treeData : UTSJSONObject[]) {
 				this.allRows = []
+				this.expandedRichTextIds = [] // 初始化时清空展开记录
 				this.flatten(treeData, 0, null)
-				// Re-apply current allExpanded state logic if needed, 
-				// or just respect the flatten defaults (currently expands all by default)
-				// If we want consistency with isAllExpanded flag:
 				if (!this.isAllExpanded) {
 					// Collapse all if global state is collapsed
 					this.allRows.forEach(row => { 
 						if(row.hasChildren) row.expanded = false 
 					})
 					this.refreshVisibility()
+				}
+				// 默认展开所有包含富文本内容的行
+				if (this.richTextProp != '') {
+					this.allRows.forEach((row: TableRow) => {
+						const val = row.originData[this.richTextProp]
+						if (val != null && val.toString().trim() != '') {
+							this.expandedRichTextIds.push(row.id)
+						}
+					})
 				}
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
@@ -216,10 +317,6 @@
 				if (!row.hasChildren) return
 				row.expanded = !row.expanded
 				this.updateChildrenVisibility(row)
-				
-				// Optional: Check if all are expanded/collapsed to update isAllExpanded
-				// For performance, we might skip this or just let it desync slightly.
-				// Or simplistic: if any collapsed, isAllExpanded = false.
 			},
 			toggleAll() {
 				this.isAllExpanded = !this.isAllExpanded
@@ -281,7 +378,6 @@
 			},
 			// Drag / Resize Methods
 			onResizeStart(index: number, e: TouchEvent) {
-				// console.log('Resize Start', index)
 				if (e.touches.length == 0) return
 				const touch = e.touches[0]
 				this.dragState.startX = touch.clientX
@@ -289,7 +385,6 @@
 				
 				let currentW = this.columnWidths[index]
 				if (currentW <= 0) {
-					// Default start width for flex columns
 					currentW = 150
 				}
 				this.dragState.startWidth = currentW
@@ -301,19 +396,14 @@
 				const touch = e.touches[0]
 				const deltaPx = touch.clientX - this.dragState.startX
 				
-				// Use uni.rpx2px to get the accurate conversion factor
-				// 750rpx corresponds to how many pixels currently?
 				const screenWidthPx = uni.rpx2px(750)
 				const factor = 750 / screenWidthPx
 				
 				const deltaRpx = deltaPx * factor
 				
-				// console.log(`Resize Move: deltaPx=${deltaPx}, factor=${factor}, deltaRpx=${deltaRpx}`)
-				
 				let newWidth = this.dragState.startWidth + deltaRpx
-				if (newWidth < 50) newWidth = 50 // Minimum width
+				if (newWidth < 50) newWidth = 50
 				
-				// Update
 				this.columnWidths[this.dragState.columnIndex] = newWidth
 			},
 			onResizeEnd() {
@@ -340,7 +430,6 @@
 				
 				const deltaPx = e.clientX - this.dragState.startX
 				
-				// Use uni.rpx2px to get the accurate conversion factor
 				const screenWidthPx = uni.rpx2px(750)
 				const factor = 750 / screenWidthPx
 				const deltaRpx = deltaPx * factor
@@ -382,7 +471,6 @@
 	.header-row {
 		display: flex;
 		flex-direction: row;
-		/* padding: 20rpx; */ /* Clean up padding to make separators full height */
 		height: 80rpx;
 		align-items: stretch;
 	}
@@ -392,10 +480,10 @@
 		flex-direction: row;
 		align-items: center;
 		padding-left: 20rpx;
-		padding-right: 40rpx; /* Ensure text stops before the separator line (approx 30rpx from right) */
+		padding-right: 40rpx;
 		position: relative;
-		justify-content: flex-start; /* Default align */
-		overflow: hidden; /* Clip anything else */
+		justify-content: flex-start;
+		overflow: hidden;
 	}
 
 	.header-text {
@@ -403,6 +491,7 @@
 		font-weight: 600;
 		color: #6B7280;
 		flex: 1;
+		white-space: nowrap;
 		lines: 1;
 		text-overflow: ellipsis;
 		overflow: hidden;
@@ -413,16 +502,15 @@
 		right: 0;
 		top: 0;
 		bottom: 0;
-		width: 60rpx; /* Increased hit area */
+		width: 60rpx;
 		display: flex;
 		flex-direction: row;
-		justify-content: center; /* Center the line within the handle area */
+		justify-content: center;
 		align-items: center;
 		/* #ifdef WEB */
 		cursor: col-resize;
 		/* #endif */
 		z-index: 10;
-		/* background-color: rgba(255, 0, 0, 0.1); */ /* Debug: visualize hit area */
 	}
 	
 	.separator-line {
@@ -478,7 +566,7 @@
 		flex-direction: row;
 		align-items: center;
 		padding-left: 20rpx;
-		padding-right: 40rpx; /* Align with header */
+		padding-right: 40rpx;
 		overflow: hidden;
 		flex-shrink: 0; 
 	}
@@ -487,13 +575,14 @@
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		flex: 1; /* Allow content to fill and truncate */
+		flex: 1;
 		overflow: hidden;
 	}
 
 	.cell-text {
 		font-size: 28rpx;
 		color: #374151;
+		white-space: nowrap;
 		lines: 1;
 		text-overflow: ellipsis;
 		overflow: hidden;
@@ -516,5 +605,109 @@
 	/* 选中行 — 极浅青碧 */
 	.row-selected {
 		background-color: #ECFEFF;
+	}
+
+	/* ====== 富文本列相关样式 ====== */
+	.richtext-cell {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		flex: 1;
+	}
+
+	.richtext-toggle-btn {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding: 6px 14px;
+		border-radius: 4px;
+		background-color: #ECFEFF;
+		border: 1px solid #B2F5EA;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+	}
+
+	.richtext-toggle-icon {
+		font-size: 20rpx;
+		color: #0891B2;
+		margin-right: 4px;
+	}
+
+	.richtext-toggle-label {
+		font-size: 24rpx;
+		color: #0891B2;
+	}
+
+	/* 富文本展开区域 */
+	.richtext-expand-area {
+		display: flex;
+		flex-direction: column;
+		background-color: #FAFBFC;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #E2E6ED;
+		border-left-width: 3px;
+		border-left-style: solid;
+		border-left-color: #0891B2;
+	}
+
+	.richtext-empty-hint {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding: 10px 16px;
+	}
+
+	.richtext-empty-text {
+		font-size: 24rpx;
+		color: #C0C4CC;
+	}
+
+	.richtext-expand-header {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12rpx 24rpx;
+		background-color: #F0F4F8;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #E2E6ED;
+	}
+
+	.richtext-expand-title {
+		font-size: 24rpx;
+		font-weight: 600;
+		color: #0891B2;
+	}
+
+	.richtext-close-btn {
+		width: 40rpx;
+		height: 40rpx;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		border-radius: 4px;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+	}
+
+	.richtext-close-icon {
+		font-size: 22rpx;
+		color: #9CA3AF;
+	}
+
+	.richtext-expand-scroll {
+		max-height: 600rpx;
+	}
+
+	.richtext-expand-content {
+		padding: 20rpx 24rpx;
 	}
 </style>

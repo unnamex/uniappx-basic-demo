@@ -667,29 +667,40 @@ function extractAndParseAndroid(
 			// V2: 从分离文件中读取
 			const files = manifest.files
 			
+			// 辅助函数：查找 JSON 文件内容（兼容正斜杠和反斜杠）
+			const findJsonFile = (path: string): string | null => {
+				let content = jsonFiles.get(path)
+				if (content != null) return content
+				const altPath = path.replace(/\//g, '\\')
+				content = jsonFiles.get(altPath)
+				if (content != null) return content
+				const altPath2 = path.replace(/\\/g, '/')
+				return jsonFiles.get(altPath2) || null
+			}
+			
 			if (files.groups != null) {
-				const content = jsonFiles.get(files.groups)
+				const content = findJsonFile(files.groups)
 				if (content != null) {
 					groups = JSON.parse(content) as TabGroup[]
 				}
 			}
 			
 			if (files.tabs != null) {
-				const content = jsonFiles.get(files.tabs)
+				const content = findJsonFile(files.tabs)
 				if (content != null) {
 					tabs = JSON.parse(content) as TabConfig[]
 				}
 			}
 			
 			if (files.components != null) {
-				const content = jsonFiles.get(files.components)
+				const content = findJsonFile(files.components)
 				if (content != null) {
 					components = JSON.parse(content) as ComponentConfig[]
 				}
 			}
 			
 			if (files.records != null) {
-				const content = jsonFiles.get(files.records)
+				const content = findJsonFile(files.records)
 				if (content != null) {
 					records = JSON.parse(content) as DataRecord[]
 				}
@@ -698,7 +709,7 @@ function extractAndParseAndroid(
 			// 解析工艺文件
 			if (files.processes != null) {
 				for (const processPath of files.processes) {
-					const content = jsonFiles.get(processPath)
+					const content = findJsonFile(processPath)
 					if (content != null) {
 						const processInfo = JSON.parse(content) as ProcessInfo
 						processes.push(processInfo)
@@ -948,9 +959,23 @@ function processHarmonyExtractedFiles(
 	reject: (reason: Error) => void
 ): void {
 	try {
+		// 辅助函数：查找并读取 JSON 文件（兼容正斜杠和反斜杠）
+		const readJsonFileHarmony = (path: string): string => {
+			try {
+				return uni.getFileSystemManager().readFileSync(extractDir + '/' + path, 'utf-8') as string
+			} catch (e1: any) {
+				try {
+					const altPath = path.replace(/\//g, '\\')
+					return uni.getFileSystemManager().readFileSync(extractDir + '/' + altPath, 'utf-8') as string
+				} catch (e2: any) {
+					const altPath2 = path.replace(/\\/g, '/')
+					return uni.getFileSystemManager().readFileSync(extractDir + '/' + altPath2, 'utf-8') as string
+				}
+			}
+		}
+
 		// 1. 读取 manifest.json
-		const manifestPath = extractDir + '/manifest.json'
-		const manifestData = uni.getFileSystemManager().readFileSync(manifestPath, 'utf-8') as string
+		const manifestData = readJsonFileHarmony('manifest.json')
 		const manifest = JSON.parse(manifestData) as PackageManifest
 		
 		if (onProgress != null) {
@@ -976,7 +1001,7 @@ function processHarmonyExtractedFiles(
 			
 			if (files.groups != null) {
 				try {
-					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.groups, 'utf-8') as string
+					const content = readJsonFileHarmony(files.groups)
 					groups = JSON.parse(content) as TabGroup[]
 				} catch (e: any) {
 					console.warn('Harmony: groups 文件读取失败:', e)
@@ -985,7 +1010,7 @@ function processHarmonyExtractedFiles(
 			
 			if (files.tabs != null) {
 				try {
-					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.tabs, 'utf-8') as string
+					const content = readJsonFileHarmony(files.tabs)
 					tabs = JSON.parse(content) as TabConfig[]
 				} catch (e: any) {
 					console.warn('Harmony: tabs 文件读取失败:', e)
@@ -994,7 +1019,7 @@ function processHarmonyExtractedFiles(
 			
 			if (files.components != null) {
 				try {
-					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.components, 'utf-8') as string
+					const content = readJsonFileHarmony(files.components)
 					components = JSON.parse(content) as ComponentConfig[]
 				} catch (e: any) {
 					console.warn('Harmony: components 文件读取失败:', e)
@@ -1003,7 +1028,7 @@ function processHarmonyExtractedFiles(
 			
 			if (files.records != null) {
 				try {
-					const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + files.records, 'utf-8') as string
+					const content = readJsonFileHarmony(files.records)
 					records = JSON.parse(content) as DataRecord[]
 				} catch (e: any) {
 					console.warn('Harmony: records 文件读取失败:', e)
@@ -1044,7 +1069,7 @@ function processHarmonyExtractedFiles(
 		
 		for (const filePath of processFilePaths) {
 			try {
-				const content = uni.getFileSystemManager().readFileSync(extractDir + '/' + filePath, 'utf-8') as string
+				const content = readJsonFileHarmony(filePath)
 				const processInfo = JSON.parse(content) as ProcessInfo
 				processes.push(processInfo)
 			} catch (e: any) {
@@ -1688,8 +1713,8 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 				const step = process.steps[j]
 				const insertStepSQL = `
 					INSERT INTO t_process_step 
-					(process_id, step_no, name, description, duration, tools_json, materials_json, images_json, videos_json)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+					(process_id, step_no, name, description, description_html, duration, tools_json, materials_json, images_json, videos_json)
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				`
 				
 				const stepParams: any[] = [
@@ -1697,6 +1722,7 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 					step.stepNo,
 					step.name,
 					step.description,
+					step.description_html ?? '', // Save HTML if it exists, fallback to empty string
 					step.duration,
 					JSON.stringify(step.tools),
 					JSON.stringify(step.materials),

@@ -147,6 +147,16 @@
 							uni.setNavigationBarTitle({
 								title: info.name
 							})
+							
+							// 默认展开包含富文本的步骤
+							for (let i = 0; i < info.steps.length; i++) {
+								const step = info.steps[i];
+								if (step.description_html != null && step.description_html != '') {
+									if (!this.expandedSteps.includes(i)) {
+										this.expandedSteps.push(i);
+									}
+								}
+							}
 						} else {
 							uni.showToast({
 								title: '工艺不存在',

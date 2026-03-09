@@ -175,6 +175,7 @@ function createTables(): Promise<void> {
 				step_no INTEGER NOT NULL,
 				name TEXT NOT NULL,
 				description TEXT,
+				description_html TEXT,
 				duration INTEGER DEFAULT 0,
 				tools_json TEXT,
 				materials_json TEXT,

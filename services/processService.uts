@@ -106,7 +106,7 @@ export function getProcessDetail(processId: string): Promise<ProcessInfo | null>
 export function getProcessSteps(processId: string): Promise<ProcessStep[]> {
 	return new Promise((resolve: (value: ProcessStep[]) => void, reject: (reason: Error) => void) => {
 		const sql = `
-			SELECT step_no, name, description, duration, 
+			SELECT step_no, name, description, description_html, duration, 
 				   tools_json, materials_json, images_json, videos_json
 			FROM t_process_step 
 			WHERE process_id = '${processId}'
@@ -123,6 +123,7 @@ export function getProcessSteps(processId: string): Promise<ProcessStep[]> {
 						stepNo: row['step_no'] as number,
 						name: row['name'] as string,
 						description: row['description'] as string,
+						description_html: row['description_html'] as string,
 						duration: row['duration'] as number,
 						tools: JSON.parse(row['tools_json'] as string) as string[],
 						materials: JSON.parse(row['materials_json'] as string) as string[],

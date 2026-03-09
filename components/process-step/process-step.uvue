@@ -16,7 +16,8 @@
 			<!-- 操作描述 -->
 			<view class="detail-section">
 				<text class="detail-label">操作说明</text>
-				<text class="detail-content">{{ step.description }}</text>
+				<ux-richtext v-if="step.description_html != null && step.description_html != ''" :content="step.description_html!"></ux-richtext>
+				<text class="detail-content" v-else>{{ step.description }}</text>
 			</view>
 			
 			<!-- 工具清单 -->

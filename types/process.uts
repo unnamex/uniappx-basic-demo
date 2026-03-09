@@ -19,6 +19,7 @@ export type ProcessStep = {
 	stepNo: number
 	name: string
 	description: string
+	description_html?: string
 	duration: number
 	tools: string[]
 	materials: string[]
