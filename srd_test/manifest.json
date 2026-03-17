@@ -1,0 +1,15 @@
+{
+  "version": "2.0",
+  "exportTime": "2026-03-17T12:00:00.000Z",
+  "source": "Antigravity-Generator",
+  "description": "PDF 预览功能测试包",
+  "files": {
+    "groups": "ui/groups.json",
+    "tabs": "ui/tabs.json",
+    "components": "ui/components.json",
+    "records": "data/records.json",
+    "processes": [
+      "processes/proc_test_pdf.json"
+    ]
+  }
+}

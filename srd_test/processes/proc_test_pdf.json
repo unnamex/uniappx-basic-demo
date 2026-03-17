@@ -1,0 +1,35 @@
+{
+  "id": "proc_test_pdf",
+  "name": "PDF预览测试工艺",
+  "code": "TEST-PDF-001",
+  "status": "已发布",
+  "version": "1.0",
+  "createdAt": "2026-03-17T12:00:00.000Z",
+  "updatedAt": "2026-03-17T12:00:00.000Z",
+  "product": {
+    "name": "测试产品",
+    "model": "T-001"
+  },
+  "steps": [
+    {
+      "stepNo": "1",
+      "name": "查看指导文档",
+      "description": "请查看下方关联的 PDF 指导手册进行操作测试。",
+      "duration": 5,
+      "tools": ["阅读器"],
+      "materials": ["PDF文档"],
+      "images": [],
+      "videos": [],
+      "resources": [
+        {
+          "id": "res_pdf_test",
+          "type": "document",
+          "name": "功能测试指导手册.pdf",
+          "path": "assets/documents/test_guide.pdf",
+          "description": "这是用于测试内联预览功能的PDF文件。"
+        }
+      ]
+    }
+  ],
+  "attachments": []
+}

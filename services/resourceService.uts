@@ -146,7 +146,7 @@ export async function getResourcesByNodeId(nodeId: string): Promise<ResourceItem
 			// 如果有 Blob 数据，重新生成 URL (解决刷新后失效问题)
 			const blobData = r.blob_data
 			if (blobData != null && blobData instanceof Blob) {
-				path = storeBlobAndGetUrl(r.id as string, blobData as Blob)
+				path = storeBlobAndGetUrl(r.id as string, blobData as Blob, r.name as string)
 			}
 			
 			const thumbBlob = r.thumbnail_blob
@@ -218,7 +218,7 @@ export async function getAllResources(): Promise<ResourceItem[]> {
 			// 如果有 Blob 数据，重新生成 URL
 			const blobData = r.blob_data
 			if (blobData != null && blobData instanceof Blob) {
-				path = storeBlobAndGetUrl(r.id as string, blobData as Blob)
+				path = storeBlobAndGetUrl(r.id as string, blobData as Blob, r.name as string)
 			}
 			
 			const thumbBlob = r.thumbnail_blob
@@ -400,19 +400,52 @@ export function ensureDirectory(path: string): boolean {
 const blobUrlCache = new Map<string, string>()
 
 /**
+ * 根据文件名推断MIME类型
+ * @param fileName 文件名
+ * @returns MIME类型字符串，未识别返回空字符串
+ */
+function getMimeTypeForFile(fileName: string): string {
+	const parts = fileName.toLowerCase().split('.')
+	if (parts.length < 2) return ''
+	const ext = parts[parts.length - 1]
+	if (ext == 'pdf') return 'application/pdf'
+	if (ext == 'jpg' || ext == 'jpeg') return 'image/jpeg'
+	if (ext == 'png') return 'image/png'
+	if (ext == 'gif') return 'image/gif'
+	if (ext == 'webp') return 'image/webp'
+	if (ext == 'svg') return 'image/svg+xml'
+	if (ext == 'mp4') return 'video/mp4'
+	if (ext == 'webm') return 'video/webm'
+	if (ext == 'mp3') return 'audio/mpeg'
+	if (ext == 'wav') return 'audio/wav'
+	if (ext == 'ogg') return 'audio/ogg'
+	return ''
+}
+
+/**
  * 存储资源 Blob 并返回 URL
  * @param resourceId 资源ID
  * @param blob Blob 数据
+ * @param fileName 文件名（用于推断MIME类型，可选）
  * @returns Blob URL
  */
-export function storeBlobAndGetUrl(resourceId: string, blob: Blob): string {
+export function storeBlobAndGetUrl(resourceId: string, blob: Blob, fileName: string = ''): string {
 	// 释放旧的 URL
 	const oldUrl = blobUrlCache.get(resourceId)
 	if (oldUrl != null) {
 		URL.revokeObjectURL(oldUrl)
 	}
 	
-	const url = URL.createObjectURL(blob)
+	// 根据文件名设置正确的MIME类型，避免浏览器无法识别文件格式
+	let finalBlob = blob
+	if (fileName != '') {
+		const mimeType = getMimeTypeForFile(fileName)
+		if (mimeType != '') {
+			finalBlob = new Blob([blob], { type: mimeType } as any)
+		}
+	}
+	
+	const url = URL.createObjectURL(finalBlob)
 	blobUrlCache.set(resourceId, url)
 	return url
 }

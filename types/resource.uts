@@ -125,7 +125,7 @@ export function inferResourceType(filename: string): string {
 	}
 	
 	// 文档格式
-	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].indexOf(ext) >= 0) {
+	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt'].indexOf(ext) >= 0) {
 		return ResourceType_DOCUMENT
 	}
 	

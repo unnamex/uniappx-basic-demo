@@ -63,7 +63,29 @@
 			</view>
 		</view>
 		
-		<!-- 文档预览 -->
+		<!-- PDF预览 -->
+		<view v-else-if="resource.type == 'document' && isPdf()" class="preview-container pdf-preview">
+			<!-- #ifdef WEB -->
+			<view ref="pdfFrame" class="pdf-frame-container"></view>
+			<view class="resource-info">
+				<text class="resource-name">{{ resource.name }}</text>
+			</view>
+			<!-- #endif -->
+			<!-- #ifdef APP -->
+			<view class="document-icon-wrap">
+				<text class="document-icon">📄</text>
+			</view>
+			<view class="resource-info">
+				<text class="resource-name">{{ resource.name }}</text>
+				<text class="resource-hint">点击下方按钮打开PDF</text>
+			</view>
+			<button class="open-btn" @click="openDocument">
+				<text class="btn-text">打开PDF</text>
+			</button>
+			<!-- #endif -->
+		</view>
+		
+		<!-- 其他文档预览 -->
 		<view v-else-if="resource.type == 'document'" class="preview-container document-preview">
 			<view class="document-icon-wrap">
 				<text class="document-icon">📄</text>
@@ -110,6 +132,36 @@
 		if (props.resource == null || props.resource.duration <= 0) return 0
 		return (currentTime.value / props.resource.duration) * 100
 	})
+	
+	// 判断是否为PDF文件
+	function isPdf(): boolean {
+		if (props.resource == null) return false
+		const parts = props.resource!.name.toLowerCase().split('.')
+		if (parts.length < 2) return false
+		return parts[parts.length - 1] == 'pdf'
+	}
+	
+	// #ifdef WEB
+	// PDF预览容器引用
+	const pdfFrame = ref<any>(null)
+	
+	// 在Web端使用iframe渲染PDF
+	function renderPdfIframe(src : string) {
+		nextTick(() => {
+			const el = pdfFrame.value as any
+			if (el != null) {
+				el.innerHTML = '<iframe src="' + src + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
+			}
+		})
+	}
+	
+	// 监听资源变化，渲染PDF
+	watch(() => props.resource, (newVal : ResourceItem | null) => {
+		if (newVal != null && isPdf()) {
+			renderPdfIframe(newVal.path)
+		}
+	}, { immediate: true })
+	// #endif
 	
 	// 格式化时间
 	const formatTime = (seconds: number): string => {
@@ -387,6 +439,17 @@
 		font-size: 12px;
 		color: #6B7280;
 		margin-top: 4px;
+	}
+	
+	/* PDF预览 */
+	.pdf-preview {
+		flex-direction: column;
+	}
+	
+	.pdf-frame-container {
+		flex: 1;
+		width: 100%;
+		min-height: 400px;
 	}
 	
 	/* 文档预览 */

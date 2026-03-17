@@ -1536,7 +1536,7 @@ function extractAndParseWeb(
 								const blob = await resourceFile.async("blob")
 								
 								// 创建 Blob URL 作为本地路径 (当前会话有效)
-								const blobUrl = storeBlobAndGetUrl(res.id, blob)
+								const blobUrl = storeBlobAndGetUrl(res.id, blob, res.name)
 								res.path = blobUrl
 								
 								let thumbBlobData: Blob | null = null
