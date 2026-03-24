@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF 查看器</title>
+  <script src="/static/pdfjs/pdf.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      color: #111827;
+    }
+
+    /* === 工具栏 === */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: #F5F7FA;
+      border-bottom: 1px solid #E2E6ED;
+      font-size: 13px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .toolbar .separator {
+      width: 1px;
+      height: 20px;
+      background: #E2E6ED;
+      margin: 0 2px;
+    }
+
+    /* 工具栏通用按钮 SVG 图标风格 */
+    .toolbar button {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #374151;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1;
+    }
+
+    .toolbar button:hover {
+      background: #E2E6ED;
+    }
+
+    .toolbar button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .toolbar button:disabled:hover {
+      background: transparent;
+    }
+
+    .toolbar button.active {
+      background: #0891B2;
+      color: #fff;
+      border-color: #0891B2;
+    }
+
+    .toolbar button.active:hover {
+      background: #0E7490;
+    }
+
+    .toolbar button.active svg {
+      stroke: #fff;
+    }
+
+    /* SVG 图标 */
+    .toolbar button svg {
+      width: 16px;
+      height: 16px;
+      stroke: #374151;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .toolbar button:hover svg {
+      stroke: #111827;
+    }
+
+    .toolbar .page-info {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .toolbar .page-info input {
+      width: 40px;
+      text-align: center;
+      background: #fff;
+      border: 1px solid #E2E6ED;
+      color: #111827;
+      border-radius: 3px;
+      padding: 2px 4px;
+      font-size: 13px;
+    }
+
+    .toolbar .page-info input:focus {
+      outline: none;
+      border-color: #0891B2;
+    }
+
+    .toolbar .page-info span {
+      color: #9CA3AF;
+      font-size: 12px;
+    }
+
+    .toolbar .zoom-info {
+      min-width: 42px;
+      text-align: center;
+      color: #6B7280;
+      font-size: 12px;
+    }
+
+    /* === 主体区域 === */
+    .main-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* === 侧边栏 === */
+    .sidebar {
+      width: 0;
+      overflow: hidden;
+      background: #F5F7FA;
+      border-right: 1px solid #E2E6ED;
+      transition: width 0.25s ease;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar.open {
+      width: 180px;
+    }
+
+    /* 侧边栏标签 */
+    .sidebar-tabs {
+      display: flex;
+      flex-shrink: 0;
+      border-bottom: 1px solid #E2E6ED;
+      background: #fff;
+    }
+
+    .sidebar-tab {
+      flex: 1;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #9CA3AF;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .sidebar-tab:hover {
+      color: #374151;
+      background: #F5F7FA;
+    }
+
+    .sidebar-tab.active {
+      color: #0891B2;
+      border-bottom-color: #0891B2;
+    }
+
+    /* 标签页内容 */
+    .sidebar-panel {
+      flex: 1;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .sidebar-panel.active {
+      display: block;
+    }
+
+    /* 缩略图 */
+    .thumbnail-list {
+      padding: 8px;
+    }
+
+    .thumbnail-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+      padding: 3px;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .thumbnail-item:hover {
+      background: #E2E6ED;
+    }
+
+    .thumbnail-item.active {
+      border-color: #0891B2;
+      background: rgba(8, 145, 178, 0.08);
+    }
+
+    .thumbnail-item canvas {
+      max-width: 100%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      background: #fff;
+      display: block;
+    }
+
+    .thumbnail-label {
+      color: #9CA3AF;
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
+    .thumbnail-item.active .thumbnail-label {
+      color: #0891B2;
+      font-weight: 500;
+    }
+
+    /* 目录 */
+    .outline-list {
+      padding: 8px 0;
+    }
+
+    .outline-empty {
+      color: #9CA3AF;
+      font-size: 12px;
+      text-align: center;
+      padding: 20px 12px;
+    }
+
+    .outline-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: #374151;
+      font-size: 12px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: background 0.1s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .outline-item:hover {
+      background: #E2E6ED;
+      color: #111827;
+    }
+
+    .outline-item.active {
+      background: #0891B2;
+      color: #fff;
+    }
+
+    .outline-item[data-level="1"] {
+      padding-left: 24px;
+    }
+
+    .outline-item[data-level="2"] {
+      padding-left: 36px;
+    }
+
+    .outline-item[data-level="3"] {
+      padding-left: 48px;
+    }
+
+    /* === PDF 内容区 === */
+    .pdf-container {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      background: #D1D5DB;
+    }
+
+    .pdf-container canvas {
+      margin-bottom: 8px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+      background: #fff;
+    }
+
+    /* 加载提示 */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(245, 247, 250, 0.85);
+      color: #6B7280;
+      font-size: 14px;
+      z-index: 10;
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    .error-message {
+      color: #DC2626;
+      font-size: 14px;
+      text-align: center;
+      padding: 40px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 工具栏 -->
+  <div class="toolbar" id="toolbar">
+    <!-- 侧边栏切换 -->
+    <button id="toggleThumbnails" title="缩略图">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    </button>
+    <button id="toggleOutline" title="目录导航">
+      <svg viewBox="0 0 24 24">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="7" y1="12" x2="21" y2="12" />
+        <line x1="7" y1="18" x2="21" y2="18" />
+        <circle cx="3" cy="12" r="1" fill="currentColor" stroke="none" />
+        <circle cx="3" cy="18" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    </button>
+
+    <div class="separator"></div>
+
+    <!-- 翻页 -->
+    <button id="prevPage" title="上一页">
+      <svg viewBox="0 0 24 24">
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    </button>
+    <div class="page-info">
+      <input type="number" id="pageInput" value="1" min="1">
+      <span>/ <span id="totalPages">0</span></span>
+    </div>
+    <button id="nextPage" title="下一页">
+      <svg viewBox="0 0 24 24">
+        <polyline points="9 6 15 12 9 18" />
+      </svg>
+    </button>
+
+    <div class="separator"></div>
+
+    <!-- 缩放 -->
+    <button id="zoomOut" title="缩小">
+      <svg viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="16.5" y1="16.5" x2="21" y2="21" />
+        <line x1="8" y1="11" x2="14" y2="11" />
+      </svg>
+    </button>
+    <span class="zoom-info" id="zoomInfo">100%</span>
+    <button id="zoomIn" title="放大">
+      <svg viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="16.5" y1="16.5" x2="21" y2="21" />
+        <line x1="11" y1="8" x2="11" y2="14" />
+        <line x1="8" y1="11" x2="14" y2="11" />
+      </svg>
+    </button>
+    <button id="fitWidth" title="适合宽度">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 3 12 6 15" />
+        <polyline points="18 9 21 12 18 15" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+      </svg>
+    </button>
+    <button id="resetZoom" title="实际大小 (100%)">
+      <svg viewBox="0 0 24 24">
+        <path d="M8 9l1-2v9" />
+        <path d="M16 9l1-2v9" />
+        <path d="M12.5 10v.01M12.5 14v.01" />
+      </svg>
+    </button>
+
+    <!-- 打印和下载功能暂时隐藏，需要时取消注释即可 -->
+    <!--
+    <div class="separator"></div>
+    <button id="printBtn" title="打印">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
+      </svg>
+    </button>
+    <button id="downloadBtn" title="下载">
+      <svg viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </button>
+    -->
+  </div>
+
+  <!-- 主体区域 -->
+  <div class="main-area">
+    <!-- 侧边栏 -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-panel="thumbnailPanel">缩略图</button>
+        <button class="sidebar-tab" data-panel="outlinePanel">目录</button>
+      </div>
+      <div class="sidebar-panel active" id="thumbnailPanel">
+        <div class="thumbnail-list" id="thumbnailList"></div>
+      </div>
+      <div class="sidebar-panel" id="outlinePanel">
+        <div class="outline-list" id="outlineList"></div>
+      </div>
+    </div>
+
+    <!-- PDF 渲染容器 -->
+    <div class="pdf-container" id="pdfContainer">
+      <div class="loading-overlay" id="loadingOverlay">加载中...</div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/pdfjs/pdf.worker.min.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const pdfUrl = urlParams.get('file');
+
+    let pdfDoc = null;
+    let currentPage = 1;
+    let totalPages = 0;
+    let currentScale = 1.0;
+    let sidebarOpen = false;
+    let activeTab = 'thumbnailPanel';
+    const SCALE_STEP = 0.15;
+    const MIN_SCALE = 0.25;
+    const MAX_SCALE = 5.0;
+    const THUMB_SCALE = 0.25;
+
+    const container = document.getElementById('pdfContainer');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const pageInput = document.getElementById('pageInput');
+    const totalPagesSpan = document.getElementById('totalPages');
+    const zoomInfo = document.getElementById('zoomInfo');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    const fitWidthBtn = document.getElementById('fitWidth');
+    const resetZoomBtn = document.getElementById('resetZoom');
+    const printBtn = document.getElementById('printBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const toggleThumbnailsBtn = document.getElementById('toggleThumbnails');
+    const toggleOutlineBtn = document.getElementById('toggleOutline');
+    const sidebar = document.getElementById('sidebar');
+    const thumbnailList = document.getElementById('thumbnailList');
+    const outlineList = document.getElementById('outlineList');
+
+    // === 侧边栏 ===
+
+    function openSidebarTab(tabId) {
+      if (sidebarOpen && activeTab === tabId) {
+        closeSidebar();
+        return;
+      }
+      sidebarOpen = true;
+      activeTab = tabId;
+      sidebar.classList.add('open');
+      toggleThumbnailsBtn.classList.toggle('active', tabId === 'thumbnailPanel');
+      toggleOutlineBtn.classList.toggle('active', tabId === 'outlinePanel');
+      document.querySelectorAll('.sidebar-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.getAttribute('data-panel') === tabId);
+      });
+      document.querySelectorAll('.sidebar-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === tabId);
+      });
+      if (tabId === 'thumbnailPanel') updateThumbnailActive();
+    }
+
+    function closeSidebar() {
+      sidebarOpen = false;
+      sidebar.classList.remove('open');
+      toggleThumbnailsBtn.classList.remove('active');
+      toggleOutlineBtn.classList.remove('active');
+    }
+
+    toggleThumbnailsBtn.addEventListener('click', function () { openSidebarTab('thumbnailPanel'); });
+    toggleOutlineBtn.addEventListener('click', function () { openSidebarTab('outlinePanel'); });
+
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+      tab.addEventListener('click', function () {
+        const panelId = this.getAttribute('data-panel');
+        activeTab = panelId;
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(panelId).classList.add('active');
+        toggleThumbnailsBtn.classList.toggle('active', panelId === 'thumbnailPanel');
+        toggleOutlineBtn.classList.toggle('active', panelId === 'outlinePanel');
+        if (panelId === 'thumbnailPanel') updateThumbnailActive();
+      });
+    });
+
+    // === 缩略图 ===
+
+    async function renderThumbnails() {
+      thumbnailList.innerHTML = '';
+      for (let i = 1; i <= totalPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: THUMB_SCALE });
+        const item = document.createElement('div');
+        item.className = 'thumbnail-item';
+        item.setAttribute('data-page', i);
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        const label = document.createElement('span');
+        label.className = 'thumbnail-label';
+        label.textContent = i;
+        item.appendChild(canvas);
+        item.appendChild(label);
+        item.addEventListener('click', function () {
+          scrollToPage(parseInt(this.getAttribute('data-page')));
+        });
+        thumbnailList.appendChild(item);
+      }
+      updateThumbnailActive();
+    }
+
+    function updateThumbnailActive() {
+      const items = thumbnailList.querySelectorAll('.thumbnail-item');
+      items.forEach(item => {
+        item.classList.toggle('active', parseInt(item.getAttribute('data-page')) === currentPage);
+      });
+      const activeItem = thumbnailList.querySelector('.thumbnail-item.active');
+      if (activeItem) activeItem.scrollIntoView({ block: 'nearest' });
+    }
+
+    // === PDF 渲染 ===
+
+    async function renderAllPages() {
+      const canvases = container.querySelectorAll('canvas');
+      canvases.forEach(c => c.remove());
+      for (let i = 1; i <= totalPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: currentScale });
+        const canvas = document.createElement('canvas');
+        canvas.id = 'page-' + i;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        container.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+      }
+    }
+
+    function updateToolbar() {
+      pageInput.value = currentPage;
+      totalPagesSpan.textContent = totalPages;
+      zoomInfo.textContent = Math.round(currentScale * 100) + '%';
+      prevPageBtn.disabled = currentPage <= 1;
+      nextPageBtn.disabled = currentPage >= totalPages;
+    }
+
+    function scrollToPage(pageNum) {
+      const canvas = document.getElementById('page-' + pageNum);
+      if (canvas) {
+        canvas.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        currentPage = pageNum;
+        updateToolbar();
+        updateThumbnailActive();
+        updateOutlineActive();
+      }
+    }
+
+    container.addEventListener('scroll', function () {
+      const canvases = container.querySelectorAll('canvas');
+      const containerRect = container.getBoundingClientRect();
+      const containerCenter = containerRect.top + containerRect.height / 2;
+      let closestPage = 1;
+      let closestDist = Infinity;
+      canvases.forEach((canvas, index) => {
+        const rect = canvas.getBoundingClientRect();
+        const dist = Math.abs(rect.top + rect.height / 2 - containerCenter);
+        if (dist < closestDist) { closestDist = dist; closestPage = index + 1; }
+      });
+      if (closestPage !== currentPage) {
+        currentPage = closestPage;
+        updateToolbar();
+        updateThumbnailActive();
+        updateOutlineActive();
+      }
+    });
+
+    // === 目录 ===
+
+    async function getPageNumberFromDest(dest) {
+      try {
+        let resolvedDest = dest;
+        if (typeof dest === 'string') resolvedDest = await pdfDoc.getDestination(dest);
+        if (Array.isArray(resolvedDest) && resolvedDest.length > 0) {
+          return (await pdfDoc.getPageIndex(resolvedDest[0])) + 1;
+        }
+      } catch (e) { console.warn('解析目录目标失败:', e); }
+      return null;
+    }
+
+    async function renderOutlineItems(items, parentEl, level) {
+      for (const item of items) {
+        const btn = document.createElement('button');
+        btn.className = 'outline-item';
+        btn.setAttribute('data-level', level);
+        btn.textContent = item.title;
+        btn.title = item.title;
+        const pageNum = await getPageNumberFromDest(item.dest);
+        if (pageNum !== null) btn.setAttribute('data-page', pageNum);
+        btn.addEventListener('click', function () {
+          const p = parseInt(this.getAttribute('data-page'));
+          if (!isNaN(p) && p >= 1 && p <= totalPages) scrollToPage(p);
+        });
+        parentEl.appendChild(btn);
+        if (item.items && item.items.length > 0) {
+          await renderOutlineItems(item.items, parentEl, Math.min(level + 1, 3));
+        }
+      }
+    }
+
+    async function loadOutline() {
+      if (!pdfDoc) return;
+      try {
+        const outline = await pdfDoc.getOutline();
+        outlineList.innerHTML = '';
+        if (!outline || outline.length === 0) {
+          outlineList.innerHTML = '<div class="outline-empty">此 PDF 没有目录信息</div>';
+          return;
+        }
+        await renderOutlineItems(outline, outlineList, 0);
+      } catch (e) {
+        console.error('加载目录失败:', e);
+        outlineList.innerHTML = '<div class="outline-empty">目录加载失败</div>';
+      }
+    }
+
+    function updateOutlineActive() {
+      const items = outlineList.querySelectorAll('.outline-item[data-page]');
+      let activeItem = null;
+      items.forEach(item => {
+        item.classList.remove('active');
+        if (!isNaN(parseInt(item.getAttribute('data-page'))) && parseInt(item.getAttribute('data-page')) <= currentPage) activeItem = item;
+      });
+      if (activeItem) {
+        activeItem.classList.add('active');
+        if (activeTab === 'outlinePanel') activeItem.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    // === 工具栏事件 ===
+
+    prevPageBtn.addEventListener('click', function () { if (currentPage > 1) scrollToPage(currentPage - 1); });
+    nextPageBtn.addEventListener('click', function () { if (currentPage < totalPages) scrollToPage(currentPage + 1); });
+
+    pageInput.addEventListener('change', function () {
+      let page = parseInt(this.value, 10);
+      if (isNaN(page) || page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+      scrollToPage(page);
+    });
+
+    zoomInBtn.addEventListener('click', async function () {
+      if (currentScale < MAX_SCALE) {
+        currentScale = Math.min(currentScale + SCALE_STEP, MAX_SCALE);
+        await renderAllPages(); updateToolbar(); scrollToPage(currentPage);
+      }
+    });
+    zoomOutBtn.addEventListener('click', async function () {
+      if (currentScale > MIN_SCALE) {
+        currentScale = Math.max(currentScale - SCALE_STEP, MIN_SCALE);
+        await renderAllPages(); updateToolbar(); scrollToPage(currentPage);
+      }
+    });
+
+    fitWidthBtn.addEventListener('click', async function () {
+      if (!pdfDoc) return;
+      const page = await pdfDoc.getPage(1);
+      const viewport = page.getViewport({ scale: 1.0 });
+      currentScale = (container.clientWidth - 32) / viewport.width;
+      await renderAllPages(); updateToolbar(); scrollToPage(currentPage);
+    });
+
+    resetZoomBtn.addEventListener('click', async function () {
+      if (!pdfDoc) return;
+      currentScale = 1.0;
+      await renderAllPages(); updateToolbar(); scrollToPage(currentPage);
+    });
+
+    // 打印和下载（暂时隐藏，放开 HTML 注释后自动生效）
+    if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
+    if (downloadBtn) downloadBtn.addEventListener('click', function () {
+      if (!pdfUrl) return;
+      const a = document.createElement('a');
+      a.href = pdfUrl;
+      a.download = pdfUrl.split('/').pop() || 'document.pdf';
+      a.click();
+    });
+
+    // === 加载 PDF ===
+
+    async function loadPdf() {
+      if (!pdfUrl) { loadingOverlay.textContent = '未指定 PDF 文件'; return; }
+      try {
+        pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
+        totalPages = pdfDoc.numPages;
+        currentPage = 1;
+        const firstPage = await pdfDoc.getPage(1);
+        const viewport = firstPage.getViewport({ scale: 1.0 });
+        currentScale = (container.clientWidth - 32) / viewport.width;
+        await renderAllPages();
+        updateToolbar();
+        loadingOverlay.classList.add('hidden');
+        renderThumbnails();
+        loadOutline();
+      } catch (err) {
+        loadingOverlay.innerHTML = '<span class="error-message">PDF 加载失败: ' + err.message + '</span>';
+        console.error('PDF load error:', err);
+      }
+    }
+
+    loadPdf();
+  </script>
+</body>
+
+</html>

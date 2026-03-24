@@ -150,7 +150,7 @@
 		nextTick(() => {
 			const el = pdfFrame.value as any
 			if (el != null) {
-				el.innerHTML = '<iframe src="' + src + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
+				el.innerHTML = '<iframe src="/static/pdfjs-viewer.html?file=' + encodeURIComponent(src) + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
 			}
 		})
 	}

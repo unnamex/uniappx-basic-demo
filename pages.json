@@ -3,7 +3,7 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "MPM工艺预览"
+				"navigationBarTitleText": ""
 			}
 		},
 		{
@@ -41,7 +41,7 @@
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "MPM工艺预览",
+		// "navigationBarTitleText": "MPM工艺预览",
 		"navigationBarBackgroundColor": "#FFFFFF",
 		"backgroundColor": "#F5F7FA"
 	},
