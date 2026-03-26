@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CAD Viewer Launcher</title>
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #f3f4f6;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #6b7280;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loading">加载 CAD 图纸中，请稍候...</div>
+  <script>
+    (async function () {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileUrl = urlParams.get('file');
+        if (!fileUrl) {
+          document.body.innerHTML = '<div class="loading">未提供 CAD 文件源</div>';
+          return;
+        }
+
+        // 抓取 Blob 数据并读取为文本
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error('网络响应异常');
+        const htmlContent = await response.text();
+
+        // 完全重写当前文档
+        // 这使得内部的脚本执行时带有真实的 HTTP(S) URL (cad-launcher.html)
+        // 从而避免 new URL(..., document.baseURI) 在遇到 blob: 协议时抛出 Invalid URL 异常
+        document.open();
+        document.write(htmlContent);
+        document.close();
+      } catch (err) {
+        console.error('CAD 文件加载失败:', err);
+        document.body.innerHTML = '<div class="loading" style="color:#ef4444">CAD 文件加载失败: ' + err.message + '</div>';
+      }
+    })();
+  </script>
+</body>
+
+</html>

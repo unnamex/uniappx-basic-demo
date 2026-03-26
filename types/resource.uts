@@ -10,6 +10,7 @@ export const ResourceType_IMAGE = 'image'
 export const ResourceType_VIDEO = 'video'
 export const ResourceType_AUDIO = 'audio'
 export const ResourceType_DOCUMENT = 'document'
+export const ResourceType_CAD = 'cad'
 
 /**
  * 资源项类型
@@ -58,6 +59,7 @@ export function getResourceTypeIcon(type: string): string {
 	if (type == ResourceType_VIDEO) return '🎬'
 	if (type == ResourceType_AUDIO) return '🔊'
 	if (type == ResourceType_DOCUMENT) return '📄'
+	if (type == ResourceType_CAD) return '📐'
 	return '📎'
 }
 
@@ -71,6 +73,7 @@ export function getResourceTypeLabel(type: string): string {
 	if (type == ResourceType_VIDEO) return '视频'
 	if (type == ResourceType_AUDIO) return '音频'
 	if (type == ResourceType_DOCUMENT) return '文档'
+	if (type == ResourceType_CAD) return 'CAD图纸'
 	return '附件'
 }
 
@@ -127,6 +130,11 @@ export function inferResourceType(filename: string): string {
 	// 文档格式
 	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt'].indexOf(ext) >= 0) {
 		return ResourceType_DOCUMENT
+	}
+	
+	// CAD 图纸格式（卡伦特供应商的 HTML 封装 CAD）
+	if (['html', 'htm'].indexOf(ext) >= 0) {
+		return ResourceType_CAD
 	}
 	
 	return 'unknown'

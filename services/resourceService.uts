@@ -419,6 +419,8 @@ function getMimeTypeForFile(fileName: string): string {
 	if (ext == 'mp3') return 'audio/mpeg'
 	if (ext == 'wav') return 'audio/wav'
 	if (ext == 'ogg') return 'audio/ogg'
+	// CAD 图纸（卡伦特供应商 HTML 封装）
+	if (ext == 'html' || ext == 'htm') return 'text/html'
 	return ''
 }
 

@@ -853,8 +853,10 @@ function isAssetFile(entryName: string): boolean {
 	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv']
 	const audioExts = ['.mp3', '.wav', '.aac', '.ogg', '.m4a']
 	const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
+	// CAD 图纸格式（卡伦特供应商的 HTML 封装 CAD）
+	const cadExts = ['.html', '.htm']
 	
-	const allExts = imageExts.concat(videoExts).concat(audioExts).concat(docExts)
+	const allExts = imageExts.concat(videoExts).concat(audioExts).concat(docExts).concat(cadExts)
 	
 	for (const ext of allExts) {
 		if (normalized.endsWith(ext)) {
@@ -1272,8 +1274,10 @@ function isAssetFileHarmony(entryName: string): boolean {
 	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv']
 	const audioExts = ['.mp3', '.wav', '.aac', '.ogg', '.m4a']
 	const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
+	// CAD 图纸格式（卡伦特供应商的 HTML 封装 CAD）
+	const cadExts = ['.html', '.htm']
 	
-	const allExts = imageExts.concat(videoExts).concat(audioExts).concat(docExts)
+	const allExts = imageExts.concat(videoExts).concat(audioExts).concat(docExts).concat(cadExts)
 	
 	for (const ext of allExts) {
 		if (normalized.endsWith(ext)) {
