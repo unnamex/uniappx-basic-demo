@@ -1,8 +1,0 @@
-3477:
-tv({__proto__:null,default:pv},[$m]);var _v=(()=>{var s2=_documentCurrentScript&&_documentCurrentScript.src||new URL("pdm-viewer.iife.js",document.baseURI).href;return function(t2){t2=t2||{};var e2;e2
-
-3512:
-2.preInit=="function"&&(e2.preInit=[e2.preInit]);0<e2.preInit.length;)e2.preInit.pop()();var Ep=!0;return e2.noInitialRun&&(Ep=!1),Mp(),t2.ready}})();window.bowser=mv;const gi=class gi2{static async createInstance(t2){const e2={isWrapper:!0,base:{},a
-
-8273:
-ersion="1.0.22";return exports.createViewer=createViewer,exports.version=version,Object.defineProperty(exports,Symbol.toStringTag,{value:"Module"}),exports}({});
