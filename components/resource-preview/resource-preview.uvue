@@ -175,7 +175,7 @@
 		nextTick(() => {
 			const el = pdfFrame.value as any
 			if (el != null) {
-				el.innerHTML = '<iframe src="/static/pdfjs-viewer.html?file=' + encodeURIComponent(src) + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
+				el.innerHTML = '<iframe src="/static/pdf/pdfjs-viewer.html?file=' + encodeURIComponent(src) + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
 			}
 		})
 	}
@@ -195,7 +195,7 @@
 					// 确保插入 iframe 且设置宽高
 					// 通过 /static/cad-launcher.html 代理加载 Blob URL，
 					// 解决某些供应商 CAD 图纸 HTML 直接加载 Blob 会因 baseURI 引发的 `Invalid URL` 异常
-					el.innerHTML = '<iframe src="/static/cad-launcher.html?file=' + encodeURIComponent(src) + '" style="width:100%;height:100%;min-height:500px;border:none;" frameborder="0" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>'
+					el.innerHTML = '<iframe src="/static/cad/cad-launcher.html?file=' + encodeURIComponent(src) + '" style="width:100%;height:100%;min-height:500px;border:none;" frameborder="0" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>'
 					console.log('successfully injected iframe')
 				}
 			} catch (e) {
