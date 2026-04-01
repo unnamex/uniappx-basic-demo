@@ -32,8 +32,22 @@
   <script>
     (async function () {
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const fileUrl = urlParams.get('file');
+        function getParam(name) {
+          const urlParams = new URLSearchParams(window.location.search);
+          let val = urlParams.get(name);
+          if (!val) {
+            let hashStr = window.location.hash;
+            if (hashStr) {
+              hashStr = hashStr.substring(1);
+              if (hashStr.startsWith('?')) hashStr = hashStr.substring(1);
+              const hashParams = new URLSearchParams(hashStr);
+              val = hashParams.get(name);
+            }
+          }
+          return val;
+        }
+
+        const fileUrl = getParam('file');
         if (!fileUrl) {
           document.body.innerHTML = '<div class="loading">未提供 CAD 文件源</div>';
           return;

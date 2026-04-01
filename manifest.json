@@ -1,8 +1,8 @@
 {
 	"name": "avpbc-pop",
-	"appid": "__UNI__2A7E9F3",
+	"appid": "__UNI__9A011F1",
 	"description": "",
-	"versionName": "1.0.0",
+	"versionName": "1.0.1",
 	"versionCode": "100",
 	"uni-app-x": {},
 	/* 快应用特有相关 */
@@ -66,6 +66,12 @@
 			"modules": {},
 			"icons": {},
 			"splashScreens": {}
+		}
+	},
+	"web": {
+		"router": {
+			"mode": "",
+			"base": "./"
 		}
 	}
 }

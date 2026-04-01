@@ -41,9 +41,9 @@
 	const paneConfig = reactive(baseConfig)
 	
 	// Watch props to update config
-	watch(() => props.label, (val) => { paneConfig['label'] = val })
-	watch(() => props.name, (val) => { paneConfig['name'] = val })
-	watch(() => props.disabled, (val) => { paneConfig['disabled'] = val })
+	watch((): string => { return props.label as string }, (val: string): void => { paneConfig['label'] = val })
+	watch((): any => { return props.name }, (val: any): void => { paneConfig['name'] = val })
+	watch((): boolean => { return props.disabled as boolean }, (val: boolean): void => { paneConfig['disabled'] = val })
 	
 	// Setup lifecycle
 	onMounted(() => {
@@ -56,7 +56,7 @@
 			// Setup watch on the context's currentName
 			const ctxNameRef = tabsContext['currentName'] as Ref<any> | null
 			if (ctxNameRef != null) {
-				watch(ctxNameRef, (newVal) => {
+				watch(ctxNameRef, (newVal: any) => {
 					active.value = (newVal == props.name)
 				}, { immediate: true })
 			}
@@ -78,7 +78,6 @@
 	.ux-tab-pane {
 		width: 100%;
 		flex: 1;
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 	}
 </style>

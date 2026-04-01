@@ -4,7 +4,6 @@
  */
 
 // #ifdef APP-ANDROID
-import { UTSAndroid } from "dcloudio.uts.android";
 import SQLiteDatabase from 'android.database.sqlite.SQLiteDatabase';
 import Cursor from 'android.database.Cursor';
 // #endif
@@ -42,7 +41,7 @@ let dbInstance: relationalStore.RdbStore | null = null
  * @returns Promise<boolean> 初始化是否成功
  */
 export function initDatabase(): Promise<boolean> {
-	return new Promise((resolve: (value: boolean) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: boolean) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID
 		initSQLiteDatabase()
 			.then(() => {
@@ -50,11 +49,11 @@ export function initDatabase(): Promise<boolean> {
 					.then(() => {
 						resolve(true)
 					})
-					.catch((e: any) => {
+					.catch((e: any | null) => {
 						reject(new Error(JSON.stringify(e)))
 					})
 			})
-			.catch((e: any) => {
+			.catch((e: any | null) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 		// #endif
@@ -66,11 +65,11 @@ export function initDatabase(): Promise<boolean> {
 					.then(() => {
 						resolve(true)
 					})
-					.catch((e: any) => {
+					.catch((e: any | null) => {
 						reject(new Error(JSON.stringify(e)))
 					})
 			})
-			.catch((e: any) => {
+			.catch((e: any | null) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 		// #endif
@@ -80,7 +79,7 @@ export function initDatabase(): Promise<boolean> {
 			.then(() => {
 				resolve(true)
 			})
-			.catch((e: any) => {
+			.catch((e: any | null) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 		// #endif
@@ -91,7 +90,7 @@ export function initDatabase(): Promise<boolean> {
  * 初始化 SQLite 数据库（App端）
  */
 function initSQLiteDatabase(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		try {
 			// #ifdef APP-ANDROID
 			const context = UTSAndroid.getAppContext()
@@ -121,7 +120,7 @@ function initSQLiteDatabase(): Promise<void> {
  * @description 使用 @ohos.data.relationalStore API 创建/打开数据库
  */
 function initHarmonyDatabase(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		try {
 			const STORE_CONFIG: relationalStore.StoreConfig = {
 				name: DB_NAME,
@@ -150,7 +149,7 @@ function initHarmonyDatabase(): Promise<void> {
  * 创建数据表
  */
 function createTables(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		const createProcessTableSQL = `
 			CREATE TABLE IF NOT EXISTS t_process (
 				id TEXT PRIMARY KEY,
@@ -365,7 +364,7 @@ function createTables(): Promise<void> {
  * @param params - 参数数组
  */
 export function executeSQL(sql: string, params: any[] = []): Promise<any> {
-	return new Promise((resolve: (value: any) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: any) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID
 		if (dbInstance == null) {
 			reject(new Error('数据库未初始化'))
@@ -421,8 +420,8 @@ export function executeSQL(sql: string, params: any[] = []): Promise<any> {
  * @param sql - 查询 SQL
  * @param params - 参数数组
  */
-export function querySQL(sql: string, params: any[] = []): Promise<any[]> {
-	return new Promise((resolve: (value: any[]) => void, reject: (reason: Error) => void) => {
+export function querySQL(sql: string, params: any[] = []): Promise<UTSJSONObject[]> {
+	return new Promise((resolve: (value: UTSJSONObject[]) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID
 		if (dbInstance == null) {
 			reject(new Error('数据库未初始化'))
@@ -439,11 +438,11 @@ export function querySQL(sql: string, params: any[] = []): Promise<any[]> {
 			}
 			
 			const cursor = dbInstance!.rawQuery(sql, args != null ? args.toTypedArray() : null)
-			const result: any[] = []
+			const result: UTSJSONObject[] = []
 			
 			if (cursor.moveToFirst()) {
 				do {
-					const row: any = {}
+					const row: UTSJSONObject = {}
 					const columnCount = cursor.getColumnCount()
 					for (let i = 0; i < columnCount; i++) {
 						const columnName = cursor.getColumnName(i)
@@ -488,10 +487,10 @@ export function querySQL(sql: string, params: any[] = []): Promise<any[]> {
 			}
 			
 			const resultSet = dbInstance!.querySql(sql, args)
-			const result: any[] = []
+			const result: UTSJSONObject[] = []
 			
 			while (resultSet.goToNextRow()) {
-				const row: any = {}
+				const row: UTSJSONObject = {}
 				const columnCount = resultSet.columnCount
 				for (let i = 0; i < columnCount; i++) {
 					const columnName = resultSet.getColumnName(i)
@@ -520,7 +519,7 @@ export function querySQL(sql: string, params: any[] = []): Promise<any[]> {
 		// #endif
 		
 		// #ifdef WEB
-		resolve([] as any[])
+		resolve([] as UTSJSONObject[])
 		// #endif
 	})
 }
@@ -619,7 +618,7 @@ const WEB_DB_VERSION: number = 4
  * 初始化 IndexedDB（Web端）
  */
 function initIndexedDB(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		try {
 			const request = indexedDB.open(DB_NAME, WEB_DB_VERSION)
 			
@@ -712,7 +711,7 @@ function initIndexedDB(): Promise<void> {
  * Web 端保存数据到 IndexedDB
  */
 export function webPutData(storeName: string, data: any): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		if (dbInstance == null) {
 			reject(new Error('IndexedDB 未初始化'))
 			return
@@ -738,8 +737,8 @@ export function webPutData(storeName: string, data: any): Promise<void> {
 /**
  * Web 端从 IndexedDB 查询所有数据
  */
-export function webGetAll(storeName: string): Promise<any[]> {
-	return new Promise((resolve: (value: any[]) => void, reject: (reason: Error) => void) => {
+export function webGetAll(storeName: string): Promise<UTSJSONObject[]> {
+	return new Promise((resolve: (value: UTSJSONObject[]) => void, reject: (reason: any) => void) => {
 		if (dbInstance == null) {
 			reject(new Error('IndexedDB 未初始化'))
 			return
@@ -751,7 +750,7 @@ export function webGetAll(storeName: string): Promise<any[]> {
 			const request = store.getAll()
 			
 			request.onsuccess = () => {
-				resolve(request.result || [])
+				resolve(request.result as UTSJSONObject[] || ([] as UTSJSONObject[]))
 			}
 			request.onerror = () => {
 				reject(new Error('IndexedDB getAll 失败: ' + storeName))
@@ -765,8 +764,8 @@ export function webGetAll(storeName: string): Promise<any[]> {
 /**
  * Web 端按索引查询数据
  */
-export function webGetByIndex(storeName: string, indexName: string, value: any): Promise<any[]> {
-	return new Promise((resolve: (value: any[]) => void, reject: (reason: Error) => void) => {
+export function webGetByIndex(storeName: string, indexName: string, value: any): Promise<UTSJSONObject[]> {
+	return new Promise((resolve: (value: UTSJSONObject[]) => void, reject: (reason: any) => void) => {
 		if (dbInstance == null) {
 			reject(new Error('IndexedDB 未初始化'))
 			return
@@ -779,7 +778,7 @@ export function webGetByIndex(storeName: string, indexName: string, value: any):
 			const request = index.getAll(value)
 			
 			request.onsuccess = () => {
-				resolve(request.result || [])
+				resolve(request.result as UTSJSONObject[] || ([] as UTSJSONObject[]))
 			}
 			request.onerror = () => {
 				reject(new Error('IndexedDB getByIndex 失败'))
@@ -794,7 +793,7 @@ export function webGetByIndex(storeName: string, indexName: string, value: any):
  * Web 端清空 Store
  */
 export function webClearStore(storeName: string): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		if (dbInstance == null) {
 			reject(new Error('IndexedDB 未初始化'))
 			return
@@ -821,7 +820,7 @@ export function webClearStore(storeName: string): Promise<void> {
  * Web 端获取记录数
  */
 export function webGetCount(storeName: string): Promise<number> {
-	return new Promise((resolve: (value: number) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: number) => void, reject: (reason: any) => void) => {
 		if (dbInstance == null) {
 			reject(new Error('IndexedDB 未初始化'))
 			return

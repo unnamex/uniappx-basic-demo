@@ -724,12 +724,12 @@ function extractAndParseAndroid(
 			records = manifest.records ?? []
 			
 			// V1: 解析 processes 目录下的文件
-			for (const [fileName, content] of jsonFiles) {
+			jsonFiles.forEach((content: string, fileName: string) => {
 				if (fileName.startsWith('processes/')) {
 					const processInfo = JSON.parse(content) as ProcessInfo
 					processes.push(processInfo)
 				}
-			}
+			})
 		}
 		
 		// 构建临时 manifest 用于保存 (兼容现有 saveUiConfigurationToDatabase)
@@ -790,19 +790,14 @@ function extractAndParseAndroid(
 				}
 			}
 			
-			// 保存工艺数据
-			saveProcessesToDatabase(processes)
-				.then(async () => {
-					// 保存资源元数据
-					try {
-						for (const res of allResources) {
-							await saveResource(res)
-							resourceCount++
-						}
-						console.log('Android: Saved resources:', resourceCount)
-					} catch (e) {
-						console.error('Android: Save resources failed:', e)
+			const executeDbSave = async () => {
+				try {
+					await saveProcessesToDatabase(processes)
+					for (const res of allResources) {
+						await saveResource(res)
+						resourceCount++
 					}
+					console.log('Android: Saved resources:', resourceCount)
 					
 					setTransactionSuccessful()
 					resolve({
@@ -813,13 +808,12 @@ function extractAndParseAndroid(
 						resourceCount: resourceCount,
 						importTime: 0
 					})
-				})
-				.catch((e: any) => {
-					throw e
-				})
-				.finally(() => {
+				} catch(e: any | null) {
 					endTransaction()
-				})
+					reject(new Error(e != null ? e.toString() : '数据库保存失败'))
+				}
+			}
+			executeDbSave().then(()=>{}).catch((e: any | null)=>{})
 				
 		} catch (e: any) {
 			endTransaction()
@@ -1158,18 +1152,14 @@ function processHarmonyExtractedFiles(
 				}
 			}
 			
-			// 保存工艺数据
-			saveProcessesToDatabase(processes)
-				.then(async () => {
-					try {
-						for (const res of allResources) {
-							await saveResource(res)
-							resourceCount++
-						}
-						console.log('Harmony: 保存资源:', resourceCount)
-					} catch (e) {
-						console.error('Harmony: 保存资源失败:', e)
+			const executeDbSave = async () => {
+				try {
+					await saveProcessesToDatabase(processes)
+					for (const res of allResources) {
+						await saveResource(res)
+						resourceCount++
 					}
+					console.log('Harmony: 保存资源:', resourceCount)
 					
 					setTransactionSuccessful()
 					resolve({
@@ -1180,13 +1170,12 @@ function processHarmonyExtractedFiles(
 						resourceCount: resourceCount,
 						importTime: 0
 					})
-				})
-				.catch((e: any) => {
-					throw e
-				})
-				.finally(() => {
+				} catch(e: any | null) {
 					endTransaction()
-				})
+					reject(new Error(e != null ? e.toString() : 'Harmony: 数据库保存失败'))
+				}
+			}
+			executeDbSave().then(()=>{}).catch((e: any | null)=>{})
 		} catch (e: any) {
 			endTransaction()
 			reject(new Error('Harmony: 数据库保存失败: ' + e.toString()))

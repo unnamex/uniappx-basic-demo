@@ -131,15 +131,14 @@
 	
 	// 滚动事件
 	const onScroll = (e: any) => {
-		const detail = e.detail
-		if (detail != null) {
-			const scrollLeft = detail.scrollLeft as number ?? 0
-			const scrollWidth = detail.scrollWidth as number ?? 1
-			const clientWidth = detail.clientWidth as number ?? 0
-			
-			if (scrollWidth > clientWidth) {
-				scrollProgress.value = (scrollLeft / (scrollWidth - clientWidth)) * 100
-			}
+		const detail = (e as UTSJSONObject)['detail'] as UTSJSONObject
+		if (detail == null) return
+		const scrollLeft = (detail['scrollLeft'] as number) ?? 0
+		const scrollWidth = (detail['scrollWidth'] as number) ?? 1
+		const clientWidth = (detail['scrollWidth'] as number) ?? 0
+		
+		if (scrollWidth > clientWidth) {
+			scrollProgress.value = (scrollLeft / (scrollWidth - clientWidth)) * 100
 		}
 	}
 </script>
@@ -147,8 +146,7 @@
 <style>
 	/* Cloud Atlas 云图白主题 — 资源列表 */
 	.resource-list {
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		background-color: #FFFFFF;
 		border-radius: 6px;
 		padding: 6px;
@@ -160,15 +158,14 @@
 	
 	/* 标题栏 */
 	.list-header {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		align-items: center;
 		margin-bottom: 4px;
 	}
 	
 	.header-title {
 		font-size: 12px;
-		font-weight: 600;
+		font-weight: bold;
 		color: #111827;
 	}
 	
@@ -181,8 +178,7 @@
 	/* 空状态 */
 	.empty-state {
 		flex: 1;
-		display: flex;
-		justify-content: center;
+			justify-content: center;
 		align-items: center;
 	}
 	
@@ -198,8 +194,7 @@
 	}
 	
 	.list-content {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		padding-bottom: 8px;
 	}
 	
@@ -248,8 +243,7 @@
 	.thumb-placeholder {
 		width: 100%;
 		height: 100%;
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		justify-content: center;
 		align-items: center;
 		background-color: #F0F2F5;
@@ -278,8 +272,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		display: flex;
-		justify-content: center;
+			justify-content: center;
 		align-items: center;
 		background-color: rgba(17, 24, 39, 0.3);
 	}
@@ -291,8 +284,7 @@
 	
 	/* 音频波形 */
 	.audio-waves {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		margin-top: 8px;
 	}
 	
@@ -338,8 +330,7 @@
 	/* 信息区域 */
 	.card-info {
 		padding: 4px 6px;
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 	}
 	
 	.card-name {

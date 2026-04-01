@@ -124,7 +124,7 @@
 	.status-text {
 		font-size: 12px;
 		color: #374151;
-		font-weight: 500;
+		font-weight: normal;
 	}
 	
 	.process-name {

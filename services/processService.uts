@@ -13,7 +13,7 @@ import { querySQL, executeSQL } from '@/services/database'
  * @returns Promise<PageResult<ProcessListItem>> 分页结果
  */
 export function getProcessList(params: PageParams): Promise<PageResult<ProcessListItem>> {
-	return new Promise((resolve: (value: PageResult<ProcessListItem>) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: PageResult<ProcessListItem>) => void, reject: (reason: any) => void) => {
 		const offset = (params.page - 1) * params.pageSize
 		
 		let countSQL = 'SELECT COUNT(*) as total FROM t_process'
@@ -63,11 +63,11 @@ export function getProcessList(params: PageParams): Promise<PageResult<ProcessLi
 							pageSize: params.pageSize
 						})
 					})
-					.catch((e: any) => {
+					.catch((e: any | null) => {
 						reject(new Error(JSON.stringify(e)))
 					})
 			})
-			.catch((e: any) => {
+			.catch((e: any | null) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 	})
@@ -79,7 +79,7 @@ export function getProcessList(params: PageParams): Promise<PageResult<ProcessLi
  * @returns Promise<ProcessInfo | null> 工艺详情
  */
 export function getProcessDetail(processId: string): Promise<ProcessInfo | null> {
-	return new Promise((resolve: (value: ProcessInfo | null) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: ProcessInfo | null) => void, reject: (reason: any) => void) => {
 		const sql = `SELECT data_json FROM t_process WHERE id = '${processId}'`
 		
 		querySQL(sql)
@@ -92,7 +92,7 @@ export function getProcessDetail(processId: string): Promise<ProcessInfo | null>
 					resolve(null)
 				}
 			})
-			.catch((e: Error) => {
+			.catch((e: any | null) => {
 				reject(e)
 			})
 	})
@@ -104,7 +104,7 @@ export function getProcessDetail(processId: string): Promise<ProcessInfo | null>
  * @returns Promise<ProcessStep[]> 步骤列表
  */
 export function getProcessSteps(processId: string): Promise<ProcessStep[]> {
-	return new Promise((resolve: (value: ProcessStep[]) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: ProcessStep[]) => void, reject: (reason: any) => void) => {
 		const sql = `
 			SELECT step_no, name, description, description_html, duration, 
 				   tools_json, materials_json, images_json, videos_json
@@ -134,7 +134,7 @@ export function getProcessSteps(processId: string): Promise<ProcessStep[]> {
 				
 				resolve(steps)
 			})
-			.catch((e: Error) => {
+			.catch((e: any | null) => {
 				reject(e)
 			})
 	})
@@ -146,7 +146,7 @@ export function getProcessSteps(processId: string): Promise<ProcessStep[]> {
  * @returns Promise<ProcessListItem[]> 搜索结果
  */
 export function searchProcess(keyword: string): Promise<ProcessListItem[]> {
-	return new Promise((resolve: (value: ProcessListItem[]) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: ProcessListItem[]) => void, reject: (reason: any) => void) => {
 		if (keyword == '') {
 			resolve([])
 			return
@@ -181,7 +181,7 @@ export function searchProcess(keyword: string): Promise<ProcessListItem[]> {
 				
 				resolve(list)
 			})
-			.catch((e: Error) => {
+			.catch((e: any | null) => {
 				reject(e)
 			})
 	})
@@ -192,7 +192,7 @@ export function searchProcess(keyword: string): Promise<ProcessListItem[]> {
  * @returns Promise<number> 工艺总数
  */
 export function getProcessCount(): Promise<number> {
-	return new Promise((resolve: (value: number) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: number) => void, reject: (reason: any) => void) => {
 		const sql = 'SELECT COUNT(*) as total FROM t_process'
 		
 		querySQL(sql)
@@ -200,7 +200,7 @@ export function getProcessCount(): Promise<number> {
 				const total = result.length > 0 ? (result[0]['total'] as number) : 0
 				resolve(total)
 			})
-			.catch((e: Error) => {
+			.catch((e: any | null) => {
 				reject(e)
 			})
 	})
@@ -211,7 +211,7 @@ export function getProcessCount(): Promise<number> {
  * @returns Promise<void>
  */
 export function clearAllProcesses(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		executeSQL('DELETE FROM t_process_attachment')
 			.then(() => executeSQL('DELETE FROM t_process_step'))
 			.then(() => executeSQL('DELETE FROM t_process'))
@@ -219,7 +219,7 @@ export function clearAllProcesses(): Promise<void> {
 				console.log('工艺数据已清空')
 				resolve()
 			})
-			.catch((e: any) => {
+			.catch((e: any | null) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 	})
@@ -230,7 +230,7 @@ export function clearAllProcesses(): Promise<void> {
  * @returns Promise<void>
  */
 export function generateMockData(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		const timestamp = new Date().toISOString()
 		
 		const mockProcesses: any[] = [
@@ -389,7 +389,7 @@ export function generateMockData(): Promise<void> {
 			.then(() => {
 				resolve()
 			})
-			.catch((e: any) => {
+			.catch((e: any | null) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 	})

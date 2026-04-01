@@ -49,20 +49,17 @@
 
 <style>
 	.ux-breadcrumb {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		align-items: center;
 	}
 
 	.ux-breadcrumb-row {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		align-items: center;
 	}
 
 	.ux-breadcrumb-item {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		align-items: center;
 		padding: 0 2px;
 	}
@@ -78,8 +75,7 @@
 	}
 
 	.ux-breadcrumb-separator {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		align-items: center;
 		padding: 0 4px;
 	}

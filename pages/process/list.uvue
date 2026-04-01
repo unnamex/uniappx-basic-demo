@@ -106,11 +106,11 @@
 			 */
 			initPage() {
 				initDatabase()
-					.then(() => {
+					.then((_r: boolean) => {
 						this.loadProcessList()
 					})
-					.catch((e: Error) => {
-						console.error('数据库初始化失败：', e.message)
+					.catch((e: any | null) => {
+						console.error('数据库初始化失败：', e)
 					})
 			},
 			
@@ -158,9 +158,9 @@
 							this.hasMore = false
 						}
 					})
-					.catch((e: Error) => {
+					.catch((e: any | null) => {
 						this.isLoading = false
-						console.error('加载工艺列表失败：', e.message)
+						console.error('加载工艺列表失败：', e)
 						uni.showToast({
 							title: '加载失败',
 							icon: 'none'

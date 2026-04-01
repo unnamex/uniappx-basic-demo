@@ -62,14 +62,10 @@
 	}
 	
 	.ux-collapse-item__header {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		height: 48px;
 		background-color: #fff;
-		/* #ifdef WEB */
-		cursor: pointer;
-		/* #endif */
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
 		border-bottom-color: #EBEEF5;
@@ -78,14 +74,10 @@
 	}
 	
 	.ux-collapse-item__header-active {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		height: 48px;
 		background-color: #fff;
-		/* #ifdef WEB */
-		cursor: pointer;
-		/* #endif */
 		border-bottom-color: transparent;
 		padding: 0 10px;
 		justify-content: space-between;
@@ -98,16 +90,10 @@
 	
 	.ux-collapse-item__arrow {
 		margin-left: 8px;
-		transform: rotate(0deg);
-		transition-property: transform;
-		transition-duration: 0.3s;
 	}
 	
 	.ux-collapse-item__arrow-active {
 		margin-left: 8px;
-		transform: rotate(90deg);
-		transition-property: transform;
-		transition-duration: 0.3s;
 	}
 	
 	.arrow-icon {

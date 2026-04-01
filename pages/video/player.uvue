@@ -44,10 +44,11 @@
 		
 		onLoad(options: any) {
 			// 获取视频源
-			if (options['src'] != null) {
-				const src = options['src']
-				const decoded = decodeURIComponent(String(src ?? ''))
-				this.videoSrc = decoded != null ? decoded : ''
+			const optObj = options as UTSJSONObject
+			if (optObj['src'] != null) {
+				const src = optObj['src'] as string
+				const decoded = decodeURIComponent(src)
+				this.videoSrc = decoded != null ? (decoded as string) : src
 				
 				// 从路径中提取标题
 				this.videoTitle = this.getFileName(this.videoSrc)

@@ -461,10 +461,24 @@
   </div>
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/pdf/pdfjs/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.min.js';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const pdfUrl = urlParams.get('file');
+    function getParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      let val = urlParams.get(name);
+      if (!val) {
+        let hashStr = window.location.hash;
+        if (hashStr) {
+          hashStr = hashStr.substring(1);
+          if (hashStr.startsWith('?')) hashStr = hashStr.substring(1);
+          const hashParams = new URLSearchParams(hashStr);
+          val = hashParams.get(name);
+        }
+      }
+      return val;
+    }
+
+    const pdfUrl = getParam('file');
 
     let pdfDoc = null;
     let currentPage = 1;

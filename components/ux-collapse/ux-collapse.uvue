@@ -69,10 +69,13 @@
 
 <style>
 	.ux-collapse {
-		display: flex;
 		flex-direction: column;
 		width: 100%;
-		border-top: 1px solid #EBEEF5;
-		border-bottom: 1px solid #EBEEF5;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #EBEEF5;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #EBEEF5;
 	}
 </style>

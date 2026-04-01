@@ -59,7 +59,7 @@ export function getResourcePath(relativePath: string): string {
  * @param targetRelativePath - 目标相对路径
  */
 export function copyResourceFile(sourcePath: string, targetRelativePath: string): Promise<string> {
-	return new Promise((resolve: (value: string) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: string) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID || APP-HARMONY
 		const targetPath = resourcePath + '/' + targetRelativePath
 		
@@ -93,7 +93,7 @@ export function copyResourceFile(sourcePath: string, targetRelativePath: string)
  * @param relativePath - 相对路径
  */
 export function saveFile(data: ArrayBuffer, relativePath: string): Promise<string> {
-	return new Promise((resolve: (value: string) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: string) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID || APP-HARMONY
 		const targetPath = resourcePath + '/' + relativePath
 		
@@ -128,7 +128,7 @@ export function saveFile(data: ArrayBuffer, relativePath: string): Promise<strin
  * @param relativePath - 相对路径
  */
 export function deleteResourceFile(relativePath: string): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID || APP-HARMONY
 		const targetPath = resourcePath + '/' + relativePath
 		
@@ -154,7 +154,7 @@ export function deleteResourceFile(relativePath: string): Promise<void> {
  * 清空所有资源文件
  */
 export function clearAllResources(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID || APP-HARMONY
 		uni.getFileSystemManager().rmdir({
 			dirPath: resourcePath,
@@ -182,17 +182,18 @@ export function clearAllResources(): Promise<void> {
  * @param relativePath - 相对路径
  */
 export function getFileInfo(relativePath: string): Promise<FileInfo> {
-	return new Promise((resolve: (value: FileInfo) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve: (value: FileInfo) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID || APP-HARMONY
 		const targetPath = resourcePath + '/' + relativePath
 		
-		uni.getFileInfo({
+		uni.getFileSystemManager().getFileInfo({
 			filePath: targetPath,
-			success: (res: UniGetFileInfoSuccessCallbackResult) => {
+			success: (res: any) => {
+				const resObj = res as UTSJSONObject
 				resolve({
 					name: getFileName(relativePath),
 					path: targetPath,
-					size: res.size,
+					size: resObj["size"] as number,
 					extension: getFileExtension(relativePath)
 				})
 			},
@@ -218,7 +219,7 @@ export function getFileInfo(relativePath: string): Promise<FileInfo> {
  * @param relativePath - 相对路径
  */
 export function fileExists(relativePath: string): Promise<boolean> {
-	return new Promise((resolve: (value: boolean) => void) => {
+	return new Promise((resolve: (value: boolean) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID || APP-HARMONY
 		const targetPath = resourcePath + '/' + relativePath
 		
@@ -247,7 +248,7 @@ function createDirectory(dirPath: string): void {
 	// #ifdef APP-ANDROID || APP-HARMONY
 	try {
 		uni.getFileSystemManager().mkdirSync(dirPath, true)
-	} catch (e: Error) {
+	} catch (e: any) {
 		// 目录可能已存在，忽略错误
 	}
 	// #endif

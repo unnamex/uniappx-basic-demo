@@ -1,17 +1,17 @@
 <template>
 	<view class="outsider-layout-container">
-		<view v-if="$slots.header" class="outsider-header">
+		<view class="outsider-header">
 			<slot name="header"></slot>
 		</view>
 		<view class="outsider-body-wrapper">
 			<view class="outsider-body-container">
 				<!-- Left Sidebar -->
-				<view v-if="$slots.left" class="outsider-left" :style="{ width: currentLeftWidth + 'px', display: isCollapsed ? 'none' : 'flex' }">
+				<view class="outsider-left" :style="{ width: currentLeftWidth + 'px', display: isCollapsed ? 'none' : 'flex' }">
 					<slot name="left"></slot>
 				</view>
 
 				<!-- Divider (Left-Main) -->
-				<view v-if="$slots.left" :class="['outsider-divider', isDragging ? 'outsider-divider-drag' : '']" 
+				<view :class="['outsider-divider', isDragging ? 'outsider-divider-drag' : '']" 
 					@touchstart="onTouchStart" 
 					@touchmove="onTouchMove" 
 					@touchend="onTouchEnd"
@@ -26,7 +26,7 @@
 				<!-- Main Content -->
 				<view class="outsider-main">
 					<!-- Vertical Split Layout if main-bottom exists -->
-					<view v-if="$slots['main-bottom']" class="outsider-main-split-container">
+					<view v-if="showMainBottom" class="outsider-main-split-container">
 						<!-- Top Section -->
 						<scroll-view scroll-y class="outsider-main-top" :style="{ height: currentMainTopHeight + 'px' }">
 							<slot></slot>
@@ -55,7 +55,7 @@
 				</view>
 
 				<!-- Divider (Main-Right) -->
-				<view v-if="$slots.right" :class="['outsider-divider', isDraggingRight ? 'outsider-divider-drag' : '']" 
+				<view v-if="showRight" :class="['outsider-divider', isDraggingRight ? 'outsider-divider-drag' : '']" 
 					@touchstart="onTouchStartRight" 
 					@touchmove="onTouchMoveRight" 
 					@touchend="onTouchEndRight"
@@ -68,10 +68,10 @@
 				</view>
 
 				<!-- Right Sidebar -->
-				<view v-if="$slots.right" class="outsider-right" :style="{ width: currentRightWidth + 'px', display: isRightCollapsed ? 'none' : 'flex' }">
+				<view v-if="showRight" class="outsider-right" :style="{ width: currentRightWidth + 'px', display: isRightCollapsed ? 'none' : 'flex' }">
 					
 					<!-- Vertical Split Layout for Right Sidebar if right-bottom exists -->
-					<view v-if="$slots['right-bottom']" class="outsider-right-split-container">
+					<view v-if="showRightBottom" class="outsider-right-split-container">
 						<!-- Right Top Section -->
 						<scroll-view scroll-y class="outsider-right-top" :style="{ height: currentRightTopHeight + 'px' }">
 							<slot name="right"></slot>
@@ -101,7 +101,7 @@
 				</view>
 			</view>
 		</view>
-		<view v-if="$slots.footer" class="outsider-footer">
+		<view class="outsider-footer">
 			<slot name="footer"></slot>
 		</view>
 	</view>
@@ -124,6 +124,11 @@
 		maxRightWidth ?: number
 		initRightTopHeight ?: number
 		minRightTopHeight ?: number
+		// Slot presence indicators for Android native
+		showLeft ?: boolean
+		showRight ?: boolean
+		showMainBottom ?: boolean
+		showRightBottom ?: boolean
 	}
 
 	const props = withDefaults(defineProps<Props>(), {
@@ -136,7 +141,11 @@
 		minRightWidth: 100,
 		maxRightWidth: 500,
 		initRightTopHeight: 300,
-		minRightTopHeight: 100
+		minRightTopHeight: 100,
+		showLeft: true,
+		showRight: true,
+		showMainBottom: false,
+		showRightBottom: false
 	})
 
 	// State - Left Sidebar
@@ -401,11 +410,12 @@
 
 <style>
 	.outsider-layout-container {
-		display: flex;
-		flex: 1;
+			flex: 1;
 		flex-direction: column;
 		height: 100%;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 	}
 
 	.outsider-header {
@@ -414,46 +424,48 @@
 
 	.outsider-body-wrapper {
 		flex: 1;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
+			flex-direction: column;
 	}
 	
 	.outsider-body-container {
-		display: flex;
-		flex-direction: row;
+			flex-direction: row;
 		flex: 1;
 		height: 100%;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 	}
 
 	.outsider-left {
 		flex: none;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
+			flex-direction: column;
 	}
 
 	.outsider-divider {
 		width: 8px;
 		background-color: transparent;
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		cursor: col-resize;
+		/* cursor: col-resize; */
 		position: relative;
 		flex: none;
 		z-index: 10;
 	}
 
-	.outsider-divider:active .outsider-divider-line,
+	/* .outsider-divider:active .outsider-divider-line,
 	.outsider-divider:active .outsider-divider-line-drag,
 	.outsider-divider-drag .outsider-divider-line,
 	.outsider-divider-drag .outsider-divider-line-drag {
 		width: 3px;
 		background-color: #007AFF;
-	}
+	} */
 
 	.outsider-divider-drag {
 	}
@@ -477,28 +489,35 @@
 		height: 28px;
 		background-color: #FFFFFF;
 		border-radius: 14px;
-		display: flex;
-		align-items: center;
+			align-items: center;
 		justify-content: center;
 		z-index: 11;
-		cursor: pointer;
+		/* cursor: pointer; */
 		position: absolute;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-		border: 1px solid #F1F5F9;
+		/* #ifdef WEB */
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+	/* #endif */
+		border-width: 1px;
+		border-style: solid;
+		border-color: #F1F5F9;
 		transition-property: background-color, box-shadow, border-color;
 		transition-duration: 0.2s;
 	}
 	
-	.outsider-divider:active .outsider-toggle-btn,
+	/* .outsider-divider:active .outsider-toggle-btn,
 	.outsider-divider-drag .outsider-toggle-btn {
-		box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
+		/* #ifdef WEB */
+	box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
+	/* #endif */
 		border-color: #E0F2FE;
-	}
+	} */
 	
-	.outsider-toggle-btn:active {
+	/* .outsider-toggle-btn:active {
 		background-color: #F8FAFC;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-	}
+		/* #ifdef WEB */
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	/* #endif */
+	} */
 	
 	.outsider-toggle-text {
 		font-size: 15px;
@@ -509,10 +528,11 @@
 
 	.outsider-main {
 		flex: 1;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 		background-color: var(--ui-background-primary, #FFFFFF);
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 	}
 	
 	.outsider-main-content-full {
@@ -520,38 +540,40 @@
 	}
 	
 	.outsider-main-split-container {
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		flex: 1;
 		height: 100%;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 	}
 	
 	.outsider-main-top {
 		flex: none; /* Controlled by height style */
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 	}
 	
 	.outsider-main-divider-horizontal {
 		height: 8px;
 		background-color: transparent;
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		cursor: row-resize;
+		/* cursor: row-resize; */
 		flex: none;
 		position: relative;
 		z-index: 10;
 	}
 
-	.outsider-main-divider-horizontal:active .outsider-divider-line-horizontal,
+	/* .outsider-main-divider-horizontal:active .outsider-divider-line-horizontal,
 	.outsider-main-divider-horizontal:active .outsider-divider-line-drag-horizontal,
 	.outsider-divider-drag-horizontal .outsider-divider-line-horizontal,
 	.outsider-divider-drag-horizontal .outsider-divider-line-drag-horizontal {
 		height: 3px;
 		background-color: #007AFF;
-	}
+	} */
 
 	.outsider-divider-drag-horizontal {
 	}
@@ -572,53 +594,60 @@
 	
 	.outsider-main-bottom {
 		flex: 1;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 	}
 
 	.outsider-right {
 		flex: none;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
+			flex-direction: column;
 	}
 	
 	.outsider-right-split-container {
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		flex: 1;
 		height: 100%;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 	}
 	
 	.outsider-right-top {
 		flex: none;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 		width: 100%;
 	}
 	
 	.outsider-right-divider-horizontal {
 		height: 8px;
 		background-color: transparent;
-		display: flex;
-		flex-direction: column;
+			flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		cursor: row-resize;
+		/* cursor: row-resize; */
 		flex: none;
 		width: 100%;
 		position: relative;
 		z-index: 10;
 	}
 
-	.outsider-right-divider-horizontal:active .outsider-divider-line-horizontal,
+	/* .outsider-right-divider-horizontal:active .outsider-divider-line-horizontal,
 	.outsider-right-divider-horizontal:active .outsider-divider-line-drag-horizontal {
 		height: 3px;
 		background-color: #007AFF;
-	}
+	} */
 	
 	.outsider-right-bottom {
 		flex: 1;
-		overflow: hidden;
+		/* #ifdef WEB */
+	overflow: hidden;
+	/* #endif */
 		width: 100%;
 	}
 	

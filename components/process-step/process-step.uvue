@@ -100,7 +100,7 @@
 		},
 		data() {
 			return {
-				isExpanded: this.expanded
+				isExpanded: this.expanded as boolean
 			}
 		},
 		watch: {

@@ -53,7 +53,7 @@
 	const isFullscreen = ref(false)
 	
 	// Watch modelValue to update internal state
-	watch(() => props.modelValue, (newVal) => {
+	watch((): any => { return props.modelValue }, (newVal: any): void => {
 		currentName.value = newVal
 	})
 	
@@ -105,12 +105,11 @@
 <style>
 	/* Cloud Atlas 云图白主题 — Tab 组件 */
 	.ux-tabs {
-		display: flex;
 		flex-direction: column;
 		width: 100%;
 		flex: 1;
 		background-color: #FFFFFF;
-		transition-property: all;
+		transition-property: background-color;
 		transition-duration: 0.3s;
 	}
 	
@@ -127,9 +126,10 @@
 	
 	/* ⭐ 浅蓝灰底色面板条 — 仪表面板感 */
 	.ux-tabs__header-row {
-		display: flex;
 		flex-direction: row;
-		border-bottom: 2px solid #E2E6ED;
+		border-bottom-width: 2px;
+		border-bottom-style: solid;
+		border-bottom-color: #E2E6ED;
 		background-color: #EEF1F6;
 		flex-shrink: 0;
 		align-items: center;
@@ -143,11 +143,12 @@
 	.ux-tabs__fullscreen-btn {
 		width: 40px;
 		height: 40px;
-		display: flex;
 		justify-content: center;
 		align-items: center;
-		cursor: pointer;
-		border-left: 1px solid #E2E6ED;
+		/* cursor: pointer; */
+		border-left-width: 1px;
+		border-left-style: solid;
+		border-left-color: #E2E6ED;
 	}
 	
 	.ux-tabs__fullscreen-icon {
@@ -156,12 +157,10 @@
 	}
 	
 	.ux-tabs__nav-wrap {
-		display: flex;
 		flex-direction: row;
 	}
 	
 	.ux-tabs__nav {
-		display: flex;
 		flex-direction: row;
 		position: relative;
 	}
@@ -169,11 +168,10 @@
 	.ux-tabs__item {
 		padding: 0 20px;
 		height: 40px;
-		display: flex;
 		justify-content: center;
 		align-items: center;
 		position: relative;
-		cursor: pointer;
+		/* cursor: pointer; */
 	}
 	
 	/* 未选中文字 — 灰色 */
@@ -186,12 +184,12 @@
 	/* 选中态文字 — 青碧品牌色 */
 	.is-active-text {
 		color: #0891B2;
-		font-weight: 600;
+		font-weight: bold;
 	}
 	
 	.is-disabled {
 		opacity: 0.5;
-		cursor: not-allowed;
+		/* cursor: not-allowed; */
 	}
 	
 	/* 选中指示条 — 青碧 */
@@ -208,7 +206,6 @@
 	.ux-tabs__content {
 		padding: 15px;
 		flex: 1;
-		display: flex;
 		flex-direction: column;
 		background-color: #FFFFFF;
 	}

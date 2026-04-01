@@ -73,9 +73,9 @@
 										icon: 'success'
 									})
 								})
-								.catch((e: Error) => {
+								.catch((e: any | null) => {
 									uni.hideLoading()
-									console.error('清理资源失败：', e.message)
+									console.error('清理资源失败：', e)
 									uni.showToast({
 										title: '清理失败',
 										icon: 'none'
@@ -107,9 +107,9 @@
 									// 发送事件通知列表刷新
 									uni.$emit('processDataCleared', {})
 								})
-								.catch((e: Error) => {
+								.catch((e: any | null) => {
 									uni.hideLoading()
-									console.error('清空数据失败：', e.message)
+									console.error('清空数据失败：', e)
 									uni.showToast({
 										title: '清空失败',
 										icon: 'none'

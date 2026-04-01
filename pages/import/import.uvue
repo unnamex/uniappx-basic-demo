@@ -10,7 +10,7 @@
 		
 		<!-- 文件选择区域 -->
 		<view class="file-picker" @click="handleSelectFile" hover-class="file-picker-hover">
-			<view class="file-picker-content" v-if="!packageInfo.fileName">
+			<view class="file-picker-content" v-if="packageInfo.fileName == ''">
 				<view class="icon-circle">
 					<text class="file-picker-icon">📂</text>
 				</view>
@@ -35,19 +35,19 @@
 			<view class="info-grid">
 				<view class="info-row">
 					<text class="info-label">名称</text>
-					<text class="info-value">{{ manifest?.name ?? '未命名数据包' }}</text>
+					<text class="info-value">{{ manifest != null ? manifest!.name : '未命名数据包' }}</text>
 				</view>
 				<view class="info-row">
 					<text class="info-label">版本</text>
-					<text class="info-value">{{ manifest?.version ?? '未知版本' }}</text>
+					<text class="info-value">{{ manifest != null ? manifest!.version : '未知版本' }}</text>
 				</view>
 				<view class="info-row">
 					<text class="info-label">描述</text>
-					<text class="info-value">{{ manifest?.description ?? '无描述' }}</text>
+					<text class="info-value">{{ manifest != null ? manifest!.description : '无描述' }}</text>
 				</view>
 				<view class="info-row">
 					<text class="info-label">时间</text>
-					<text class="info-value">{{ formatTime(manifest?.exportTime) }}</text>
+					<text class="info-value">{{ formatTime(manifest != null ? manifest!.exportTime : null) }}</text>
 				</view>
 			</view>
 		</view>
@@ -61,16 +61,16 @@
 			<view class="progress-track">
 				<view class="progress-fill" :style="{ width: (importProgress.current / importProgress.total) * 100 + '%' }"></view>
 			</view>
-			<text class="progress-status">{{ importProgress.status || '正在处理数据...' }}</text>
+			<text class="progress-status">{{ (importProgress.status != '' ? importProgress.status : '正在处理数据...') }}</text>
 		</view>
 		
 		<!-- 导入结果 -->
 		<view class="result-section" v-if="importResult != null">
-			<view class="result-card" :class="importResult!.success ? 'result-success' : 'result-error'">
-				<text :class="importResult!.success ? 'result-icon-large' : 'result-error-icon-large'">{{ importResult!.success ? '✓' : '✕' }}</text>
-				<text class="result-title">{{ importResult!.success ? '导入完成' : '导入失败' }}</text>
+			<view class="result-card" :class="importResult!.success == true ? 'result-success' : 'result-error'">
+				<text :class="importResult!.success == true ? 'result-icon-large' : 'result-error-icon-large'">{{ importResult!.success == true ? '✓' : '✕' }}</text>
+				<text class="result-title">{{ importResult!.success == true ? '导入完成' : '导入失败' }}</text>
 				<text class="result-desc">{{ importResult!.message }}</text>
-				<text class="result-stats" v-if="importResult!.success">
+				<text class="result-stats" v-if="importResult!.success == true">
 					成功导入 {{ importResult!.processCount }} 条数据，耗时 {{ (importResult!.importTime / 1000).toFixed(1) }}秒
 				</text>
 			</view>
@@ -83,7 +83,7 @@
 				hover-class="btn-hover"
 				:disabled="packageInfo.fileName == '' || isImporting"
 				@click="handleImport"
-				v-if="!importResult?.success"
+				v-if="importResult == null || importResult!.success != true"
 			>
 				<text class="btn-text">{{ isImporting ? '正在导入...' : '开始导入' }}</text>
 			</button>
@@ -91,7 +91,7 @@
 			<button 
 				class="btn-success" 
 				hover-class="btn-hover"
-				v-if="importResult?.success"
+				v-if="importResult != null && importResult!.success == true"
 				@click="handleViewProcess"
 			>
 				<text class="btn-text">查看工艺列表</text>
@@ -130,28 +130,28 @@
 	
 	const importResult = ref<ImportResult | null>(null)
 	
-	// 生命周期
-	onLoad(() => {
-		initDb()
-	})
-	
 	/**
 	 * 初始化数据库
 	 */
 	const initDb = () => {
 		initDatabase()
-			.then(() => {
+			.then((_r: boolean) => {
 				isDbReady.value = true
 				console.log('数据库初始化成功')
 			})
-			.catch((e: Error) => {
-				console.error('数据库初始化失败：', e.message)
+			.catch((e: any | null) => {
+				console.error('数据库初始化失败：', e)
 				uni.showToast({
 					title: '数据库初始化失败',
 					icon: 'none'
 				})
 			})
 	}
+	
+	// 生命周期：必须在 initDb 声明之后
+	onLoad(() => {
+		initDb()
+	})
 	
 	/**
 	 * 选择文件
@@ -180,18 +180,18 @@
 						packageInfo.manifest = manifestRes
 						packageInfo.isValid = true
 					})
-					.catch((e: Error) => {
+					.catch((e: any | null) => {
 						uni.hideLoading()
 						packageInfo.isValid = false
-						packageInfo.errorMessage = e.message
+						packageInfo.errorMessage = e != null ? (e as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误'
 						uni.showToast({
 							title: '数据包验证失败',
 							icon: 'none'
 						})
 					})
 			})
-			.catch((e: Error) => {
-				console.error('选择文件失败：', e.message)
+			.catch((e: any | null) => {
+				console.error('选择文件失败：', e)
 			})
 	}
 	
@@ -199,7 +199,7 @@
 	 * 开始导入
 	 */
 	const handleImport = () => {
-		if (!isDbReady.value) {
+		if (isDbReady.value != true) {
 			uni.showToast({ title: '数据库未就绪', icon: 'none' })
 			return
 		}
@@ -228,16 +228,17 @@
 					uni.showToast({ title: '导入成功', icon: 'success' })
 				}
 			})
-			.catch((e: Error) => {
+			.catch((e: any | null) => {
 				isImporting.value = false
-				importResult.value = {
+				const errResult : ImportResult = {
 					success: false,
-					message: e.message,
+					message: (e as UTSJSONObject)['message'] as string ?? '导入失败',
 					processCount: 0,
 					uiConfigCount: 0,
 					resourceCount: 0,
 					importTime: 0
 				}
+				importResult.value = errResult
 				uni.showToast({ title: '导入失败', icon: 'none' })
 			})
 	}
@@ -326,7 +327,7 @@
 	
 	.card-title {
 		font-size: 16px;
-		font-weight: 600;
+		font-weight: bold;
 		color: #111827;
 		margin-bottom: 16px;
 		padding-left: 8px;
@@ -373,7 +374,7 @@
 	
 	.file-picker-title {
 		font-size: 17px;
-		font-weight: 600;
+		font-weight: bold;
 		color: #111827;
 		margin-bottom: 6px;
 	}
@@ -414,7 +415,7 @@
 	.file-name {
 		font-size: 16px;
 		color: #111827;
-		font-weight: 600;
+		font-weight: bold;
 		margin-bottom: 4px;
 	}
 	
@@ -453,7 +454,7 @@
 	.info-value {
 		color: #374151;
 		font-size: 14px;
-		font-weight: 500;
+		font-weight: normal;
 	}
 	
 	/* 进度条样式 */
@@ -470,7 +471,7 @@
 	.progress-title {
 		font-size: 14px;
 		color: #111827;
-		font-weight: 600;
+		font-weight: bold;
 	}
 	
 	.progress-percent {
@@ -605,6 +606,6 @@
 	.btn-text {
 		color: #FFFFFF;
 		font-size: 16px;
-		font-weight: 600;
+		font-weight: bold;
 	}
 </style>

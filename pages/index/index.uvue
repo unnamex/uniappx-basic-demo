@@ -175,7 +175,7 @@
 				<resource-list 
 					:title="nodeResourcesTitle"
 					:resources="nodeResources"
-					:selectedId="previewResource != null ? previewResource.id : ''"
+					:selectedId="previewResourceId"
 					@select="onResourceSelect"
 				/>
 			</view>
@@ -290,7 +290,7 @@
 							<view 
 								v-for="(item, index) in nodeResources" 
 								:key="item.id"
-								:class="(previewResource != null && previewResource.id == item.id) ? 'fullscreen-thumb-item-selected' : 'fullscreen-thumb-item'"
+								:class="previewResourceId == item.id ? 'fullscreen-thumb-item-selected' : 'fullscreen-thumb-item'"
 								@click="onResourceSelect(item)"
 							>
 								<view class="thumb-wrapper">
@@ -377,6 +377,7 @@
 	const nodeResources = ref([] as ResourceItem[])
 	const nodeResourcesTitle = ref('资源列表')
 	const previewResource = ref(null as ResourceItem | null)
+	const previewResourceId = computed((): string => previewResource.value != null ? previewResource.value!.id : '')
 	const isResourceMaximized = ref(false)
 	const isFullscreenListVisible = ref(true)
 	

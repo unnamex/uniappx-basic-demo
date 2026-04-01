@@ -519,13 +519,13 @@ export interface RequestConfig {
 
 export type RequestInterceptor = (options: RequestConfig) => RequestConfig;
 export type RequestInterceptorSync = (options: RequestConfig) => Promise<RequestConfig>;
-export type RequestRejectInterceptor = (options: RequestConfig, reject: (reason: any) => void) => RequestConfig;
-export type RequestRejectInterceptorSync = (options: RequestConfig, reject: (reason: any) => void) => Promise<RequestConfig>;
+export type RequestRejectInterceptor = (options: RequestConfig, reject: (reason: any | null) => void) => RequestConfig;
+export type RequestRejectInterceptorSync = (options: RequestConfig, reject: (reason: any | null) => void) => Promise<RequestConfig>;
 export type ResponseInterceptor = (response: any) => any;
 export type ResponseInterceptorSync = (response: any) => Promise<any>;
 export type ResponseXhrInterceptor = (response: RequestSuccess<any>) => any;
-export type ResponseRejectInterceptor = (response: RequestSuccess<any>, reject: (reason: any) => void) => any;
-export type ResponseFailInterceptor = (fail: RequestFail, reject: (reason: any) => void) => void;
+export type ResponseRejectInterceptor = (response: RequestSuccess<any>, reject: (reason: any | null) => void) => any;
+export type ResponseFailInterceptor = (fail: RequestFail, reject: (reason: any | null) => void) => void;
 
 /**
  * `onFail` 回调参数类型

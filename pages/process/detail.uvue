@@ -6,36 +6,36 @@
 			<!-- 基本信息卡片 -->
 			<view class="info-card">
 				<view class="card-header">
-					<text class="process-code">{{ processInfo?.code ?? '' }}</text>
-					<view class="status-tag" :class="getStatusClass(processInfo?.status ?? '')">
-						<text class="status-text">{{ processInfo?.status ?? '' }}</text>
+					<text class="process-code">{{ processInfo != null ? processInfo?.code : '' }}</text>
+					<view class="status-tag" :class="getStatusClass(processInfo != null ? processInfo?.status : '')">
+						<text class="status-text">{{ processInfo != null ? processInfo?.status : '' }}</text>
 					</view>
 				</view>
 				
-				<text class="process-name">{{ processInfo?.name ?? '' }}</text>
+				<text class="process-name">{{ processInfo != null ? processInfo?.name : '' }}</text>
 				
 				<view class="info-grid">
 					<view class="info-item">
 						<text class="info-label">产品名称</text>
-						<text class="info-value">{{ processInfo?.product?.name ?? '-' }}</text>
+						<text class="info-value">{{ processInfo != null && processInfo?.product != null ? processInfo?.product!.name : '-' }}</text>
 					</view>
 					<view class="info-item">
 						<text class="info-label">产品型号</text>
-						<text class="info-value">{{ processInfo?.product?.model ?? '-' }}</text>
+						<text class="info-value">{{ processInfo != null && processInfo?.product != null ? processInfo?.product!.model : '-' }}</text>
 					</view>
 					<view class="info-item">
 						<text class="info-label">版本</text>
-						<text class="info-value">{{ processInfo?.version ?? '-' }}</text>
+						<text class="info-value">{{ processInfo != null ? processInfo?.version : '-' }}</text>
 					</view>
 					<view class="info-item">
 						<text class="info-label">工艺步骤</text>
-						<text class="info-value">{{ processInfo?.steps?.length ?? 0 }} 个</text>
+						<text class="info-value">{{ processInfo != null ? processInfo?.steps.length : 0 }} 个</text>
 					</view>
 				</view>
 				
 				<view class="time-info">
-					<text class="time-text">创建：{{ formatTime(processInfo?.createdAt ?? '') }}</text>
-					<text class="time-text">更新：{{ formatTime(processInfo?.updatedAt ?? '') }}</text>
+					<text class="time-text">创建：{{ formatTime(processInfo != null ? processInfo?.createdAt : '') }}</text>
+					<text class="time-text">更新：{{ formatTime(processInfo != null ? processInfo?.updatedAt : '') }}</text>
 				</view>
 			</view>
 			
@@ -43,12 +43,12 @@
 			<view class="section">
 				<view class="section-header">
 					<text class="section-title">工艺步骤</text>
-					<text class="section-count">共 {{ processInfo?.steps?.length ?? 0 }} 步</text>
+					<text class="section-count">共 {{ processInfo != null ? processInfo?.steps.length : 0 }} 步</text>
 				</view>
 				
-				<view class="steps-list" v-if="processInfo != null && processInfo.steps.length > 0">
+				<view class="steps-list" v-if="processInfo != null && processInfo?.steps.length > 0">
 					<process-step
-						v-for="(step, index) in processInfo.steps" 
+						v-for="(step, index) in processInfo?.steps" 
 						:key="index"
 						:step="step"
 						:expanded="expandedSteps.includes(index)"
@@ -59,7 +59,7 @@
 			</view>
 			
 			<!-- 附件列表 -->
-			<view class="section" v-if="processInfo != null && processInfo.attachments.length > 0">
+			<view class="section" v-if="processInfo != null && processInfo?.attachments.length > 0">
 				<view class="section-header">
 					<text class="section-title">相关附件</text>
 				</view>
@@ -67,7 +67,7 @@
 				<view class="attachment-list">
 					<view 
 						class="attachment-item" 
-						v-for="(attachment, aIdx) in processInfo.attachments" 
+						v-for="(attachment, aIdx) in processInfo?.attachments" 
 						:key="aIdx"
 						@click="openAttachment(attachment)"
 					>
@@ -106,8 +106,9 @@
 		},
 		
 		onLoad(options: any) {
-			if (options['id'] != null) {
-				this.processId = options['id'] as string
+			const optObj = options as UTSJSONObject
+			if (optObj['id'] != null) {
+				this.processId = optObj['id'] as string
 			}
 			
 			// 设置资源路径
@@ -134,39 +135,48 @@
 				uni.showLoading({ title: '加载中...' })
 				
 				initDatabase()
-					.then(() => {
-						return getProcessDetail(this.processId)
-					})
-					.then((info: ProcessInfo | null) => {
-						uni.hideLoading()
-						
-						if (info != null) {
-							this.processInfo = info
-							
-							// 设置导航栏标题
-							uni.setNavigationBarTitle({
-								title: info.name
-							})
-							
-							// 默认展开包含富文本的步骤
-							for (let i = 0; i < info.steps.length; i++) {
-								const step = info.steps[i];
-								if (step.description_html != null && step.description_html != '') {
-									if (!this.expandedSteps.includes(i)) {
-										this.expandedSteps.push(i);
+					.then((_r: boolean) => {
+						getProcessDetail(this.processId)
+							.then((info: ProcessInfo | null) => {
+								uni.hideLoading()
+								
+								if (info != null) {
+									this.processInfo = info
+									
+									// 设置导航栏标题
+									uni.setNavigationBarTitle({
+										title: info.name
+									})
+									
+									// 默认展开包含富文本的步骤
+									for (let i = 0; i < info.steps.length; i++) {
+										const step = info.steps[i];
+									const descHtml = step.description_html
+								if (descHtml != null && descHtml != '') {
+											if (!this.expandedSteps.includes(i)) {
+												this.expandedSteps.push(i);
+											}
+										}
 									}
+								} else {
+									uni.showToast({
+										title: '工艺不存在',
+										icon: 'none'
+									})
 								}
-							}
-						} else {
-							uni.showToast({
-								title: '工艺不存在',
-								icon: 'none'
 							})
-						}
+							.catch((e: any | null) => {
+								uni.hideLoading()
+								console.error('加载工艺详情失败：', e)
+								uni.showToast({
+									title: '加载失败',
+									icon: 'none'
+								})
+							})
 					})
-					.catch((e: Error) => {
+					.catch((e: any | null) => {
 						uni.hideLoading()
-						console.error('加载工艺详情失败：', e.message)
+						console.error('数据库初始化失败：', e)
 						uni.showToast({
 							title: '加载失败',
 							icon: 'none'
@@ -206,7 +216,6 @@
 				// #ifdef APP-ANDROID || APP-HARMONY
 				uni.openDocument({
 					filePath: fullPath,
-					showMenu: true,
 					fail: (err: any) => {
 						uni.showToast({
 							title: '无法打开文件',
@@ -324,7 +333,7 @@
 	.status-text {
 		font-size: 12px;
 		color: #374151;
-		font-weight: 500;
+		font-weight: normal;
 	}
 	
 	.process-name {

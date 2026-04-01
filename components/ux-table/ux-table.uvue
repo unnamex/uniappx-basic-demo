@@ -17,7 +17,7 @@
 					<!-- #endif -->
 					<!-- #ifndef H5 -->
 					<view class="resize-handle" 
-						@touchstart.stop="onResizeStart(index, $event)" 
+						@touchstart.stop="(e : UniTouchEvent) => onResizeStart(index, e)" 
 						@touchmove.stop="onResizeMove" 
 						@touchend="onResizeEnd">
 						<view class="separator-line"></view>
@@ -180,7 +180,7 @@
 			},
 			selectedId: {
 				handler(newId: string | null) {
-					if (newId !== undefined) {
+					if (newId != null) {
 						this.selectedRowId = newId
 					}
 				},
@@ -203,7 +203,7 @@
 					const w = col['width']
 					if (w != null) {
 						// Ensure it is a number. col['width'] from JSON could be various types, assume number
-						return Number(w)
+						return parseFloat(w.toString())
 					}
 					return -1 // Flag for flex
 				})
@@ -331,7 +331,7 @@
 				// Full refresh of visibility
 				// Using Map for faster lookup
 				const idMap = new Map<string, TableRow>()
-				this.allRows.forEach(r => idMap.set(r.id, r))
+				this.allRows.forEach(r => { idMap.set(r.id, r) })
 				
 				this.allRows.forEach(row => {
 					if (row.level == 0) {
@@ -370,14 +370,14 @@
 			},
 			findRowById(id : string | null) : TableRow | null {
 				if (id == null) return null
-				return this.allRows.find((r: TableRow) : boolean => r.id == id) || null
+				return this.allRows.find((r: TableRow) : boolean => r.id == id) ?? null
 			},
 			handleRowClick(row : TableRow) {
 				this.selectedRowId = row.id
 				this.$emit('row-click', row.originData)
 			},
 			// Drag / Resize Methods
-			onResizeStart(index: number, e: TouchEvent) {
+			onResizeStart(index: number, e: UniTouchEvent) {
 				if (e.touches.length == 0) return
 				const touch = e.touches[0]
 				this.dragState.startX = touch.clientX
@@ -389,7 +389,7 @@
 				}
 				this.dragState.startWidth = currentW
 			},
-			onResizeMove(e: TouchEvent) {
+			onResizeMove(e: UniTouchEvent) {
 				if (this.dragState.columnIndex < 0) return
 				if (e.touches.length == 0) return
 				
@@ -452,7 +452,6 @@
 <style>
 	/* Cloud Atlas 云图白主题 — 表格组件 */
 	.ux-table {
-		display: flex;
 		flex-direction: column;
 		width: 100%;
 		border-width: 1px;
@@ -469,14 +468,12 @@
 	}
 
 	.header-row {
-		display: flex;
 		flex-direction: row;
 		height: 80rpx;
 		align-items: stretch;
 	}
 
 	.header-cell {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		padding-left: 20rpx;
@@ -488,12 +485,10 @@
 
 	.header-text {
 		font-size: 28rpx;
-		font-weight: 600;
+		font-weight: bold;
 		color: #6B7280;
 		flex: 1;
-		white-space: nowrap;
 		lines: 1;
-		text-overflow: ellipsis;
 		overflow: hidden;
 	}
 	
@@ -503,13 +498,9 @@
 		top: 0;
 		bottom: 0;
 		width: 60rpx;
-		display: flex;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		/* #ifdef WEB */
-		cursor: col-resize;
-		/* #endif */
 		z-index: 10;
 	}
 	
@@ -530,10 +521,9 @@
 		align-items: center;
 		background-color: #F0F2F5;
 		z-index: 100;
-		border-left: 1px solid #D1D5DB;
-		/* #ifdef WEB */
-		box-shadow: -2px 0 5px rgba(0,0,0,0.05);
-		/* #endif */
+		border-left-width: 1px;
+		border-left-style: solid;
+		border-left-color: #D1D5DB;
 	}
 	
 	.header-action-hover {
@@ -546,12 +536,10 @@
 	}
 
 	.body {
-		display: flex;
 		flex-direction: column;
 	}
 
 	.row {
-		display: flex;
 		flex-direction: row;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
@@ -562,7 +550,6 @@
 	}
 
 	.cell {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		padding-left: 20rpx;
@@ -572,7 +559,6 @@
 	}
 	
 	.cell-content-wrapper {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		flex: 1;
@@ -582,9 +568,7 @@
 	.cell-text {
 		font-size: 28rpx;
 		color: #374151;
-		white-space: nowrap;
 		lines: 1;
-		text-overflow: ellipsis;
 		overflow: hidden;
 		flex: 1;
 	}
@@ -609,7 +593,6 @@
 
 	/* ====== 富文本列相关样式 ====== */
 	.richtext-cell {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
@@ -617,17 +600,15 @@
 	}
 
 	.richtext-toggle-btn {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
 		padding: 6px 14px;
 		border-radius: 4px;
 		background-color: #ECFEFF;
-		border: 1px solid #B2F5EA;
-		/* #ifdef WEB */
-		cursor: pointer;
-		/* #endif */
+		border-width: 1px;
+		border-style: solid;
+		border-color: #B2F5EA;
 	}
 
 	.richtext-toggle-icon {
@@ -643,7 +624,6 @@
 
 	/* 富文本展开区域 */
 	.richtext-expand-area {
-		display: flex;
 		flex-direction: column;
 		background-color: #FAFBFC;
 		border-bottom-width: 1px;
@@ -655,7 +635,6 @@
 	}
 
 	.richtext-empty-hint {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
@@ -668,7 +647,6 @@
 	}
 
 	.richtext-expand-header {
-		display: flex;
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
@@ -681,21 +659,17 @@
 
 	.richtext-expand-title {
 		font-size: 24rpx;
-		font-weight: 600;
+		font-weight: bold;
 		color: #0891B2;
 	}
 
 	.richtext-close-btn {
 		width: 40rpx;
 		height: 40rpx;
-		display: flex;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
 		border-radius: 4px;
-		/* #ifdef WEB */
-		cursor: pointer;
-		/* #endif */
 	}
 
 	.richtext-close-icon {
