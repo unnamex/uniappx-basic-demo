@@ -304,12 +304,13 @@
 		const res = props.resource
 		if (res == null) return
 		
-		// #ifdef APP-ANDROID
+		// #ifdef APP-ANDROID || APP-HARMONY
 		uni.openDocument({
 			filePath: res.path,
 			fail: (err: any) => {
+				const errMsg = err instanceof Error ? err.message : (err != null ? err.toString() : 'unknown');
 				uni.showToast({
-					title: '无法打开文档',
+					title: '无法打开文档: ' + errMsg,
 					icon: 'none'
 				})
 			}
