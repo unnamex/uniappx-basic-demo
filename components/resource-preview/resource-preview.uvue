@@ -81,19 +81,17 @@
 		</view>
 		
 		<!-- CAD 图纸预览 -->
-		<view v-else-if="resType == 'cad'" class="preview-container cad-preview">
+		<view v-else-if="resType == 'cad'" class="cad-preview-container">
 			<!-- #ifdef WEB -->
 			<view ref="cadFrame" class="cad-frame-container"></view>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-				<text class="resource-desc cad-label">📐 CAD 图纸查看器</text>
+			<view class="cad-info">
+				<text class="cad-info-name">{{ resName }}</text>
 			</view>
 			<!-- #endif -->
 			<!-- #ifdef APP -->
 			<web-view class="cad-webview" :src="resPath"></web-view>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-				<text class="resource-hint">内嵌 CAD 图纸</text>
+			<view class="cad-info">
+				<text class="cad-info-name">{{ resName }}</text>
 			</view>
 			<!-- #endif -->
 		</view>
@@ -149,7 +147,6 @@
 	const pdfWebViewSrc = computed((): string => {
 		const res = props.resource
 		if (res == null || res.path == '') return ''
-		// Android/Harmony 平台 web-view 可以通过 /static/ 访问打包内的本地资源
 		const encodedSrc = encodeURIComponent(res.path)
 		return '/static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc
 	})
@@ -589,10 +586,16 @@
 		margin-top: 4px;
 	}
 	
-	/* CAD 图纸预览 */
-	.cad-preview {
+	/* CAD 图纸预览 — 无 padding，最大化显示 */
+	.cad-preview-container {
+		flex: 1;
 		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
 		height: 100%;
+		background-color: #F0F2F5;
+		overflow: hidden;
 	}
 	
 	.cad-frame-container {
@@ -603,7 +606,24 @@
 	.cad-webview {
 		flex: 1;
 		width: 100%;
-		background-color: #FFFFFF;
+		background-color: #F0F2F5;
+	}
+	
+	/* CAD 底部信息栏 — 极简紧凑 */
+	.cad-info {
+		padding: 4px 8px;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		background-color: #F8FAFC;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #E2E6ED;
+	}
+	
+	.cad-info-name {
+		font-size: 12px;
+		color: #6B7280;
 	}
 	
 	.pdf-webview {
