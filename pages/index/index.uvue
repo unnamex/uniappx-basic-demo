@@ -4,7 +4,7 @@
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
 		:initRightWidth="300"
-		:initRightTopHeight="500"
+		:initRightTopHeight="350"
 		:minRightTopHeight="200"
 		:showMainBottom="true"
 		:showRightBottom="true"
@@ -1401,6 +1401,14 @@
 		height: 100%;
 		background-color: #FFFFFF;
 		min-width: 0;
+	}
+	
+	.right-panel {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
 	}
 	
 	.main-content-top {

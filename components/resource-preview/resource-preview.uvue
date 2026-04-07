@@ -505,18 +505,19 @@
 	/* PDF预览 */
 	.pdf-preview {
 		flex-direction: column;
+		height: 100%;
 	}
 	
 	.pdf-frame-container {
 		flex: 1;
 		width: 100%;
-		min-height: 400px;
 	}
 	
 	/* 文档预览 */
 	.document-preview {
 		justify-content: center;
 		align-items: center;
+		height: 100%;
 	}
 	
 	.document-icon-wrap {
@@ -591,25 +592,23 @@
 	/* CAD 图纸预览 */
 	.cad-preview {
 		flex-direction: column;
+		height: 100%;
 	}
 	
 	.cad-frame-container {
 		flex: 1;
 		width: 100%;
-		min-height: 500px;
 	}
 	
 	.cad-webview {
 		flex: 1;
 		width: 100%;
-		min-height: 500px;
 		background-color: #FFFFFF;
 	}
 	
 	.pdf-webview {
 		flex: 1;
 		width: 100%;
-		min-height: 500px;
 		background-color: #FFFFFF;
 	}
 	
