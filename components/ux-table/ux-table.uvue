@@ -40,7 +40,7 @@
 						
 						<view v-if="colIndex === 0" class="cell-content-wrapper">
 							<!-- 仅树模式显示缩进和展开图标 -->
-							<view v-if="showExpand" :style="{ width: (row.level * 40) + 'rpx' }"></view>
+							<view v-if="showExpand" :style="{ width: (row.level * 20) + 'px' }"></view>
 							<view v-if="showExpand" class="expand-icon" @click.stop="toggleExpand(row)">
 								<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
 								<text class="icon-text" v-else></text>
@@ -196,7 +196,7 @@
 			getColWidth(index: number): string {
 				const w = this.columnWidths[index]
 				if (w <= 0) return ''
-				return w + 'rpx'
+				return w + 'px'
 			},
 			initColumns(cols: UTSJSONObject[]) {
 				this.columnWidths = cols.map((col): number => {
@@ -396,10 +396,7 @@
 				const touch = e.touches[0]
 				const deltaPx = touch.clientX - this.dragState.startX
 				
-				const screenWidthPx = uni.rpx2px(750)
-				const factor = 750 / screenWidthPx
-				
-				const deltaRpx = deltaPx * factor
+				const deltaRpx = deltaPx
 				
 				let newWidth = this.dragState.startWidth + deltaRpx
 				if (newWidth < 50) newWidth = 50
@@ -430,9 +427,7 @@
 				
 				const deltaPx = e.clientX - this.dragState.startX
 				
-				const screenWidthPx = uni.rpx2px(750)
-				const factor = 750 / screenWidthPx
-				const deltaRpx = deltaPx * factor
+				const deltaRpx = deltaPx
 				
 				let newWidth = this.dragState.startWidth + deltaRpx
 				if (newWidth < 50) newWidth = 50
@@ -469,22 +464,22 @@
 
 	.header-row {
 		flex-direction: row;
-		height: 80rpx;
+		height: 40px;
 		align-items: stretch;
 	}
 
 	.header-cell {
 		flex-direction: row;
 		align-items: center;
-		padding-left: 20rpx;
-		padding-right: 40rpx;
+		padding-left: 10px;
+		padding-right: 20px;
 		position: relative;
 		justify-content: flex-start;
 		overflow: hidden;
 	}
 
 	.header-text {
-		font-size: 28rpx;
+		font-size: 14px;
 		font-weight: bold;
 		color: #6B7280;
 		flex: 1;
@@ -497,7 +492,7 @@
 		right: 0;
 		top: 0;
 		bottom: 0;
-		width: 60rpx;
+		width: 30px;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
@@ -506,7 +501,7 @@
 	
 	.separator-line {
 		width: 1px;
-		height: 40rpx;
+		height: 20px;
 		background-color: #D1D5DB;
 		margin-right: 2px;
 	}
@@ -516,7 +511,7 @@
 		right: 0;
 		top: 0;
 		bottom: 0;
-		width: 120rpx;
+		width: 60px;
 		justify-content: center;
 		align-items: center;
 		background-color: #F0F2F5;
@@ -531,7 +526,7 @@
 	}
 	
 	.action-text {
-		font-size: 26rpx;
+		font-size: 13px;
 		color: #0891B2;
 	}
 
@@ -545,15 +540,15 @@
 		border-bottom-style: solid;
 		border-bottom-color: #F3F4F6;
 		background-color: #FFFFFF;
-		padding-top: 20rpx;
-		padding-bottom: 20rpx;
+		padding-top: 10px;
+		padding-bottom: 10px;
 	}
 
 	.cell {
 		flex-direction: row;
 		align-items: center;
-		padding-left: 20rpx;
-		padding-right: 40rpx;
+		padding-left: 10px;
+		padding-right: 20px;
 		overflow: hidden;
 		flex-shrink: 0; 
 	}
@@ -566,7 +561,7 @@
 	}
 
 	.cell-text {
-		font-size: 28rpx;
+		font-size: 14px;
 		color: #374151;
 		lines: 1;
 		overflow: hidden;
@@ -574,15 +569,15 @@
 	}
 
 	.expand-icon {
-		width: 40rpx;
-		height: 40rpx;
+		width: 20px;
+		height: 20px;
 		justify-content: center;
 		align-items: center;
-		margin-right: 10rpx;
+		margin-right: 5px;
 	}
 	
 	.icon-text {
-		font-size: 24rpx;
+		font-size: 12px;
 		color: #9CA3AF;
 	}
 
@@ -612,13 +607,13 @@
 	}
 
 	.richtext-toggle-icon {
-		font-size: 20rpx;
+		font-size: 10px;
 		color: #0891B2;
 		margin-right: 4px;
 	}
 
 	.richtext-toggle-label {
-		font-size: 24rpx;
+		font-size: 12px;
 		color: #0891B2;
 	}
 
@@ -642,7 +637,7 @@
 	}
 
 	.richtext-empty-text {
-		font-size: 24rpx;
+		font-size: 12px;
 		color: #C0C4CC;
 	}
 
@@ -650,7 +645,7 @@
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
-		padding: 12rpx 24rpx;
+		padding: 6px 12px;
 		background-color: #F0F4F8;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
@@ -658,14 +653,14 @@
 	}
 
 	.richtext-expand-title {
-		font-size: 24rpx;
+		font-size: 12px;
 		font-weight: bold;
 		color: #0891B2;
 	}
 
 	.richtext-close-btn {
-		width: 40rpx;
-		height: 40rpx;
+		width: 20px;
+		height: 20px;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
@@ -673,15 +668,15 @@
 	}
 
 	.richtext-close-icon {
-		font-size: 22rpx;
+		font-size: 11px;
 		color: #9CA3AF;
 	}
 
 	.richtext-expand-scroll {
-		max-height: 600rpx;
+		max-height: 300px;
 	}
 
 	.richtext-expand-content {
-		padding: 20rpx 24rpx;
+		padding: 10px 12px;
 	}
 </style>

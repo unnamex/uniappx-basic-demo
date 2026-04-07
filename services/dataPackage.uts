@@ -8,7 +8,7 @@ import { saveResource, extractResourcesFromNode, getAssetsBasePath } from '@/ser
 import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
 // #endif
 // #ifdef APP-HARMONY
-import { zlib } from '@kit.BasicServicesKit';
+import zlib from '@ohos.zlib';
 import { ensureDirectory as ensureDirectoryHarmony } from '@/services/resourceService'
 // #endif
 // #ifdef WEB
@@ -208,6 +208,7 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 				// 尝试解密，如果失败则假设为未加密的ZIP
 				let zipData = encryptedData
 				const decryptResult = decryptPackage(encryptedData)
+				console.log('validatePackage: 解密结果 success =', decryptResult.success, ' msg =', decryptResult.errorMessage)
 				if (decryptResult.success && decryptResult.data != null) {
 					zipData = decryptResult.data!
 				}
@@ -228,11 +229,15 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 						resolve(manifest)
 					})
 					.catch((e: any) => {
-						reject(new Error(e.toString()))
+						console.error('validatePackage: parseManifestFromZip 失败:', e)
+						const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
+						reject(new Error(errMsg))
 					})
 			})
 			.catch((e: any) => {
-				reject(new Error(e.toString()))
+				console.error('validatePackage: readFileAsArrayBuffer 失败:', e)
+				const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
+				reject(new Error(errMsg))
 			})
 	})
 }
@@ -336,7 +341,9 @@ function readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
 				resolve(res.data as ArrayBuffer)
 			},
 			fail: (err: any) => {
-				reject(new Error('读取文件失败'))
+				const errMsg = err != null ? JSON.stringify(err) : 'unknown';
+				console.error('readFileAsArrayBuffer 失败:', filePath, errMsg);
+				reject(new Error('读取文件失败: ' + errMsg))
 			}
 		})
 		// #endif
@@ -432,6 +439,8 @@ function parseManifestHarmony(
 		const tempZipPath = userDataPath + '/temp_manifest_' + Date.now() + '.zip'
 		const tempExtractDir = userDataPath + '/temp_extract_manifest_' + Date.now()
 		
+		console.log('parseManifestHarmony: tempZipPath =', tempZipPath)
+		
 		// 将 ZIP 数据写入临时文件
 		uni.getFileSystemManager().writeFile({
 			filePath: tempZipPath,
@@ -444,9 +453,11 @@ function parseManifestHarmony(
 					// 目录可能已存在
 				}
 				
-				// 使用鸿蒙 zlib 解压
-				zlib.decompressFile(tempZipPath, tempExtractDir)
-					.then(() => {
+				// 使用 uni 内置 unzip 接口，直接支持 unifile:// 虚拟协议路径
+				uni.getFileSystemManager().unzip({
+					zipFilePath: tempZipPath,
+					targetPath: tempExtractDir,
+					success: () => {
 						// 读取解压后的 manifest.json
 						const manifestPath = tempExtractDir + '/manifest.json'
 						
@@ -471,14 +482,18 @@ function parseManifestHarmony(
 								reject(new Error('数据包中未找到清单文件'))
 							}
 						})
-					})
-					.catch((zlibErr: Error) => {
+					},
+					fail: (unzipErr: any) => {
 						cleanupTempFiles(tempZipPath, tempExtractDir)
-						reject(new Error('ZIP 解压失败：' + zlibErr.message))
-					})
+						const errMsg = unzipErr != null ? JSON.stringify(unzipErr) : 'unknown'
+						reject(new Error('ZIP 解压失败：' + errMsg))
+					}
+				})
 			},
 			fail: (writeErr: any) => {
-				reject(new Error('写入临时 ZIP 文件失败'))
+				const errMsg = writeErr != null ? JSON.stringify(writeErr) : 'unknown';
+				console.error('parseManifestHarmony 写入临时 ZIP 失败:', tempZipPath, errMsg);
+				reject(new Error('写入临时 ZIP 文件失败: ' + errMsg))
 			}
 		})
 	} catch (e: any) {
@@ -913,9 +928,11 @@ function extractAndParseHarmony(
 					})
 				}
 				
-				// 使用鸿蒙 zlib 解压
-				zlib.decompressFile(tempZipPath, tempExtractDir)
-					.then(() => {
+				// 使用 uni 内置 unzip 解压，兼容 unifile:// 环境协议
+				uni.getFileSystemManager().unzip({
+					zipFilePath: tempZipPath,
+					targetPath: tempExtractDir,
+					success: () => {
 						// 解压成功，开始解析文件
 						processHarmonyExtractedFiles(
 							tempExtractDir,
@@ -929,11 +946,13 @@ function extractAndParseHarmony(
 								reject(error)
 							}
 						)
-					})
-					.catch((zlibErr: Error) => {
+					},
+					fail: (unzipErr: any) => {
 						cleanupTempFiles(tempZipPath, tempExtractDir)
-						reject(new Error('Harmony ZIP 解压失败：' + zlibErr.message))
-					})
+						const errMsg = unzipErr != null ? JSON.stringify(unzipErr) : 'unknown'
+						reject(new Error('Harmony ZIP 解压失败：' + errMsg))
+					}
+				})
 			},
 			fail: (writeErr: any) => {
 				reject(new Error('Harmony: 写入临时 ZIP 文件失败'))
@@ -1151,36 +1170,54 @@ function processHarmonyExtractedFiles(
 					allResources.push(res)
 				}
 			}
-			
-			const executeDbSave = async () => {
-				try {
-					await saveProcessesToDatabase(processes)
-					for (const res of allResources) {
-						await saveResource(res)
-						resourceCount++
+			// 开始写入数据库（避免使用 async lambda 防止 UTS 在鸿蒙发生未捕获坠落）
+			saveProcessesToDatabase(processes)
+				.then(() => {
+					// 顺序保存资源
+					const saveNextResource = (index: number) => {
+						if (index >= allResources.length) {
+							console.log('Harmony: 保存资源条数:', resourceCount)
+							setTransactionSuccessful()
+							endTransaction()
+							resolve({
+								success: true,
+								message: '导入成功',
+								processCount: processes.length,
+								uiConfigCount: uiConfigCount,
+								resourceCount: resourceCount,
+								importTime: 0
+							})
+							return
+						}
+						
+						saveResource(allResources[index])
+							.then(() => {
+								resourceCount++
+								saveNextResource(index + 1)
+							})
+							.catch((resErr: any) => {
+								console.error('Harmony: 保存单一资源失败:', resErr)
+								// 继续保存下个资源，保持容错
+								saveNextResource(index + 1)
+							})
 					}
-					console.log('Harmony: 保存资源:', resourceCount)
 					
-					setTransactionSuccessful()
-					resolve({
-						success: true,
-						message: '导入成功',
-						processCount: processes.length,
-						uiConfigCount: uiConfigCount,
-						resourceCount: resourceCount,
-						importTime: 0
-					})
-				} catch(e: any | null) {
+					saveNextResource(0)
+				})
+				.catch((dbErr: any) => {
+					console.error('Harmony: 数据库保存 Process 基础异常:', dbErr)
 					endTransaction()
-					reject(new Error(e != null ? e.toString() : 'Harmony: 数据库保存失败'))
-				}
-			}
-			executeDbSave().then(()=>{}).catch((e: any | null)=>{})
+					const errMsg = dbErr instanceof Error ? dbErr.message : (dbErr != null ? dbErr.toString() : 'unknown')
+					reject(new Error('数据入库异常: ' + errMsg))
+				})
+				
 		} catch (e: any) {
+			console.error('Harmony: 解析数据包环境构建异常:', e)
 			endTransaction()
-			reject(new Error('Harmony: 数据库保存失败: ' + e.toString()))
+			reject(new Error('Harmony 数据库保存前失败: ' + e.toString()))
 		}
 	} catch (e: any) {
+		console.error('Harmony: 解析数据包顶级流程异常:', e)
 		reject(new Error('Harmony: 解析数据包失败：' + e.toString()))
 	}
 }
@@ -1208,9 +1245,17 @@ function copyAssetsRecursive(
 			const targetPath = targetDir + '/' + entryRelPath
 			
 			try {
-				// 检查是否是目录
-				const stat = uni.getFileSystemManager().statSync(sourcePath, false)
-				if (stat.isDirectory()) {
+				// 在鸿蒙底层，statSync 返回的对象可能因版本遗失 isDirectory() 方法，
+				// 这里使用 readdirSync 探测是否为目录的旁路判断更为稳妥
+				let isDir = false
+				try {
+					uni.getFileSystemManager().readdirSync(sourcePath)
+					isDir = true
+				} catch (err: any) {
+					isDir = false
+				}
+				
+				if (isDir) {
 					// 确保目标目录存在
 					try {
 						uni.getFileSystemManager().mkdirSync(targetPath, true)
@@ -1690,10 +1735,10 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 				process.name,
 				process.version,
 				process.status,
-				process.product.id,
-				process.product.name,
-				process.product.model,
-				process.steps.length,
+				process.product != null ? process.product.id : '',
+				process.product != null ? process.product.name : '',
+				process.product != null ? process.product.model : '',
+				process.steps != null ? process.steps.length : 0,
 				process.createdAt,
 				process.updatedAt,
 				JSON.stringify(process)
@@ -1702,9 +1747,10 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 			savePromises.push(executeSQL(insertProcessSQL, processParams))
 			
 			// 插入工艺步骤
-			for (let j = 0; j < process.steps.length; j++) {
-				const step = process.steps[j]
-				const insertStepSQL = `
+			if (process.steps != null) {
+				for (let j = 0; j < process.steps.length; j++) {
+					const step = process.steps[j]
+					const insertStepSQL = `
 					INSERT INTO t_process_step 
 					(process_id, step_no, name, description, description_html, duration, tools_json, materials_json, images_json, videos_json)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1725,8 +1771,10 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 				
 				savePromises.push(executeSQL(insertStepSQL, stepParams))
 			}
-			
-			// 插入附件
+		}
+
+		// 插入附件
+		if (process.attachments != null) {
 			for (let k = 0; k < process.attachments.length; k++) {
 				const attachment = process.attachments[k]
 				const insertAttachmentSQL = `
@@ -1745,6 +1793,7 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 				savePromises.push(executeSQL(insertAttachmentSQL, attachmentParams))
 			}
 		}
+	}
 		
 		Promise.all(savePromises)
 			.then(() => {

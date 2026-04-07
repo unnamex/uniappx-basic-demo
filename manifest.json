@@ -63,7 +63,16 @@
 	},
 	"app-harmony": {
 		"distribute": {
-			"modules": {},
+			"modules": {
+				"entry": {
+					"abilities": [
+						{
+							"name": "EntryAbility",
+							"orientation": "auto_rotation"
+						}
+					]
+				}
+			},
 			"icons": {},
 			"splashScreens": {}
 		}

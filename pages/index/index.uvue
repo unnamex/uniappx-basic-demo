@@ -6,6 +6,8 @@
 		:initRightWidth="300"
 		:initRightTopHeight="500"
 		:minRightTopHeight="200"
+		:showMainBottom="true"
+		:showRightBottom="true"
 	>
 		<template #header>
 			<view class="header-container">
@@ -486,12 +488,15 @@
 		// SQL: Check meta_tab_groups table
 		await initDatabase()
 		const res = await querySQL("SELECT count(*) as count FROM meta_tab_groups")
-		const count = res[0]['count'] as number
+		// 鸿蒙端 getLong 返回的可能不是标准 number，需要转换
+		const countRaw = res.length > 0 ? res[0]['count'] : 0
+		const count = Number(countRaw)
+		console.log('initData: meta_tab_groups count =', count, ' raw =', countRaw)
 		// #endif
 		
-		if (count == 0) {
+		if (count == 0 || Number.isNaN(count)) {
 			statusMessage.value = 'No data found. Please Reset & Import.'
-			// console.log('No data found, attempting to load default package if available...')
+			console.log('No data found, attempting to load default package if available...')
 		} else {
 			statusMessage.value = 'Data loaded from DB'
 			await loadLeftPanel()
@@ -676,10 +681,11 @@
 		try {
 			const rows = await querySQL(`SELECT * FROM ${tableName}`)
 			data = rows.map((p: UTSJSONObject): UTSJSONObject => {
-				// SQL 中 children/data 等字段可能是字符串，需要尝试解析
-				const content = p['data']
+				// SQL 中嵌套结构等字段可能是字符串格式，需要尝试解析其原始完整 JSON
+				const content = p['data_json'] ?? p['data'] ?? p['config_json']
 				if (content != null && typeof content == 'string') {
 					try {
+						// 大部分保存的 json 结构体本身包含了 id 等元数据，因此直接覆盖返回即可
 						return JSON.parse(content as string) as UTSJSONObject
 					} catch(e) { return p }
 				}
@@ -1408,47 +1414,39 @@
 	}
 	
 	.main-nav-actions {
-		display: flex;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
 		padding: 12px 20px;
 		background-color: #FFFFFF;
-		border-top: 1px solid #E2E8F0;
-		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.02);
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #E2E8F0;
 	}
 	
 	.nav-action-btn {
-		display: flex;
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
 		padding: 8px 24px;
 		margin: 0 10px;
 		background-color: #FFFFFF;
-		border: 1px solid #CBD5E1;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #CBD5E1;
 		border-radius: 6px;
-		/* #ifdef WEB */
-		/* #ifdef WEB */
-		cursor: pointer;
-		/* #endif */
-		/* #endif */
 		transition-property: background-color, border-color, opacity;
 		transition-duration: 0.2s;
 	}
 	
-	.nav-action-btn:active {
-		background-color: #F8FAFC;
-	}
+	/* ucss 不支持 :active 伪类，已移除 */
 	
 	.nav-action-btn-primary {
 		background-color: #0F172A;
 		border-color: #0F172A;
 	}
 	
-	.nav-action-btn-primary:active {
-		background-color: #1E293B;
-	}
+	/* ucss 不支持 :active 伪类，已移除 */
 	
 	.nav-action-text {
 		color: #334155;
@@ -1466,18 +1464,12 @@
 		opacity: 0.5;
 		background-color: #F1F5F9;
 		border-color: #E2E8F0;
-		/* #ifdef WEB */
-		pointer-events: none;
-		/* #endif */
 	}
 	
 	.btn-primary-disabled {
 		opacity: 0.5;
 		background-color: #94A3B8;
 		border-color: #94A3B8;
-		/* #ifdef WEB */
-		pointer-events: none;
-		/* #endif */
 	}
 	
 	.nav-text-disabled {

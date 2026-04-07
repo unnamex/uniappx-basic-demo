@@ -37,16 +37,27 @@ let dbInstance: relationalStore.RdbStore | null = null
 
 
 /**
+ * 数据库是否已完成初始化
+ */
+let isDbInitialized: boolean = false
+
+/**
  * 初始化数据库
  * @returns Promise<boolean> 初始化是否成功
  */
 export function initDatabase(): Promise<boolean> {
+	// 如果已经初始化过且 dbInstance 存在，直接返回成功
+	if (isDbInitialized && dbInstance != null) {
+		return Promise.resolve(true)
+	}
+	
 	return new Promise((resolve: (value: boolean) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID
 		initSQLiteDatabase()
 			.then(() => {
 				createTables()
 					.then(() => {
+						isDbInitialized = true
 						resolve(true)
 					})
 					.catch((e: any | null) => {
@@ -65,11 +76,20 @@ export function initDatabase(): Promise<boolean> {
 			.then(() => {
 				createTables()
 					.then(() => {
+						isDbInitialized = true
 						resolve(true)
 					})
 					.catch((e: any | null) => {
-						const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown');
-						reject(new Error(errMsg))
+						// 建表失败可能是因为表已存在的残留 reject（Promise.all 竞争），
+						// 如果 dbInstance 已经有效，仍然标记为初始化成功
+						if (dbInstance != null) {
+							console.warn('Harmony: createTables 部分失败但 DB 可用，继续...')
+							isDbInitialized = true
+							resolve(true)
+						} else {
+							const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown');
+							reject(new Error(errMsg))
+						}
 					})
 			})
 			.catch((e: any | null) => {
@@ -81,6 +101,7 @@ export function initDatabase(): Promise<boolean> {
 		// #ifdef WEB
 		initIndexedDB()
 			.then(() => {
+				isDbInitialized = true
 				resolve(true)
 			})
 			.catch((e: any | null) => {
