@@ -43,7 +43,8 @@
 		"navigationBarTextStyle": "black",
 		// "navigationBarTitleText": "MPM工艺预览",
 		"navigationBarBackgroundColor": "#FFFFFF",
-		"backgroundColor": "#F5F7FA"
+		"backgroundColor": "#F5F7FA",
+		"pageOrientation": "auto"
 	},
 	"uniIdRouter": {
 		"loginPage": "",
