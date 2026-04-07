@@ -42,6 +42,11 @@ let dbInstance: relationalStore.RdbStore | null = null
 let isDbInitialized: boolean = false
 
 /**
+ * 正在进行中的初始化 Promise（防止并发调用）
+ */
+let initPromise: Promise<boolean> | null = null
+
+/**
  * 初始化数据库
  * @returns Promise<boolean> 初始化是否成功
  */
@@ -51,7 +56,12 @@ export function initDatabase(): Promise<boolean> {
 		return Promise.resolve(true)
 	}
 	
-	return new Promise((resolve: (value: boolean) => void, reject: (reason: any) => void) => {
+	// 如果正在初始化中，返回同一个 Promise（防止并发竞争）
+	if (initPromise != null) {
+		return initPromise!
+	}
+	
+	initPromise = new Promise((resolve: (value: boolean) => void, reject: (reason: any) => void) => {
 		// #ifdef APP-ANDROID
 		initSQLiteDatabase()
 			.then(() => {
@@ -110,6 +120,7 @@ export function initDatabase(): Promise<boolean> {
 			})
 		// #endif
 	})
+	return initPromise!
 }
 
 /**
@@ -347,32 +358,44 @@ function createTables(): Promise<void> {
 		// #ifdef APP-HARMONY
 		if (dbInstance != null) {
 			try {
-				// 鸿蒙端使用 executeSql 批量建表
-				Promise.all([
-					dbInstance!.executeSql(createProcessTableSQL),
-					dbInstance!.executeSql(createStepTableSQL),
-					dbInstance!.executeSql(createAttachmentTableSQL),
-					dbInstance!.executeSql(createPackageTableSQL),
-					dbInstance!.executeSql(createAssetsTableSQL),
-					dbInstance!.executeSql(createIconConfigTableSQL),
-					dbInstance!.executeSql(createTabGroupsTableSQL),
-					dbInstance!.executeSql(createTabsTableSQL),
-					dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)"),
-					dbInstance!.executeSql(createComponentsTableSQL),
-					dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)"),
-					dbInstance!.executeSql(createDataRecordsTableSQL),
-					dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)"),
-					dbInstance!.executeSql(createResourcesTableSQL),
-					dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)"),
-					dbInstance!.executeSql("CREATE INDEX IF NOT EXISTS idx_resources_type ON t_resources(type)")
-				]).then(() => {
-					console.log('Harmony: 数据表创建成功')
-					resolve()
-				}).catch((e: any) => {
-					console.error('Harmony: 数据表创建失败：', e)
-					const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown');
-					reject(new Error(errMsg))
-				})
+				// 鸿蒙端 SQLite 不支持并发写入，改为顺序执行建表
+				const sqls: string[] = [
+					createProcessTableSQL,
+					createStepTableSQL,
+					createAttachmentTableSQL,
+					createPackageTableSQL,
+					createAssetsTableSQL,
+					createIconConfigTableSQL,
+					createTabGroupsTableSQL,
+					createTabsTableSQL,
+					"CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)",
+					createComponentsTableSQL,
+					"CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)",
+					createDataRecordsTableSQL,
+					"CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)",
+					createResourcesTableSQL,
+					"CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)",
+					"CREATE INDEX IF NOT EXISTS idx_resources_type ON t_resources(type)"
+				]
+				
+				// 顺序执行每条 SQL
+				const executeNext = (index: number) => {
+					if (index >= sqls.length) {
+						console.log('Harmony: 数据表创建成功')
+						resolve()
+						return
+					}
+					dbInstance!.executeSql(sqls[index])
+						.then(() => {
+							executeNext(index + 1)
+						})
+						.catch((e: any) => {
+							// CREATE TABLE IF NOT EXISTS 不应该失败，记录但继续
+							console.warn('Harmony: 建表SQL[' + index + ']警告:', e)
+							executeNext(index + 1)
+						})
+				}
+				executeNext(0)
 			} catch(e: any) {
 				console.error('Harmony: 数据表创建抛出异常：', e)
 				const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown');
@@ -541,6 +564,13 @@ export function querySQL(sql: string, params: any[] = []): Promise<UTSJSONObject
 							row[columnName] = null
 						} else if (columnType == relationalStore.ColumnType.TYPE_BLOB) {
 							row[columnName] = null
+						} else {
+							// 未知列类型，尝试用 getString 兜底读取
+							try {
+								row[columnName] = resultSet.getString(i)
+							} catch (readErr: any) {
+								row[columnName] = null
+							}
 						}
 					}
 					result.push(row)

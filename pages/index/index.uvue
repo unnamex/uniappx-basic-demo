@@ -487,11 +487,25 @@
 		// #ifndef WEB
 		// SQL: Check meta_tab_groups table
 		await initDatabase()
-		const res = await querySQL("SELECT count(*) as count FROM meta_tab_groups")
-		// 鸿蒙端 getLong 返回的可能不是标准 number，需要转换
-		const countRaw = res.length > 0 ? res[0]['count'] : 0
-		const count = Number(countRaw)
-		console.log('initData: meta_tab_groups count =', count, ' raw =', countRaw)
+		const res = await querySQL("SELECT count(*) as total FROM meta_tab_groups")
+		// 鸿蒙端 getColumnName 可能不返回别名，打印完整结果以诊断
+		let count = 0
+		if (res.length > 0) {
+			const row = res[0]
+			console.log('initData: 查询结果 row =', JSON.stringify(row))
+			// 尝试多种可能的列名
+			const val = row['total'] ?? row['count'] ?? row['count(*)'] ?? row['COUNT(*)']
+			if (val != null) {
+				count = Number(val)
+			} else {
+				// 如果所有已知列名都不匹配，取第一个 key 的值
+				const keys = Object.keys(row)
+				if (keys.length > 0) {
+					count = Number(row[keys[0]])
+				}
+			}
+		}
+		console.log('initData: meta_tab_groups count =', count)
 		// #endif
 		
 		if (count == 0 || Number.isNaN(count)) {
