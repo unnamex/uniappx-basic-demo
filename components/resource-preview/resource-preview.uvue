@@ -72,16 +72,11 @@
 			</view>
 			<!-- #endif -->
 			<!-- #ifdef APP -->
-			<view class="document-icon-wrap">
-				<text class="document-icon">📄</text>
-			</view>
+			<web-view class="pdf-webview" :src="pdfWebViewSrc"></web-view>
 			<view class="resource-info">
 				<text class="resource-name">{{ resName }}</text>
-				<text class="resource-hint">点击下方按钮打开PDF</text>
+				<text class="resource-hint">内嵌 PDF 阅读器</text>
 			</view>
-			<button class="open-btn" @click="openDocument">
-				<text class="btn-text">打开PDF</text>
-			</button>
 			<!-- #endif -->
 		</view>
 		
@@ -95,16 +90,11 @@
 			</view>
 			<!-- #endif -->
 			<!-- #ifdef APP -->
-			<view class="document-icon-wrap">
-				<text class="document-icon">📐</text>
-			</view>
+			<web-view class="cad-webview" :src="resPath"></web-view>
 			<view class="resource-info">
 				<text class="resource-name">{{ resName }}</text>
-				<text class="resource-hint">点击下方按钮打开CAD图纸</text>
+				<text class="resource-hint">内嵌 CAD 图纸</text>
 			</view>
-			<button class="open-btn" @click="openDocument">
-				<text class="btn-text">打开CAD图纸</text>
-			</button>
 			<!-- #endif -->
 		</view>
 		
@@ -154,6 +144,16 @@
 	const resThumbnail = computed((): string => props.resource?.thumbnail ?? '')
 	const resDescription = computed((): string => props.resource?.description ?? '')
 	const resId = computed((): string => props.resource?.id ?? '')
+	
+	// #ifdef APP
+	const pdfWebViewSrc = computed((): string => {
+		const res = props.resource
+		if (res == null || res.path == '') return ''
+		// Android/Harmony 平台 web-view 可以通过 /static/ 访问打包内的本地资源
+		const encodedSrc = encodeURIComponent(res.path)
+		return '/static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc
+	})
+	// #endif
 
 	const isPlaying = ref(false)
 	const currentTime = ref(0)
@@ -597,6 +597,20 @@
 		flex: 1;
 		width: 100%;
 		min-height: 500px;
+	}
+	
+	.cad-webview {
+		flex: 1;
+		width: 100%;
+		min-height: 500px;
+		background-color: #FFFFFF;
+	}
+	
+	.pdf-webview {
+		flex: 1;
+		width: 100%;
+		min-height: 500px;
+		background-color: #FFFFFF;
 	}
 	
 	.cad-label {
