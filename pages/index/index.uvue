@@ -10,7 +10,7 @@
 		:showRightBottom="true"
 	>
 		<template #header>
-			<view class="header-container">
+			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 16) + 'px' }">
 				<!-- 左侧：当前工艺大图标 -->
 				<view class="header-icon-area">
 					<view class="header-process-icon">
@@ -333,6 +333,11 @@
 	import ResourcePreview from '@/components/resource-preview/resource-preview.uvue'
 	import ResourceList from '@/components/resource-list/resource-list.uvue'
 	import UxBreadcrumb from '@/components/ux-breadcrumb/ux-breadcrumb.uvue'
+
+	// 获取状态栏高度（自定义导航栏模式下需要手动避让状态栏）
+	const statusBarHeight = ref(0)
+	const windowInfo = uni.getWindowInfo()
+	statusBarHeight.value = windowInfo.statusBarHeight
 
 	// 面包屑项类型
 	type BreadcrumbItem = {
@@ -1343,13 +1348,13 @@
 
 <style>
 	.header-container {
-		height: 64px;
 		background-color: #FFFFFF;
 		border-bottom: 1px solid #E2E6ED;
-		display: flex;
 		flex-direction: row;
 		align-items: center;
-		padding: 0 16px;
+		padding-left: 16px;
+		padding-right: 16px;
+		padding-bottom: 10px;
 	}
 
 	/* 左侧图标区域 */
