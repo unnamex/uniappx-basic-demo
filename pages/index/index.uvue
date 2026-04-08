@@ -28,9 +28,12 @@
 						<ux-breadcrumb :items="bottomBreadcrumbItems"></ux-breadcrumb>
 					</view>
 				</view>
-				<!-- 设置按钮 -->
+				<!-- 右侧操作区：设置按钮 + 企业Logo -->
 				<view class="header-actions">
-					<button class="settings-btn" size="mini" plain="true" @click="toggleSettingsMenu">⚙</button>
+					<view class="settings-icon-btn" @click="toggleSettingsMenu">
+						<image class="settings-icon-img" src="/static/icons/settings_icon.svg" mode="aspectFit"></image>
+					</view>
+					<image class="header-logo" src="/static/icons/casc_logo.png" mode="aspectFit"></image>
 				</view>
 			</view>
 		</template>
@@ -1353,7 +1356,7 @@
 		flex-direction: row;
 		align-items: center;
 		padding-left: 16px;
-		padding-right: 16px;
+		padding-right: 12px;
 		padding-bottom: 10px;
 	}
 
@@ -1396,7 +1399,31 @@
 	}
 
 	.header-actions {
-		padding: 5px 10px;
+		flex-direction: row;
+		align-items: center;
+		padding: 5px 0 5px 10px;
+	}
+
+	.header-logo {
+		width: 50px;
+		height: 50px;
+		margin-left: 12px;
+	}
+
+	.settings-icon-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 16px;
+		background-color: transparent;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.settings-icon-img {
+		width: 25px;
+		height: 25px;
 	}
 
 	.left-panel {
