@@ -10,7 +10,7 @@
 		:showRightBottom="true"
 	>
 		<template #header>
-			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 16) + 'px' }">
+			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 0) + 'px' }">
 				<!-- 左侧：当前工艺大图标 -->
 				<view class="header-icon-area">
 					<view class="header-process-icon">
@@ -205,7 +205,7 @@
 	
 	<!-- 全屏资源预览覆盖层 -->
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
-		<view class="fullscreen-container">
+		<view class="fullscreen-container" :style="{ paddingTop: statusBarHeight + 'px' }">
 			<!-- 头部工具栏 -->
 			<view class="fullscreen-header">
 				<view class="header-left">

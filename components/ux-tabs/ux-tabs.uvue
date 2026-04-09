@@ -1,5 +1,5 @@
 <template>
-	<view :class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]">
+	<view :class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]" :style="isFullscreen ? { paddingTop: statusBarHeight + 'px' } : {}">
 		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
 		<view class="ux-tabs__header-row">
 			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
@@ -44,6 +44,9 @@
 			default: ''
 		}
 	})
+	
+	const windowInfo = uni.getWindowInfo()
+	const statusBarHeight = ref(windowInfo.statusBarHeight)
 	
 	const emit = defineEmits(['update:modelValue', 'tab-click', 'change'])
 	
