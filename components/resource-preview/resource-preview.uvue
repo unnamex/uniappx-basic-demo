@@ -72,10 +72,9 @@
 			</view>
 			<!-- #endif -->
 			<!-- #ifdef APP -->
-			<web-view class="pdf-webview" :src="pdfWebViewSrc"></web-view>
+			<web-view :id="webviewId" class="pdf-webview" :src="pdfWebViewSrc" @load="onPdfWebViewLoad"></web-view>
 			<view class="resource-info">
 				<text class="resource-name">{{ resName }}</text>
-				<text class="resource-hint">内嵌 PDF 阅读器</text>
 			</view>
 			<!-- #endif -->
 		</view>
@@ -144,12 +143,37 @@
 	const resId = computed((): string => props.resource?.id ?? '')
 	
 	// #ifdef APP
+	const webviewId = 'pdf_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
+
 	const pdfWebViewSrc = computed((): string => {
 		const res = props.resource
 		if (res == null || res.path == '') return ''
+		// #ifdef APP-HARMONY
+		if (!res.path.startsWith('http://') && !res.path.startsWith('https://')) {
+			return '/static/pdf/pdfjs-viewer.html'
+		}
+		// #endif
 		const encodedSrc = encodeURIComponent(res.path)
 		return '/static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc
 	})
+
+	const onPdfWebViewLoad = () => {
+		// #ifdef APP-HARMONY
+		const res = props.resource
+		if (res == null || res.path == '') return
+		if (res.path.startsWith('http://') || res.path.startsWith('https://')) return
+		
+		try {
+			const fs = uni.getFileSystemManager()
+			const base64Str = fs.readFileSync(res.path, 'base64') as string
+			const wvContext = uni.createWebviewContext(webviewId)
+			wvContext.evalJS(`window.loadPdfFromBase64('${base64Str}')`)
+		} catch (err: any) {
+			console.error("读取 PDF 文件转 Base64 失败: ", err)
+			emit('error', '加载鸿蒙本地PDF失败')
+		}
+		// #endif
+	}
 	// #endif
 
 	const isPlaying = ref(false)

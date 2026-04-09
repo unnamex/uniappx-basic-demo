@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF 查看器</title>
-  <script src="/static/pdf/pdfjs/pdf.min.js"></script>
+  <script src="./pdfjs/pdf.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -762,7 +762,7 @@
     // === 加载 PDF ===
 
     async function loadPdf() {
-      if (!pdfUrl) { loadingOverlay.textContent = '未指定 PDF 文件'; return; }
+      if (!pdfUrl) { loadingOverlay.textContent = '等待读取 PDF 数据...'; return; }
       try {
         pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
         totalPages = pdfDoc.numPages;
@@ -782,6 +782,40 @@
     }
 
     loadPdf();
+
+    // === 给 Native (uni-app) 环境被动调用的方法 ===
+    window.loadPdfFromBase64 = async function (base64Str) {
+      if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.textContent = '解析本地 PDF...';
+      }
+      try {
+        // Base64 转 Uint8Array
+        const raw = window.atob(base64Str);
+        const rawLength = raw.length;
+        const array = new Uint8Array(new ArrayBuffer(rawLength));
+        for (let i = 0; i < rawLength; i++) {
+          array[i] = raw.charCodeAt(i);
+        }
+
+        pdfDoc = await pdfjsLib.getDocument({ data: array }).promise;
+        totalPages = pdfDoc.numPages;
+        currentPage = 1;
+        const firstPage = await pdfDoc.getPage(1);
+        const viewport = firstPage.getViewport({ scale: 1.0 });
+        currentScale = (container.clientWidth - 32) / viewport.width;
+        await renderAllPages();
+        updateToolbar();
+        loadingOverlay.classList.add('hidden');
+        renderThumbnails();
+        loadOutline();
+      } catch (err) {
+        if (loadingOverlay) {
+          loadingOverlay.innerHTML = '<span class="error-message">PDF 解析失败: ' + err.message + '</span>';
+        }
+        console.error('PDF Load From Base64 error:', err);
+      }
+    };
   </script>
 </body>
 
