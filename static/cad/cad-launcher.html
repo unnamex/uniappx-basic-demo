@@ -58,24 +58,17 @@
         if (!response.ok) throw new Error('网络响应异常');
         let htmlContent = await response.text();
 
-        // ========== 注入 resize 自适应脚本 ==========
-        // 该脚本在 CAD 页面加载完毕后，监听 window resize 事件，
-        // 自动查找所有 <canvas> 元素并重设其尺寸，同时尝试触发
-        // 主流 3D 引擎（HOOPS / Three.js / 通用 WebGL）的 resize 回调。
+        // ========== 注入优化后的 resize 自适应脚本 ==========
         const resizeScript = `
 <script>
 (function() {
-  var resizeTimer = null;
-
   function doResize() {
     var w = window.innerWidth;
     var h = window.innerHeight;
 
-    // 1. 重设所有 canvas 元素的像素尺寸
     var canvases = document.querySelectorAll('canvas');
     for (var i = 0; i < canvases.length; i++) {
       var c = canvases[i];
-      // 仅调整那些几乎占满容器的主 canvas（跳过小图标 canvas）
       if (c.width > 100 && c.height > 100) {
         c.width = w;
         c.height = h;
@@ -84,12 +77,10 @@
       }
     }
 
-    // 2. 尝试调用 HOOPS Communicator 的 resize
     if (typeof hwv !== 'undefined' && hwv && typeof hwv.resizeCanvas === 'function') {
       try { hwv.resizeCanvas(); } catch(e) {}
     }
 
-    // 3. 尝试调用 Three.js 全局 renderer 的 resize
     if (typeof renderer !== 'undefined' && renderer && typeof renderer.setSize === 'function') {
       try {
         renderer.setSize(w, h);
@@ -102,36 +93,55 @@
       } catch(e) {}
     }
 
-    // 4. 尝试触发全局的 onResize / onWindowResize 回调
     if (typeof onResize === 'function') { try { onResize(); } catch(e) {} }
     if (typeof onWindowResize === 'function') { try { onWindowResize(); } catch(e) {} }
     if (typeof handleResize === 'function') { try { handleResize(); } catch(e) {} }
   }
 
-  // 防抖：拖拽期间 100ms 内只触发一次
-  window.addEventListener('resize', function() {
-    if (resizeTimer) clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(doResize, 100);
+  // 使用 ResizeObserver 搭配 requestAnimationFrame 提升性能，避免卡顿
+  var observer = new ResizeObserver(function() {
+    window.requestAnimationFrame(doResize);
   });
+  
+  if (document.body) {
+    observer.observe(document.body);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      if(document.body) observer.observe(document.body);
+    });
+  }
 
-  // 页面加载后延迟触发一次初始 resize，确保 canvas 匹配实际容器尺寸
-  setTimeout(doResize, 500);
-  setTimeout(doResize, 1500);
+  // 通知父容器隐藏 loading
+  try {
+    var parentLoading = window.parent.document.querySelector('.loading');
+    if (parentLoading) {
+      parentLoading.style.display = 'none';
+    }
+  } catch(e) {}
 })();
-<\\/script>`;
+<\/script>`;
 
-        // 将 resize 脚本注入到 </body> 之前
         if (htmlContent.indexOf('</body>') !== -1) {
           htmlContent = htmlContent.replace('</body>', resizeScript + '\n</body>');
         } else {
-          // 如果没有 </body> 标签，追加到末尾
           htmlContent += resizeScript;
         }
 
-        // 完全重写当前文档
-        document.open();
-        document.write(htmlContent);
-        document.close();
+        // 使用 iframe 替代 HTML 文档的直接覆盖 (document.write) 避免阻塞主线程
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;';
+        iframe.src = blobUrl;
+
+        iframe.onload = function () {
+          const loading = document.querySelector('.loading');
+          if (loading) loading.style.display = 'none';
+          URL.revokeObjectURL(blobUrl);
+        };
+
+        document.body.appendChild(iframe);
       } catch (err) {
         console.error('CAD 文件加载失败:', err);
         document.body.innerHTML = '<div class="loading" style="color:#ef4444">CAD 文件加载失败: ' + err.message + '</div>';
