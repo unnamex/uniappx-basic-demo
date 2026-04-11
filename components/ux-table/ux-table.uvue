@@ -284,7 +284,8 @@
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
 				list.forEach((item, index) => {
-					let id = item["id"]
+					// 优先使用 innerId（工艺树节点），兼容 id
+					let id = item["innerId"] ?? item["id"]
 					if (id == null) {
 						id = `${parentId}_${index}`
 					}
