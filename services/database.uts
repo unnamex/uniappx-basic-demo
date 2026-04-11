@@ -269,6 +269,23 @@ function createTables(): Promise<void> {
 			)
 		`
 		
+		const createResourcesTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_resources (
+				id TEXT PRIMARY KEY,
+				node_id TEXT NOT NULL,
+				type TEXT NOT NULL,
+				name TEXT NOT NULL,
+				path TEXT NOT NULL,
+				original_path TEXT,
+				thumbnail TEXT,
+				duration INTEGER DEFAULT 0,
+				size INTEGER DEFAULT 0,
+				description TEXT,
+				sort_order INTEGER DEFAULT 0,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		`
+		
 		// #ifdef APP-ANDROID
 		if (dbInstance != null) {
 			try {
@@ -278,6 +295,8 @@ function createTables(): Promise<void> {
 				// Assets and Icon Config Tables
 				dbInstance!.execSQL(createAssetsTableSQL)
 				dbInstance!.execSQL(createIconConfigTableSQL)
+				dbInstance!.execSQL(createResourcesTableSQL)
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
 				
 				// Dynamic Tab System Tables
 				dbInstance!.execSQL(createTabGroupsTableSQL)
@@ -308,6 +327,8 @@ function createTables(): Promise<void> {
 					createPackageTableSQL,
 					createAssetsTableSQL,
 					createIconConfigTableSQL,
+					createResourcesTableSQL,
+					"CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)",
 					createTabGroupsTableSQL,
 					createTabsTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)",

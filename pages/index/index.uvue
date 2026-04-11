@@ -455,27 +455,36 @@
 		return flattenTree(tableData.value)
 	})
 
+	// 兼容获取节点唯一ID
+	const getNodeId = (node: UTSJSONObject | null): string => {
+		if (node == null) return ''
+		return (node['innerId'] as string | null) ?? (node['id'] as string | null) ?? ''
+	}
+
 	const hasPrevNode = computed((): boolean => {
 		if (selectedRow.value == null) return false
-		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		const targetId = getNodeId(selectedRow.value!)
+		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
 		return index > 0
 	})
 
 	const hasNextNode = computed((): boolean => {
 		if (selectedRow.value == null) return false
-		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		const targetId = getNodeId(selectedRow.value!)
+		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
 		return index >= 0 && index < flatNodes.value.length - 1
 	})
 
 	const selectedRowId = computed((): string | null => {
 		if (selectedRow.value == null) return null
-		return selectedRow.value!['id'] as string
+		return getNodeId(selectedRow.value!)
 	})
 
 	const goToPrevNode = () => {
 		if (!hasPrevNode.value) return
 		const list = flatNodes.value
-		const index = list.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		const targetId = getNodeId(selectedRow.value!)
+		const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
 		if (index > 0) {
 			const prevNode = list[index - 1]
 			handleRowClick(prevNode)
@@ -485,7 +494,8 @@
 	const goToNextNode = () => {
 		if (!hasNextNode.value) return
 		const list = flatNodes.value
-		const index = list.findIndex((n: UTSJSONObject): boolean => n['id'] == selectedRow.value!['id'])
+		const targetId = getNodeId(selectedRow.value!)
+		const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
 		if (index >= 0 && index < list.length - 1) {
 			const nextNode = list[index + 1]
 			handleRowClick(nextNode)
@@ -1019,6 +1029,7 @@
 		const partSecretIdDisplay = (node['partSecretId_display'] as string) ?? ''
 		const partModifyByIdDisplay = (node['partModifyById_display'] as string) ?? ''
 		const partModifyTime = (node['partModifyTime'] as string) ?? ''
+		const partContextName = (node['partContextName'] as string) ?? ''
 
 		// 获取图标
 		const icon = (node['icon'] as string) ?? '📋'
@@ -1058,12 +1069,13 @@
 		// === 下部分面包屑：部件详情 > 工艺详情 ===
 		const bottomItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
-		// 部件详情面包屑项（类型 | 密级 | 修改人 | 修改时间）
+		// 部件详情面包屑项（类型 | 修改人 | 修改时间 | 上下文名称 | 密级）
 		const partDetailParts: string[] = [] as string[]
 		if (partClassIdDisplay != '') partDetailParts.push(partClassIdDisplay)
-		if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
 		if (partModifyByIdDisplay != '') partDetailParts.push(partModifyByIdDisplay)
 		if (partModifyTime != '') partDetailParts.push(partModifyTime)
+		if (partContextName != '') partDetailParts.push(partContextName)
+		if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
 		const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
 		bottomItems.push({ 
 			label: partDetailLabel, 
@@ -1073,12 +1085,13 @@
 			version: ''
 		} as BreadcrumbItem)
 
-		// 工艺详情面包屑项（类型 | 密级 | 修改人 | 修改时间）
+		// 工艺详情面包屑项（类型 | 修改人 | 修改时间 | 上下文名称 | 密级）
 		const processDetailParts: string[] = [] as string[]
 		if (classIdDisplay != '') processDetailParts.push(classIdDisplay)
-		if (secretIdDisplay != '') processDetailParts.push(secretIdDisplay)
 		if (modifyByIdDisplay != '') processDetailParts.push(modifyByIdDisplay)
 		if (modifyTime != '') processDetailParts.push(modifyTime)
+		if (contextName != '') processDetailParts.push(contextName)
+		if (secretIdDisplay != '') processDetailParts.push(secretIdDisplay)
 		const processDetailLabel = processDetailParts.length > 0 ? processDetailParts.join(' | ') : '无工艺详情'
 		bottomItems.push({ 
 			label: processDetailLabel, 
@@ -1102,7 +1115,7 @@
 		updateBreadcrumbs(row)
 		
 		// 从节点的 tabs_top / tabs_bottom 字段动态读取关联的 group ID
-		const nodeId = row['id'] as string
+		const nodeId = getNodeId(row)
 		const nodeName = row['name'] as string
 		const tabsTopId = (row['tabs_top'] as string) ?? ''
 		const tabsBottomId = (row['tabs_bottom'] as string) ?? ''
