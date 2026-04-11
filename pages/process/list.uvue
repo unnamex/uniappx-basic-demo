@@ -28,7 +28,7 @@
 			<view class="process-list" v-if="processList.length > 0">
 				<process-card 
 					v-for="(item, index) in processList" 
-					:key="item.id"
+					:key="item.innerId"
 					:item="item"
 					@click="handleCardClick"
 				></process-card>
@@ -60,9 +60,9 @@
 </template>
 
 <script lang="uts">
-	import { ProcessListItem } from '@/types/process'
+	import { ProcessNode } from '@/types/process'
 	import { PageParams, PageResult } from '@/types/common'
-	import { getProcessList, getProcessCount } from '@/services/processService'
+	import { getProcessList, searchProcess } from '@/services/processService'
 	import { initDatabase } from '@/services/database'
 	
 	export default {
@@ -72,7 +72,7 @@
 				keyword: '',
 				
 				// 工艺列表
-				processList: [] as ProcessListItem[],
+				processList: [] as ProcessNode[],
 				
 				// 总数
 				totalCount: 0,
@@ -141,7 +141,7 @@
 				}
 				
 				getProcessList(params)
-					.then((result: PageResult<ProcessListItem>) => {
+					.then((result: PageResult<ProcessNode>) => {
 						this.isLoading = false
 						this.totalCount = result.total
 						
@@ -203,11 +203,13 @@
 			/**
 			 * 点击工艺卡片
 			 */
-			handleCardClick(item: ProcessListItem) {
-				uni.navigateTo({
-					url: '/pages/process/detail?id=' + item.id
+			handleCardClick(item: ProcessNode) {
+				// 跳转回首页并携带工艺 ID
+				uni.reLaunch({
+					url: '/pages/index/index?id=' + item.innerId
 				})
 			},
+
 			
 			/**
 			 * 跳转到导入页面

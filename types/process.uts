@@ -1,67 +1,116 @@
 /**
- * MPM 工艺预览系统 - 工艺相关类型定义
- * @description 定义工艺数据的核心类型
+ * MPM 工艺预览系统 - V4 工艺树类型定义
+ * @description 定义四级工艺树节点的核心类型：Process → Operation → Step → ActionUnit
  */
 
 /**
- * 产品信息类型
+ * 节点层级标识常量
+ * targetClassId 的合法取值
  */
-export type ProductInfo = {
-	id: string
-	name: string
-	model: string
+export const NodeLevel_PROCESS = 'Process'
+export const NodeLevel_OPERATION = 'Operation'
+export const NodeLevel_STEP = 'Step'
+export const NodeLevel_ACTION_UNIT = 'ActionUnit'
+
+/**
+ * 节点关联资源类型
+ * 用于右侧查看器加载
+ */
+export type NodeResource = {
+	id: string              // 资源唯一 ID
+	type: string            // 资源类型: image | video | audio | document | cad
+	name: string            // 显示名称
+	path: string            // 包内路径（导入后更新为本地路径）
+	thumbnail: string       // 缩略图路径
+	duration: number        // 时长（秒），视频/音频使用，其他为 0
+	description: string     // 描述
 }
 
 /**
- * 工艺步骤类型
+ * 四级工艺树通用节点类型
+ * Process / Operation / Step / ActionUnit 均使用此类型
+ *
+ * 层级约束（不可跳级）：
+ * - Process 的 children 只能是 Operation
+ * - Operation 的 children 只能是 Step
+ * - Step 的 children 只能是 ActionUnit
+ * - ActionUnit 的 children 必须为空
  */
-export type ProcessStep = {
-	stepNo: number
-	name: string
-	description: string
-	description_html?: string
-	duration: number
-	tools: string[]
-	materials: string[]
-	images: string[]
-	videos: string[]
+export type ProcessNode = {
+	classId: string            // 类型标识（自定义分类，如 JJGY、ZPGY）
+	innerId: string            // 唯一标识（全局唯一）
+	name: string               // 名称
+	code: string               // 编号
+	targetClassId: string      // 层级标识（固定为 Process / Operation / Step / ActionUnit）
+	tabs_top: string           // 上方 Tab 组 ID（引用 groups.json 中的 id）
+	tabs_bottom: string        // 下方 Tab 组 ID（为空字符串则隐藏下方区域）
+	attachment: NodeResource[]  // 关联附件列表
+	children: ProcessNode[]    // 子节点列表（严格下一级）
 }
 
 /**
- * 工艺附件类型
+ * 校验节点层级合法性
+ * @param node 待校验节点
+ * @returns 是否合法
  */
-export type ProcessAttachment = {
-	type: string
-	name: string
-	path: string
+export function validateNodeHierarchy(node: ProcessNode): boolean {
+	const level = node.targetClassId
+
+	// 校验 children 的 targetClassId 是否合法
+	if (node.children.length > 0) {
+		let expectedChildLevel = ''
+		if (level == NodeLevel_PROCESS) {
+			expectedChildLevel = NodeLevel_OPERATION
+		} else if (level == NodeLevel_OPERATION) {
+			expectedChildLevel = NodeLevel_STEP
+		} else if (level == NodeLevel_STEP) {
+			expectedChildLevel = NodeLevel_ACTION_UNIT
+		} else if (level == NodeLevel_ACTION_UNIT) {
+			// ActionUnit 不能有子节点
+			console.error('校验失败: ActionUnit 不能有子节点, innerId =', node.innerId)
+			return false
+		}
+
+		for (const child of node.children) {
+			if (child.targetClassId != expectedChildLevel) {
+				console.error('校验失败: 期望子节点层级', expectedChildLevel,
+					'实际', child.targetClassId, ', 父节点 innerId =', node.innerId)
+				return false
+			}
+			// 递归校验
+			if (!validateNodeHierarchy(child)) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 /**
- * 完整工艺信息类型
+ * 校验所有 innerId 全局唯一
+ * @param node 根节点
+ * @returns 是否全部唯一
  */
-export type ProcessInfo = {
-	id: string
-	code: string
-	name: string
-	version: string
-	status: string
-	product: ProductInfo
-	steps: ProcessStep[]
-	attachments: ProcessAttachment[]
-	createdAt: string
-	updatedAt: string
+export function validateInnerIdUnique(node: ProcessNode): boolean {
+	const idSet = new Set<string>()
+	return collectAndCheckIds(node, idSet)
 }
 
 /**
- * 工艺列表项类型（用于列表展示，不含完整步骤信息）
+ * 递归收集并检查 innerId 唯一性
  */
-export type ProcessListItem = {
-	id: string
-	code: string
-	name: string
-	version: string
-	status: string
-	productName: string
-	stepCount: number
-	updatedAt: string
+function collectAndCheckIds(node: ProcessNode, idSet: Set<string>): boolean {
+	if (idSet.has(node.innerId)) {
+		console.error('innerId 重复:', node.innerId)
+		return false
+	}
+	idSet.add(node.innerId)
+
+	for (const child of node.children) {
+		if (!collectAndCheckIds(child, idSet)) {
+			return false
+		}
+	}
+	return true
 }

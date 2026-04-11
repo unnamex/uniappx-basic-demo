@@ -474,19 +474,18 @@
 		}
 	}
 
-	onLoad((options: OnLoadOptions) => {
+	onLoad(async () => {
 		// console.log('Page Load')
-		const nodeId = options['id'] as string | null
-		initData(nodeId)
+		await initData()
 	})
 	
-	onPageShow(() => {
+	onPageShow(async () => {
 		// 每次页面显示时检查并刷新数据
 		// console.log('Page Show')
-		initData(null)
+		await initData()
 	})
 	
-	const initData = async (targetNodeId: string | null = null) => {
+	const initData = async () => {
 		// #ifdef WEB
 		// Web: Check if data exists in IndexedDB
 		await initDatabase()
@@ -522,7 +521,7 @@
 			console.log('No data found, attempting to load default package if available...')
 		} else {
 			statusMessage.value = 'Data loaded from DB'
-			await loadLeftPanel(targetNodeId)
+			await loadLeftPanel()
 		}
 	}
 	
@@ -626,7 +625,7 @@
 		}
 	}
 	
-	const loadLeftPanel = async (targetNodeId: string | null = null) => {
+	const loadLeftPanel = async () => {
 		// Load the "Management" group for the left panel
 		// Based on groups.json, id is 'group_process_mgmt'
 		const group = await loadGroup('group_process_mgmt')
@@ -647,27 +646,12 @@
 					columns.value = getColumnsFromConfig(treeComp.config)
 					// console.log('Left panel tree loaded:', tableData.value.length, 'nodes')
 					
-					// 自动选中逻辑
+					// 自动选中第一个根节点（工艺节点）
 					if (tableData.value.length > 0) {
-						let targetRow: UTSJSONObject | null = null
-						
-						if (targetNodeId != null) {
-							// 在扁平化节点中查找匹配 ID 的节点
-							const found = flatNodes.value.find((n: UTSJSONObject): boolean => n['innerId'] == targetNodeId || n['id'] == targetNodeId)
-							if (found != null) {
-								targetRow = found
-							}
-						}
-						
-						// 如果没找到或没提供 ID，选第一个
-						if (targetRow == null) {
-							targetRow = tableData.value[0]
-						}
-						
+						const firstRow = tableData.value[0]
 						// 延迟执行确保 UI 渲染完成
-						const finalRow = targetRow as UTSJSONObject
 						setTimeout(() => {
-							handleRowClick(finalRow)
+							handleRowClick(firstRow)
 						}, 100)
 					}
 				}
@@ -971,32 +955,33 @@
 		const nodeType = node['type'] as string
 		if (nodeType != 'process') return
 		
-		// === 工艺侧元数据 ===
-		const processCode = (node['code'] as string) ?? ''
-		const processName = (node['name'] as string) ?? ''
-		const classIdDisplay = (node['classId_display'] as string) ?? ''
-		const stateName = (node['stateName'] as string) ?? ''
-		const fullversionNo = (node['fullversionNo'] as string) ?? ''
-		const secretIdDisplay = (node['secretId_display'] as string) ?? ''
-		const modifyByIdDisplay = (node['modifyById_display'] as string) ?? ''
-		const modifyTime = (node['modifyTime'] as string) ?? ''
-		const contextName = (node['contextName'] as string) ?? ''
-
-		// === 部件侧元数据 ===
+		// 获取节点中的部件信息
 		const partCode = (node['partCode'] as string) ?? ''
 		const partName = (node['partName'] as string) ?? ''
-		const partClassIdDisplay = (node['partClassId_display'] as string) ?? '部件'
-		const partStateName = (node['partStateName'] as string) ?? ''
-		const partFullversionNo = (node['partFullversionNo'] as string) ?? ''
-		const partSecretIdDisplay = (node['partSecretId_display'] as string) ?? ''
-		const partModifyByIdDisplay = (node['partModifyById_display'] as string) ?? ''
-		const partModifyTime = (node['partModifyTime'] as string) ?? ''
+		const partLifecycle = (node['partLifecycle'] as string) ?? ''
+		const partVersion = (node['partVersion'] as string) ?? ''
+		const partType = (node['partType'] as string) ?? '部件'
+		const partCreator = (node['partCreator'] as string) ?? ''
+		const partCreateTime = (node['partCreateTime'] as string) ?? ''
+		const partLocation = (node['partLocation'] as string) ?? ''
+		const partSecurityLevel = (node['partSecurityLevel'] as string) ?? ''
+
+		// 获取节点中的工艺信息
+		const processCode = (node['code'] as string) ?? ''
+		const processName = (node['name'] as string) ?? ''
+		const processLifecycle = (node['processLifecycle'] as string) ?? (node['status'] as string) ?? ''
+		const processVersion = (node['processVersion'] as string) ?? (node['version'] as string) ?? ''
+		const processType = (node['processType'] as string) ?? '机加工艺'
+		const processCreator = (node['processCreator'] as string) ?? ''
+		const processCreateTime = (node['processCreateTime'] as string) ?? ''
+		const processLocation = (node['processLocation'] as string) ?? ''
+		const processSecurityLevel = (node['processSecurityLevel'] as string) ?? ''
 
 		// 获取图标
 		const icon = (node['icon'] as string) ?? '📋'
 		currentProcessIcon.value = icon
 
-		// === 上部分面包屑：部件编号/名称/版本 > 工艺编号/名称/版本 ===
+		// === 上部分面包屑：部件编号/名称/生命周期/版本 > 工艺编号/名称/生命周期/版本 ===
 		const topItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
 		// 部件面包屑项
@@ -1004,7 +989,8 @@
 		if (partCode != '') {
 			partLabel = partCode
 			if (partName != '') partLabel = partLabel + '，' + partName
-			if (partFullversionNo != '') partLabel = partLabel + ' ' + partFullversionNo
+			if (partLifecycle != '') partLabel = partLabel + ' ' + partLifecycle
+			if (partVersion != '') partLabel = partLabel + ' ' + partVersion
 		} else {
 			partLabel = '未关联部件'
 		}
@@ -1014,7 +1000,8 @@
 		let processLabel = ''
 		if (processCode != '') {
 			processLabel = processCode + '，' + processName
-			if (fullversionNo != '') processLabel = processLabel + ' ' + fullversionNo
+			if (processLifecycle != '') processLabel = processLabel + ' ' + processLifecycle
+			if (processVersion != '') processLabel = processLabel + ' ' + processVersion
 		} else {
 			processLabel = processName
 		}
@@ -1025,23 +1012,23 @@
 		// === 下部分面包屑：部件详情 > 工艺详情 ===
 		const bottomItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
-		// 部件详情面包屑项（类型 | 状态 | 密级 | 修改人 | 修改时间）
+		// 部件详情面包屑项（类型 | 用户 | 时间 | 位置 | 密级）
 		const partDetailParts: string[] = [] as string[]
-		if (partClassIdDisplay != '') partDetailParts.push(partClassIdDisplay)
-		if (partStateName != '') partDetailParts.push(partStateName)
-		if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
-		if (partModifyByIdDisplay != '') partDetailParts.push(partModifyByIdDisplay)
-		if (partModifyTime != '') partDetailParts.push(partModifyTime)
+		if (partType != '') partDetailParts.push(partType)
+		if (partCreator != '') partDetailParts.push(partCreator)
+		if (partCreateTime != '') partDetailParts.push(partCreateTime)
+		if (partLocation != '') partDetailParts.push(partLocation)
+		if (partSecurityLevel != '') partDetailParts.push(partSecurityLevel)
 		const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
 		bottomItems.push({ label: partDetailLabel, value: 'part-detail' } as BreadcrumbItem)
 
-		// 工艺详情面包屑项（类型 | 状态 | 密级 | 修改人 | 修改时间）
+		// 工艺详情面包屑项（类型 | 用户 | 时间 | 位置 | 密级）
 		const processDetailParts: string[] = [] as string[]
-		if (classIdDisplay != '') processDetailParts.push(classIdDisplay)
-		if (stateName != '') processDetailParts.push(stateName)
-		if (secretIdDisplay != '') processDetailParts.push(secretIdDisplay)
-		if (modifyByIdDisplay != '') processDetailParts.push(modifyByIdDisplay)
-		if (modifyTime != '') processDetailParts.push(modifyTime)
+		if (processType != '') processDetailParts.push(processType)
+		if (processCreator != '') processDetailParts.push(processCreator)
+		if (processCreateTime != '') processDetailParts.push(processCreateTime)
+		if (processLocation != '') processDetailParts.push(processLocation)
+		if (processSecurityLevel != '') processDetailParts.push(processSecurityLevel)
 		const processDetailLabel = processDetailParts.length > 0 ? processDetailParts.join(' | ') : '无工艺详情'
 		bottomItems.push({ label: processDetailLabel, value: 'process-detail' } as BreadcrumbItem)
 
@@ -1058,15 +1045,18 @@
 		// 更新面包屑
 		updateBreadcrumbs(row)
 		
-		// 从节点的 tabs_top / tabs_bottom 字段动态读取关联的 group ID
+		// 根据节点类型动态加载对应的 Tab Group
+		const nodeType = row['type'] as string
 		const nodeId = row['id'] as string
 		const nodeName = row['name'] as string
-		const tabsTopId = (row['tabs_top'] as string) ?? ''
-		const tabsBottomId = (row['tabs_bottom'] as string) ?? ''
 		
-		// 加载上方 Tab Group
-		if (tabsTopId != '') {
-			const group = await loadGroup(tabsTopId)
+		let groupId = ''
+		if (nodeType == 'process') groupId = 'group_process_view'
+		else if (nodeType == 'procedure') groupId = 'group_procedure_view'
+		else if (nodeType == 'step') groupId = 'group_step_view'
+		
+		if (groupId != '') {
+			const group = await loadGroup(groupId)
 			if (group != null) {
 				// 将当前节点数据绑定到 Group 的组件中
 				bindDataToGroup(group, row)
@@ -1077,13 +1067,16 @@
 					activeTabs.set(group.id, group.tabs[0].id)
 				}
 			}
-		} else {
-			topGroup.value = null
 		}
 		
-		// 加载下方 Tab Group
-		if (tabsBottomId != '') {
-			const group = await loadGroup(tabsBottomId)
+		// 加载底部详情
+		let bottomGroupId = ''
+		if (nodeType == 'process') bottomGroupId = 'group_bottom_proc'
+		else if (nodeType == 'procedure') bottomGroupId = 'group_bottom_op'
+		else if (nodeType == 'step') bottomGroupId = 'group_bottom_step'
+		
+		if (bottomGroupId != '') {
+			const group = await loadGroup(bottomGroupId)
 			if (group != null) {
 				bindDataToGroup(group, row)
 				bottomGroup.value = group
@@ -1093,12 +1086,9 @@
 					activeTabs.set(group.id, group.tabs[0].id)
 				}
 			}
-		} else {
-			bottomGroup.value = null
 		}
 		
 		// 加载节点关联的资源列表
-		const nodeType = (row['type'] as string) ?? ''
 		await loadNodeResources(nodeId, nodeName, nodeType)
 	}
 	
@@ -1125,14 +1115,14 @@
 						// 确保子节点也有显示用字段
 						comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 					}
-				} else if (dataSource == 'description' || dataSource == 'processDescription') {
+				} else if (dataSource == 'description' || dataSource == 'processDescription' || dataSource == 'safetyNotes' || dataSource == 'notes') {
 					// 文本型数据源，包装成 { text: value } 对象
 					const textVal = node[dataSource]
 					if (textVal != null) {
 						const item = { text: textVal }
 						comp.data.push(item)
 					}
-				} else if (dataSource == 'qualityChecks') {
+				} else if (dataSource == 'tools' || dataSource == 'materials' || dataSource == 'qualityChecks' || dataSource == 'safetyChecks' || dataSource == 'checklist') {
 					// 字符串数组型数据源，每个元素包装成 { text: value }
 					const arr = node[dataSource]
 					if (arr != null && Array.isArray(arr)) {

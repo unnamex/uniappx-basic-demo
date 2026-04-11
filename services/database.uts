@@ -189,44 +189,13 @@ function createTables(): Promise<void> {
 	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
 		const createProcessTableSQL = `
 			CREATE TABLE IF NOT EXISTS t_process (
-				id TEXT PRIMARY KEY,
+				inner_id TEXT PRIMARY KEY,
+				class_id TEXT NOT NULL,
 				code TEXT NOT NULL,
 				name TEXT NOT NULL,
-				version TEXT,
-				status TEXT,
-				product_id TEXT,
-				product_name TEXT,
-				product_model TEXT,
-				step_count INTEGER DEFAULT 0,
 				created_at TEXT,
 				updated_at TEXT,
 				data_json TEXT
-			)
-		`
-		
-		const createStepTableSQL = `
-			CREATE TABLE IF NOT EXISTS t_process_step (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				process_id TEXT NOT NULL,
-				step_no INTEGER NOT NULL,
-				name TEXT NOT NULL,
-				description TEXT,
-				description_html TEXT,
-				duration INTEGER DEFAULT 0,
-				tools_json TEXT,
-				materials_json TEXT,
-				images_json TEXT,
-				videos_json TEXT
-			)
-		`
-		
-		const createAttachmentTableSQL = `
-			CREATE TABLE IF NOT EXISTS t_process_attachment (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				process_id TEXT NOT NULL,
-				type TEXT,
-				name TEXT,
-				path TEXT
 			)
 		`
 		
@@ -300,30 +269,10 @@ function createTables(): Promise<void> {
 			)
 		`
 		
-		// V3: 静态资源元数据表
-		const createResourcesTableSQL = `
-			CREATE TABLE IF NOT EXISTS t_resources (
-				id TEXT PRIMARY KEY,
-				node_id TEXT NOT NULL,
-				type TEXT NOT NULL,
-				name TEXT NOT NULL,
-				path TEXT NOT NULL,
-				original_path TEXT,
-				thumbnail TEXT,
-				duration INTEGER DEFAULT 0,
-				size INTEGER DEFAULT 0,
-				description TEXT,
-				sort_order INTEGER DEFAULT 0,
-				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-			)
-		`
-		
 		// #ifdef APP-ANDROID
 		if (dbInstance != null) {
 			try {
 				dbInstance!.execSQL(createProcessTableSQL)
-				dbInstance!.execSQL(createStepTableSQL)
-				dbInstance!.execSQL(createAttachmentTableSQL)
 				dbInstance!.execSQL(createPackageTableSQL)
 				
 				// Assets and Icon Config Tables
@@ -338,11 +287,6 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)")
 				dbInstance!.execSQL(createDataRecordsTableSQL)
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)")
-				
-				// V3: 资源表
-				dbInstance!.execSQL(createResourcesTableSQL)
-				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
-				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_type ON t_resources(type)")
 
 				console.log('数据表创建成功')
 				resolve()
@@ -361,8 +305,6 @@ function createTables(): Promise<void> {
 				// 鸿蒙端 SQLite 不支持并发写入，改为顺序执行建表
 				const sqls: string[] = [
 					createProcessTableSQL,
-					createStepTableSQL,
-					createAttachmentTableSQL,
 					createPackageTableSQL,
 					createAssetsTableSQL,
 					createIconConfigTableSQL,
@@ -372,10 +314,7 @@ function createTables(): Promise<void> {
 					createComponentsTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)",
 					createDataRecordsTableSQL,
-					"CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)",
-					createResourcesTableSQL,
-					"CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)",
-					"CREATE INDEX IF NOT EXISTS idx_resources_type ON t_resources(type)"
+					"CREATE INDEX IF NOT EXISTS idx_data_comp ON data_records(component_id)"
 				]
 				
 				// 顺序执行每条 SQL

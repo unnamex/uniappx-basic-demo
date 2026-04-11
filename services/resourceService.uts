@@ -487,8 +487,9 @@ export function extractResourcesFromNode(node: UTSJSONObject): ResourceItem[] {
  * 递归提取资源
  */
 function extractResourcesRecursive(node: UTSJSONObject, resources: ResourceItem[]): void {
-	const nodeId = node['id'] as string
-	const nodeResources = node['resources']
+	const nodeId = node['innerId'] as string
+	// 优先读取 attachment（V4+），向后兼容 resources（V3）
+	const nodeResources = node['attachment'] ?? node['resources']
 	
 	if (nodeResources != null && Array.isArray(nodeResources)) {
 		const resList = nodeResources as UTSJSONObject[]

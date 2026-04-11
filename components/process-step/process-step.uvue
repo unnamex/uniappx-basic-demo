@@ -2,7 +2,7 @@
 	<view class="step-card" @click="toggleExpand">
 		<view class="step-header">
 			<view class="step-number">
-				<text class="step-number-text">{{ step.stepNo }}</text>
+				<text class="step-number-text">{{ (0) }}</text>
 			</view>
 			<view class="step-info">
 				<text class="step-name">{{ step.name }}</text>
@@ -16,8 +16,8 @@
 			<!-- 操作描述 -->
 			<view class="detail-section">
 				<text class="detail-label">操作说明</text>
-				<ux-richtext v-if="step.description_html != null && step.description_html != ''" :content="step.description_html!"></ux-richtext>
-				<text class="detail-content" v-else>{{ step.description }}</text>
+				<ux-richtext v-if="step.code_html != null && step.code_html != ''" :content="step.code_html!"></ux-richtext>
+				<text class="detail-content" v-else>{{ step.code }}</text>
 			</view>
 			
 			<!-- 工具清单 -->
@@ -75,7 +75,7 @@
 </template>
 
 <script lang="uts">
-	import { ProcessStep } from '@/types/process'
+	import { ProcessNode } from '@/types/process'
 	
 	/**
 	 * 工艺步骤组件
@@ -86,7 +86,7 @@
 		emits: ['toggle'],
 		props: {
 			step: {
-				type: Object as PropType<ProcessStep>,
+				type: Object as PropType<ProcessNode>,
 				required: true
 			},
 			expanded: {

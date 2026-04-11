@@ -1,5 +1,5 @@
 import { ComponentConfig, DataRecord, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
-import { ProcessInfo } from '@/types/process'
+import { ProcessNode } from '@/types/process'
 import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
@@ -216,16 +216,6 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 				// 解压并读取清单文件
 				parseManifestFromZip(zipData)
 					.then((manifest: PackageManifest) => {
-						// 自动填充工艺数量
-						if (manifest.processCount == null) {
-							if (manifest.files != null && manifest.files?.processes != null) {
-								manifest.processCount = manifest.files?.processes?.length
-							} else if (manifest.processFiles != null) {
-								manifest.processCount = manifest.processFiles?.length
-							} else {
-								manifest.processCount = 0
-							}
-						}
 						resolve(manifest)
 					})
 					.catch((e: any) => {
@@ -595,156 +585,41 @@ function extractAndParseAndroid(
 		const inputStream = new ByteArrayInputStream(new Int8Array(zipData) as ByteArray)
 		const zipStream = new ZipInputStream(inputStream)
 		
-		const processes: ProcessInfo[] = []
-		let manifest: PackageManifest | null = null
+		let processNode: ProcessNode | null = null
 		
-		// 存储所有 JSON 文件内容，用于 V2 分离文件格式
-		const jsonFiles = new Map<string, string>()
-		
-		// V3: 资源文件保存路径映射（原始路径 -> 本地路径）
-		const savedAssetPaths = new Map<string, string>()
-		const assetsBasePath = getAssetsBasePath()
-		
-		// 确保资源目录存在
-		ensureDirectory(assetsBasePath)
-		
-		let entry = zipStream.getNextEntry()
-		
-		while (entry != null) {
-			const entryName = entry.getName()
-			
-			// 读取 json 文件到内存
-			if (entryName.endsWith('.json')) {
-				const outputStream = new ByteArrayOutputStream()
-				const buffer = new ByteArray(1024)
-				let len = zipStream.read(buffer)
-				while (len > 0) {
-					outputStream.write(buffer, 0, len)
-					len = zipStream.read(buffer)
-				}
-				const content = outputStream.toString('UTF-8')
-				jsonFiles.set(entryName, content)
-			}
-			// V3: 保存资源文件到沙盒
-			else if (isAssetFile(entryName)) {
-				try {
-					// 读取文件内容
-					const outputStream = new ByteArrayOutputStream()
-					const buffer = new ByteArray(4096)
-					let len = zipStream.read(buffer)
-					while (len > 0) {
-						outputStream.write(buffer, 0, len)
-						len = zipStream.read(buffer)
-					}
-					const fileBytes = outputStream.toByteArray()
-					
-					// 确定本地保存路径
-					const localPath = assetsBasePath + '/' + getRelativeAssetPath(entryName)
-					
-					// 写入文件
-					if (writeFileBytes(localPath, fileBytes)) {
-						savedAssetPaths.set(entryName, localPath)
-						console.log('Android: Saved asset:', entryName, '->', localPath)
-					} else {
-						console.warn('Android: Failed to save asset:', entryName)
-					}
-				} catch (e) {
-					console.error('Android: Error saving asset:', entryName, e)
-				}
-			}
-			
-			entry = zipStream.getNextEntry()
-		}
-		
-		zipStream.close()
-		
-		// 解析 manifest
-		const manifestContent = jsonFiles.get('manifest.json')
-		if (manifestContent != null) {
-			manifest = JSON.parse(manifestContent) as PackageManifest
-		}
-		
-		if (manifest == null) {
-			reject(new Error('数据包中未找到 manifest.json'))
-			return
-		}
-		
-		// 检测是 V2 (分离文件) 还是 V1 (内联) 格式
-		const isV2 = manifest.files != null
-		
-		// 解析 UI 配置
-		let groups: TabGroup[] = []
-		let tabs: TabConfig[] = []
-		let components: ComponentConfig[] = []
-		let records: DataRecord[] = []
-		
-		if (isV2 && manifest.files != null) {
-			// V2: 从分离文件中读取
+		if (manifest.files != null) {
 			const files = manifest.files
 			
-			// 辅助函数：查找 JSON 文件内容（兼容正斜杠和反斜杠）
-			const findJsonFile = (path: string): string | null => {
+			const findJsonFile = (path) => {
 				let content = jsonFiles.get(path)
 				if (content != null) return content
-				const altPath = path.replace(/\//g, '\\')
+				const altPath = path.replace(/\/\//g, '\\\\')
 				content = jsonFiles.get(altPath)
 				if (content != null) return content
-				const altPath2 = path.replace(/\\/g, '/')
+				const altPath2 = path.replace(/\\\\/g, '/')
 				return jsonFiles.get(altPath2) || null
 			}
 			
 			if (files.groups != null) {
 				const content = findJsonFile(files.groups)
-				if (content != null) {
-					groups = JSON.parse(content) as TabGroup[]
-				}
+				if (content != null) groups = JSON.parse(content)
 			}
-			
 			if (files.tabs != null) {
 				const content = findJsonFile(files.tabs)
-				if (content != null) {
-					tabs = JSON.parse(content) as TabConfig[]
-				}
+				if (content != null) tabs = JSON.parse(content)
 			}
-			
 			if (files.components != null) {
 				const content = findJsonFile(files.components)
-				if (content != null) {
-					components = JSON.parse(content) as ComponentConfig[]
-				}
+				if (content != null) components = JSON.parse(content)
 			}
-			
 			if (files.records != null) {
 				const content = findJsonFile(files.records)
-				if (content != null) {
-					records = JSON.parse(content) as DataRecord[]
-				}
+				if (content != null) records = JSON.parse(content)
 			}
-			
-			// 解析工艺文件
-			if (files.processes != null) {
-				for (const processPath of files.processes) {
-					const content = findJsonFile(processPath)
-					if (content != null) {
-						const processInfo = JSON.parse(content) as ProcessInfo
-						processes.push(processInfo)
-					}
-				}
+			if (files.processTree != null) {
+				const content = findJsonFile(files.processTree)
+				if (content != null) processNode = JSON.parse(content)
 			}
-		} else {
-			// V1: 从 manifest 内联数据读取
-			groups = manifest.groups ?? []
-			tabs = manifest.tabs ?? []
-			components = manifest.components ?? []
-			records = manifest.records ?? []
-			
-			// V1: 解析 processes 目录下的文件
-			jsonFiles.forEach((content: string, fileName: string) => {
-				if (fileName.startsWith('processes/')) {
-					const processInfo = JSON.parse(content) as ProcessInfo
-					processes.push(processInfo)
-				}
-			})
 		}
 		
 		// 构建临时 manifest 用于保存 (兼容现有 saveUiConfigurationToDatabase)
@@ -763,51 +638,37 @@ function extractAndParseAndroid(
 			// 保存 UI 配置
 			let uiConfigCount = saveUiConfigurationToDatabase(fullManifest)
 			
-		// V3: 从工艺数据中提取资源元数据
+		// 从工艺树提取资源
 			let resourceCount = 0
-			const allResources: ResourceItem[] = []
+			const allResources = []
 			
-			for (const process of processes) {
-				const processObj = process as UTSJSONObject
+			if (processNode != null) {
+				const processObj = processNode
 				const extractedResources = extractResourcesFromNode(processObj)
-				
 				for (const res of extractedResources) {
-					// 使用保存的路径映射来更新资源的本地路径
 					const originalPath = res.originalPath
-					const localPath = savedAssetPaths.get(originalPath)
+					const localPath = savedAssetPaths.get(originalPath) || savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
 					
 					if (localPath != null) {
 						res.path = localPath
 					} else {
-						// 尝试使用替换斜杠的路径查找
-						const altPath = originalPath.replace(/\//g, '\\')
-						const altLocalPath = savedAssetPaths.get(altPath)
-						if (altLocalPath != null) {
-							res.path = altLocalPath
-						} else {
-							// 如果找不到已保存的文件，跳过该资源
-							console.warn('Android: Resource file not saved:', originalPath)
-							continue
-						}
+						continue
 					}
 					
-					// 处理缩略图路径
 					if (res.thumbnail != '') {
 						const thumbPath = savedAssetPaths.get(res.thumbnail)
-						if (thumbPath != null) {
-							res.thumbnail = thumbPath
-						} else {
-							res.thumbnail = ''  // 缩略图未保存，清空
-						}
+						if (thumbPath != null) res.thumbnail = thumbPath
+						else res.thumbnail = ''
 					}
-					
 					allResources.push(res)
 				}
 			}
 			
 			const executeDbSave = async () => {
 				try {
-					await saveProcessesToDatabase(processes)
+					if (processNode != null) {
+						await saveProcessTreeToDatabase(processNode)
+					}
 					for (const res of allResources) {
 						await saveResource(res)
 						resourceCount++
@@ -818,7 +679,7 @@ function extractAndParseAndroid(
 					resolve({
 						success: true,
 						message: '导入成功',
-						processCount: processes.length,
+						nodeCount: processNode != null ? 1 : 0,
 						uiConfigCount: uiConfigCount,
 						resourceCount: resourceCount,
 						importTime: 0
@@ -1057,38 +918,15 @@ function processHarmonyExtractedFiles(
 			records = manifest.records ?? []
 		}
 		
-		// 4. 解析工艺文件
-		const processes: ProcessInfo[] = []
-		let processFilePaths: string[] = []
+		// 4. 解析工艺树
+		let processNode: ProcessNode | null = null
 		
-		if (isV2 && manifest.files != null && manifest.files?.processes != null) {
-			processFilePaths = manifest.files!.processes!
-		} else if (manifest.processFiles != null) {
-			processFilePaths = manifest.processFiles!
-		} else {
-			// 兼容：遍历解压目录查找 processes 目录
+		if (isV2 && manifest.files != null && manifest.files.processTree != null) {
 			try {
-				const processDir = extractDir + '/processes'
-				const entries = uni.getFileSystemManager().readdirSync(processDir)
-				if (entries != null) {
-					for (const entry of entries) {
-						if (entry.endsWith('.json')) {
-							processFilePaths.push('processes/' + entry)
-						}
-					}
-				}
-			} catch (e: any) {
-				console.warn('Harmony: processes 目录读取失败:', e)
-			}
-		}
-		
-		for (const filePath of processFilePaths) {
-			try {
-				const content = readJsonFileHarmony(filePath)
-				const processInfo = JSON.parse(content) as ProcessInfo
-				processes.push(processInfo)
-			} catch (e: any) {
-				console.warn('Harmony: 工艺文件解析失败:', filePath, e)
+				const content = readJsonFileHarmony(manifest.files.processTree)
+				processNode = JSON.parse(content)
+			} catch (e) {
+				console.warn('Harmony: 工艺树解析失败', e)
 			}
 		}
 		
@@ -1182,7 +1020,7 @@ function processHarmonyExtractedFiles(
 							resolve({
 								success: true,
 								message: '导入成功',
-								processCount: processes.length,
+								nodeCount: processes.length,
 								uiConfigCount: uiConfigCount,
 								resourceCount: resourceCount,
 								importTime: 0
@@ -1437,51 +1275,33 @@ function extractAndParseWeb(
 				records = manifest.records ?? []
 			}
 			
-			// 4. 解析 processes - 支持 V1 和 V2 两种路径来源
-			const processes: ProcessInfo[] = []
-			let processFilePaths: string[] = []
-			
-			if (isV2 && manifest.files != null && manifest.files.processes != null) {
-				processFilePaths = manifest.files.processes
-			} else if (manifest.processFiles != null) {
-				processFilePaths = manifest.processFiles
-			} else {
-				// 兼容：遍历 ZIP 查找 processes 目录
-				const allFiles = Object.keys(zip.files)
-				processFilePaths = allFiles.filter((name) => {
-					const normalized = name.replace(/\\/g, '/')
-					return normalized.startsWith('processes/') && normalized.endsWith('.json')
-				})
-			}
-			
-			console.log('Web: Process files to load:', processFilePaths.length, processFilePaths);
-			console.log('Web: All ZIP files:', Object.keys(zip.files));
-			
-			// 辅助函数：从 ZIP 中查找文件（兼容正斜杠和反斜杠） - 如在 isV2 块外需要，重新定义
 			const findProcessFile = (path: string): any => {
 				let file = zip.file(path)
 				if (file != null) return file
-				const altPath = path.replace(/\//g, '\\')
+				const altPath = path.replace(/\//g, '\\\\')
 				file = zip.file(altPath)
 				if (file != null) return file
-				const altPath2 = path.replace(/\\/g, '/')
+				const altPath2 = path.replace(/\\\\/g, '/')
 				return zip.file(altPath2)
 			}
 			
-			for (const filePath of processFilePaths) {
-				console.log('Web: Trying to load process file:', filePath);
-				const file = findProcessFile(filePath)
-				if (file != null && !file.dir) {
-					const content = await file.async("string")
-					try {
-						const process = JSON.parse(content) as ProcessInfo
-						processes.push(process)
-						console.log('Web: Parsed process:', process.id);
-					} catch(e) {
-						console.error('Web: Failed to parse process file:', filePath, e);
-					}
-				} else {
-					console.warn('Web: Process file not found in ZIP:', filePath);
+			// 4. 解析 processTree (V4)
+			let processNode: ProcessNode | null = null
+			let processTreeEntry = zip.file('data/process_tree.json')
+			if (processTreeEntry == null) {
+				const keys = Object.keys(zip.files)
+				const treeFile = keys.find((name: string): boolean => name.endsWith('process_tree.json') && !zip.files[name].dir)
+				if (treeFile != null) {
+					processTreeEntry = zip.file(treeFile as string)
+				}
+			}
+			
+			if (processTreeEntry != null) {
+				try {
+					const content = await processTreeEntry.async("string")
+					processNode = JSON.parse(content) as ProcessNode
+				} catch(e) {
+					console.error('Web: Failed to parse process_tree.json', e)
 				}
 			}
 			
@@ -1542,46 +1362,32 @@ function extractAndParseWeb(
 				}
 				
 				// 保存工艺数据
-				for (const p of processes) {
-					await webPutData('t_process', p)
+				if (processNode != null) {
+					await webPutData('t_process', processNode)
 				}
 				
-				// V3: 提取并保存资源
+				// 提取并保存资源
 				let resourceCount = 0
-				
-				// 判断是否有 assets 目录配置
-				const hasAssets = isV2 && manifest.files != null && manifest.files.assets != null
-				const assetsPrefix = hasAssets ? (manifest.files!.assets ?? 'assets/') : 'assets/'
-				
-				// 清空旧的资源记录
 				await webClearStore('t_resources')
 				clearBlobUrls()
 				
-				// 从工艺数据中提取资源引用并处理
-				for (const process of processes) {
-					const processObj = JSON.parse(JSON.stringify(process)) as UTSJSONObject
+				if (processNode != null) {
+					const processObj = JSON.parse(JSON.stringify(processNode)) as UTSJSONObject
 					const extractedResources = extractResourcesFromNode(processObj)
-					
 					for (const res of extractedResources) {
-						// 在 ZIP 中查找资源文件
 						const resourcePath = res.originalPath
 						if (resourcePath == '') continue
 						
-						const resourceFile = findProcessFile(resourcePath)
+						const resourceFile = findProcessFile(resourcePath) || findProcessFile(resourcePath.replace(/\/\//g, '\\\\'))
 						if (resourceFile != null && !resourceFile.dir) {
 							try {
-								// 读取资源为 Blob
 								const blob = await resourceFile.async("blob")
-								
-								// 创建 Blob URL 作为本地路径 (当前会话有效)
 								const blobUrl = storeBlobAndGetUrl(res.id, blob, res.name)
 								res.path = blobUrl
 								
-								let thumbBlobData: Blob | null = null
-								
-								// 处理缩略图
+								let thumbBlobData = null
 								if (res.thumbnail != '') {
-									const thumbFile = findProcessFile(res.thumbnail)
+									const thumbFile = findProcessFile(res.thumbnail) || findProcessFile(res.thumbnail.replace(/\/\//g, '\\\\'))
 									if (thumbFile != null) {
 										const thumbBlob = await thumbFile.async("blob")
 										const thumbUrl = storeBlobAndGetUrl(res.id + '_thumb', thumbBlob)
@@ -1590,8 +1396,6 @@ function extractAndParseWeb(
 									}
 								}
 								
-								// 保存资源元数据到数据库
-								// Web环境：同时保存 Blob 数据以实现持久化
 								await webPutData('t_resources', {
 									id: res.id,
 									node_id: res.nodeId,
@@ -1604,28 +1408,22 @@ function extractAndParseWeb(
 									size: res.size,
 									description: res.description,
 									sort_order: res.sortOrder,
-									// 存储 Blob 数据，确保刷新后可用
 									blob_data: blob,
 									thumbnail_blob: thumbBlobData
 								})
-								
 								resourceCount++
-								console.log('Web: Extracted resource:', res.name);
 							} catch (e) {
 								console.warn('Web: Failed to extract resource:', resourcePath, e);
 							}
-						} else {
-							console.warn('Web: Resource file not found in ZIP:', resourcePath);
 						}
 					}
 				}
 				
-				console.log('Web: DB Save success, UI configs:', uiConfigCount, ', Processes:', processes.length, ', Resources:', resourceCount);
-				
+				console.log('Web: DB Save success');
 				resolve({
 					success: true,
 					message: '导入成功',
-					processCount: processes.length,
+					nodeCount: processNode != null ? 1 : 0,
 					uiConfigCount: uiConfigCount,
 					resourceCount: resourceCount,
 					importTime: 0
@@ -1715,88 +1513,26 @@ function saveUiConfigurationToDatabase(manifest: PackageManifest): number {
 /**
  * 保存工艺数据到数据库
  */
-function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: Error) => void) => {
-		const savePromises: Promise<any>[] = []
-		
-		for (let i = 0; i < processes.length; i++) {
-			const process = processes[i]
-			
-			// 插入工艺主表
-			const insertProcessSQL = `
-				INSERT OR REPLACE INTO t_process 
-				(id, code, name, version, status, product_id, product_name, product_model, step_count, created_at, updated_at, data_json)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			`
-			
-			const processParams: any[] = [
-				process.id,
-				process.code,
-				process.name,
-				process.version,
-				process.status,
-				process.product != null ? process.product.id : '',
-				process.product != null ? process.product.name : '',
-				process.product != null ? process.product.model : '',
-				process.steps != null ? process.steps.length : 0,
-				process.createdAt,
-				process.updatedAt,
-				JSON.stringify(process)
-			]
-			
-			savePromises.push(executeSQL(insertProcessSQL, processParams))
-			
-			// 插入工艺步骤
-			if (process.steps != null) {
-				for (let j = 0; j < process.steps.length; j++) {
-					const step = process.steps[j]
-					const insertStepSQL = `
-					INSERT INTO t_process_step 
-					(process_id, step_no, name, description, description_html, duration, tools_json, materials_json, images_json, videos_json)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-				`
-				
-				const stepParams: any[] = [
-					process.id,
-					step.stepNo,
-					step.name,
-					step.description,
-					step.description_html ?? '', // Save HTML if it exists, fallback to empty string
-					step.duration,
-					JSON.stringify(step.tools),
-					JSON.stringify(step.materials),
-					JSON.stringify(step.images),
-					JSON.stringify(step.videos)
-				]
-				
-				savePromises.push(executeSQL(insertStepSQL, stepParams))
-			}
-		}
+function saveProcessTreeToDatabase(processNode: ProcessNode): Promise<void> {
+	return new Promise<void>((resolve, reject) => {
+		const insertProcessSQL = `
+			INSERT OR REPLACE INTO t_process 
+			(inner_id, class_id, code, name, created_at, updated_at, data_json)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		`
 
-		// 插入附件
-		if (process.attachments != null) {
-			for (let k = 0; k < process.attachments.length; k++) {
-				const attachment = process.attachments[k]
-				const insertAttachmentSQL = `
-					INSERT INTO t_process_attachment 
-					(process_id, type, name, path)
-					VALUES (?, ?, ?, ?)
-				`
-				
-				const attachmentParams: any[] = [
-					process.id,
-					attachment.type,
-					attachment.name,
-					attachment.path
-				]
-				
-				savePromises.push(executeSQL(insertAttachmentSQL, attachmentParams))
-			}
-		}
-	}
-		
-		Promise.all(savePromises)
-			.then(() => {
+		const processParams: any[] = [
+			processNode.innerId,
+			processNode.classId,
+			processNode.code,
+			processNode.name,
+			Date.now().toString(),
+			Date.now().toString(),
+			JSON.stringify(processNode)
+		]
+
+		executeSQL(insertProcessSQL, processParams)
+			.then((_) => {
 				resolve()
 			})
 			.catch((e: any) => {
@@ -1804,4 +1540,3 @@ function saveProcessesToDatabase(processes: ProcessInfo[]): Promise<void> {
 			})
 	})
 }
-

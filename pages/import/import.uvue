@@ -233,7 +233,7 @@
 				const errResult : ImportResult = {
 					success: false,
 					message: (e as UTSJSONObject)['message'] as string ?? '导入失败',
-					processCount: 0,
+					nodeCount: 0,
 					uiConfigCount: 0,
 					resourceCount: 0,
 					importTime: 0

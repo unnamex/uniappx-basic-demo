@@ -13,12 +13,7 @@
 				"navigationBarTitleText": "工艺列表"
 			}
 		},
-		{
-			"path": "pages/process/detail",
-			"style": {
-				"navigationBarTitleText": "工艺详情"
-			}
-		},
+
 		{
 			"path": "pages/import/import",
 			"style": {

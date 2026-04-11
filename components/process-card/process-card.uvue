@@ -16,7 +16,7 @@
 			</view>
 			<view class="info-row">
 				<text class="info-icon">📋</text>
-				<text class="info-text">{{ item.stepCount }} 个步骤</text>
+				<text class="info-text">{{ (item.children ? item.children.length : 0) }} 个步骤</text>
 			</view>
 		</view>
 		
@@ -28,7 +28,7 @@
 </template>
 
 <script lang="uts">
-	import { ProcessListItem } from '@/types/process'
+	import { ProcessNode } from '@/types/process'
 	
 	/**
 	 * 工艺卡片组件
@@ -39,7 +39,7 @@
 		emits: ['click'],
 		props: {
 			item: {
-				type: Object as PropType<ProcessListItem>,
+				type: Object as PropType<ProcessNode>,
 				required: true
 			}
 		},
