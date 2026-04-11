@@ -622,7 +622,7 @@ export function endTransaction(): void {
 
 // #ifdef WEB
 // Web 端数据库版本，变更需增加版本号
-const WEB_DB_VERSION: number = 4
+const WEB_DB_VERSION: number = 5
 
 /**
  * 初始化 IndexedDB（Web端）
@@ -646,11 +646,13 @@ function initIndexedDB(): Promise<void> {
 				const db = (event.target as IDBOpenDBRequest).result
 				
 				// 工艺数据表
-				if (!db.objectStoreNames.contains('t_process')) {
-					const processStore = db.createObjectStore('t_process', { keyPath: 'id' })
-					processStore.createIndex('code', 'code', { unique: false })
-					processStore.createIndex('name', 'name', { unique: false })
+				// V5: 更改主键为 innerId
+				if (db.objectStoreNames.contains('t_process')) {
+					db.deleteObjectStore('t_process')
 				}
+				const processStore = db.createObjectStore('t_process', { keyPath: 'innerId' })
+				processStore.createIndex('code', 'code', { unique: false })
+				processStore.createIndex('name', 'name', { unique: false })
 				
 				// 工艺步骤表
 				if (!db.objectStoreNames.contains('t_process_step')) {

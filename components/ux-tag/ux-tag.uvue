@@ -1,0 +1,169 @@
+<template>
+	<view class="ux-tag" :class="[typeClass, sizeClass, roundClass]" :style="customStyle">
+		<text class="ux-tag-text" :class="[textTypeClass]" :style="textStyle">{{ text }}</text>
+	</view>
+</template>
+
+<script setup lang="uts">
+	/**
+	 * ux-tag 标签组件
+	 * @description 用于标记和选择，支持预设颜色与自定义颜色
+	 */
+	const props = defineProps({
+		/** 标签文本 */
+		text: {
+			type: String,
+			default: ''
+		},
+		/** 标签类型: primary, success, warning, danger, info, default */
+		type: {
+			type: String,
+			default: 'default'
+		},
+		/** 尺寸: small, mini */
+		size: {
+			type: String,
+			default: 'small'
+		},
+		/** 是否圆角 */
+		round: {
+			type: Boolean,
+			default: false
+		},
+		/** 自定义字体颜色 */
+		color: {
+			type: String,
+			default: ''
+		},
+		/** 自定义背景色 */
+		bgColor: {
+			type: String,
+			default: ''
+		},
+		/** 自定义边框颜色 */
+		borderColor: {
+			type: String,
+			default: ''
+		}
+	})
+
+	const typeClass = computed((): string => `ux-tag--${props.type}`)
+	const textTypeClass = computed((): string => `ux-tag-text--${props.type}`)
+	const sizeClass = computed((): string => `ux-tag--${props.size}`)
+	const roundClass = computed((): string => props.round ? 'is-round' : '')
+
+	const customStyle = computed((): string => {
+		let style = ''
+		if (props.bgColor != '') style += `background-color: ${props.bgColor};`
+		if (props.borderColor != '') style += `border-color: ${props.borderColor};`
+		return style
+	})
+
+	const textStyle = computed((): string => {
+		let style = ''
+		if (props.color != '') style += `color: ${props.color};`
+		return style
+	})
+</script>
+
+<style>
+	.ux-tag {
+		border-width: 1px;
+		border-style: solid;
+		justify-content: center;
+		align-items: center;
+		flex-direction: row;
+		box-sizing: border-box;
+		border-radius: 4px; /* Default border radius, can be overridden by modifiers */
+	}
+
+	.ux-tag-text {
+		font-size: 12px;
+	}
+
+	/* Sizes */
+	.ux-tag--small {
+		padding: 0 6px;
+		height: 20px;
+	}
+	.ux-tag--small .ux-tag-text {
+		font-size: 11px;
+	}
+
+	.ux-tag--mini {
+		padding: 0 4px;
+		height: 16px;
+		border-radius: 2px;
+	}
+	.ux-tag--mini .ux-tag-text {
+		font-size: 10px;
+	}
+
+	.is-round {
+		border-radius: 100px;
+	}
+
+	/* Types (Colors mapped from standard palettes) */
+	/* Default */
+	.ux-tag--default {
+		background-color: #f4f4f5;
+		border-color: #e9e9eb;
+	}
+	.ux-tag-text--default {
+		color: #909399;
+	}
+
+	/* Primary */
+	.ux-tag--primary {
+		background-color: #ecf5ff;
+		border-color: #d9ecff;
+	}
+	.ux-tag-text--primary {
+		color: #409eff;
+	}
+
+	/* Success */
+	.ux-tag--success {
+		background-color: #f0f9eb;
+		border-color: #e1f3d8;
+	}
+	.ux-tag-text--success {
+		color: #67c23a;
+	}
+
+	/* Warning */
+	.ux-tag--warning {
+		background-color: #fdf6ec;
+		border-color: #faecd8;
+	}
+	.ux-tag-text--warning {
+		color: #e6a23c;
+	}
+
+	/* Danger */
+	.ux-tag--danger {
+		background-color: #fef0f0;
+		border-color: #fde2e2;
+	}
+	.ux-tag-text--danger {
+		color: #f56c6c;
+	}
+
+	/* Info */
+	.ux-tag--info {
+		background-color: #f4f4f5;
+		border-color: #e9e9eb;
+	}
+	.ux-tag-text--info {
+		color: #909399;
+	}
+
+	/* Cyan (符合项目的青/蓝绿色系) */
+	.ux-tag--cyan {
+		background-color: #E5F8F8;
+		border-color: #A1E9EB;
+	}
+	.ux-tag-text--cyan {
+		color: #00B4B6;
+	}
+</style>

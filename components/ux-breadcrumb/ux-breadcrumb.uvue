@@ -5,6 +5,10 @@
 			<!-- 面包屑项 -->
 			<view class="ux-breadcrumb-item" @click="onItemClick(item, index)">
 				<text class="ux-breadcrumb-text" :class="index == items.length - 1 ? 'ux-breadcrumb-text-active' : ''">{{ item.label }}</text>
+				<!-- 状态标签 -->
+				<ux-tag v-if="item.state != ''" :text="item.state" :type="item.stateType" style="margin-left: 6px;"></ux-tag>
+				<!-- 版本标签 -->
+				<ux-tag v-if="item.version != ''" :text="item.version" type="cyan" style="margin-left: 4px;"></ux-tag>
 			</view>
 			<!-- 箭头分隔符（最后一项不显示） -->
 			<view v-if="index < items.length - 1" class="ux-breadcrumb-separator">
@@ -25,6 +29,9 @@
 	type BreadcrumbItem = {
 		label: string     // 显示文本
 		value: string     // 值/标识（可选，用于点击回调）
+		state: string     // 状态文字（可选）
+		stateType: string // 状态对应的标签类型（可选）
+		version: string   // 版本号文字（可选）
 	}
 
 	// Props

@@ -346,6 +346,24 @@
 	type BreadcrumbItem = {
 		label: string
 		value: string
+		state: string
+		stateType: string
+		version: string
+	}
+	
+	// 状态主题映射字典
+	const stateTagMap = new Map<string, string>()
+	stateTagMap.set('设计中', 'primary')
+	stateTagMap.set('更改中', 'danger')
+	stateTagMap.set('受控中', 'warning')
+	stateTagMap.set('审批中', 'warning')
+	stateTagMap.set('已发布', 'success')
+	stateTagMap.set('已废弃', 'info')
+	
+	// 获取状态对应的标签类型
+	const getStateTagType = (stateName: string): string => {
+		if (stateName == '') return 'default'
+		return stateTagMap.get(stateName) ?? 'default'
 	}
 
 	// Define ViewModels
@@ -761,11 +779,21 @@
 	
 	// 为节点添加显示字段（图标+名称，资源计数标签）
 	const enrichNodeForDisplay = (node: UTSJSONObject): UTSJSONObject => {
+		// 兼容 V4/V5 数据结构：尝试从 targetClassId 映射合成 type 字段
+		if (node['type'] == null && node['targetClassId'] != null) {
+			const targetCls = node['targetClassId'] as string
+			if (targetCls == 'Process') node['type'] = 'process'
+			else if (targetCls == 'Operation') node['type'] = 'procedure'
+			else if (targetCls == 'Step') node['type'] = 'step'
+			else if (targetCls == 'ActionUnit') node['type'] = 'action-unit'
+			else node['type'] = targetCls.toLowerCase()
+		}
+		
 		// 获取图标配置
 		let fallbackEmoji = '📄'
 		let iconName = 'default'
 		
-		const nodeType = node['type'] as string
+		const nodeType = (node['type'] as string) ?? ''
 		const cfg = iconConfigs.get(nodeType) ?? iconConfigs.get('default')
 		
 		if (cfg != null) {
@@ -1000,50 +1028,65 @@
 		const topItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
 		// 部件面包屑项
-		let partLabel = ''
+		let partLabel = '未关联部件'
 		if (partCode != '') {
-			partLabel = partCode
-			if (partName != '') partLabel = partLabel + '，' + partName
-			if (partFullversionNo != '') partLabel = partLabel + ' ' + partFullversionNo
-		} else {
-			partLabel = '未关联部件'
+			partLabel = partName != '' ? `${partCode}，${partName}` : partCode
 		}
-		topItems.push({ label: partLabel, value: 'part' } as BreadcrumbItem)
+		topItems.push({ 
+			label: partLabel, 
+			value: 'part',
+			state: partCode != '' ? partStateName : '',
+			stateType: getStateTagType(partStateName),
+			version: partCode != '' ? partFullversionNo : ''
+		} as BreadcrumbItem)
 
 		// 工艺面包屑项
-		let processLabel = ''
+		let processLabel = processName
 		if (processCode != '') {
-			processLabel = processCode + '，' + processName
-			if (fullversionNo != '') processLabel = processLabel + ' ' + fullversionNo
-		} else {
-			processLabel = processName
+			processLabel = `${processCode}，${processName}`
 		}
-		topItems.push({ label: processLabel, value: 'process' } as BreadcrumbItem)
+		topItems.push({ 
+			label: processLabel, 
+			value: 'process',
+			state: processCode != '' ? stateName : '',
+			stateType: getStateTagType(stateName),
+			version: processCode != '' ? fullversionNo : ''
+		} as BreadcrumbItem)
 
 		topBreadcrumbItems.value = topItems
 
 		// === 下部分面包屑：部件详情 > 工艺详情 ===
 		const bottomItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
-		// 部件详情面包屑项（类型 | 状态 | 密级 | 修改人 | 修改时间）
+		// 部件详情面包屑项（类型 | 密级 | 修改人 | 修改时间）
 		const partDetailParts: string[] = [] as string[]
 		if (partClassIdDisplay != '') partDetailParts.push(partClassIdDisplay)
-		if (partStateName != '') partDetailParts.push(partStateName)
 		if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
 		if (partModifyByIdDisplay != '') partDetailParts.push(partModifyByIdDisplay)
 		if (partModifyTime != '') partDetailParts.push(partModifyTime)
 		const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
-		bottomItems.push({ label: partDetailLabel, value: 'part-detail' } as BreadcrumbItem)
+		bottomItems.push({ 
+			label: partDetailLabel, 
+			value: 'part-detail',
+			state: '',
+			stateType: 'default',
+			version: ''
+		} as BreadcrumbItem)
 
-		// 工艺详情面包屑项（类型 | 状态 | 密级 | 修改人 | 修改时间）
+		// 工艺详情面包屑项（类型 | 密级 | 修改人 | 修改时间）
 		const processDetailParts: string[] = [] as string[]
 		if (classIdDisplay != '') processDetailParts.push(classIdDisplay)
-		if (stateName != '') processDetailParts.push(stateName)
 		if (secretIdDisplay != '') processDetailParts.push(secretIdDisplay)
 		if (modifyByIdDisplay != '') processDetailParts.push(modifyByIdDisplay)
 		if (modifyTime != '') processDetailParts.push(modifyTime)
 		const processDetailLabel = processDetailParts.length > 0 ? processDetailParts.join(' | ') : '无工艺详情'
-		bottomItems.push({ label: processDetailLabel, value: 'process-detail' } as BreadcrumbItem)
+		bottomItems.push({ 
+			label: processDetailLabel, 
+			value: 'process-detail',
+			state: '',
+			stateType: 'default',
+			version: ''
+		} as BreadcrumbItem)
 
 		bottomBreadcrumbItems.value = bottomItems
 	}
