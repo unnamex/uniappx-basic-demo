@@ -63,12 +63,13 @@
 										></ux-table>
 									</view>
 									
-									<!-- Key-Value Component (Info Panel) -->
-									<view v-else-if="comp.type == 'key-value'" class="node-info-panel">
-										<text v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-row">
-											{{ field['label'] }}: {{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}
-										</text>
-									</view>
+									<!-- InfoView 组件 -->
+									<ux-info-view
+										v-else-if="comp.type == 'infoView'"
+										:fields="getFieldsFromConfig(comp.config)"
+										:data="comp.data.length > 0 ? comp.data[0] : null"
+										:columns="getInfoViewColumns(comp.config)"
+									/>
 									
 									<!-- Text Block Component -->
 									<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
@@ -117,12 +118,13 @@
 												></ux-table>
 											</view>
 											
-											<!-- Key-Value Component (Info Panel) -->
-											<view v-else-if="comp.type == 'key-value'" class="node-info-panel">
-												<text v-for="(field, idx) in getFieldsFromConfig(comp.config)" :key="idx" class="info-row">
-													{{ field['label'] }}: {{ getString(comp.data.length > 0 ? comp.data[0] : null, field['key'] as string) }}
-												</text>
-											</view>
+											<!-- InfoView 组件 -->
+											<ux-info-view
+												v-else-if="comp.type == 'infoView'"
+												:fields="getFieldsFromConfig(comp.config)"
+												:data="comp.data.length > 0 ? comp.data[0] : null"
+												:columns="getInfoViewColumns(comp.config)"
+											/>
 											
 											<!-- Text Block Component -->
 											<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
@@ -1204,7 +1206,7 @@
 		return []
 	}
 	
-	// 从 config 中提取 fields (用于 Key-Value)
+	// 从 config 中提取 fields (用于 InfoView)
 	const getFieldsFromConfig = (config: any): UTSJSONObject[] => {
 		if (config == null) return []
 		const confObj = config as UTSJSONObject
@@ -1213,6 +1215,15 @@
 			if (Array.isArray(fields)) return fields as UTSJSONObject[]
 		}
 		return []
+	}
+	
+	// 从 config 中提取 columns 配置（用于 InfoView，默认 2 列）
+	const getInfoViewColumns = (config: any): number => {
+		if (config == null) return 2
+		const confObj = config as UTSJSONObject
+		const cols = confObj['columns']
+		if (cols != null) return parseInt(cols.toString())
+		return 2
 	}
 	
 	// 获取节点类型的中文标签

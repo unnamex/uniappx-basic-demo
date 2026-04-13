@@ -73,7 +73,7 @@ def clean_components(components):
             fields = config['fields']
             if isinstance(fields, list):
                 original_len = len(fields)
-                config['fields'] = [f for f in fields if f.get('key') not in REMOVED_FIELDS]
+                config['fields'] = [f for f in fields if f.get('key') not in REMOVED_FIELDS and f.get('vModel') not in REMOVED_FIELDS]
                 if len(config['fields']) < original_len:
                     print(f'  清理组件 {comp_id} 中的 duration 字段')
         
@@ -86,6 +86,19 @@ def clean_components(components):
                 if len(config['columns']) < original_len:
                     print(f'  清理组件 {comp_id} 中的 duration 列')
         
+        # key-value → infoView 类型转换
+        if comp.get('type') == 'key-value':
+            comp['type'] = 'infoView'
+            print(f'  转换组件类型: {comp_id} key-value → infoView')
+            # fields 中 key → vModel 字段名转换
+            if isinstance(config, dict) and 'fields' in config:
+                for f in config['fields']:
+                    if 'key' in f:
+                        f['vModel'] = f.pop('key')
+                # 补充默认 columns 配置
+                if 'columns' not in config:
+                    config['columns'] = 2
+
         cleaned.append(comp)
     
     return cleaned

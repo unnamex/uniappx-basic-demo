@@ -1,0 +1,134 @@
+<template>
+	<view class="ux-info-view">
+		<view v-for="(row, rowIdx) in fieldRows" :key="rowIdx" class="info-view-row">
+			<view v-for="(field, colIdx) in row" :key="colIdx" class="info-view-cell"
+				:style="{ width: cellWidth }">
+				<text class="info-view-label">{{ field['label'] ?? '' }}：</text>
+				<text class="info-view-value">{{ getFieldValue(field) }}</text>
+			</view>
+		</view>
+		<!-- 无字段时的占位提示 -->
+		<view v-if="fields.length == 0" class="info-view-empty">
+			<text class="info-view-empty-text">暂无信息</text>
+		</view>
+	</view>
+</template>
+
+<script lang="uts">
+	import { PropType } from 'vue'
+
+	export default {
+		name: "ux-info-view",
+		props: {
+			/** 字段配置数组，每项含 vModel（数据键名）和 label（显示标签） */
+			fields: {
+				type: Array as PropType<UTSJSONObject[]>,
+				default: () => [] as UTSJSONObject[]
+			},
+			/** 当前节点的数据对象 */
+			data: {
+				type: Object as PropType<UTSJSONObject | null>,
+				default: null
+			},
+			/** 每行显示的列数，组件级别统一配置 */
+			columns: {
+				type: Number,
+				default: 2
+			}
+		},
+		computed: {
+			/** 将fields按columns分组为二维数组 */
+			fieldRows(): UTSJSONObject[][] {
+				const rows = [] as UTSJSONObject[][]
+				const cols = this.columns > 0 ? this.columns : 2
+				let currentRow = [] as UTSJSONObject[]
+				for (let i = 0; i < this.fields.length; i++) {
+					currentRow.push(this.fields[i])
+					if (currentRow.length >= cols) {
+						rows.push(currentRow)
+						currentRow = [] as UTSJSONObject[]
+					}
+				}
+				if (currentRow.length > 0) {
+					rows.push(currentRow)
+				}
+				return rows
+			},
+			/** 每个单元格的百分比宽度 */
+			cellWidth(): string {
+				const cols = this.columns > 0 ? this.columns : 2
+				const pct = Math.floor(100 / cols)
+				return pct + '%'
+			}
+		},
+		methods: {
+			/** 从 data 中读取 vModel 对应的值 */
+			getFieldValue(field: UTSJSONObject): string {
+				if (this.data == null) return '—'
+				const vModel = field['vModel'] as string | null
+				if (vModel == null || vModel == '') return '—'
+				const val = this.data![vModel]
+				if (val == null) return '—'
+				const str = val.toString()
+				if (str.trim() == '') return '—'
+				return str
+			}
+		}
+	}
+</script>
+
+<style>
+	.ux-info-view {
+		flex-direction: column;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E6ED;
+		border-radius: 6px;
+		overflow: hidden;
+		background-color: #FFFFFF;
+	}
+
+	.info-view-row {
+		flex-direction: row;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #F0F2F5;
+	}
+
+	/* 每个单元格：横向排列 label 和 value */
+	.info-view-cell {
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 10px 14px;
+		border-right-width: 1px;
+		border-right-style: solid;
+		border-right-color: #F0F2F5;
+	}
+
+	/* label 不换行，固定宽度收缩 */
+	.info-view-label {
+		font-size: 13px;
+		color: #94A3B8;
+		lines: 1;
+		flex-shrink: 0;
+	}
+
+	/* value 占剩余空间，过长自动折行 */
+	.info-view-value {
+		font-size: 14px;
+		color: #1E293B;
+		flex: 1;
+	}
+
+	.info-view-empty {
+		padding: 20px;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.info-view-empty-text {
+		font-size: 13px;
+		color: #C0C4CC;
+	}
+</style>
