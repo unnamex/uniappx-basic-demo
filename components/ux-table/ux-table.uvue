@@ -99,6 +99,7 @@
 		originData : UTSJSONObject
 		// 方便计算显示
 		isShow : boolean
+		loadedChildren : boolean
 	}
 	
 	type DragState = {
@@ -139,7 +140,7 @@
 					startWidth: 0,
 					columnIndex: -1
 				} as DragState,
-				isAllExpanded: true,
+				isAllExpanded: false, // 懒加载模式下默认收起
 				/** 存储展开了富文本的行ID列表 */
 				expandedRichTextIds: [] as string[]
 			}
@@ -182,6 +183,8 @@
 				handler(newId: string | null) {
 					if (newId != null) {
 						this.selectedRowId = newId
+						// Auto select and expand invisible parents via lazy load
+						this.autoExpandToId(newId)
 					}
 				},
 				immediate: true
@@ -268,7 +271,7 @@
 				if (!this.isAllExpanded) {
 					// Collapse all if global state is collapsed
 					this.allRows.forEach(row => { 
-						if(row.hasChildren) row.expanded = false 
+						if(row.hasChildren && row.level > 0) row.expanded = false 
 					})
 					this.refreshVisibility()
 				}
@@ -297,36 +300,142 @@
 					}
 					const hasChildren = children != null && children.length > 0
 					
+					// 懒展开：只有第 0 级（工艺）和第 1 级（工序）默认加载
+					const shouldLoadChildren = level < 1 || this.isAllExpanded
+
 					const row : TableRow = {
 						id: id.toString(),
 						level: level,
-						expanded: true, // Default to expanded
+						expanded: shouldLoadChildren, // 初始只有已加载内容的层级才默认展开
 						hasChildren: hasChildren,
 						parentId: parentId,
 						originData: item,
-						isShow: true
+						isShow: true,
+						loadedChildren: shouldLoadChildren
 					}
 					
 					this.allRows.push(row)
 					
-					if (hasChildren) {
+					if (hasChildren && row.loadedChildren) {
 						this.flatten(children!, level + 1, row.id)
 					}
 				})
 			},
+			insertChildren(list: UTSJSONObject[], level: number, parentId: string, insertIndex: number): number {
+				let currentInsertIdx = insertIndex;
+				list.forEach((item, index) => {
+					let id = item["innerId"] ?? item["id"]
+					if (id == null) {
+						id = `${parentId}_${index}`
+					}
+					const childrenRaw = item["children"]
+					let children: UTSJSONObject[] | null = null
+					if (childrenRaw != null && Array.isArray(childrenRaw)) {
+						children = childrenRaw as UTSJSONObject[]
+					}
+					const hasChildren = children != null && children.length > 0
+					
+					const row : TableRow = {
+						id: id.toString(),
+						level: level,
+						expanded: false, 
+						hasChildren: hasChildren,
+						parentId: parentId,
+						originData: item,
+						isShow: true,
+						loadedChildren: false
+					}
+					
+					this.allRows.splice(currentInsertIdx, 0, row);
+					currentInsertIdx++;
+				})
+				return currentInsertIdx;
+			},
 			toggleExpand(row : TableRow) {
 				if (!row.hasChildren) return
+				
+				if (!row.loadedChildren) {
+					// 懒加载子节点
+					row.loadedChildren = true;
+					const childrenRaw = row.originData["children"];
+					if (childrenRaw != null && Array.isArray(childrenRaw)) {
+						const children = childrenRaw as UTSJSONObject[];
+						const parentIdx = this.allRows.findIndex((r: TableRow): boolean => r.id == row.id);
+						if (parentIdx >= 0) {
+							this.insertChildren(children, row.level + 1, row.id, parentIdx + 1);
+						}
+					}
+				}
+
 				row.expanded = !row.expanded
 				this.updateChildrenVisibility(row)
 			},
 			toggleAll() {
 				this.isAllExpanded = !this.isAllExpanded
+				if (this.isAllExpanded) {
+					// Force load all children dynamically
+					let i = 0;
+					while (i < this.allRows.length) {
+						const row = this.allRows[i];
+						if (row.hasChildren && !row.loadedChildren) {
+							row.loadedChildren = true;
+							const childrenRaw = row.originData["children"];
+							if (childrenRaw != null && Array.isArray(childrenRaw)) {
+								this.insertChildren(childrenRaw as UTSJSONObject[], row.level + 1, row.id, i + 1);
+							}
+						}
+						i++;
+					}
+				}
 				this.allRows.forEach(row => {
 					if (row.hasChildren) {
 						row.expanded = this.isAllExpanded
 					}
 				})
 				this.refreshVisibility()
+			},
+			// 用于寻找目标节点时懒展开上级
+			autoExpandToId(targetId: string) {
+				const path = [] as UTSJSONObject[];
+				if (this.findPathInRaw(this.data, targetId, path)) {
+					for (let i = 0; i < path.length - 1; i++) {
+						const ancestorNode = path[i];
+						const ancestorId = ancestorNode["innerId"]?.toString() ?? ancestorNode["id"]?.toString() ?? '';
+						const ancestorRow = this.findRowById(ancestorId);
+						if (ancestorRow != null) {
+							if (!ancestorRow.loadedChildren) {
+								ancestorRow.loadedChildren = true;
+								const cRaw = ancestorNode["children"];
+								if (cRaw != null && Array.isArray(cRaw)) {
+									const parentIdx = this.allRows.findIndex((r: TableRow): boolean => r.id == ancestorId);
+									if (parentIdx >= 0) {
+										this.insertChildren(cRaw as UTSJSONObject[], ancestorRow.level + 1, ancestorId, parentIdx + 1);
+									}
+								}
+							}
+							if (!ancestorRow.expanded) {
+								ancestorRow.expanded = true;
+							}
+						}
+					}
+					this.refreshVisibility();
+				}
+			},
+			findPathInRaw(list: UTSJSONObject[], targetId: string, path: UTSJSONObject[]): boolean {
+				for (let i = 0; i < list.length; i++) {
+					const item = list[i];
+					const id = item["innerId"]?.toString() ?? item["id"]?.toString() ?? "";
+					path.push(item);
+					if (id == targetId) return true;
+					const childrenRaw = item["children"];
+					if (childrenRaw != null && Array.isArray(childrenRaw)) {
+						if (this.findPathInRaw(childrenRaw as UTSJSONObject[], targetId, path)) {
+							return true;
+						}
+					}
+					path.pop();
+				}
+				return false;
 			},
 			refreshVisibility() {
 				// Full refresh of visibility
