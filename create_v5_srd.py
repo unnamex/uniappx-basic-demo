@@ -106,7 +106,9 @@ def main():
     print(f'读取工艺树: {process_tree["name"]} ({process_tree["code"]})')
     print(f'  新增字段: classId_display={process_tree.get("classId_display")}, '
           f'modifyById_display={process_tree.get("modifyById_display")}, '
-          f'secretId_display={process_tree.get("secretId_display")}')
+          f'secretId_display={process_tree.get("secretId_display")}, '
+          f'phaseId_display={process_tree.get("phaseId_display")}, '
+          f'partPhaseId_display={process_tree.get("partPhaseId_display")}')
     
     with zipfile.ZipFile(INPUT_SRD, 'r') as in_zf:
         with zipfile.ZipFile(OUTPUT_SRD, 'w', zipfile.ZIP_DEFLATED) as out_zf:

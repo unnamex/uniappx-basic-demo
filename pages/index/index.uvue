@@ -1019,6 +1019,7 @@
 		const modifyByIdDisplay = (node['modifyById_display'] as string) ?? ''
 		const modifyTime = (node['modifyTime'] as string) ?? ''
 		const contextName = (node['contextName'] as string) ?? ''
+		const phaseIdDisplay = (node['phaseId_display'] as string) ?? ''
 
 		// === 部件侧元数据 ===
 		const partCode = (node['partCode'] as string) ?? ''
@@ -1030,6 +1031,7 @@
 		const partModifyByIdDisplay = (node['partModifyById_display'] as string) ?? ''
 		const partModifyTime = (node['partModifyTime'] as string) ?? ''
 		const partContextName = (node['partContextName'] as string) ?? ''
+		const partPhaseIdDisplay = (node['partPhaseId_display'] as string) ?? ''
 
 		// 获取图标
 		const icon = (node['icon'] as string) ?? '📋'
@@ -1075,6 +1077,7 @@
 		if (partModifyByIdDisplay != '') partDetailParts.push(partModifyByIdDisplay)
 		if (partModifyTime != '') partDetailParts.push(partModifyTime)
 		if (partContextName != '') partDetailParts.push(partContextName)
+		if (partPhaseIdDisplay != '') partDetailParts.push(partPhaseIdDisplay)
 		if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
 		const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
 		bottomItems.push({ 
@@ -1091,6 +1094,7 @@
 		if (modifyByIdDisplay != '') processDetailParts.push(modifyByIdDisplay)
 		if (modifyTime != '') processDetailParts.push(modifyTime)
 		if (contextName != '') processDetailParts.push(contextName)
+		if (phaseIdDisplay != '') processDetailParts.push(phaseIdDisplay)
 		if (secretIdDisplay != '') processDetailParts.push(secretIdDisplay)
 		const processDetailLabel = processDetailParts.length > 0 ? processDetailParts.join(' | ') : '无工艺详情'
 		bottomItems.push({ 
