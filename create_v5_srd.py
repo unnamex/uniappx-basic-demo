@@ -4,8 +4,8 @@
 使用更新后的 process_tree.json（附件字段重构版）
 
 - resources → attachment
-- 移除已删除字段的 UI 组件引用（tools/materials/safetyNotes/safetyChecks/checklist/notes/duration）
-- 保留 qualityChecks / processDescription
+- 移除已删除字段的 UI 组件引用（tools/materials/safetyNotes/safetyChecks/checklist/notes/duration等）
+- 全面清洗废弃字段：description, processDescription, productName 等
 """
 
 import zipfile
@@ -17,7 +17,7 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 INPUT_SRD = 'test_v4_richer.srd'
-OUTPUT_SRD = 'test_v5_attachment.srd'
+OUTPUT_SRD = 'test_v5_clean.srd'
 PROCESS_TREE_FILE = 'process_tree.json'
 
 # 需要从 UI 配置中移除的组件（引用了已删除字段）
@@ -40,8 +40,13 @@ REMOVED_TAB_IDS = {
     'tab_bottom_step_checklist', # 检查清单（工步底部）
 }
 
-# 需要从 key-value 组件的 fields 中移除的字段
-REMOVED_FIELDS = {'duration'}
+# 需要清理与移除的废弃字段集合
+REMOVED_FIELDS = {
+    'duration',
+    'description', 'description_html', 'processDescription',
+    'productName', 'productModel', 'targetVehicle',
+    'qualityLevel', 'inspectionType', 'qualityChecks'
+}
 
 def clean_components(components):
     """清理组件列表：移除引用已删字段的组件，清理 fields 中的 duration"""
@@ -54,8 +59,16 @@ def clean_components(components):
             print(f'  移除组件: {comp_id}')
             continue
         
-        # 清理 key-value 组件中的 duration 字段
         config = comp.get('config', {})
+        
+        # 移除整个依赖废弃 dataSource 的组件
+        if isinstance(config, dict):
+            ds = config.get('dataSource')
+            if isinstance(ds, str) and ds in REMOVED_FIELDS:
+                print(f'  因依赖废弃 dataSource={ds} 移除组件: {comp_id}')
+                continue
+
+        # 清理 key-value 组件中的字段
         if isinstance(config, dict) and 'fields' in config:
             fields = config['fields']
             if isinstance(fields, list):
@@ -90,6 +103,31 @@ def clean_tabs(tabs):
     return cleaned
 
 
+def extract_attachments(node, attachments_list):
+    """递归提取附件并记录nodeId，同时从节点中删除该属性"""
+    node_id = node.get('innerId', '')
+    if 'attachment' in node:
+        for att in node['attachment']:
+            att['nodeId'] = node_id
+            attachments_list.append(att)
+        del node['attachment']
+    
+    if 'resources' in node:
+        for res in node['resources']:
+            res['nodeId'] = node_id
+            attachments_list.append(res)
+        del node['resources']
+        
+    # 清理废弃字段
+    for field in REMOVED_FIELDS:
+        if field in node:
+            del node[field]
+            
+    for child in node.get('children', []):
+        extract_attachments(child, attachments_list)
+
+
+
 def main():
     if not os.path.exists(INPUT_SRD):
         print(f'错误：找不到输入文件 {INPUT_SRD}')
@@ -102,6 +140,9 @@ def main():
     # 读取更新后的工艺树
     with open(PROCESS_TREE_FILE, 'r', encoding='utf-8') as f:
         process_tree = json.load(f)
+        
+    flat_attachments = []
+    extract_attachments(process_tree, flat_attachments)
     
     print(f'读取工艺树: {process_tree["name"]} ({process_tree["code"]})')
     print(f'  新增字段: classId_display={process_tree.get("classId_display")}, '
@@ -109,6 +150,7 @@ def main():
           f'secretId_display={process_tree.get("secretId_display")}, '
           f'phaseId_display={process_tree.get("phaseId_display")}, '
           f'partPhaseId_display={process_tree.get("partPhaseId_display")}')
+    print(f'  提取附件: 共 {len(flat_attachments)} 项')
     
     with zipfile.ZipFile(INPUT_SRD, 'r') as in_zf:
         with zipfile.ZipFile(OUTPUT_SRD, 'w', zipfile.ZIP_DEFLATED) as out_zf:
@@ -128,8 +170,11 @@ def main():
                     manifest = json.loads(content.decode('utf-8'))
                     manifest['version'] = '5.0'
                     manifest['name'] = 'V8发动机总装工艺包（V5-附件版）'
-                    manifest['description'] = '字段重构版：resources→attachment，新增元数据字段，移除冗余数据'
+                    manifest['description'] = '字段重构版：resources→attachment，并在data目录独立出attachment.json'
                     manifest['exportTime'] = '2026-04-11T11:28:00+08:00'
+                    if 'files' not in manifest:
+                        manifest['files'] = {}
+                    manifest['files']['attachment'] = 'data/attachment.json'
                     out_zf.writestr(name, json.dumps(manifest, ensure_ascii=False, indent=2))
                     print(f'更新 manifest.json (version={manifest["version"]})')
                     
@@ -154,10 +199,15 @@ def main():
                     out_zf.writestr(item, content)
                     entries_copied += 1
             
-            # 写入新的工艺树
+            # 写入分离的附件列表
+            out_zf.writestr('data/attachment.json', 
+                          json.dumps(flat_attachments, ensure_ascii=False, indent=2))
+            print(f'\n写入独立附件: data/attachment.json')
+
+            # 写入新的工艺树 (已瘦身)
             out_zf.writestr('data/process_tree.json', 
                           json.dumps(process_tree, ensure_ascii=False, indent=2))
-            print(f'\n写入新工艺树: data/process_tree.json')
+            print(f'写入新工艺树: data/process_tree.json')
             
             print(f'\n=== 打包完成 ===')
             print(f'输出文件: {OUTPUT_SRD}')

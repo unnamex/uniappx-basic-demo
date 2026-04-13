@@ -3,7 +3,7 @@ import { ProcessNode } from '@/types/process'
 import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
-import { saveResource, extractResourcesFromNode, getAssetsBasePath } from '@/services/resourceService'
+import { saveResource, extractResourcesFromNode, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
 // #ifdef APP-ANDROID
 import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
 // #endif
@@ -633,30 +633,47 @@ function extractAndParseAndroid(
 			saveUiConfigurationToDatabase(groups, tabs, components, records)
 				.then((uiConfigCount: number) => {
 			
-		// 从工艺树提取资源
+		// 提取资源（兼容全量解析和独立打包）
 			let resourceCount = 0
-			const allResources = []
+			const allResources: ResourceItem[] = []
+			const rawResources: ResourceItem[] = []
+			
+			if (manifest?.files != null) {
+				const files = manifest.files as ManifestFileRefs
+				const attPath = files.attachment ?? 'data/attachment.json'
+				const attContent = findJsonFile(attPath)
+				if (attContent != null) {
+					const indRes = parseAttachmentFile(attContent)
+					for (const res of indRes) {
+					    rawResources.push(res)
+					}
+				}
+			}
 			
 			if (processNode != null) {
 				const processObj = processNode
 				const extractedResources = extractResourcesFromNode(processObj)
 				for (const res of extractedResources) {
-					const originalPath = res.originalPath
-					const localPath = savedAssetPaths.get(originalPath) || savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
-					
-					if (localPath != null) {
-						res.path = localPath
-					} else {
-						continue
-					}
-					
-					if (res.thumbnail != '') {
-						const thumbPath = savedAssetPaths.get(res.thumbnail)
-						if (thumbPath != null) res.thumbnail = thumbPath
-						else res.thumbnail = ''
-					}
-					allResources.push(res)
+				    rawResources.push(res)
 				}
+			}
+			
+			for (const res of rawResources) {
+				const originalPath = res.originalPath
+				const localPath = savedAssetPaths.get(originalPath) || savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
+				
+				if (localPath != null) {
+					res.path = localPath
+				} else {
+					continue
+				}
+				
+				if (res.thumbnail != '') {
+					const thumbPath = savedAssetPaths.get(res.thumbnail)
+					if (thumbPath != null) res.thumbnail = thumbPath
+					else res.thumbnail = ''
+				}
+				allResources.push(res)
 			}
 			
 			const executeDbSave = async () => {
@@ -965,40 +982,56 @@ function processHarmonyExtractedFiles(
 		try {
 			let resourceCount = 0
 			const allResources: ResourceItem[] = []
+			const rawResources: ResourceItem[] = []
+			
+			if (manifest?.files != null) {
+				const files = manifest.files as ManifestFileRefs
+				const attPath = files.attachment ?? 'data/attachment.json'
+				const attContent = findJsonFile(attPath)
+				if (attContent != null) {
+					const indRes = parseAttachmentFile(attContent)
+					for (const res of indRes) {
+					    rawResources.push(res)
+					}
+				}
+			}
 			
 			if (processNode != null) {
 				const processObj = JSON.parse(JSON.stringify(processNode)) as UTSJSONObject
 				const extractedResources = extractResourcesFromNode(processObj)
-				
 				for (const res of extractedResources) {
-					const originalPath = res.originalPath
-					const localPath = savedAssetPaths.get(originalPath)
-					
-					if (localPath != null) {
-						res.path = localPath
-					} else {
-						const altPath = originalPath.replace(/\//g, '\\\\')
-						const altLocalPath = savedAssetPaths.get(altPath)
-						if (altLocalPath != null) {
-							res.path = altLocalPath
-						} else {
-							console.warn('Harmony: 资源文件未找到:', originalPath)
-							continue
-						}
-					}
-					
-					// 处理缩略图路径
-					if (res.thumbnail != '') {
-						const thumbPath = savedAssetPaths.get(res.thumbnail)
-						if (thumbPath != null) {
-							res.thumbnail = thumbPath
-						} else {
-							res.thumbnail = ''
-						}
-					}
-					
-					allResources.push(res)
+				    rawResources.push(res)
 				}
+			}
+			
+			for (const res of rawResources) {
+				const originalPath = res.originalPath
+				const localPath = savedAssetPaths.get(originalPath)
+				
+				if (localPath != null) {
+					res.path = localPath
+				} else {
+					const altPath = originalPath.replace(/\//g, '\\\\')
+					const altLocalPath = savedAssetPaths.get(altPath)
+					if (altLocalPath != null) {
+						res.path = altLocalPath
+					} else {
+						console.warn('Harmony: 资源文件未找到:', originalPath)
+						continue
+					}
+				}
+				
+				// 处理缩略图路径
+				if (res.thumbnail != '') {
+					const thumbPath = savedAssetPaths.get(res.thumbnail)
+					if (thumbPath != null) {
+						res.thumbnail = thumbPath
+					} else {
+						res.thumbnail = ''
+					}
+				}
+				
+				allResources.push(res)
 			}
 			
 			// 封装一个保存资源文件的递归逻辑
@@ -1379,50 +1412,73 @@ function extractAndParseWeb(
 				await webClearStore('t_resources')
 				clearBlobUrls()
 				
+				const rawResources: ResourceItem[] = []
+				
+				if (manifest?.files != null) {
+					const files = manifest.files as ManifestFileRefs
+					const attPath = files.attachment ?? 'data/attachment.json'
+					const attFile = findProcessFile(attPath)
+					if (attFile != null && !attFile.dir) {
+						try {
+							const attContent = await attFile.async("string")
+							const indRes = parseAttachmentFile(attContent)
+							for (const res of indRes) {
+							    rawResources.push(res)
+							}
+						} catch (e) {
+							console.warn('Web: Failed to parse attachment.json', e)
+						}
+					}
+				}
+				
 				if (processNode != null) {
 					const processObj = JSON.parse(JSON.stringify(processNode)) as UTSJSONObject
 					const extractedResources = extractResourcesFromNode(processObj)
 					for (const res of extractedResources) {
-						const resourcePath = res.originalPath
-						if (resourcePath == '') continue
-						
-						const resourceFile = findProcessFile(resourcePath) || findProcessFile(resourcePath.replace(/\/\//g, '\\\\'))
-						if (resourceFile != null && !resourceFile.dir) {
-							try {
-								const blob = await resourceFile.async("blob")
-								const blobUrl = storeBlobAndGetUrl(res.id, blob, res.name)
-								res.path = blobUrl
-								
-								let thumbBlobData = null
-								if (res.thumbnail != '') {
-									const thumbFile = findProcessFile(res.thumbnail) || findProcessFile(res.thumbnail.replace(/\/\//g, '\\\\'))
-									if (thumbFile != null) {
-										const thumbBlob = await thumbFile.async("blob")
-										const thumbUrl = storeBlobAndGetUrl(res.id + '_thumb', thumbBlob)
-										res.thumbnail = thumbUrl
-										thumbBlobData = thumbBlob
-									}
+						rawResources.push(res)
+					}
+				}
+				
+				for (const res of rawResources) {
+					const resourcePath = res.originalPath
+					if (resourcePath == '') continue
+					
+					const resourceFile = findProcessFile(resourcePath) || findProcessFile(resourcePath.replace(/\/\//g, '\\\\'))
+					if (resourceFile != null && !resourceFile.dir) {
+						try {
+							const blob = await resourceFile.async("blob")
+							const blobUrl = storeBlobAndGetUrl(res.id, blob, res.name)
+							res.path = blobUrl
+							
+							let thumbBlobData = null
+							if (res.thumbnail != '') {
+								const thumbFile = findProcessFile(res.thumbnail) || findProcessFile(res.thumbnail.replace(/\/\//g, '\\\\'))
+								if (thumbFile != null) {
+									const thumbBlob = await thumbFile.async("blob")
+									const thumbUrl = storeBlobAndGetUrl(res.id + '_thumb', thumbBlob)
+									res.thumbnail = thumbUrl
+									thumbBlobData = thumbBlob
 								}
-								
-								await webPutData('t_resources', {
-									id: res.id,
-									node_id: res.nodeId,
-									type: res.type,
-									name: res.name,
-									path: res.path,
-									original_path: res.originalPath,
-									thumbnail: res.thumbnail,
-									duration: res.duration,
-									size: res.size,
-									description: res.description,
-									sort_order: res.sortOrder,
-									blob_data: blob,
-									thumbnail_blob: thumbBlobData
-								})
-								resourceCount++
-							} catch (e) {
-								console.warn('Web: Failed to extract resource:', resourcePath, e);
 							}
+							
+							await webPutData('t_resources', {
+								id: res.id,
+								node_id: res.nodeId,
+								type: res.type,
+								name: res.name,
+								path: res.path,
+								original_path: res.originalPath,
+								thumbnail: res.thumbnail,
+								duration: res.duration,
+								size: res.size,
+								description: res.description,
+								sort_order: res.sortOrder,
+								blob_data: blob,
+								thumbnail_blob: thumbBlobData
+							})
+							resourceCount++
+						} catch (e) {
+							console.warn('Web: Failed to extract resource:', resourcePath, e);
 						}
 					}
 				}

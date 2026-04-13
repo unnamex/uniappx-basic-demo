@@ -524,3 +524,42 @@ function extractResourcesRecursive(node: UTSJSONObject, resources: ResourceItem[
 		}
 	}
 }
+
+/**
+ * 解析独立的 attachment.json 附件文件
+ * @param content attachment.json 的文本内容
+ * @returns 资源列表（扁平化）
+ */
+export function parseAttachmentFile(content: string): ResourceItem[] {
+	const resources: ResourceItem[] = []
+	try {
+		const arr = JSON.parse(content) as UTSJSONObject[]
+		const sortMap = new Map<string, number>()
+		
+		for (const res of arr) {
+			const nodeId = res['nodeId'] as string ?? 'unknown'
+			let sortOrder = sortMap.get(nodeId) ?? 0
+			
+			const item: ResourceItem = {
+				id: res['id'] as string ?? `res_${nodeId}_${sortOrder}`,
+				type: res['type'] as string ?? inferResourceType(res['path'] as string ?? ''),
+				name: res['name'] as string ?? '未命名资源',
+				path: '',  // 导入时更新为本地路径
+				originalPath: res['path'] as string ?? '',
+				thumbnail: res['thumbnail'] as string ?? '',
+				duration: res['duration'] as number ?? 0,
+				size: res['size'] as number ?? 0,
+				description: res['description'] as string ?? '',
+				nodeId: nodeId,
+				sortOrder: sortOrder
+			}
+			
+			resources.push(item)
+			sortMap.set(nodeId, sortOrder + 1)
+		}
+	} catch (e) {
+		console.warn('解析 attachment.json 失败', e)
+	}
+	
+	return resources
+}

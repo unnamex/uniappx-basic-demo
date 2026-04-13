@@ -11,12 +11,8 @@
 		
 		<view class="card-info">
 			<view class="info-row">
-				<text class="info-icon">📦</text>
-				<text class="info-text">{{ item.productName }}</text>
-			</view>
-			<view class="info-row">
 				<text class="info-icon">📋</text>
-				<text class="info-text">{{ (item.children ? item.children.length : 0) }} 个步骤</text>
+				<text class="info-text">{{ (item.children ? item.children.length : 0) }} 个步骤配置</text>
 			</view>
 		</view>
 		

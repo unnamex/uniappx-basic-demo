@@ -9,8 +9,6 @@
   "classId_display": "机加工艺",
   "tabs_top": "group_process_view",
   "tabs_bottom": "group_bottom_proc",
-  "description": "",
-  "description_html": "",
   "attachment": [
     {
       "id": "res_proc_001",
@@ -62,8 +60,6 @@
       "classId": "",
       "tabs_top": "group_procedure_view",
       "tabs_bottom": "group_bottom_op",
-      "description": "缸体组装工序负责完成缸体、活塞、曲轴等核心零部件的装配，是整个发动机装配中最关键的工序。",
-      "description_html": "<div style=\"font-family:sans-serif;font-size:14px;line-height:1.6;\"><h3 style=\"color:#1a1a2e;border-bottom:2px solid #0891b2;padding-bottom:6px;\">缸体组装工序操作指引</h3><p><span style=\"color:#f56c6c;font-weight:bold;font-size:16px;\">⚠ 重要安全提示：</span>操作前必须确认工位<span style=\"text-decoration:underline;color:#e6a23c;\">已断电</span>，佩戴<span style=\"color:#409eff;font-weight:bold;\">防护手套</span>和<span style=\"color:#409eff;font-weight:bold;\">护目镜</span>。</p><p>缸体组装工序负责完成<span style=\"text-decoration:underline;color:#007aff;\">缸体</span>、<span style=\"text-decoration:underline;color:#007aff;\">活塞</span>、<span style=\"text-decoration:underline;color:#007aff;\">曲轴</span>等核心零部件的装配，是整个发动机装配中<span style=\"color:#e6a23c;font-weight:bold;\">最关键的工序</span>。</p><p style=\"margin:8px 0;\"><img src=\"/static/logo.png\" width=\"80\" style=\"vertical-align:middle;\" /> <span style=\"color:#909399;font-size:12px;\">工艺标识</span></p><h4 style=\"color:#303133;\">螺栓扭矩参数表</h4><table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;border-color:#dcdfe6;width:100%;font-size:13px;\"><tr style=\"background-color:#f0f2f5;\"><th style=\"color:#303133;text-align:left;\">紧固部位</th><th style=\"color:#303133;text-align:center;\">扭矩(Nm)</th><th style=\"color:#303133;text-align:center;\">精度等级</th></tr><tr><td>主轴承盖螺栓</td><td style=\"text-align:center;color:#e6a23c;font-weight:bold;\">65±3</td><td style=\"text-align:center;\">A级</td></tr><tr style=\"background-color:#fafafa;\"><td>连杆螺栓</td><td style=\"text-align:center;color:#e6a23c;font-weight:bold;\">45±2</td><td style=\"text-align:center;\">A级</td></tr><tr><td>飞轮螺栓</td><td style=\"text-align:center;color:#e6a23c;font-weight:bold;\">90±5</td><td style=\"text-align:center;\">B级</td></tr></table><p style=\"margin-top:8px;\"><span style=\"background-color:#ecf5ff;color:#409eff;padding:2px 6px;border-radius:3px;\">提示</span> 所有扭矩值需使用<span style=\"text-decoration:underline;\">已校准的扭力扳手</span>进行操作。</p></div>",
       "attachment": [
         {
           "id": "res_op01_001",
@@ -106,8 +102,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "清洁缸体表面，使用专用清洁剂去除油污和杂质。检查铸造面是否有裂纹、气孔等缺陷。",
-          "description_html": "清洁缸体表面，使用专用清洁剂去除油污和杂质。检查铸造面是否有裂纹、气孔等缺陷。",
           "attachment": [
             {
               "id": "res_s01_001",
@@ -144,8 +138,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "安装活塞环到活塞槽内，注意活塞环开口位置错开120度。使用活塞环压缩器将活塞推入缸筒。",
-          "description_html": "安装活塞环到活塞槽内，注意活塞环开口位置错开120度。使用活塞环压缩器将活塞推入缸筒。",
           "attachment": [
             {
               "id": "res_s02_001",
@@ -173,8 +165,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "安装主轴承瓦，涂抹装配油脂，将曲轴放入曲轴箱。按规定扭矩紧固主轴承盖。",
-          "description_html": "安装主轴承瓦，涂抹装配油脂，将曲轴放入曲轴箱。按规定扭矩紧固主轴承盖。",
           "attachment": [
             {
               "id": "res_s03_001",
@@ -201,8 +191,6 @@
       "classId": "",
       "tabs_top": "group_procedure_view",
       "tabs_bottom": "group_bottom_op",
-      "description": "缸盖组装工序负责缸垫、缸盖、凸轮轴及正时系统的安装，直接影响发动机配气性能。",
-      "description_html": "<div style=\"font-family:sans-serif;font-size:14px;line-height:1.6;\"><h3 style=\"color:#1a1a2e;border-bottom:2px solid #67c23a;padding-bottom:6px;\">缸盖组装工序操作规范</h3><p style=\"color:#67c23a;font-weight:bold;\">本工序属于 <span style=\"background-color:#f0f9eb;padding:2px 8px;border-radius:3px;\">A级工装控制</span> 范畴</p><p>缸盖组装工序负责<span style=\"text-decoration:underline;color:#303133;font-weight:bold;\">缸垫</span>、<span style=\"text-decoration:underline;color:#303133;font-weight:bold;\">缸盖</span>、<span style=\"text-decoration:underline;color:#303133;font-weight:bold;\">凸轮轴</span>及<span style=\"text-decoration:underline;color:#303133;font-weight:bold;\">正时系统</span>的安装，直接影响发动机配气性能。</p><p style=\"margin:8px 0;\"><img src=\"/static/icons/procedure.svg\" width=\"40\" style=\"vertical-align:middle;\" /> <span style=\"color:#909399;font-size:12px;\">工序标识</span></p><h4 style=\"color:#303133;\">螺栓紧固顺序（对角线法）</h4><table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;border-color:#dcdfe6;width:100%;font-size:13px;\"><tr style=\"background-color:#f0f2f5;\"><th style=\"text-align:left;color:#303133;\">紧固阶段</th><th style=\"text-align:center;color:#303133;\">目标扭矩</th><th style=\"text-align:center;color:#303133;\">操作说明</th></tr><tr><td>第一次预紧</td><td style=\"text-align:center;color:#409eff;\">40 Nm</td><td style=\"text-align:center;\">按对角线顺序</td></tr><tr style=\"background-color:#fafafa;\"><td>第二次紧固</td><td style=\"text-align:center;color:#e6a23c;\">80 Nm</td><td style=\"text-align:center;\">按对角线顺序</td></tr><tr><td style=\"font-weight:bold;\">最终紧固</td><td style=\"text-align:center;color:#f56c6c;font-weight:bold;\">120 Nm</td><td style=\"text-align:center;color:#f56c6c;\">按对角线顺序，需复验</td></tr></table><p style=\"margin-top:8px;\"><span style=\"color:#f56c6c;\">⚠ 注意：</span>缸盖密封面<span style=\"text-decoration:underline;color:#f56c6c;\">严禁</span>使用金属刮刀清理，<span style=\"color:#909399;\">应使用专用塑料刮板。</span></p></div>",
       "attachment": [
         {
           "id": "res_op02_001",
@@ -221,8 +209,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "放置新缸垫，注意缸垫正反方向。安装缸盖，按对角线顺序分三次紧固螺栓。",
-          "description_html": "放置新缸垫，注意缸垫正反方向。安装缸盖，按对角线顺序分三次紧固螺栓。",
           "attachment": [
             {
               "id": "res_op02_s01_001",
@@ -250,8 +236,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "对齐凸轮轴正时标记，安装凸轮轴轴瓦和正时链条。检查正时标记对齐情况。",
-          "description_html": "对齐凸轮轴正时标记，安装凸轮轴轴瓦和正时链条。检查正时标记对齐情况。",
           "attachment": [
             {
               "id": "res_op02_s02_001",
@@ -277,8 +261,6 @@
       "classId": "",
       "tabs_top": "group_procedure_view",
       "tabs_bottom": "group_bottom_op",
-      "description": "附件安装工序负责进排气系统、线束连接等外围部件的安装，是发动机总装的最后阶段。",
-      "description_html": "<div style=\"font-family:sans-serif;font-size:14px;line-height:1.6;\"><h3 style=\"color:#1a1a2e;border-bottom:2px solid #e6a23c;padding-bottom:6px;\">附件安装工序说明</h3><p>附件安装工序负责<span style=\"color:#409eff;text-decoration:underline;\">进排气系统</span>、<span style=\"color:#409eff;text-decoration:underline;\">线束连接</span>等外围部件的安装，是发动机总装的<span style=\"color:#e6a23c;font-weight:bold;\">最后阶段</span>。</p><p style=\"margin:8px 0;\"><img src=\"/static/icons/process.svg\" width=\"40\" style=\"vertical-align:middle;\" /> <span style=\"color:#909399;font-size:12px;\">工艺标识</span></p><h4 style=\"color:#303133;\">关键检验项目</h4><table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse:collapse;border-color:#dcdfe6;width:100%;font-size:13px;\"><tr style=\"background-color:#f0f2f5;\"><th style=\"text-align:left;color:#303133;\">检验项</th><th style=\"text-align:center;color:#303133;\">标准值</th><th style=\"text-align:center;color:#303133;\">检验方法</th></tr><tr><td>进气歧管真空度</td><td style=\"text-align:center;\">≥ -60 kPa</td><td style=\"text-align:center;\">真空表检测</td></tr><tr style=\"background-color:#fafafa;\"><td>排气歧管密封性</td><td style=\"text-align:center;color:#67c23a;font-weight:bold;\">零泄漏</td><td style=\"text-align:center;\">烟雾检测法</td></tr><tr><td>线束绝缘电阻</td><td style=\"text-align:center;\">≥ 10 MΩ</td><td style=\"text-align:center;\">兆欧表</td></tr><tr style=\"background-color:#fafafa;\"><td>接头拉拔力</td><td style=\"text-align:center;\">≥ 50 N</td><td style=\"text-align:center;\">拉力计</td></tr></table><p style=\"margin-top:8px;\"><span style=\"color:#f56c6c;font-weight:bold;\">⚠ 安全警告：</span>排气歧管可能有<span style=\"text-decoration:underline;color:#f56c6c;\">锐利边缘</span>，操作时请佩戴<span style=\"color:#409eff;font-weight:bold;\">防割手套</span>。</p></div>",
       "attachment": [],
       "children": [
         {
@@ -289,8 +271,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "安装进气歧管和排气歧管，检查密封性能。确保所有法兰面密封良好。",
-          "description_html": "安装进气歧管和排气歧管，检查密封性能。确保所有法兰面密封良好。",
           "attachment": [
             {
               "id": "res_op03_s01_001",
@@ -312,8 +292,6 @@
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
-          "description": "连接发动机线束，安装传感器接头。确保所有电气连接可靠。",
-          "description_html": "连接发动机线束，安装传感器接头。确保所有电气连接可靠。",
           "attachment": [],
           "children": [],
           "icon": "⚙️",
@@ -330,12 +308,6 @@
   "status": "Released",
   "resourceCount": 3,
   "expanded": true,
-  "productName": "V8涡轮增压发动机",
-  "productModel": "V8-T-2024",
-  "targetVehicle": "豪华轿车系列",
-  "processDescription": "本工艺规定了V8涡轮增压发动机的总装流程，包括缸体组装、缸盖组装和附件安装三个主要工序。工艺版本3.0.0，适用于2024款V8-T系列发动机的批量生产。",
-  "qualityLevel": "A级（关键件）",
-  "inspectionType": "首件全检 + 过程抽检",
   "partCode": "PART-V8-001",
   "partName": "V8涡轮增压发动机总成",
   "modifyById": "U20260101001",
@@ -360,12 +332,5 @@
   "partSecretId": "10",
   "partSecretId_display": "公开",
   "partStateName": "设计中",
-  "partFullversionNo": "A.1",
-  "qualityChecks": [
-    "缸体与曲轴间隙检测",
-    "活塞环开口间隙检查",
-    "螺栓扭矩抽检",
-    "气密性测试",
-    "运转噪音检测"
-  ]
+  "partFullversionNo": "A.1"
 }

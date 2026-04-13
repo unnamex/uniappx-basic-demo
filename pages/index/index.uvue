@@ -1185,22 +1185,6 @@
 						// 确保子节点也有显示用字段
 						comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 					}
-				} else if (dataSource == 'description' || dataSource == 'processDescription') {
-					// 文本型数据源，包装成 { text: value } 对象
-					const textVal = node[dataSource]
-					if (textVal != null) {
-						const item = { text: textVal }
-						comp.data.push(item)
-					}
-				} else if (dataSource == 'qualityChecks') {
-					// 字符串数组型数据源，每个元素包装成 { text: value }
-					const arr = node[dataSource]
-					if (arr != null && Array.isArray(arr)) {
-						const list = arr as string[]
-						comp.data = list.map((item: string): UTSJSONObject => {
-							return { text: item }
-						})
-					}
 				}
 			}
 		}
