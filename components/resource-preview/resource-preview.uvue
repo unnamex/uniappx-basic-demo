@@ -88,7 +88,7 @@
 			</view>
 			<!-- #endif -->
 			<!-- #ifdef APP -->
-			<web-view class="cad-webview" :src="resPath"></web-view>
+			<web-view :id="cadWebviewId" class="cad-webview" :src="cadWebViewSrc" @load="onCadWebViewLoad"></web-view>
 			<view class="cad-info">
 				<text class="cad-info-name">{{ resName }}</text>
 			</view>
@@ -144,6 +144,7 @@
 	
 	// #ifdef APP
 	const webviewId = 'pdf_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
+	const cadWebviewId = 'cad_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
 
 	const pdfWebViewSrc = computed((): string => {
 		const res = props.resource
@@ -171,6 +172,36 @@
 		} catch (err: any) {
 			console.error("读取 PDF 文件转 Base64 失败: ", err)
 			emit('error', '加载鸿蒙本地PDF失败')
+		}
+		// #endif
+	}
+
+	const cadWebViewSrc = computed((): string => {
+		const res = props.resource
+		if (res == null || res.path == '') return ''
+		// #ifdef APP-HARMONY
+		if (!res.path.startsWith('http://') && !res.path.startsWith('https://')) {
+			return '/static/cad/cad-launcher.html'
+		}
+		// #endif
+		const encodedSrc = encodeURIComponent(res.path)
+		return '/static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc
+	})
+
+	const onCadWebViewLoad = () => {
+		// #ifdef APP-HARMONY
+		const res = props.resource
+		if (res == null || res.path == '') return
+		if (res.path.startsWith('http://') || res.path.startsWith('https://')) return
+		
+		try {
+			const fs = uni.getFileSystemManager()
+			const base64Str = fs.readFileSync(res.path, 'base64') as string
+			const wvContext = uni.createWebviewContext(cadWebviewId)
+			wvContext.evalJS(`window.loadCadFromBase64('${base64Str}')`)
+		} catch (err: any) {
+			console.error("读取 CAD 文件转 Base64 失败: ", err)
+			emit('error', '加载鸿蒙本地CAD失败')
 		}
 		// #endif
 	}
@@ -222,8 +253,9 @@
 				const el = (cadFrame.value as any).$el || (cadFrame.value as any)
 				if (el != null) {
 					const encodedSrc = encodeURIComponent(src)
-					el.innerHTML = '<iframe src="./static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;min-height:500px;border:none;" frameborder="0" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>'
-					console.log('successfully injected iframe')
+					// 恢复使用 cad-launcher.html 中间层，利用其内部的 baseUrl 注入来修复 blob 异常
+					el.innerHTML = '<iframe src="./static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;min-height:500px;border:none;" frameborder="0" allowfullscreen></iframe>'
+					console.log('successfully injected iframe via cad-launcher.html')
 				}
 			} catch (e) {
 				console.error('Failed to inject CAD iframe:', e)

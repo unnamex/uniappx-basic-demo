@@ -30,123 +30,105 @@
 <body>
   <div class="loading">加载 CAD 图纸中，请稍候...</div>
   <script>
+    // ========== 公共的 resize 自适应脚本（注入到 CAD HTML 中） ==========
+    var _resizeScript = '\n<sc' + 'ript>\n(function() {\n  function doResize() {\n    var w = window.innerWidth;\n    var h = window.innerHeight;\n    var canvases = document.querySelectorAll("canvas");\n    for (var i = 0; i < canvases.length; i++) {\n      var c = canvases[i];\n      if (c.width > 100 && c.height > 100) {\n        c.width = w; c.height = h;\n        c.style.width = w + "px"; c.style.height = h + "px";\n      }\n    }\n    if (typeof hwv !== "undefined" && hwv && typeof hwv.resizeCanvas === "function") { try { hwv.resizeCanvas(); } catch(e) {} }\n    if (typeof renderer !== "undefined" && renderer && typeof renderer.setSize === "function") {\n      try { renderer.setSize(w, h); if (typeof camera !== "undefined" && camera) { camera.aspect = w / h; if (typeof camera.updateProjectionMatrix === "function") { camera.updateProjectionMatrix(); } } } catch(e) {}\n    }\n    if (typeof onResize === "function") { try { onResize(); } catch(e) {} }\n    if (typeof onWindowResize === "function") { try { onWindowResize(); } catch(e) {} }\n    if (typeof handleResize === "function") { try { handleResize(); } catch(e) {} }\n  }\n  var observer = new ResizeObserver(function() { window.requestAnimationFrame(doResize); });\n  if (document.body) { observer.observe(document.body); } else { document.addEventListener("DOMContentLoaded", function() { if(document.body) observer.observe(document.body); }); }\n\n  // 屏蔽离线CAD查看器的无效API请求（防止 Vite SPA 路由返回 200 HTML 导致 axios 内部解析 undefined 报错）\n  var origOpen = window.XMLHttpRequest.prototype.open;\n  window.XMLHttpRequest.prototype.open = function(method, url) {\n    if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n      url = "http://127.0.0.1:1/offline_block";\n    }\n    return origOpen.apply(this, arguments);\n  };\n  var origFetch = window.fetch;\n  if (origFetch) {\n    window.fetch = function() {\n      var url = arguments[0];\n      if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n        return Promise.reject(new TypeError("Failed to fetch"));\n      }\n      return origFetch.apply(this, arguments);\n    };\n  }\n})();\n</' + 'script>';
+
+    function renderCadHtml(htmlContent) {
+      // 注入 resize 脚本，严格查找最后一个 </body>，避免替换到由于 JS 内部字符串字面量包含的 </body>
+      var lastBodyIdx = htmlContent.lastIndexOf('</body>');
+      if (lastBodyIdx !== -1) {
+        htmlContent = htmlContent.substring(0, lastBodyIdx) + _resizeScript + '\n' + htmlContent.substring(lastBodyIdx);
+      } else {
+        htmlContent += _resizeScript;
+      }
+
+      // 修复 blob: iframe 内部 Invalid URL 异常的问题：
+      // 注入一个真实的 absolute host <base> 标签，强行修正其 document.baseURI。
+      var baseUrl = window.location.origin + '/';
+      var baseTag = '<base href="' + baseUrl + '" />';
+      
+      // 替换已有的 <base href="/"> 或是注入到 <head> 中，只替换第一个出现的以防破坏后续内容
+      if (htmlContent.indexOf('<base href="/"') !== -1) {
+        htmlContent = htmlContent.replace(/<base href="\/".*?>/, baseTag);
+      } else if (htmlContent.indexOf('<head>') !== -1) {
+        htmlContent = htmlContent.replace('<head>', '<head>\n  ' + baseTag);
+      } else {
+        htmlContent = baseTag + '\n' + htmlContent;
+      }
+
+      // 使用 iframe 替代 HTML 文档的直接覆盖 (document.write) 避免阻塞主线程及极大数据渲染成文本的 BUG
+      var blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      var blobUrl = URL.createObjectURL(blob);
+
+      var iframe = document.createElement('iframe');
+      iframe.style.cssText = 'width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;';
+      iframe.src = blobUrl;
+
+      iframe.onload = function () {
+        var loading = document.querySelector('.loading');
+        if (loading) loading.style.display = 'none';
+        URL.revokeObjectURL(blobUrl);
+      };
+
+      document.body.appendChild(iframe);
+    }
+
+    // ========== 方式一：通过 URL 参数 fetch 加载（WEB 端使用） ==========
     (async function () {
       try {
         function getParam(name) {
-          const urlParams = new URLSearchParams(window.location.search);
-          let val = urlParams.get(name);
+          var urlParams = new URLSearchParams(window.location.search);
+          var val = urlParams.get(name);
           if (!val) {
-            let hashStr = window.location.hash;
+            var hashStr = window.location.hash;
             if (hashStr) {
               hashStr = hashStr.substring(1);
               if (hashStr.startsWith('?')) hashStr = hashStr.substring(1);
-              const hashParams = new URLSearchParams(hashStr);
+              var hashParams = new URLSearchParams(hashStr);
               val = hashParams.get(name);
             }
           }
           return val;
         }
 
-        const fileUrl = getParam('file');
+        var fileUrl = getParam('file');
         if (!fileUrl) {
-          document.body.innerHTML = '<div class="loading">未提供 CAD 文件源</div>';
+          // 没有 file 参数时，等待原生端通过 evalJS 注入内容
           return;
         }
 
         // 抓取 HTML 内容
-        const response = await fetch(fileUrl);
+        var response = await fetch(fileUrl);
         if (!response.ok) throw new Error('网络响应异常');
-        let htmlContent = await response.text();
+        var htmlContent = await response.text();
 
-        // ========== 注入优化后的 resize 自适应脚本 ==========
-        const resizeScript = `
-<script>
-(function() {
-  function doResize() {
-    var w = window.innerWidth;
-    var h = window.innerHeight;
-
-    var canvases = document.querySelectorAll('canvas');
-    for (var i = 0; i < canvases.length; i++) {
-      var c = canvases[i];
-      if (c.width > 100 && c.height > 100) {
-        c.width = w;
-        c.height = h;
-        c.style.width = w + 'px';
-        c.style.height = h + 'px';
-      }
-    }
-
-    if (typeof hwv !== 'undefined' && hwv && typeof hwv.resizeCanvas === 'function') {
-      try { hwv.resizeCanvas(); } catch(e) {}
-    }
-
-    if (typeof renderer !== 'undefined' && renderer && typeof renderer.setSize === 'function') {
-      try {
-        renderer.setSize(w, h);
-        if (typeof camera !== 'undefined' && camera) {
-          camera.aspect = w / h;
-          if (typeof camera.updateProjectionMatrix === 'function') {
-            camera.updateProjectionMatrix();
-          }
-        }
-      } catch(e) {}
-    }
-
-    if (typeof onResize === 'function') { try { onResize(); } catch(e) {} }
-    if (typeof onWindowResize === 'function') { try { onWindowResize(); } catch(e) {} }
-    if (typeof handleResize === 'function') { try { handleResize(); } catch(e) {} }
-  }
-
-  // 使用 ResizeObserver 搭配 requestAnimationFrame 提升性能，避免卡顿
-  var observer = new ResizeObserver(function() {
-    window.requestAnimationFrame(doResize);
-  });
-  
-  if (document.body) {
-    observer.observe(document.body);
-  } else {
-    document.addEventListener('DOMContentLoaded', function() {
-      if(document.body) observer.observe(document.body);
-    });
-  }
-
-  // 通知父容器隐藏 loading
-  try {
-    var parentLoading = window.parent.document.querySelector('.loading');
-    if (parentLoading) {
-      parentLoading.style.display = 'none';
-    }
-  } catch(e) {}
-})();
-<\/script>`;
-
-        if (htmlContent.indexOf('</body>') !== -1) {
-          htmlContent = htmlContent.replace('</body>', resizeScript + '\n</body>');
-        } else {
-          htmlContent += resizeScript;
-        }
-
-        // 使用 iframe 替代 HTML 文档的直接覆盖 (document.write) 避免阻塞主线程
-        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;';
-        iframe.src = blobUrl;
-
-        iframe.onload = function () {
-          const loading = document.querySelector('.loading');
-          if (loading) loading.style.display = 'none';
-          URL.revokeObjectURL(blobUrl);
-        };
-
-        document.body.appendChild(iframe);
+        renderCadHtml(htmlContent);
       } catch (err) {
         console.error('CAD 文件加载失败:', err);
         document.body.innerHTML = '<div class="loading" style="color:#ef4444">CAD 文件加载失败: ' + err.message + '</div>';
       }
     })();
+
+    // ========== 方式二：原生端通过 evalJS 注入 Base64 内容（APP 端使用） ==========
+    /**
+     * 接收 Base64 编码的 CAD HTML，解码后渲染
+     * @param {string} base64Str - Base64 编码的 HTML 内容
+     */
+    window.loadCadFromBase64 = function (base64Str) {
+      try {
+        // 解码 Base64 -> 二进制 -> UTF-8 文本
+        var binaryStr = atob(base64Str);
+        var bytes = new Uint8Array(binaryStr.length);
+        for (var i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        var htmlContent = new TextDecoder('utf-8').decode(bytes);
+        renderCadHtml(htmlContent);
+      } catch (err) {
+        console.error('CAD Base64 解码失败:', err);
+        document.body.innerHTML = '<div class="loading" style="color:#ef4444">CAD 加载失败: ' + err.message + '</div>';
+      }
+    };
   </script>
 </body>
 
