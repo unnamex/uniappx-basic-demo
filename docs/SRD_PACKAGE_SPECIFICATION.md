@@ -1,7 +1,7 @@
 # SRD 数据包规范说明 (V5)
 
-> **文档版本**: 5.0  
-> **最后更新**: 2026-04-13  
+> **文档版本**: 5.1  
+> **最后更新**: 2026-04-14  
 > **适用对象**: MPM 离线工艺预览系统 — 数据包制作与集成开发人员
 
 ---
@@ -66,6 +66,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 | `assets` | string | 否 | 资源文件根目录路径 |
 | `attachment` | string | 否 | 独立附件清单文件路径（V5 新增） |
 
+> **注意**：`data/process_tree.json` 为固定路径，不在 `files` 中显式声明，系统自动从该路径加载工艺树。
+
 ### 示例
 
 ```json
@@ -129,7 +131,6 @@ Process（工艺）
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `version` | string | 工艺版本号（如 `"3.0.0"`） |
-| `status` | string | 工艺状态（如 `"Released"`） |
 | `classId_display` | string | 工艺分类显示名（如 `"机加工艺"`） |
 | `classId_business_icon` | string | 业务图标路径 |
 | `classId_icon` | string | 树节点图标路径 |
@@ -141,7 +142,7 @@ Process（工艺）
 | `phaseId_display` | string | 工艺阶段中文名（如 `"试样阶段"`） |
 | `secretId` | string | 密级 ID |
 | `secretId_display` | string | 密级中文名（如 `"公开"`） |
-| `stateName` | string | 状态名称 |
+| `stateName` | string | 工艺状态名称（如 `"设计中"`、`"已发布"`） |
 | `fullversionNo` | string | 完整版本号（如 `"A.1"`） |
 
 #### 关联部件信息
@@ -208,10 +209,30 @@ Process（工艺）
     }
   ],
   "version": "3.0.0",
-  "status": "Released",
+  "stateName": "设计中",
+  "modifyById": "U20260101001",
   "modifyById_display": "张三",
+  "modifyTime": "2026-03-21 14:06:17",
+  "contextName": "工艺知识库",
+  "phaseId": "phase_trial_001",
   "phaseId_display": "试样阶段",
-  "secretId_display": "公开"
+  "secretId": "10",
+  "secretId_display": "公开",
+  "fullversionNo": "A.1",
+  "partCode": "PART-V8-001",
+  "partName": "V8涡轮增压发动机总成",
+  "partClassId": "Part",
+  "partClassId_display": "部件",
+  "partModifyById": "U20260101001",
+  "partModifyById_display": "张三",
+  "partModifyTime": "2026-03-21 14:06:17",
+  "partContextName": "部件库",
+  "partPhaseId": "phase_part_trial_001",
+  "partPhaseId_display": "试样阶段",
+  "partSecretId": "10",
+  "partSecretId_display": "公开",
+  "partStateName": "设计中",
+  "partFullversionNo": "A.1"
 }
 ```
 
@@ -269,6 +290,14 @@ Process（工艺）
     "nodeId": "proc_v8_engine"
   },
   {
+    "id": "res_cad_001",
+    "type": "cad",
+    "name": "装配CAD图纸.html",
+    "path": "assets/cad/process-cad-viewer.html",
+    "description": "卡伦特供应商提供的装配CAD图纸（HTML格式）",
+    "nodeId": "proc_v8_engine"
+  },
+  {
     "id": "res_s01_001",
     "type": "image",
     "name": "清洁前状态",
@@ -283,7 +312,7 @@ Process（工艺）
 
 ## 6. layout/groups.json — Tab 分组
 
-定义 UI 中的 Tab 区域分组。每个分组对应界面上的一个 Tab 容器（如上方视图区、下方详情区）。
+定义 UI 中的 Tab 区域分组。每个分组对应界面上的一个 Tab 容器（如左侧面板、上方视图区、下方详情区）。
 
 ### 字段说明
 
@@ -295,10 +324,31 @@ Process（工艺）
 | `description` | string | 否 | 描述信息 |
 | `sort_order` | number | ✅ | 排序序号 |
 
+### 完整分组清单
+
+系统定义了 7 个 Tab 分组，按 `sort_order` 排列：
+
+| sort_order | id | name | 位置 | 说明 |
+|------------|------|------|------|------|
+| 0 | `group_process_mgmt` | 工艺管理 | 左侧面板 | 工艺结构树和工艺列表所在区域 |
+| 1 | `group_process_view` | 工艺视图 | 上方视图区 | 选中 Process 节点时显示 |
+| 2 | `group_procedure_view` | 工序视图 | 上方视图区 | 选中 Operation 节点时显示 |
+| 3 | `group_step_view` | 工步视图 | 上方视图区 | 选中 Step 节点时显示 |
+| 4 | `group_bottom_proc` | 工艺详情 | 下方详情区 | 选中 Process 节点时显示 |
+| 5 | `group_bottom_op` | 工序详情 | 下方详情区 | 选中 Operation 节点时显示 |
+| 6 | `group_bottom_step` | 工步详情 | 下方详情区 | 选中 Step 节点时显示 |
+
 ### 示例
 
 ```json
 [
+  {
+    "id": "group_process_mgmt",
+    "name": "工艺管理",
+    "type": "tab-group",
+    "description": "Left Panel Group",
+    "sort_order": 0
+  },
   {
     "id": "group_process_view",
     "name": "工艺视图",
@@ -307,11 +357,39 @@ Process（工艺）
     "sort_order": 1
   },
   {
+    "id": "group_procedure_view",
+    "name": "工序视图",
+    "type": "tab-group",
+    "description": "Selected Procedure View (Middle Top)",
+    "sort_order": 2
+  },
+  {
+    "id": "group_step_view",
+    "name": "工步视图",
+    "type": "tab-group",
+    "description": "Selected Step View (Middle Top)",
+    "sort_order": 3
+  },
+  {
     "id": "group_bottom_proc",
     "name": "工艺详情",
     "type": "tab-group",
     "description": "Selected Process Details (Middle Bottom)",
     "sort_order": 4
+  },
+  {
+    "id": "group_bottom_op",
+    "name": "工序详情",
+    "type": "tab-group",
+    "description": "Selected Procedure Details (Middle Bottom)",
+    "sort_order": 5
+  },
+  {
+    "id": "group_bottom_step",
+    "name": "工步详情",
+    "type": "tab-group",
+    "description": "Selected Step Details (Middle Bottom)",
+    "sort_order": 6
   }
 ]
 ```
@@ -320,20 +398,22 @@ Process（工艺）
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  左侧面板        │     上方视图区 (tabs_top)         │
-│                  │  ┌──────────────────────────────┐│
-│  group_process   │  │ group_process_view           ││
-│  _mgmt           │  │ group_procedure_view         ││
-│  (工艺管理)      │  │ group_step_view              ││
-│                  │  └──────────────────────────────┘│
-│                  │     下方详情区 (tabs_bottom)       │
-│                  │  ┌──────────────────────────────┐│
-│                  │  │ group_bottom_proc             ││
-│                  │  │ group_bottom_op               ││
-│                  │  │ group_bottom_step             ││
-│                  │  └──────────────────────────────┘│
+│  左侧面板              │    上方视图区 (tabs_top)     │
+│                        │  ┌────────────────────────┐│
+│  group_process_mgmt    │  │ group_process_view     ││
+│  ├─ 工艺结构树         │  │ group_procedure_view   ││
+│  └─ 工艺列表           │  │ group_step_view        ││
+│                        │  └────────────────────────┘│
+│                        │    下方详情区 (tabs_bottom)   │
+│                        │  ┌────────────────────────┐│
+│                        │  │ group_bottom_proc      ││
+│                        │  │ group_bottom_op         ││
+│                        │  │ group_bottom_step       ││
+│                        │  └────────────────────────┘│
 └─────────────────────────────────────────────────────┘
 ```
+
+> **动态切换**：上方和下方区域的可见分组由当前选中节点的 `tabs_top` 和 `tabs_bottom` 字段动态决定。例如，选中一个 Operation 节点时，上方显示 `group_procedure_view`，下方显示 `group_bottom_op`。
 
 ---
 
@@ -350,10 +430,68 @@ Process（工艺）
 | `title` | string | ✅ | Tab 显示标题 |
 | `sort_order` | number | ✅ | 在分组内的排序序号 |
 
+### 完整页签清单
+
+按分组归类如下：
+
+#### 左侧面板（group_process_mgmt）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `left_panel` | 工艺结构树 | 0 |
+| `tab_process_list` | 工艺列表 | 1 |
+
+#### 上方 — 工艺视图（group_process_view）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `tab_proc_info` | 基本信息 | 0 |
+| `tab_proc_children` | 工序列表 | 1 |
+
+#### 上方 — 工序视图（group_procedure_view）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `tab_procedure_info` | 工序详情 | 0 |
+| `tab_procedure_children` | 工步列表 | 1 |
+
+#### 上方 — 工步视图（group_step_view）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `tab_step_info` | 操作说明 | 0 |
+| `tab_step_resources` | 资源列表 | 1 |
+
+#### 下方 — 工艺详情（group_bottom_proc）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `tab_bottom_proc_ov` | 概览 | 0 |
+| `tab_bottom_proc_product` | 产品信息 | 1 |
+| `tab_bottom_proc_quality` | 质量要求 | 2 |
+
+#### 下方 — 工序详情（group_bottom_op）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `tab_bottom_op_ov` | 概览 | 0 |
+
+#### 下方 — 工步详情（group_bottom_step）
+
+| id | title | sort_order |
+|----|-------|------------|
+| `tab_bottom_step_ov` | 说明 | 0 |
+
 ### 示例
 
 ```json
 [
+  {
+    "id": "left_panel",
+    "group_id": "group_process_mgmt",
+    "title": "工艺结构树",
+    "sort_order": 0
+  },
   {
     "id": "tab_proc_info",
     "group_id": "group_process_view",
@@ -365,6 +503,18 @@ Process（工艺）
     "group_id": "group_process_view",
     "title": "工序列表",
     "sort_order": 1
+  },
+  {
+    "id": "tab_procedure_info",
+    "group_id": "group_procedure_view",
+    "title": "工序详情",
+    "sort_order": 0
+  },
+  {
+    "id": "tab_bottom_proc_ov",
+    "group_id": "group_bottom_proc",
+    "title": "概览",
+    "sort_order": 0
   }
 ]
 ```
@@ -391,8 +541,8 @@ Process（工艺）
 | type 值 | 说明 | 典型用途 |
 |---------|------|----------|
 | `process-tree` | 工艺树组件 | 左侧导航树 |
-| `table` | 数据表格 | 列表型数据展示 |
-| `key-value` | 键值对卡片 | 节点基本信息展示 |
+| `table` | 数据表格 | 列表型数据展示（工序/工步列表） |
+| `infoView` | 信息视图（键值对） | 节点基本信息展示 |
 | `list` | 简单列表 | 工具/物料清单 |
 
 ### config 配置详解
@@ -407,19 +557,20 @@ Process（工艺）
 | `"children"` | string | 当前选中节点的子节点列表 |
 | `{ type, name }` | object | 引用特定数据库表（如 `t_process`） |
 
-#### fields（用于 key-value 类型）
+#### fields（用于 infoView 类型）
 
-定义要展示的字段列表：
+定义要展示的字段列表，使用 `vModel` 指定数据绑定的字段名，`columns` 指定每行列数：
 
 ```json
 {
   "dataSource": "self",
   "fields": [
-    { "key": "code", "label": "工艺代码" },
-    { "key": "name", "label": "工艺名称" },
-    { "key": "version", "label": "版本" },
-    { "key": "status", "label": "状态" }
-  ]
+    { "label": "工艺代码", "vModel": "code" },
+    { "label": "工艺名称", "vModel": "name" },
+    { "label": "版本", "vModel": "version" },
+    { "label": "状态", "vModel": "stateName" }
+  ],
+  "columns": 2
 }
 ```
 
@@ -437,22 +588,57 @@ Process（工艺）
 }
 ```
 
+### 完整组件清单
+
+| id | tab_id | type | title |
+|----|--------|------|-------|
+| `comp_process_tree` | `left_panel` | `process-tree` | 工艺树 |
+| `comp_process_table` | `tab_process_list` | `table` | 工艺总览表 |
+| `comp_proc_info` | `tab_proc_info` | `infoView` | 工艺基本信息 |
+| `comp_proc_list` | `tab_proc_children` | `table` | 工序列表 |
+| `comp_procedure_info` | `tab_procedure_info` | `infoView` | 工序详情 |
+| `comp_procedure_list` | `tab_procedure_children` | `table` | 工步列表 |
+| `comp_step_basic` | `tab_step_info` | `infoView` | 基本信息 |
+| `comp_bottom_proc_info` | `tab_bottom_proc_ov` | `infoView` | 工艺概览 |
+| `comp_bottom_proc_product` | `tab_bottom_proc_product` | `infoView` | 关联产品 |
+| `comp_bottom_proc_quality` | `tab_bottom_proc_quality` | `infoView` | 质量标准 |
+| `comp_bottom_op_info` | `tab_bottom_op_ov` | `infoView` | 工序概览 |
+| `comp_bottom_step_info` | `tab_bottom_step_ov` | `infoView` | 工步基本信息 |
+
 ### 完整组件示例
 
 ```json
 {
   "id": "comp_proc_info",
   "tab_id": "tab_proc_info",
-  "type": "key-value",
+  "type": "infoView",
   "title": "工艺基本信息",
   "sort_order": 0,
   "config": {
     "dataSource": "self",
     "fields": [
-      { "key": "code", "label": "工艺代码" },
-      { "key": "name", "label": "工艺名称" },
-      { "key": "version", "label": "版本" },
-      { "key": "status", "label": "状态" }
+      { "label": "工艺代码", "vModel": "code" },
+      { "label": "工艺名称", "vModel": "name" },
+      { "label": "版本", "vModel": "version" },
+      { "label": "状态", "vModel": "stateName" }
+    ],
+    "columns": 2
+  }
+}
+```
+
+```json
+{
+  "id": "comp_proc_list",
+  "tab_id": "tab_proc_children",
+  "type": "table",
+  "title": "工序列表",
+  "sort_order": 0,
+  "config": {
+    "dataSource": "children",
+    "columns": [
+      { "label": "代码", "prop": "code", "width": 180 },
+      { "label": "名称", "prop": "name", "width": 350 }
     ]
   }
 }
@@ -517,7 +703,19 @@ Process（工艺）
       "code": "ASM-ENG-V8",
       "name": "V8发动机总装工艺",
       "version": "2.1.0",
-      "status": "已发布"
+      "status": "已发布",
+      "productModel": "V8-T-2024"
+    }
+  },
+  {
+    "record_id": "rec_qa_1",
+    "component_id": "comp_qa_collapse",
+    "data": {
+      "title": "外观检查",
+      "检测项目": "表面质量",
+      "检测方法": "目视检查",
+      "合格标准": "无裂纹、划痕、毛刺",
+      "检测频次": "100%"
     }
   }
 ]
@@ -596,6 +794,6 @@ manifest.json
 |------|------|
 | V1-V3 | 旧版格式，manifest 中内联所有数据 |
 | V4 | 引入四级工艺树、`layout/` 独立目录、`resources` 字段 |
-| V5 | `resources` 重命名为 `attachment`；附件从工艺树剥离至独立的 `data/attachment.json`；移除废弃字段（`description_html`、`processDescription`、`productName`、`productModel`、`targetVehicle`、`qualityLevel`、`inspectionType`、`qualityChecks`） |
+| V5 | `resources` 重命名为 `attachment`；附件从工艺树剥离至独立的 `data/attachment.json`；移除废弃字段（`description_html`、`processDescription`、`productName`、`productModel`、`targetVehicle`、`qualityLevel`、`inspectionType`、`qualityChecks`）；工艺树 `status` 字段移除，统一使用 `stateName` |
 
 > **向后兼容**：V5 客户端可以正常导入 V4 及更早版本的数据包。当检测到包内不存在 `data/attachment.json` 时，系统会自动回退到从工艺树节点的 `attachment`（或旧版 `resources`）字段中递归提取附件。

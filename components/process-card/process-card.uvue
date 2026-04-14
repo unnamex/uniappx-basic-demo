@@ -3,7 +3,7 @@
 		<view class="card-header">
 			<text class="process-code">{{ item.code }}</text>
 			<view class="status-tag" :class="statusClass">
-				<text class="status-text">{{ item.status }}</text>
+				<text class="status-text">{{ item.stateName }}</text>
 			</view>
 		</view>
 		
@@ -44,7 +44,7 @@
 			 * 状态样式类
 			 */
 			statusClass(): string {
-				const status = this.item.status
+				const status = this.item.stateName
 				if (status == '已发布') {
 					return 'status-published'
 				} else if (status == '草稿') {
