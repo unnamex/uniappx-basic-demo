@@ -30,33 +30,114 @@
 <body>
   <div class="loading">加载 CAD 图纸中，请稍候...</div>
   <script>
-    // ========== 公共的 resize 自适应脚本（注入到 CAD HTML 中） ==========
-    var _resizeScript = '\n<sc' + 'ript>\n(function() {\n  function doResize() {\n    var w = window.innerWidth;\n    var h = window.innerHeight;\n    var canvases = document.querySelectorAll("canvas");\n    for (var i = 0; i < canvases.length; i++) {\n      var c = canvases[i];\n      if (c.width > 100 && c.height > 100) {\n        c.width = w; c.height = h;\n        c.style.width = w + "px"; c.style.height = h + "px";\n      }\n    }\n    if (typeof hwv !== "undefined" && hwv && typeof hwv.resizeCanvas === "function") { try { hwv.resizeCanvas(); } catch(e) {} }\n    if (typeof renderer !== "undefined" && renderer && typeof renderer.setSize === "function") {\n      try { renderer.setSize(w, h); if (typeof camera !== "undefined" && camera) { camera.aspect = w / h; if (typeof camera.updateProjectionMatrix === "function") { camera.updateProjectionMatrix(); } } } catch(e) {}\n    }\n    if (typeof onResize === "function") { try { onResize(); } catch(e) {} }\n    if (typeof onWindowResize === "function") { try { onWindowResize(); } catch(e) {} }\n    if (typeof handleResize === "function") { try { handleResize(); } catch(e) {} }\n  }\n  var observer = new ResizeObserver(function() { window.requestAnimationFrame(doResize); });\n  if (document.body) { observer.observe(document.body); } else { document.addEventListener("DOMContentLoaded", function() { if(document.body) observer.observe(document.body); }); }\n\n  // 屏蔽离线CAD查看器的无效API请求（防止 Vite SPA 路由返回 200 HTML 导致 axios 内部解析 undefined 报错）\n  var origOpen = window.XMLHttpRequest.prototype.open;\n  window.XMLHttpRequest.prototype.open = function(method, url) {\n    if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n      url = "http://127.0.0.1:1/offline_block";\n    }\n    return origOpen.apply(this, arguments);\n  };\n  var origFetch = window.fetch;\n  if (origFetch) {\n    window.fetch = function() {\n      var url = arguments[0];\n      if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n        return Promise.reject(new TypeError("Failed to fetch"));\n      }\n      return origFetch.apply(this, arguments);\n    };\n  }\n})();\n</' + 'script>';
+    /**
+     * 沙盒兼容脚本：注入到 CAD HTML 的 <head> 中，在引擎代码执行前优先运行。
+     * 解决 HarmonyOS WebView / Blob 环境下的三大安全限制：
+     * 1. localStorage / sessionStorage 访问被拒 (SecurityError)
+     * 2. IndexedDB 访问被拒 (SecurityError)
+     * 3. new URL() 因协议不合法而抛出 TypeError
+     * 4. /pdm/ 无效 API 请求拦截
+     */
+    function buildSandboxShimScript() {
+      return '<sc' + 'ript>\n' +
+        '(function() {\n' +
+        '  // 1. Mock localStorage / sessionStorage\n' +
+        '  window._mockStorage = (function() {\n' +
+        '    var store = {};\n' +
+        '    return {\n' +
+        '      getItem: function(k) { return store[k] || null; },\n' +
+        '      setItem: function(k, v) { store[k] = String(v); },\n' +
+        '      removeItem: function(k) { delete store[k]; },\n' +
+        '      clear: function() { store = {}; },\n' +
+        '      key: function(i) { return Object.keys(store)[i] || null; },\n' +
+        '      get length() { return Object.keys(store).length; }\n' +
+        '    };\n' +
+        '  })();\n' +
+        '\n' +
+        '  // 2. IndexedDB 拦截\n' +
+        '  if (window.IDBFactory && IDBFactory.prototype && IDBFactory.prototype.open) {\n' +
+        '    var origIdbOpen = IDBFactory.prototype.open;\n' +
+        '    IDBFactory.prototype.open = function() {\n' +
+        '      try {\n' +
+        '        return origIdbOpen.apply(this, arguments);\n' +
+        '      } catch(e) {\n' +
+        '        console.warn("Sandbox: IndexedDB blocked", e);\n' +
+        '        var req = {};\n' +
+        '        setTimeout(function() {\n' +
+        '          if (typeof req.onerror === "function") {\n' +
+        '            req.error = new Error("IndexedDB blocked");\n' +
+        '            req.onerror({ target: req });\n' +
+        '          }\n' +
+        '        }, 10);\n' +
+        '        return req;\n' +
+        '      }\n' +
+        '    };\n' +
+        '  }\n' +
+        '\n' +
+        '  // 3. URL 构造容错\n' +
+        '  var OrigURL = window.URL;\n' +
+        '  if (typeof OrigURL === "function") {\n' +
+        '    window.URL = function(url, base) {\n' +
+        '      try {\n' +
+        '        return base ? new OrigURL(url, base) : new OrigURL(url);\n' +
+        '      } catch(e) {\n' +
+        '        console.warn("Sandbox: Invalid URL intercepted:", url);\n' +
+        '        return new OrigURL("http://127.0.0.1:1/dummy");\n' +
+        '      }\n' +
+        '    };\n' +
+        '    window.URL.createObjectURL = OrigURL.createObjectURL;\n' +
+        '    window.URL.revokeObjectURL = OrigURL.revokeObjectURL;\n' +
+        '  }\n' +
+        '\n' +
+        '  // 4. /pdm/ 无效 API 拦截\n' +
+        '  var origOpen = window.XMLHttpRequest.prototype.open;\n' +
+        '  window.XMLHttpRequest.prototype.open = function(method, url) {\n' +
+        '    if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n' +
+        '      url = "http://127.0.0.1:1/offline_block";\n' +
+        '    }\n' +
+        '    return origOpen.apply(this, arguments);\n' +
+        '  };\n' +
+        '  var origFetch = window.fetch;\n' +
+        '  if (origFetch) {\n' +
+        '    window.fetch = function() {\n' +
+        '      var url = arguments[0];\n' +
+        '      if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n' +
+        '        return Promise.reject(new TypeError("Failed to fetch"));\n' +
+        '      }\n' +
+        '      return origFetch.apply(this, arguments);\n' +
+        '    };\n' +
+        '  }\n' +
+        '})();\n' +
+        '</' + 'script>';
+    }
 
     function renderCadHtml(htmlContent) {
-      // 注入 resize 脚本，严格查找最后一个 </body>，避免替换到由于 JS 内部字符串字面量包含的 </body>
-      var lastBodyIdx = htmlContent.lastIndexOf('</body>');
-      if (lastBodyIdx !== -1) {
-        htmlContent = htmlContent.substring(0, lastBodyIdx) + _resizeScript + '\n' + htmlContent.substring(lastBodyIdx);
-      } else {
-        htmlContent += _resizeScript;
-      }
+      // 构建沙盒兼容脚本
+      var shimScript = buildSandboxShimScript();
 
-      // 修复 blob: iframe 内部 Invalid URL 异常的问题：
-      // 注入一个真实的 absolute host <base> 标签，强行修正其 document.baseURI。
-      var baseUrl = window.location.origin + '/';
-      var baseTag = '<base href="' + baseUrl + '" />';
-      
-      // 替换已有的 <base href="/"> 或是注入到 <head> 中，只替换第一个出现的以防破坏后续内容
+      // 计算 baseUrl
+      var baseUrl = window.location.origin;
+      if (!baseUrl || baseUrl === 'null' || baseUrl === 'file://') {
+        baseUrl = 'http://127.0.0.1:1/';
+      } else {
+        baseUrl += '/';
+      }
+      var headInsert = '<base href="' + baseUrl + '" />\n' + shimScript;
+
+      // 注入到 <head> 最前面，确保沙盒脚本先于引擎代码执行
       if (htmlContent.indexOf('<base href="/"') !== -1) {
-        htmlContent = htmlContent.replace(/<base href="\/".*?>/, baseTag);
+        htmlContent = htmlContent.replace(/<base href="\/".*?>/, headInsert);
       } else if (htmlContent.indexOf('<head>') !== -1) {
-        htmlContent = htmlContent.replace('<head>', '<head>\n  ' + baseTag);
+        htmlContent = htmlContent.replace('<head>', '<head>\n  ' + headInsert);
       } else {
-        htmlContent = baseTag + '\n' + htmlContent;
+        htmlContent = headInsert + '\n' + htmlContent;
       }
 
-      // 使用 iframe 替代 HTML 文档的直接覆盖 (document.write) 避免阻塞主线程及极大数据渲染成文本的 BUG
+      // 全局替换 localStorage / sessionStorage 为 mock 对象
+      htmlContent = htmlContent.replace(/\blocalStorage\b/g, 'window._mockStorage');
+      htmlContent = htmlContent.replace(/\bsessionStorage\b/g, 'window._mockStorage');
+
+      // 使用 Blob + iframe 渲染
       var blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
       var blobUrl = URL.createObjectURL(blob);
 

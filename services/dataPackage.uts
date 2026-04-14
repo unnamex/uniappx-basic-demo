@@ -987,12 +987,14 @@ function processHarmonyExtractedFiles(
 			if (manifest?.files != null) {
 				const files = manifest.files as ManifestFileRefs
 				const attPath = files.attachment ?? 'data/attachment.json'
-				const attContent = findJsonFile(attPath)
-				if (attContent != null) {
+				try {
+					const attContent = readJsonFileHarmony(attPath)
 					const indRes = parseAttachmentFile(attContent)
 					for (const res of indRes) {
 					    rawResources.push(res)
 					}
+				} catch (e: any) {
+					console.warn('Harmony: 独立资源文件引索为空或拉取失败', e)
 				}
 			}
 			
