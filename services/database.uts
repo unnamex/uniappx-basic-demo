@@ -286,6 +286,13 @@ function createTables(): Promise<void> {
 			)
 		`
 		
+		const createNodeContentTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_node_content (
+				node_id TEXT PRIMARY KEY,
+				content_json TEXT
+			)
+		`
+		
 		// #ifdef APP-ANDROID
 		if (dbInstance != null) {
 			try {
@@ -297,6 +304,7 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL(createIconConfigTableSQL)
 				dbInstance!.execSQL(createResourcesTableSQL)
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
+				dbInstance!.execSQL(createNodeContentTableSQL)
 				
 				// Dynamic Tab System Tables
 				dbInstance!.execSQL(createTabGroupsTableSQL)
@@ -329,6 +337,7 @@ function createTables(): Promise<void> {
 					createIconConfigTableSQL,
 					createResourcesTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)",
+					createNodeContentTableSQL,
 					createTabGroupsTableSQL,
 					createTabsTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)",
@@ -643,7 +652,7 @@ export function endTransaction(): void {
 
 // #ifdef WEB
 // Web 端数据库版本，变更需增加版本号
-const WEB_DB_VERSION: number = 5
+const WEB_DB_VERSION: number = 6
 
 /**
  * 初始化 IndexedDB（Web端）
@@ -730,6 +739,11 @@ function initIndexedDB(): Promise<void> {
 					const resourceStore = db.createObjectStore('t_resources', { keyPath: 'id' })
 					resourceStore.createIndex('node_id', 'node_id', { unique: false })
 					resourceStore.createIndex('type', 'type', { unique: false })
+				}
+				
+				// 节点富文本内容表 (V5)
+				if (!db.objectStoreNames.contains('t_node_content')) {
+					db.createObjectStore('t_node_content', { keyPath: 'node_id' })
 				}
 				
 				console.log('IndexedDB Object Stores 创建/更新完成')
@@ -869,6 +883,33 @@ export function webGetCount(storeName: string): Promise<number> {
 			}
 			request.onerror = () => {
 				reject(new Error('IndexedDB count 失败: ' + storeName))
+			}
+		} catch (e: any) {
+			reject(new Error(e.toString()))
+		}
+	})
+}
+
+/**
+ * Web 端按主键查询数据
+ */
+export function webGetByKey(storeName: string, key: any): Promise<UTSJSONObject | null> {
+	return new Promise((resolve: (value: UTSJSONObject | null) => void, reject: (reason: any) => void) => {
+		if (dbInstance == null) {
+			reject(new Error('IndexedDB 未初始化'))
+			return
+		}
+		
+		try {
+			const transaction = dbInstance.transaction([storeName], 'readonly')
+			const store = transaction.objectStore(storeName)
+			const request = store.get(key)
+			
+			request.onsuccess = () => {
+				resolve(request.result as UTSJSONObject || null)
+			}
+			request.onerror = () => {
+				reject(new Error('IndexedDB getByKey 失败: ' + storeName))
 			}
 		} catch (e: any) {
 			reject(new Error(e.toString()))

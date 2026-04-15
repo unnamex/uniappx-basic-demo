@@ -75,7 +75,10 @@
 								<text class="richtext-close-icon">✕</text>
 							</view>
 						</view>
-						<scroll-view scroll-y="true" class="richtext-expand-scroll">
+						<view v-if="loadingRichTextIds.indexOf(row.id) >= 0" class="richtext-loading-box">
+							<text class="richtext-loading-text">加载中...</text>
+						</view>
+						<scroll-view v-else scroll-y="true" class="richtext-expand-scroll">
 							<view class="richtext-expand-content">
 								<ux-richtext :content="getRichTextContent(row)"></ux-richtext>
 							</view>
@@ -89,6 +92,7 @@
 
 <script lang="uts">
 	import { PropType } from 'vue'
+	import { getNodeContent } from '@/services/nodeContentService'
 
 	type TableRow = {
 		id : string
@@ -142,7 +146,11 @@
 				} as DragState,
 				isAllExpanded: false, // 懒加载模式下默认收起
 				/** 存储展开了富文本的行ID列表 */
-				expandedRichTextIds: [] as string[]
+				expandedRichTextIds: [] as string[],
+				/** 富文本内容缓存 Map<InnerId, ContentHTML> */
+				richTextCache: new Map<string, string>(),
+				/** 正在加载内容的节点ID */
+				loadingRichTextIds: [] as string[]
 			}
 		},
 		computed: {
@@ -251,7 +259,45 @@
 					this.expandedRichTextIds.splice(idx, 1)
 				} else {
 					this.expandedRichTextIds.push(rowId)
+					// 如果是展开，且缓存中没有内容，则发起请求
+					if (!this.richTextCache.has(rowId)) {
+						this.fetchRichTextContent(rowId)
+					}
 				}
+			},
+			/** 异步获取富文本内容 */
+			fetchRichTextContent(rowId: string) {
+				if (this.loadingRichTextIds.indexOf(rowId) >= 0) return
+				
+				this.loadingRichTextIds.push(rowId)
+				getNodeContent(rowId).then((res) => {
+					if (res != null) {
+						// 根据数据包规范，内容可能存在 description_html 字段，或者整体就是富文本
+						// 这里统一尝试读取 description_html，如果不存在则找第一个 string 字段
+						let content = ""
+						if (res['description_html'] != null) {
+							content = res['description_html'] as string
+						} else {
+							// 兜底：寻找第一个非 nodeId 的字符串字段
+							const keys = Object.keys(res)
+							for (const key of keys) {
+								if (key != 'nodeId' && typeof res[key] == 'string') {
+									content = res[key] as string
+									break
+								}
+							}
+						}
+						this.richTextCache.set(rowId, content)
+					} else {
+						this.richTextCache.set(rowId, "")
+					}
+				}).catch(err => {
+					console.error('Fetch rich text failed:', err)
+					this.richTextCache.set(rowId, "加载失败，请重试")
+				}).finally(() => {
+					const lIdx = this.loadingRichTextIds.indexOf(rowId)
+					if (lIdx >= 0) this.loadingRichTextIds.splice(lIdx, 1)
+				})
 			},
 			/** 判断行的富文本是否展开 */
 			isRichTextExpanded(rowId: string): boolean {
@@ -259,10 +305,7 @@
 			},
 			/** 获取行的富文本HTML内容 */
 			getRichTextContent(row: TableRow): string {
-				if (this.richTextProp == '') return ''
-				const val = row.originData[this.richTextProp]
-				if (val == null) return ''
-				return val.toString()
+				return this.richTextCache.get(row.id) ?? ""
 			},
 			initTableData(treeData : UTSJSONObject[]) {
 				this.allRows = []
@@ -275,15 +318,9 @@
 					})
 					this.refreshVisibility()
 				}
-				// 默认展开所有包含富文本内容的行
-				if (this.richTextProp != '') {
-					this.allRows.forEach((row: TableRow) => {
-						const val = row.originData[this.richTextProp]
-						if (val != null && val.toString().trim() != '') {
-							this.expandedRichTextIds.push(row.id)
-						}
-					})
-				}
+				// 节点内容按需加载，不再初始化时自动标记展开（除非是非常小的包，但为了性能一致性，此处改为手动触发）
+				this.expandedRichTextIds = []
+				this.richTextCache.clear()
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
 				list.forEach((item, index) => {
@@ -588,16 +625,24 @@
 		overflow: hidden;
 	}
 
-	.header-text {
-		font-size: 14px;
-		font-weight: bold;
-		color: #6B7280;
-		flex: 1;
-		lines: 1;
-		overflow: hidden;
+	.richtext-empty-text {
+		font-size: 13px;
+		color: #9CA3AF;
 	}
-	
-	.resize-handle {
+
+	.richtext-loading-box {
+		padding: 20px;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.richtext-loading-text {
+		font-size: 13px;
+		color: #9CA3AF;
+		font-style: italic;
+	}
+
+	.richtext-expand-scroll {
 		position: absolute;
 		right: 0;
 		top: 0;

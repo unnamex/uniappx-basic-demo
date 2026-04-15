@@ -27,8 +27,19 @@ export type ManifestFileRefs = {
 	icons: string | null    // layout/icons.json（可选）
 	records: string         // data/records.json
 	processTree: string     // data/process_tree.json
+	descriptions: string | null // data/descriptions.json（可选，V5 新增）
+	attachment: string | null   // data/attachment.json (新版独立附件列表)
 	assets: string | null   // 资源目录路径 "assets/"
 }
+
+/**
+ * 节点富文本内容记录 (对应 data/descriptions.json)
+ */
+export type NodeDescription = {
+	nodeId: string          // 关联的工艺节点 innerId
+	[key: string]: any      // 存储在此节点的富文本/长文本，如 description_html, safety_notice 等
+}
+
 
 /**
  * Tab 分组 (对应 layout/groups.json)

@@ -1,7 +1,7 @@
 # SRD 数据包规范说明 (V5)
 
-> **文档版本**: 5.1  
-> **最后更新**: 2026-04-14  
+> **文档版本**: 5.2  
+> **最后更新**: 2026-04-15  
 > **适用对象**: MPM 离线工艺预览系统 — 数据包制作与集成开发人员
 
 ---
@@ -65,6 +65,7 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 | `records` | string | 否 | 静态数据记录文件路径 |
 | `assets` | string | 否 | 资源文件根目录路径 |
 | `attachment` | string | 否 | 独立附件清单文件路径（V5 新增） |
+| `descriptions` | string | 否 | 节点富文本内容文件路径（V5.2 新增） |
 
 > **注意**：`data/process_tree.json` 为固定路径，不在 `files` 中显式声明，系统自动从该路径加载工艺树。
 
@@ -83,7 +84,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
     "icons": "layout/icons.json",
     "records": "data/records.json",
     "assets": "assets/",
-    "attachment": "data/attachment.json"
+    "attachment": "data/attachment.json",
+    "descriptions": "data/descriptions.json"
   }
 }
 ```
@@ -198,6 +200,58 @@ Process（工艺）
         {
           "innerId": "proc_v8_engine_op01_s01",
           "code": "S-01",
+          "name": "清洗缸体",
+          "targetClassId": "Step",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 5. data/descriptions.json — 节点富文本内容 (V5.2)
+
+### 5.1 设计背景
+
+在大型工艺包中，节点（Process/Operation/Step）往往包含大量的 HTML 富文本描述、安全提示、工艺注意事项等。
+如果将这些庞大的 HTML 字符串直接嵌套在 `process_tree.json` 中，会导致树形结构文件体积剧增，在移动端触发大量的内存占用，并显著拖慢 `JSON.parse` 的解析速度（可能造成 2-5 秒的 UI 线程阻塞）。
+
+为了优化性能，V5.2 引入了**描述内容解耦模式**。
+
+### 5.2 存储规范
+
+`descriptions.json` 是一个顶级数组，存储所有具有富文本描述的节点内容。系统会按需通过 `innerId` 查询此文件入库后的数据。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `nodeId` | string | ✅ | 关联节点 `innerId`（外键） |
+| `description_html` | string | 否 | 工艺描述 HTML 字符串 |
+| `safety_notice` | string | 否 | 安全预防措施 |
+| `technical_requirement` | string | 否 | 技术要求/标准说明 |
+
+### 5.3 示例
+
+```json
+[
+  {
+    "nodeId": "proc_v8_engine_op01",
+    "description_html": "<h3>工序描述</h3><p>本工序主要负责 V8 发动机缸体的基础组装，包含...</p>",
+    "safety_notice": "操作时必须佩戴静电手环和劳保手套。"
+  },
+  {
+    "nodeId": "proc_v8_engine_op01_s01",
+    "description_html": "<p>使用高压喷淋设备冲洗缸体内部油道...</p>"
+  }
+]
+```
+
+### 5.4 加载策略
+
+1. **导入期**：解压缩并在后台将内容存入 `t_node_content` 数据库表。
+2. **预览期**：`process_tree.json` 加载时不包含这些内容，UI 界面仅在用户点击“展开”行时，通过 `nodeId` 异步查询数据库并渲染。
           "name": "缸体预处理",
           "targetClassId": "Step",
           "classId": "",

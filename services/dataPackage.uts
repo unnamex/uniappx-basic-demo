@@ -1,4 +1,4 @@
-import { ComponentConfig, DataRecord, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
+import { ComponentConfig, DataRecord, ImportProgress, ImportResult, ManifestFileRefs, NodeDescription, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ProcessNode } from '@/types/process'
 import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
@@ -623,6 +623,11 @@ function extractAndParseAndroid(
 				const content = findJsonFile('data/process_tree.json')
 				if (content != null) processNode = JSON.parse(content)
 			}
+			let descriptions: NodeDescription[] = []
+			if (files.descriptions != null) {
+				const content = findJsonFile(files.descriptions)
+				if (content != null) descriptions = JSON.parse(content) as NodeDescription[]
+			}
 		}
 		
 		// 开始事务
@@ -632,8 +637,14 @@ function extractAndParseAndroid(
 			// 保存 UI 配置（链式调用）
 			saveUiConfigurationToDatabase(groups, tabs, components, records)
 				.then((uiConfigCount: number) => {
-			
-		// 提取资源（兼容全量解析和独立打包）
+					// 保存节点内容 (V5)
+					return saveNodeContentsToDatabase(descriptions).then((descCount: number) => {
+						return { uiConfigCount, descCount }
+					})
+				})
+				.then((counts: any) => {
+					const uiConfigCount = counts.uiConfigCount as number
+
 			let resourceCount = 0
 			const allResources: ResourceItem[] = []
 			const rawResources: ResourceItem[] = []
@@ -919,15 +930,24 @@ function processHarmonyExtractedFiles(
 				}
 			}
 			
-			if (files.records != null) {
-				try {
-					const content = readJsonFileHarmony(files.records)
-					records = JSON.parse(content) as DataRecord[]
-				} catch (e: any) {
-					console.warn('Harmony: records 文件读取失败:', e)
+				if (files.records != null) {
+					try {
+						const content = readJsonFileHarmony(files.records)
+						records = JSON.parse(content) as DataRecord[]
+					} catch (e: any) {
+						console.warn('Harmony: records 文件读取失败:', e)
+					}
 				}
-			}
-		} else {
+
+				if (files.descriptions != null) {
+					try {
+						const content = readJsonFileHarmony(files.descriptions)
+						descriptions = JSON.parse(content) as NodeDescription[]
+					} catch (e: any) {
+						console.warn('Harmony: descriptions 文件读取失败:', e)
+					}
+				}
+			} else {
 			// V1: 从 manifest 内联数据读取
 			groups = manifest.groups ?? []
 			tabs = manifest.tabs ?? []
@@ -1066,6 +1086,10 @@ function processHarmonyExtractedFiles(
 			
 			// 使用 Promise 链式调用保存 UI 配置，确保所有 SQL 顺序执行完毕后再继续
 			saveUiConfigurationToDatabase(groups, tabs, components, records)
+				.then((uiConfigCount: number) => {
+					// 保存节点内容
+					return saveNodeContentsToDatabase(descriptions).then(() => uiConfigCount)
+				})
 				.then((uiConfigCount: number) => {
 					console.log('Harmony: UI配置保存完成, count:', uiConfigCount)
 					// UI 配置保存完毕后，保存工艺树和资源
@@ -1298,6 +1322,23 @@ function extractAndParseWeb(
 						console.log('Web: Loaded records:', records.length);
 					} else {
 						console.warn('Web: records file not found:', files.records)
+					}
+				}
+
+				if (files.descriptions != null) {
+					const descFile = findZipFile(files.descriptions)
+					if (descFile != null) {
+						const content = await descFile.async("string")
+						const descriptions = JSON.parse(content) as NodeDescription[]
+						
+						await webClearStore('t_node_content')
+						for (const desc of descriptions) {
+							await webPutData('t_node_content', {
+								node_id: desc.nodeId,
+								content_json: JSON.stringify(desc)
+							})
+						}
+						console.log('Web: Loaded descriptions:', descriptions.length);
 					}
 				}
 				
@@ -1623,5 +1664,47 @@ function saveProcessTreeToDatabase(processNode: ProcessNode): Promise<void> {
 			.catch((e: any) => {
 				reject(new Error(e.toString()))
 			})
+	})
+}
+
+/**
+ * 保存节点描述内容到数据库
+ */
+function saveNodeContentsToDatabase(descriptions: NodeDescription[]): Promise<number> {
+	return new Promise<number>((resolve: (value: number) => void, reject: (reason: any) => void) => {
+		if (descriptions.length == 0) {
+			resolve(0)
+			return
+		}
+		
+		const sqlQueue: UTSJSONObject[] = []
+		for (let i = 0; i < descriptions.length; i++) {
+			const d = descriptions[i]
+			sqlQueue.push({
+				sql: "INSERT OR REPLACE INTO t_node_content (node_id, content_json) VALUES (?, ?)",
+				params: [d.nodeId, JSON.stringify(d)]
+			})
+		}
+		
+		let completed = 0
+		const executeNext = (index: number) => {
+			if (index >= sqlQueue.length) {
+				resolve(completed)
+				return
+			}
+			const item = sqlQueue[index]
+			const sql = item['sql'] as string
+			const params = item['params'] as any[]
+			executeSQL(sql, params)
+				.then((_: any) => {
+					completed++
+					executeNext(index + 1)
+				})
+				.catch((e: any) => {
+					console.error('saveNodeContents SQL 失败:', sql, e)
+					executeNext(index + 1)
+				})
+		}
+		executeNext(0)
 	})
 }
