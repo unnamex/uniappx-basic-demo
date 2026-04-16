@@ -1,10 +1,10 @@
 <template>
 	<view class="ux-table">
 		<!-- #ifdef WEB -->
-		<view class="table-scroll-container" style="overflow: auto;">
+		<view class="table-scroll-container" :style="{ overflowX: showExpand ? 'hidden' : 'auto', overflowY: 'auto' }">
 		<!-- #endif -->
 		<!-- #ifndef WEB -->
-		<scroll-view scroll-x="true" class="table-scroll-container">
+		<scroll-view :scroll-x="!showExpand" scroll-y="true" class="table-scroll-container">
 		<!-- #endif -->
 			<view class="table-inner" :style="{ minWidth: tableMinWidth + 'px' }">
 				<view class="header">
