@@ -207,7 +207,7 @@
 	}
 	
 	.ux-tabs__content {
-		padding: 15px;
+		/* padding: 15px; */
 		flex: 1;
 		flex-direction: column;
 		background-color: #FFFFFF;
