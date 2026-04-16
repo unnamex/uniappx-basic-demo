@@ -40,6 +40,7 @@
 							@mousedown="onMouseDownMain"
 						>
 							<view :class="['outsider-divider-line-horizontal', isDraggingMain ? 'outsider-divider-line-drag-horizontal' : '']"></view>
+							<view :class="['outsider-divider-handle-horizontal', isDraggingMain ? 'outsider-divider-handle-drag' : '']"></view>
 						</view>
 
 						<!-- Bottom Section -->
@@ -85,6 +86,7 @@
 							@mousedown="onMouseDownRightMain"
 						>
 							<view :class="['outsider-divider-line-horizontal', isDraggingRightMain ? 'outsider-divider-line-drag-horizontal' : '']"></view>
+							<view :class="['outsider-divider-handle-horizontal', isDraggingRightMain ? 'outsider-divider-handle-drag' : '']"></view>
 						</view>
 
 						<!-- Right Bottom Section -->
@@ -657,5 +659,21 @@
 
 	.outsider-footer {
 		flex: none;
+	}
+
+	.outsider-divider-handle-horizontal {
+		width: 32px;
+		height: 4px;
+		background-color: #CBD5E1;
+		border-radius: 2px;
+		z-index: 12;
+		position: absolute;
+		transition-property: background-color, transform;
+		transition-duration: 0.2s;
+	}
+
+	.outsider-divider-handle-drag {
+		background-color: #007AFF;
+		transform: scaleY(1.2);
 	}
 </style>
