@@ -52,7 +52,7 @@
 						<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
 							<view class="tab-content-wrap">
 								<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
-									<text class="comp-title">{{ comp.title }}</text>
+									<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
 									
 									<!-- Table Component -->
 									<view v-if="comp.type == 'table'" style="min-height: 200px;">
@@ -107,7 +107,7 @@
 								<scroll-view style="flex: 1; height: 100%;" scroll-y="true">
 									<view class="tab-content-wrap">
 										<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper">
-											<text class="comp-title">{{ comp.title }}</text>
+											<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
 											
 											<!-- Table Component -->
 											<view v-if="comp.type == 'table'" style="min-height: 200px;">
@@ -1528,7 +1528,7 @@
 	}
 	
 	.main-content-bottom {
-		padding: 8px 12px;
+		padding: 0 4px;
 		display: flex;
 		flex-direction: column;
 		flex: 1;
@@ -1642,28 +1642,22 @@
 	}
 	
 	.tab-content-wrap {
-		padding: 8px 0;
+		padding: 0;
 	}
 	
 	.component-wrapper {
-		margin-bottom: 12px;
-		padding: 12px 16px;
-		background-color: #FFFFFF;
-		border: 1px solid #E2E8F0;
-		border-radius: 8px;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-		transition-property: box-shadow;
-		transition-duration: 0.2s;
+		margin-bottom: 16px;
+		padding: 4px 0;
 	}
 	
 	.comp-title {
 		font-weight: 600;
 		margin-bottom: 8px;
 		font-size: 13px;
-		
 		color: #64748B;
-		
 		letter-spacing: 0;
+		padding-left: 2px;
+		padding-bottom: 4px;
 	}
 	
 	.kv-row {
