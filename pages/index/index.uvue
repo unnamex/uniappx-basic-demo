@@ -3,8 +3,9 @@
 		:initLeftWidth="340" 
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
-		:initRightWidth="300"
-		:initRightTopHeight="350"
+		:initRightWidth="450"
+		:maxRightWidth="800"
+		:initRightTopHeight="windowInfo.windowHeight - 250"
 		:minRightTopHeight="200"
 		:showMainBottom="true"
 		:showRightBottom="true"
@@ -1638,7 +1639,7 @@
 		background-color: #F5F7FA;
 		display: flex;
 		flex-direction: column;
-		height: 100px;
+		height: 100%;
 		border-top: 1px solid #E2E6ED;
 	}
 	

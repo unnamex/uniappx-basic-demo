@@ -14,6 +14,7 @@
 		<scroll-view 
 			v-else
 			class="scroll-container"
+			direction="horizontal"
 			scroll-x="true"
 			:show-scrollbar="false"
 			style="height: 100%;"
@@ -191,17 +192,20 @@
 	.scroll-container {
 		flex: 1;
 		width: 100%;
+		flex-direction: row;
 	}
 	
 	.list-content {
-			flex-direction: row;
+		flex-direction: row;
 		padding-bottom: 8px;
+		align-self: flex-start;
 	}
 	
 	/* 资源卡片 */
 	.resource-card {
-		width: 60px;
-		margin-right: 6px;
+		width: 90px;
+		flex-shrink: 0;
+		margin-right: 8px;
 		background-color: #F3F4F6;
 		border-radius: 6px;
 		overflow: hidden;
@@ -211,8 +215,9 @@
 	}
 	
 	.resource-card-selected {
-		width: 60px;
-		margin-right: 6px;
+		width: 90px;
+		flex-shrink: 0;
+		margin-right: 8px;
 		background-color: #ECFEFF;
 		border-radius: 6px;
 		overflow: hidden;
@@ -223,8 +228,8 @@
 	
 	/* 缩略图区域 */
 	.card-thumbnail {
-		width: 60px;
-		height: 36px;
+		width: 90px;
+		height: 56px;
 		position: relative;
 		overflow: hidden;
 	}
@@ -262,7 +267,7 @@
 	}
 	
 	.placeholder-icon {
-		font-size: 22px;
+		font-size: 28px;
 	}
 	
 	/* 播放覆盖层 */
@@ -334,7 +339,7 @@
 	}
 	
 	.card-name {
-		font-size: 10px;
+		font-size: 11px;
 		color: #374151;
 		overflow: hidden;
 	}
