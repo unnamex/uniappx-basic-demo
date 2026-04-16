@@ -18,6 +18,7 @@
 					@mousedown="onMouseDown"
 					>
 					<view :class="['outsider-divider-line', isDragging ? 'outsider-divider-line-drag' : '']"></view>
+					<view :class="['outsider-divider-handle-vertical', isDragging ? 'outsider-divider-handle-drag-vertical' : '']"></view>
 					<view class="outsider-toggle-btn" @click.stop="toggleCollapse">
 						<text class="outsider-toggle-text">{{ isCollapsed ? '⟩' : '⟨' }}</text>
 					</view>
@@ -63,6 +64,7 @@
 					@mousedown="onMouseDownRight"
 					>
 					<view :class="['outsider-divider-line', isDraggingRight ? 'outsider-divider-line-drag' : '']"></view>
+					<view :class="['outsider-divider-handle-vertical', isDraggingRight ? 'outsider-divider-handle-drag-vertical' : '']"></view>
 					<view class="outsider-toggle-btn" @click.stop="toggleRightCollapse">
 						<text class="outsider-toggle-text">{{ isRightCollapsed ? '⟨' : '⟩' }}</text>
 					</view>
@@ -487,45 +489,42 @@
 	}
 
 	.outsider-toggle-btn {
-		width: 28px;
-		height: 28px;
+		width: 14px;
+		height: 48px;
 		background-color: #FFFFFF;
-		border-radius: 14px;
-			align-items: center;
+		border-radius: 7px;
+		align-items: center;
 		justify-content: center;
-		z-index: 11;
-		/* cursor: pointer; */
+		z-index: 15; /* 确保在所有分割线元素之上 */
 		position: absolute;
 		/* #ifdef WEB */
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-	/* #endif */
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		/* #endif */
 		border-width: 1px;
 		border-style: solid;
-		border-color: #F1F5F9;
-		transition-property: background-color, box-shadow, border-color;
-		transition-duration: 0.2s;
+		border-color: #E2E8F0;
+		transition-property: background-color, box-shadow, transform, border-color;
+		transition-duration: 0.3s;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		left: -3px; /* 居中于 8px 宽的分割线容器 */
 	}
-	
-	/* .outsider-divider:active .outsider-toggle-btn,
-	.outsider-divider-drag .outsider-toggle-btn {
+
+	.outsider-toggle-btn:hover {
 		/* #ifdef WEB */
-	box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
-	/* #endif */
-		border-color: #E0F2FE;
-	} */
-	
-	/* .outsider-toggle-btn:active {
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+		/* #endif */
 		background-color: #F8FAFC;
-		/* #ifdef WEB */
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-	/* #endif */
-	} */
+		transform: scale(1.05);
+	}
+
 	
 	.outsider-toggle-text {
-		font-size: 15px;
-		color: #64748B;
-		line-height: 28px;
+		font-size: 13px;
+		font-weight: 700;
+		color: #94A3B8;
+		line-height: 48px;
 		font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+		text-align: center;
 	}
 
 	.outsider-main {
@@ -675,5 +674,21 @@
 	.outsider-divider-handle-drag {
 		background-color: #007AFF;
 		transform: scaleY(1.2);
+	}
+
+	.outsider-divider-handle-vertical {
+		width: 4px;
+		height: 32px;
+		background-color: #CBD5E1;
+		border-radius: 2px;
+		z-index: 10; /* 低于按钮 z-index: 11 */
+		position: absolute;
+		transition-property: background-color, transform;
+		transition-duration: 0.2s;
+	}
+
+	.outsider-divider-handle-drag-vertical {
+		background-color: #007AFF;
+		transform: scaleX(1.2);
 	}
 </style>
