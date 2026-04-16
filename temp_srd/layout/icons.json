@@ -1,0 +1,20 @@
+{
+  "nodeIcons": {
+    "process": {
+      "icon": "process",
+      "fallback": "📋"
+    },
+    "procedure": {
+      "icon": "procedure",
+      "fallback": "🔧"
+    },
+    "step": {
+      "icon": "step",
+      "fallback": "⚙️"
+    },
+    "default": {
+      "icon": "default",
+      "fallback": "📄"
+    }
+  }
+}

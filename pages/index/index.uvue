@@ -901,11 +901,7 @@
 						data: []
 					}
 					
-					// Load Data
-					const records = await webGetByIndex('data_records', 'component_id', compId)
-					compVM.data = records.map((r: any): UTSJSONObject => {
-						return r.data as UTSJSONObject || {}
-					})
+					// 运行时数据由 bindDataToGroup 根据 dataSource 填充，不在此处预加载
 					
 					tabVM.components.push(compVM)
 				}
@@ -969,14 +965,7 @@
 					data: []
 				}
 				
-				// Load Data
-				const records = await querySQL("SELECT data_json FROM data_records WHERE component_id = ?", [compId])
-				compVM.data = records.map((r): UTSJSONObject => {
-					const jsonStr = r['data_json'] as string
-					try {
-						return JSON.parse(jsonStr) as UTSJSONObject
-					} catch (e) { return {} }
-				})
+				// 运行时数据由 bindDataToGroup 根据 dataSource 填充，不在此处预加载
 				
 				tabVM.components.push(compVM)
 			}
@@ -1170,17 +1159,31 @@
 			const tab = group.tabs[i]
 			for (let j = 0; j < tab.components.length; j++) {
 				const comp = tab.components[j]
-				const config = comp.config as UTSJSONObject
-				const dataSource = config['dataSource'] as string
+				// 始终先重置数据，防止任何残留
+				comp.data = []
+
+				let dataSource = ''
+				if (comp.config != null) {
+					if (!Array.isArray(comp.config)) {
+						const configObj = comp.config as UTSJSONObject
+						const ds = configObj['dataSource']
+						if (ds != null) {
+							// dataSource 可能是字符串或对象，仅处理字符串类型响应点击联动
+							if (typeof ds == 'string') {
+								dataSource = ds as string
+							}
+							// 对象类型的 dataSource (如 { type: 'table' }) 忽略，
+							// 这些组件数据由独立的 loadDataForGroup 函数去查询整表填充
+						}
+					}
+				}
 				
-				// 根据 dataSource 填充 comp.data
-				comp.data = [] // Reset
-				
+				// 针对右侧列表/下方列表的组件，根据 dataSource 填充
 				if (dataSource == 'self') {
 					// 自身数据，作为单条记录放入数组
 					comp.data.push(node)
-				} else if (dataSource == 'children') {
-					// 子节点列表
+				} else if (dataSource == 'children' || dataSource == '') {
+					// 子节点列表 (未配置 dataSource 时兼容旧包，默认显示节点的直接子节点)
 					const children = node['children']
 					if (children != null && Array.isArray(children)) {
 						const list = children as UTSJSONObject[]

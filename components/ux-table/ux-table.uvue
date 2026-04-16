@@ -1,37 +1,44 @@
 <template>
 	<view class="ux-table">
-		<view class="header">
-			<view class="header-row">
-				<view v-for="(col, index) in columns" :key="index" class="header-cell"
-					:style="{ flex: getColFlex(index), width: getColWidth(index) }">
-					<text class="header-text">{{ col['label'] }}</text>
+		<!-- #ifdef WEB -->
+		<view class="table-scroll-container" style="overflow: auto;">
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		<scroll-view scroll-x="true" class="table-scroll-container">
+		<!-- #endif -->
+			<view class="table-inner" :style="{ minWidth: tableMinWidth + 'px' }">
+				<view class="header">
+					<view class="header-row">
+						<view v-for="(col, index) in columns" :key="index" class="header-cell"
+							:style="{ flex: getColFlex(index), width: getColWidth(index) }">
+							<text class="header-text">{{ col['label'] }}</text>
+							
+							<!-- #ifdef H5 -->
+							<view class="resize-handle" 
+								@touchstart.stop.prevent="onResizeStart(index, $event)" 
+								@touchmove.stop.prevent="onResizeMove" 
+								@touchend="onResizeEnd"
+								@mousedown.stop.prevent="onResizeStartMouse(index, $event)">
+								<view class="separator-line"></view>
+							</view>
+							<!-- #endif -->
+							<!-- #ifndef H5 -->
+							<view class="resize-handle" 
+								@touchstart.stop="(e : UniTouchEvent) => onResizeStart(index, e)" 
+								@touchmove.stop="onResizeMove" 
+								@touchend="onResizeEnd">
+								<view class="separator-line"></view>
+							</view>
+							<!-- #endif -->
+						</view>
+					</view>
 					
-					<!-- #ifdef H5 -->
-					<view class="resize-handle" 
-						@touchstart.stop.prevent="onResizeStart(index, $event)" 
-						@touchmove.stop.prevent="onResizeMove" 
-						@touchend="onResizeEnd"
-						@mousedown.stop.prevent="onResizeStartMouse(index, $event)">
-						<view class="separator-line"></view>
+					<!-- Header Action: Expand/Collapse All (Floating on right) -->
+					<view v-if="showExpand" class="header-action" @click="toggleAll" hover-class="header-action-hover">
+						<text class="action-text">{{ isAllExpanded ? '收起' : '展开' }}</text>
 					</view>
-					<!-- #endif -->
-					<!-- #ifndef H5 -->
-					<view class="resize-handle" 
-						@touchstart.stop="(e : UniTouchEvent) => onResizeStart(index, e)" 
-						@touchmove.stop="onResizeMove" 
-						@touchend="onResizeEnd">
-						<view class="separator-line"></view>
-					</view>
-					<!-- #endif -->
 				</view>
-			</view>
-			
-			<!-- Header Action: Expand/Collapse All (Floating on right) -->
-			<view v-if="showExpand" class="header-action" @click="toggleAll" hover-class="header-action-hover">
-				<text class="action-text">{{ isAllExpanded ? '收起' : '展开' }}</text>
-			</view>
-		</view>
-		<view class="body">
+				<view class="body">
 			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex">
 				<!-- 行主体部分 -->
 				<view class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
@@ -86,7 +93,14 @@
 					</view>
 				</view>
 			</view>
+				</view>
+			</view>
+		<!-- #ifdef WEB -->
 		</view>
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		</scroll-view>
+		<!-- #endif -->
 	</view>
 </template>
 
@@ -170,6 +184,16 @@
 					return (col['prop'] as string) ?? ''
 				}
 				return ''
+			},
+			/** 计算表格最小宽度 */
+			tableMinWidth() : number {
+				let total = 0
+				for (let i = 0; i < this.columnWidths.length; i++) {
+					const w = this.columnWidths[i]
+					total += (w > 0 ? w : 150)
+				}
+				// 默认最小宽度 600
+				return Math.max(total, 600)
 			}
 		},
 		watch: {
@@ -335,7 +359,8 @@
 					if (childrenRaw != null && Array.isArray(childrenRaw)) {
 						children = childrenRaw as UTSJSONObject[]
 					}
-					const hasChildren = children != null && children.length > 0
+					// Only treat as having children if showExpand is enabled
+					const hasChildren = this.showExpand && children != null && children.length > 0
 					
 					// 懒展开：只有第 0 级（工艺）和第 1 级（工序）默认加载
 					const shouldLoadChildren = level < 1 || this.isAllExpanded
@@ -370,7 +395,8 @@
 					if (childrenRaw != null && Array.isArray(childrenRaw)) {
 						children = childrenRaw as UTSJSONObject[]
 					}
-					const hasChildren = children != null && children.length > 0
+					// Only treat as having children if showExpand is enabled
+					const hasChildren = this.showExpand && children != null && children.length > 0
 					
 					const row : TableRow = {
 						id: id.toString(),
@@ -599,6 +625,17 @@
 		border-width: 1px;
 		border-style: solid;
 		border-color: #E2E6ED;
+		overflow: hidden;
+	}
+	
+	.table-scroll-container {
+		flex: 1;
+		width: 100%;
+	}
+	
+	.table-inner {
+		flex-direction: column;
+		width: 100%;
 	}
 
 	.header {
@@ -607,12 +644,14 @@
 		border-bottom-style: solid;
 		border-bottom-color: #E2E6ED;
 		position: relative;
+		width: 100%;
 	}
 
 	.header-row {
 		flex-direction: row;
 		height: 40px;
 		align-items: stretch;
+		width: 100%;
 	}
 
 	.header-cell {
@@ -640,18 +679,6 @@
 		font-size: 13px;
 		color: #9CA3AF;
 		font-style: italic;
-	}
-
-	.richtext-expand-scroll {
-		position: absolute;
-		right: 0;
-		top: 0;
-		bottom: 0;
-		width: 30px;
-		flex-direction: row;
-		justify-content: center;
-		align-items: center;
-		z-index: 10;
 	}
 	
 	.separator-line {
@@ -687,6 +714,7 @@
 
 	.body {
 		flex-direction: column;
+		width: 100%;
 	}
 
 	.row {
@@ -695,6 +723,7 @@
 		border-bottom-style: solid;
 		border-bottom-color: #F3F4F6;
 		background-color: #FFFFFF;
+		width: 100%;
 		padding-top: 10px;
 		padding-bottom: 10px;
 	}
@@ -805,6 +834,7 @@
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
 		border-bottom-color: #E2E6ED;
+		width: 100%;
 	}
 
 	.richtext-expand-title {
@@ -829,6 +859,8 @@
 
 	.richtext-expand-scroll {
 		max-height: 300px;
+		width: 100%;
+		flex: 1;
 	}
 
 	.richtext-expand-content {

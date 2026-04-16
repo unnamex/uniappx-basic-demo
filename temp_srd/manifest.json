@@ -1,0 +1,16 @@
+{
+  "name": "V8发动机总装工艺包 (V6-精简结构版)",
+  "version": "6.0",
+  "description": "V6 测试包：剔除了 records.json 中的冗余树节点数据，完全使用 process_tree 配合动态子节点渲染机制。包含所有结构、富文本分离，以及附件扩展功能。",
+  "exportTime": "2026-03-02T14:00:00+08:00",
+  "files": {
+    "groups": "layout/groups.json",
+    "tabs": "layout/tabs.json",
+    "components": "layout/components.json",
+    "icons": "layout/icons.json",
+    "records": "data/records.json",
+    "assets": "assets/",
+    "attachment": "data/attachment.json",
+    "descriptions": "data/descriptions.json"
+  }
+}
