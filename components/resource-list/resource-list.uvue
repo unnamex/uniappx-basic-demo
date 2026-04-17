@@ -13,6 +13,7 @@
 		
 		<scroll-view 
 			v-else
+			ref="scrollViewRef"
 			class="scroll-container"
 			direction="horizontal"
 			scroll-x="true"
@@ -88,10 +89,17 @@
 			</view>
 		</scroll-view>
 		
-		<!-- 滚动指示器 -->
+		<!-- 可拖拽滚动指示器 -->
 		<view v-if="resources.length > 3" class="scroll-indicator">
-			<view class="indicator-track">
-				<view class="indicator-thumb" :style="{ left: scrollProgress + '%' }"></view>
+			<view 
+				class="indicator-track"
+				ref="trackRef"
+				@touchstart="onTrackTouchStart" 
+				@touchmove="onTrackTouchMove" 
+				@touchend="onTrackTouchEnd"
+				@mousedown="onTrackMouseDown"
+			>
+				<view class="indicator-thumb" :style="{ transform: thumbTransform }"></view>
 			</view>
 		</view>
 	</view>
@@ -112,36 +120,167 @@
 		(e: 'select', item: ResourceItem): void
 	}>()
 	
-	// 滚动进度
-	const scrollProgress = ref(0)
+	// === 核心状态 ===
+	const scrollViewRef = ref<UniElement | null>(null)
+	const trackRef = ref<UniElement | null>(null)
+	const scrollProgress = ref(0)   // 0~1 表示滚动进度
+	const isDragging = ref(false)
 	
-	// 获取类型标签
+	// 布局缓存（从 scroll 事件中获取真实值）
+	let cachedScrollWidth = 0
+	let cachedClientWidth = 0
+	
+	// 拖拽起始记录
+	let dragStartX = 0
+	let dragStartProgress = 0
+	let cachedTrackWidth = 200
+	
+	// === 计算属性 ===
+	const thumbTransform = computed((): string => {
+		const maxOffset = cachedTrackWidth - 30  // 30px 为 thumb 宽度
+		const offset = scrollProgress.value * maxOffset
+		return `translateX(${offset}px)`
+	})
+	
+	// === 工具方法 ===
 	const getTypeLabel = (type: string): string => {
 		return getResourceTypeLabel(type)
 	}
 	
-	// 格式化时间
 	const formatTime = (seconds: number): string => {
 		return formatDuration(seconds)
 	}
 	
-	// 点击资源项
 	const onItemClick = (item: ResourceItem) => {
 		emit('select', item)
 	}
 	
-	// 滚动事件
+	/**
+	 * 核心方法：直接操作 scroll-view 的原生滚动位置
+	 * 放弃 :scroll-left 属性绑定（在多平台上不可靠），
+	 * 改为通过 UniElement 的 scrollLeft 属性直接设置
+	 */
+	const scrollToPosition = (targetLeft: number) => {
+		if (scrollViewRef.value == null) return
+		const el = scrollViewRef.value!
+		// 直接设置原生 DOM 的 scrollLeft 属性
+		el.scrollLeft = targetLeft
+	}
+	
+	// === 被动监听：用户手动滑动列表时同步指示器位置 ===
 	const onScroll = (e: any) => {
+		// 拖拽指示器期间忽略被动滚动事件，防止循环触发
+		if (isDragging.value) return
+		
 		const detail = (e as UTSJSONObject)['detail'] as UTSJSONObject
 		if (detail == null) return
+		
 		const scrollLeft = (detail['scrollLeft'] as number) ?? 0
 		const scrollWidth = (detail['scrollWidth'] as number) ?? 1
-		const clientWidth = (detail['scrollWidth'] as number) ?? 0
+		// detail 中 clientWidth 字段名可能是 'width' 或 'clientWidth'
+		let clientWidth = (detail['width'] as number) ?? 0
+		if (clientWidth == 0) {
+			clientWidth = (detail['clientWidth'] as number) ?? 0
+		}
+		// 如果仍然取不到，就用 scrollWidth 兜底（此时 maxScroll=0，不更新进度）
+		if (clientWidth == 0) {
+			clientWidth = scrollWidth
+		}
+		
+		// 缓存真实值，供拖拽时使用
+		cachedScrollWidth = scrollWidth
+		cachedClientWidth = clientWidth
 		
 		if (scrollWidth > clientWidth) {
-			scrollProgress.value = (scrollLeft / (scrollWidth - clientWidth)) * 100
+			const maxScroll = scrollWidth - clientWidth
+			scrollProgress.value = Math.max(0, Math.min(1, scrollLeft / maxScroll))
 		}
 	}
+	
+	// === 主动控制：拖拽指示器时驱动列表滚动 ===
+	
+	/** 通用：拖拽开始 */
+	const handleDragStart = (clientX: number) => {
+		isDragging.value = true
+		dragStartX = clientX
+		dragStartProgress = scrollProgress.value
+		
+		// 测量轨道实际宽度
+		if (trackRef.value != null) {
+			cachedTrackWidth = trackRef.value!.getBoundingClientRect().width
+		}
+		
+		// 如果从未触发过 onScroll（用户直接拖指示器），需要估算尺寸
+		if (cachedScrollWidth == 0 && props.resources.length > 0) {
+			// 每张卡片 90px 宽 + 8px 间距 = 98px
+			cachedScrollWidth = props.resources.length * 98
+			cachedClientWidth = cachedTrackWidth + 40
+		}
+	}
+	
+	/** 通用：拖拽移动 */
+	const handleDragMove = (clientX: number) => {
+		const deltaX = clientX - dragStartX
+		const maxTrackMove = cachedTrackWidth - 30
+		
+		if (maxTrackMove <= 0) return
+		
+		// 计算新的进度
+		const deltaProgress = deltaX / maxTrackMove
+		let newProgress = dragStartProgress + deltaProgress
+		newProgress = Math.max(0, Math.min(1, newProgress))
+		
+		// 更新指示器位置
+		scrollProgress.value = newProgress
+		
+		// 驱动列表滚动（核心：直接操作 DOM scrollLeft）
+		if (cachedScrollWidth > cachedClientWidth) {
+			const targetLeft = newProgress * (cachedScrollWidth - cachedClientWidth)
+			scrollToPosition(targetLeft)
+		}
+	}
+	
+	/** 通用：拖拽结束 */
+	const handleDragEnd = () => {
+		isDragging.value = false
+	}
+	
+	// === 触摸事件（App 端 / 鸿蒙端） ===
+	const onTrackTouchStart = (e: UniTouchEvent) => {
+		if (e.touches.length == 0) return
+		handleDragStart(e.touches[0].clientX)
+	}
+	
+	const onTrackTouchMove = (e: UniTouchEvent) => {
+		if (!isDragging.value || e.touches.length == 0) return
+		handleDragMove(e.touches[0].clientX)
+	}
+	
+	const onTrackTouchEnd = () => {
+		handleDragEnd()
+	}
+	
+	// === 鼠标事件（Web/H5 端） ===
+	const onTrackMouseDown = (e: MouseEvent) => {
+		handleDragStart(e.clientX)
+		// #ifdef H5 || WEB
+		document.addEventListener('mousemove', onDocMouseMove)
+		document.addEventListener('mouseup', onDocMouseUp)
+		// #endif
+	}
+	
+	// #ifdef H5 || WEB
+	const onDocMouseMove = (e: MouseEvent) => {
+		if (isDragging.value) {
+			handleDragMove(e.clientX)
+		}
+	}
+	const onDocMouseUp = () => {
+		handleDragEnd()
+		document.removeEventListener('mousemove', onDocMouseMove)
+		document.removeEventListener('mouseup', onDocMouseUp)
+	}
+	// #endif
 </script>
 
 <style>
@@ -350,10 +489,11 @@
 		margin-top: 2px;
 	}
 	
-	/* 滚动指示器 */
+	/* 可拖拽滚动指示器 */
 	.scroll-indicator {
 		margin-top: 8px;
 		padding: 0 20px;
+		padding-bottom: 6px;
 	}
 	
 	.indicator-track {
@@ -369,5 +509,8 @@
 		height: 4px;
 		background-color: #0891B2;
 		border-radius: 2px;
+		transition-property: transform;
+		transition-duration: 0.1s;
+		top: 0;
 	}
 </style>
