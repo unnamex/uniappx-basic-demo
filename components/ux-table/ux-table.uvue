@@ -628,16 +628,13 @@
 </script>
 
 <style>
-	/* Cloud Atlas 云图白主题 — 表格组件 */
+	/* Cloud Atlas 云图白主题 — 表格组件 (Slate/Cyan 设计语言) */
 	.ux-table {
 		flex-direction: column;
 		width: 100%;
 		flex: 1;
 		height: 100%;
-		border-width: 1px;
-		border-style: solid;
-		border-color: #E2E8F0;
-		border-radius: 8px;
+		/* 无框设计：融入父容器，不额外添加边框 */
 		background-color: #FFFFFF;
 		overflow: hidden;
 	}
@@ -653,8 +650,9 @@
 		width: 100%;
 	}
 
+	/* 表头：白色背景 + 底部细分隔线，与内容区一体化 */
 	.header {
-		background-color: #F8FAFC;
+		background-color: #FFFFFF;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
 		border-bottom-color: #E2E8F0;
@@ -664,7 +662,7 @@
 
 	.header-row {
 		flex-direction: row;
-		height: 40px;
+		height: 36px;
 		align-items: stretch;
 		width: 100%;
 	}
@@ -672,59 +670,66 @@
 	.header-cell {
 		flex-direction: row;
 		align-items: center;
-		padding-left: 10px;
-		padding-right: 20px;
+		padding-left: 12px;
+		padding-right: 12px;
 		position: relative;
 		justify-content: flex-start;
 		overflow: hidden;
 	}
 
-	.richtext-empty-text {
+	/* 表头文字：Slate-500 小号加粗，与 Tab 标题体系协调 */
+	.header-text {
 		font-size: 13px;
-		color: #9CA3AF;
+		font-weight: 600;
+		color: #64748B;
+		lines: 1;
+		overflow: hidden;
 	}
 
 	.richtext-loading-box {
-		padding: 20px;
+		padding: 16px;
 		align-items: center;
 		justify-content: center;
 	}
 
 	.richtext-loading-text {
 		font-size: 13px;
-		color: #9CA3AF;
+		color: #94A3B8;
 		font-style: italic;
 	}
 	
+	/* 列拖拽分隔线 */
 	.separator-line {
 		width: 1px;
-		height: 20px;
-		background-color: #D1D5DB;
+		height: 16px;
+		background-color: #CBD5E1;
 		margin-right: 2px;
 	}
 
+	/* 展开/收起全部 — 浮动操作按钮 */
 	.header-action {
 		position: absolute;
 		right: 0;
 		top: 0;
 		bottom: 0;
-		width: 60px;
+		width: 56px;
 		justify-content: center;
 		align-items: center;
-		background-color: #F0F2F5;
+		background-color: #FFFFFF;
 		z-index: 100;
 		border-left-width: 1px;
 		border-left-style: solid;
-		border-left-color: #D1D5DB;
+		border-left-color: #E2E8F0;
 	}
 	
 	.header-action-hover {
-		background-color: #E2E6ED;
+		background-color: #F1F5F9;
 	}
 	
 	.action-text {
-		font-size: 13px;
+		font-size: 12px;
 		color: #0891B2;
+		font-weight: 600;
 	}
 
 	.body {
@@ -732,22 +737,23 @@
 		width: 100%;
 	}
 
+	/* 数据行：紧凑间距 + Slate-100 极细分隔线 */
 	.row {
 		flex-direction: row;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #F3F4F6;
+		border-bottom-color: #F1F5F9;
 		background-color: #FFFFFF;
 		width: 100%;
-		padding-top: 10px;
-		padding-bottom: 10px;
+		padding-top: 8px;
+		padding-bottom: 8px;
 	}
 
 	.cell {
 		flex-direction: row;
 		align-items: center;
-		padding-left: 10px;
-		padding-right: 20px;
+		padding-left: 12px;
+		padding-right: 12px;
 		overflow: hidden;
 		flex-shrink: 0; 
 	}
@@ -759,9 +765,10 @@
 		overflow: hidden;
 	}
 
+	/* 单元格文字：Slate-700 正文风格 */
 	.cell-text {
 		font-size: 14px;
-		color: #374151;
+		color: #334155;
 		lines: 1;
 		overflow: hidden;
 		flex: 1;
@@ -772,17 +779,20 @@
 		height: 20px;
 		justify-content: center;
 		align-items: center;
-		margin-right: 5px;
+		margin-right: 4px;
 	}
 	
 	.icon-text {
-		font-size: 12px;
-		color: #9CA3AF;
+		font-size: 11px;
+		color: #94A3B8;
 	}
 
-	/* 选中行 — 极浅青碧 */
+	/* 选中行 — 极浅青碧 + 左侧品牌色指示条 */
 	.row-selected {
-		background-color: #ECFEFF;
+		background-color: #F0FDFA;
+		border-left-width: 3px;
+		border-left-style: solid;
+		border-left-color: #0891B2;
 	}
 
 	/* ====== 富文本列相关样式 ====== */
@@ -793,20 +803,21 @@
 		flex: 1;
 	}
 
+	/* 展开/收起按钮：轻量药丸风格 */
 	.richtext-toggle-btn {
 		flex-direction: row;
 		align-items: center;
 		justify-content: center;
-		padding: 6px 14px;
-		border-radius: 4px;
-		background-color: #ECFEFF;
+		padding: 4px 12px;
+		border-radius: 12px;
+		background-color: #F0FDFA;
 		border-width: 1px;
 		border-style: solid;
-		border-color: #B2F5EA;
+		border-color: #99F6E4;
 	}
 
 	.richtext-toggle-icon {
-		font-size: 10px;
+		font-size: 9px;
 		color: #0891B2;
 		margin-right: 4px;
 	}
@@ -819,10 +830,10 @@
 	/* 富文本展开区域 */
 	.richtext-expand-area {
 		flex-direction: column;
-		background-color: #FAFBFC;
+		background-color: #F8FAFC;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #E2E6ED;
+		border-bottom-color: #E2E8F0;
 		border-left-width: 3px;
 		border-left-style: solid;
 		border-left-color: #0891B2;
@@ -837,39 +848,40 @@
 
 	.richtext-empty-text {
 		font-size: 12px;
-		color: #C0C4CC;
+		color: #94A3B8;
 	}
 
+	/* 展开区头部 */
 	.richtext-expand-header {
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
 		padding: 6px 12px;
-		background-color: #F0F4F8;
+		background-color: #F1F5F9;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #E2E6ED;
+		border-bottom-color: #E2E8F0;
 		width: 100%;
 	}
 
 	.richtext-expand-title {
 		font-size: 12px;
-		font-weight: bold;
+		font-weight: 600;
 		color: #0891B2;
 	}
 
 	.richtext-close-btn {
-		width: 20px;
-		height: 20px;
+		width: 22px;
+		height: 22px;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		border-radius: 4px;
+		border-radius: 11px;
 	}
 
 	.richtext-close-icon {
 		font-size: 11px;
-		color: #9CA3AF;
+		color: #94A3B8;
 	}
 
 	.richtext-expand-scroll {
@@ -883,22 +895,22 @@
 	}
 
 	/* #ifdef WEB */
-	/* 匹配整体界面的定制化滚动条设计 */
+	/* 定制滚动条：纤细、圆角、半透明 */
 	.table-scroll-container::-webkit-scrollbar,
 	.richtext-expand-scroll::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
+		width: 5px;
+		height: 5px;
 	}
 	
 	.table-scroll-container::-webkit-scrollbar-thumb,
 	.richtext-expand-scroll::-webkit-scrollbar-thumb {
-		background-color: #CBD5E1; 
-		border-radius: 4px;
+		background-color: rgba(148, 163, 184, 0.4);
+		border-radius: 3px;
 	}
 	
 	.table-scroll-container::-webkit-scrollbar-thumb:hover,
 	.richtext-expand-scroll::-webkit-scrollbar-thumb:hover {
-		background-color: #94A3B8; 
+		background-color: rgba(148, 163, 184, 0.7);
 	}
 	
 	.table-scroll-container::-webkit-scrollbar-track,

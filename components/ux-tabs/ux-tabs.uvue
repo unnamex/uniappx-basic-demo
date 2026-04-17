@@ -127,13 +127,13 @@
 		width: 100%;
 	}
 	
-	/* ⭐ 浅蓝灰底色面板条 — 仪表面板感 */
+	/* ⭐ 浅蓝灰底色面板条 — 与表格一体化风格 */
 	.ux-tabs__header-row {
 		flex-direction: row;
-		border-bottom-width: 2px;
+		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #E2E6ED;
-		background-color: #EEF1F6;
+		border-bottom-color: #E2E8F0;
+		background-color: #F8FAFC;
 		flex-shrink: 0;
 		align-items: center;
 	}
@@ -151,7 +151,7 @@
 		/* cursor: pointer; */
 		border-left-width: 1px;
 		border-left-style: solid;
-		border-left-color: #E2E6ED;
+		border-left-color: #E2E8F0;
 	}
 	
 	.ux-tabs__fullscreen-icon {
