@@ -1651,7 +1651,7 @@
 	}
 	
 	.component-wrapper {
-		margin-bottom: 16px;
+		/* margin-bottom: 16px; */
 		padding: 4px 0;
 	}
 	
