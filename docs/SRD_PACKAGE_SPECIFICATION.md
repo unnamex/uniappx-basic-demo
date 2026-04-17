@@ -596,9 +596,10 @@ Process（工艺）
 
 | dataSource 值 | 类型 | 说明 |
 |---------------|------|------|
+| `"database"` | string | **[V5.4新增]** 系统根据当前组件类型智能匹配查询特定的全量数据库表（如 tableTree 会映射为查 `t_process`） |
 | `"self"` | string | 当前选中节点自身数据 |
 | `"children"` | string | 当前选中节点的子节点列表 |
-| `{ type, name }` | object | 引用特定数据库表（如 `t_process`） |
+| `{ type, name }` | object | **[已废弃]** 引用特定数据库表（如 `t_process`） |
 
 #### fields（用于 infoView 类型）
 
@@ -718,9 +719,8 @@ Process（工艺）
 ```
 导入数据包 → 解析 components.json → 为每个组件创建 ComponentVM
   → 根据 config.dataSource 判断数据来源
-  → 若 dataSource 为 { type: "table", name: "t_process" }
-    → 从本地数据库加载全量表数据 → 填充到 comp.data
-  → 若 dataSource 为 "tableTree" 类型组件
+  → 若 dataSource 为 "database"（现代化架构）：
+    → 策略分发：若是 "tableTree" 则加载 t_process 全量表
     → 加载后追加 enrichNodeForDisplay() 处理（计算显示名等）
 ```
 

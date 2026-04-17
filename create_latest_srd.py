@@ -11,6 +11,14 @@ OUTPUT_SRD = 'test_v8_refactored.srd'
 def process_components(content):
     components = json.loads(content.decode('utf-8'))
     for comp in components:
+        # Config adjustments
+        config = comp.get('config', {})
+        if isinstance(config, dict):
+            # Transform dataSource: { type: "table", name: "t_process" } -> "database"
+            ds = config.get('dataSource')
+            if isinstance(ds, dict) and ds.get('type') == 'table' and ds.get('name') == 't_process':
+                config['dataSource'] = 'database'
+                
         # process-tree → tableTree
         if comp.get('type') == 'process-tree':
             comp['type'] = 'tableTree'

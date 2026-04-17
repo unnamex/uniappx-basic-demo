@@ -718,19 +718,16 @@
 				
 				// 检查是否配置了数据源
 				if (dataSource != null) {
-					// Case: { "type": "table", "name": "t_process" }
-					if (typeof dataSource == 'object') {
-						const dsObj = dataSource as UTSJSONObject
-						const dsType = dsObj['type'] as string
-						const dsName = dsObj['name'] as string
-						
-						if (dsType == 'table' && dsName != '') {
-							comp.data = await loadTableData(dsName)
-							
-							// 特殊处理：如果是工艺树，需要 enrichment
-							if (comp.type == 'tableTree') {
-								comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
-							}
+					// 现代化语义解析模式 (dataSource == "database")
+					if (typeof dataSource == 'string' && dataSource == 'database') {
+						// 策略1：如果是 tableTree 组件，必然需要全量工艺树数据
+						if (comp.type == 'tableTree') {
+							comp.data = await loadTableData('t_process')
+							comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
+						} else {
+							// 策略2：预留其他需要直接取全量表的组件 (如未来新增全局列表等)
+							comp.data = []
+							console.warn("未知组件类型请求了全局 database 数据: " + comp.id)
 						}
 					}
 				}
