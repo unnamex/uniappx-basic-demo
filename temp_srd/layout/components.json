@@ -111,7 +111,7 @@
           "label": "内容",
           "prop": "description_html",
           "width": -1,
-          "isRichText": true
+          "cellType": "richtext"
         }
       ]
     }
@@ -169,7 +169,7 @@
           "label": "内容",
           "prop": "description_html",
           "width": -1,
-          "isRichText": true
+          "cellType": "richtext"
         }
       ]
     }

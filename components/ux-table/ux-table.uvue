@@ -57,10 +57,10 @@
 						
 						<view v-else class="cell-content-wrapper">
 							<!-- 富文本列：仅显示展开/收起按钮 -->
-							<view v-if="isRichTextCol(col)" class="richtext-cell">
-								<view class="richtext-toggle-btn" @click.stop="toggleRichText(row.id)">
-									<text class="richtext-toggle-icon">{{ isRichTextExpanded(row.id) ? '▲' : '▼' }}</text>
-									<text class="richtext-toggle-label">{{ isRichTextExpanded(row.id) ? '收起' : '展开' }}</text>
+							<view v-if="getCellType(col) == 'richtext'" class="richtext-cell">
+								<view class="richtext-toggle-btn" @click.stop="toggleRowExpand(row.id)">
+									<text class="richtext-toggle-icon">{{ isRowExpanded(row.id) ? '▲' : '▼' }}</text>
+									<text class="richtext-toggle-label">{{ isRowExpanded(row.id) ? '收起' : '展开' }}</text>
 								</view>
 							</view>
 							<!-- 普通文本列 -->
@@ -68,29 +68,32 @@
 						</view>
 					</view>
 				</view>
-				<!-- 富文本展开区域：如果该行有富文本列且已展开，则在行下方显示完整内容 -->
-				<view v-if="hasRichTextColumn && isRichTextExpanded(row.id)" class="richtext-expand-area">
-					<!-- 无内容时显示紧凑提示 -->
-					<view v-if="getRichTextContent(row) == ''" class="richtext-empty-hint">
-						<text class="richtext-empty-text">暂无内容</text>
-					</view>
-					<!-- 有内容时显示完整富文本 -->
-					<view v-else>
-						<view class="richtext-expand-header">
-							<text class="richtext-expand-title">内容详情</text>
-							<view class="richtext-close-btn" @click.stop="toggleRichText(row.id)">
-								<text class="richtext-close-icon">✕</text>
-							</view>
+				<!-- 展开区域：如果该行有可展开列且已展开，则在行下方显示完整内容 -->
+				<view v-if="hasExpandableColumn && isRowExpanded(row.id)" class="richtext-expand-area">
+					<!-- 目前根据可展开类型进行渲染，暂时只有 richtext -->
+					<template v-if="expandableCellType == 'richtext'">
+						<!-- 无内容时显示紧凑提示 -->
+						<view v-if="getExpandContent(row) == ''" class="richtext-empty-hint">
+							<text class="richtext-empty-text">暂无内容</text>
 						</view>
-						<view v-if="loadingRichTextIds.indexOf(row.id) >= 0" class="richtext-loading-box">
-							<text class="richtext-loading-text">加载中...</text>
-						</view>
-						<scroll-view v-else scroll-y="true" class="richtext-expand-scroll">
-							<view class="richtext-expand-content">
-								<ux-richtext :content="getRichTextContent(row)"></ux-richtext>
+						<!-- 有内容时显示完整富文本 -->
+						<view v-else>
+							<view class="richtext-expand-header">
+								<text class="richtext-expand-title">内容详情</text>
+								<view class="richtext-close-btn" @click.stop="toggleRowExpand(row.id)">
+									<text class="richtext-close-icon">✕</text>
+								</view>
 							</view>
-						</scroll-view>
-					</view>
+							<view v-if="loadingRowIds.indexOf(row.id) >= 0" class="richtext-loading-box">
+								<text class="richtext-loading-text">加载中...</text>
+							</view>
+							<scroll-view v-else scroll-y="true" class="richtext-expand-scroll">
+								<view class="richtext-expand-content">
+									<ux-richtext :content="getExpandContent(row)"></ux-richtext>
+								</view>
+							</scroll-view>
+						</view>
+					</template>
 				</view>
 			</view>
 				</view>
@@ -159,12 +162,12 @@
 					columnIndex: -1
 				} as DragState,
 				isAllExpanded: false, // 懒加载模式下默认收起
-				/** 存储展开了富文本的行ID列表 */
-				expandedRichTextIds: [] as string[],
-				/** 富文本内容缓存 Map<InnerId, ContentHTML> */
-				richTextCache: new Map<string, string>(),
+				/** 存储展开了内容的行ID列表 */
+				expandedRowIds: [] as string[],
+				/** 展开内容缓存 Map<InnerId, ContentHTML> */
+				expandContentCache: new Map<string, string>(),
 				/** 正在加载内容的节点ID */
-				loadingRichTextIds: [] as string[]
+				loadingRowIds: [] as string[]
 			}
 		},
 		computed: {
@@ -173,15 +176,18 @@
 					return row.isShow
 				})
 			},
-			/** 是否存在富文本列 */
-			hasRichTextColumn() : boolean {
-				return this.columns.some((col: UTSJSONObject): boolean => col['isRichText'] === true)
+			/** 是否存在可展开列 */
+			hasExpandableColumn() : boolean {
+				return this.expandableCellType != ''
 			},
-			/** 获取第一个富文本列的prop名称 */
-			richTextProp() : string {
-				const col = this.columns.find((c: UTSJSONObject): boolean => c['isRichText'] === true)
+			/** 获取第一个可展开列的cellType */
+			expandableCellType() : string {
+				const col = this.columns.find((c: UTSJSONObject): boolean => {
+					const type = c['cellType'] as string | null
+					return type === 'richtext' // 这里未来可以加其他需要整行展开的类型
+				})
 				if (col != null) {
-					return (col['prop'] as string) ?? ''
+					return (col['cellType'] as string) ?? ''
 				}
 				return ''
 			},
@@ -248,9 +254,13 @@
 				if (val == null) return ''
 				return val.toString()
 			},
-			/** 判断列是否为富文本列 */
-			isRichTextCol(col: UTSJSONObject): boolean {
-				return col['isRichText'] === true
+			/** 获取列的 cellType */
+			getCellType(col: UTSJSONObject): string {
+				const type = col['cellType']
+				if (type != null) {
+					return type as string
+				}
+				return ''
 			},
 			/** 从富文本HTML中提取纯文本摘要 */
 			getPlainText(data: UTSJSONObject, key: string): string {
@@ -276,24 +286,24 @@
 				}
 				return result
 			},
-			/** 切换行的富文本展开/收起状态 */
-			toggleRichText(rowId: string) {
-				const idx = this.expandedRichTextIds.indexOf(rowId)
+			/** 切换行的展开/收起状态 */
+			toggleRowExpand(rowId: string) {
+				const idx = this.expandedRowIds.indexOf(rowId)
 				if (idx >= 0) {
-					this.expandedRichTextIds.splice(idx, 1)
+					this.expandedRowIds.splice(idx, 1)
 				} else {
-					this.expandedRichTextIds.push(rowId)
+					this.expandedRowIds.push(rowId)
 					// 如果是展开，且缓存中没有内容，则发起请求
-					if (!this.richTextCache.has(rowId)) {
-						this.fetchRichTextContent(rowId)
+					if (!this.expandContentCache.has(rowId)) {
+						this.fetchExpandContent(rowId)
 					}
 				}
 			},
-			/** 异步获取富文本内容 */
-			fetchRichTextContent(rowId: string) {
-				if (this.loadingRichTextIds.indexOf(rowId) >= 0) return
+			/** 异步获取展开内容 */
+			fetchExpandContent(rowId: string) {
+				if (this.loadingRowIds.indexOf(rowId) >= 0) return
 				
-				this.loadingRichTextIds.push(rowId)
+				this.loadingRowIds.push(rowId)
 				getNodeContent(rowId).then((res) => {
 					if (res != null) {
 						// 根据数据包规范，内容可能存在 description_html 字段，或者整体就是富文本
@@ -311,29 +321,29 @@
 								}
 							}
 						}
-						this.richTextCache.set(rowId, content)
+						this.expandContentCache.set(rowId, content)
 					} else {
-						this.richTextCache.set(rowId, "")
+						this.expandContentCache.set(rowId, "")
 					}
 				}).catch(err => {
-					console.error('Fetch rich text failed:', err)
-					this.richTextCache.set(rowId, "加载失败，请重试")
+					console.error('Fetch expand content failed:', err)
+					this.expandContentCache.set(rowId, "加载失败，请重试")
 				}).finally(() => {
-					const lIdx = this.loadingRichTextIds.indexOf(rowId)
-					if (lIdx >= 0) this.loadingRichTextIds.splice(lIdx, 1)
+					const lIdx = this.loadingRowIds.indexOf(rowId)
+					if (lIdx >= 0) this.loadingRowIds.splice(lIdx, 1)
 				})
 			},
-			/** 判断行的富文本是否展开 */
-			isRichTextExpanded(rowId: string): boolean {
-				return this.expandedRichTextIds.indexOf(rowId) >= 0
+			/** 判断行是否展开 */
+			isRowExpanded(rowId: string): boolean {
+				return this.expandedRowIds.indexOf(rowId) >= 0
 			},
-			/** 获取行的富文本HTML内容 */
-			getRichTextContent(row: TableRow): string {
-				return this.richTextCache.get(row.id) ?? ""
+			/** 获取行的展开内容 */
+			getExpandContent(row: TableRow): string {
+				return this.expandContentCache.get(row.id) ?? ""
 			},
 			initTableData(treeData : UTSJSONObject[]) {
 				this.allRows = []
-				this.expandedRichTextIds = [] // 初始化时清空展开记录
+				this.expandedRowIds = [] // 初始化时清空展开记录
 				this.flatten(treeData, 0, null)
 				if (!this.isAllExpanded) {
 					// Collapse all if global state is collapsed
@@ -343,8 +353,8 @@
 					this.refreshVisibility()
 				}
 				// 节点内容按需加载，不再初始化时自动标记展开（除非是非常小的包，但为了性能一致性，此处改为手动触发）
-				this.expandedRichTextIds = []
-				this.richTextCache.clear()
+				this.expandedRowIds = []
+				this.expandContentCache.clear()
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
 				list.forEach((item, index) => {
@@ -622,6 +632,8 @@
 	.ux-table {
 		flex-direction: column;
 		width: 100%;
+		flex: 1;
+		height: 100%;
 		border-width: 1px;
 		border-style: solid;
 		border-color: #E2E6ED;
@@ -631,6 +643,7 @@
 	.table-scroll-container {
 		flex: 1;
 		width: 100%;
+		height: 100%;
 	}
 	
 	.table-inner {

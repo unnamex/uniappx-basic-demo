@@ -632,12 +632,19 @@ Process（工艺）
 
 定义表格列配置：
 
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `label` | string | 列标题 |
+| `prop` | string | 数据绑定字段名 |
+| `width` | number | 列宽（rpx）。-1 表示弹性填充（flex: 1） |
+| `cellType` | string | **单元格渲染类型**。不填表示纯文本。可选值：<br>`"richtext"`: 渲染富文本展开/收起按钮。 |
+
 ```json
 {
   "dataSource": "children",
   "columns": [
     { "label": "代码", "prop": "code", "width": 180 },
-    { "label": "名称", "prop": "name", "width": 350 }
+    { "label": "内容", "prop": "description_html", "width": -1, "cellType": "richtext" }
   ]
 }
 ```
