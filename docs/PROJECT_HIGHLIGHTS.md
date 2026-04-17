@@ -62,7 +62,7 @@ ASP+ 平台配置 UI 布局 → MPM 系统编制工艺数据 → 打包导出 .s
 |---------|------|------|
 | `ui/groups.json` | 定义 Tab 分组 | "工艺信息"分组、"工步详情"分组 |
 | `ui/tabs.json` | 定义页签 | "基本信息"、"物料清单"页签 |
-| `ui/components.json` | 定义组件类型与布局 | table / infoView / list / tableTree / text-block |
+| `ui/components.json` | 定义组件类型与布局 | table / infoView / list / tableTree / richText |
 | `ui/icons.json` | 定义工艺树节点图标映射 | 工艺📋、工序🔧、工步⚙️ |
 | `data/records.json` | 组件数据 | 各组件的实际数据内容 |
 

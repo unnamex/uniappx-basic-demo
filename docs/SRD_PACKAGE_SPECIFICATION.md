@@ -1,7 +1,7 @@
 # SRD 数据包规范说明 (V5)
 
-> **文档版本**: 5.2  
-> **最后更新**: 2026-04-15  
+> **文档版本**: 5.3  
+> **最后更新**: 2026-04-17  
 > **适用对象**: MPM 离线工艺预览系统 — 数据包制作与集成开发人员
 
 ---
@@ -23,9 +23,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 │   ├── process_tree.json          # 工艺树结构（核心）
 │   ├── attachment.json            # 附件资源清单（独立于工艺树）
 │   └── records.json               # 静态数据记录
-├── layout/
-│   ├── groups.json                # Tab 分组定义
-│   ├── tabs.json                  # Tab 页签定义
+│   ├── tabs.json                  # Tab 分组定义 (原 groups.json)
+│   ├── tab.json                   # Tab 页签定义 (原 tabs.json)
 │   ├── components.json            # UI 组件配置
 │   └── icons.json                 # 图标映射配置
 └── assets/                        # 多媒体资源目录
@@ -58,8 +57,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `groups` | string | ✅ | Tab 分组文件路径 |
-| `tabs` | string | ✅ | Tab 页签文件路径 |
+| `tabs` | string | ✅ | Tab 分组文件路径 (原 groups) |
+| `tab` | string | ✅ | Tab 页签文件路径 (原 tabs) |
 | `components` | string | ✅ | UI 组件配置文件路径 |
 | `icons` | string | 否 | 图标配置文件路径 |
 | `records` | string | 否 | 静态数据记录文件路径 |
@@ -78,8 +77,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
   "description": "含工艺树、附件清单及 UI 布局",
   "exportTime": "2026-04-11T11:28:00+08:00",
   "files": {
-    "groups": "layout/groups.json",
     "tabs": "layout/tabs.json",
+    "tab": "layout/tab.json",
     "components": "layout/components.json",
     "icons": "layout/icons.json",
     "records": "data/records.json",
@@ -119,8 +118,8 @@ Process（工艺）
 | `code` | string | ✅ | 节点编号（如 `"ASM-ENG-V8"`、`"OP-01"`、`"S-01"`） |
 | `name` | string | ✅ | 节点名称 |
 | `targetClassId` | string | ✅ | 层级标识，取值：`Process` / `Operation` / `Step` / `ActionUnit` |
-| `classId` | string | 否 | 自定义分类标识（如 `"JJGY"` 表示机加工艺） |
-| `tabs_top` | string | ✅ | 上方 Tab 组 ID（引用 `groups.json` 中的 `id`） |
+| `classId` | string | ✅ | 自定义分类标识（如 `"JJGY"` 表示机加工艺） |
+| `tabs_top` | string | ✅ | 上方 Tab 组 ID（引用 `tabs.json` 中的 `id`） |
 | `tabs_bottom` | string | 否 | 下方 Tab 组 ID（空字符串则隐藏下方区域） |
 | `children` | ProcessNode[] | ✅ | 子节点数组（严格下一级，`ActionUnit` 必须为空数组） |
 
@@ -202,58 +201,6 @@ Process（工艺）
           "code": "S-01",
           "name": "清洗缸体",
           "targetClassId": "Step",
-          "children": []
-        }
-      ]
-    }
-  ]
-}
-```
-
----
-
-## 5. data/descriptions.json — 节点富文本内容 (V5.2)
-
-### 5.1 设计背景
-
-在大型工艺包中，节点（Process/Operation/Step）往往包含大量的 HTML 富文本描述、安全提示、工艺注意事项等。
-如果将这些庞大的 HTML 字符串直接嵌套在 `process_tree.json` 中，会导致树形结构文件体积剧增，在移动端触发大量的内存占用，并显著拖慢 `JSON.parse` 的解析速度（可能造成 2-5 秒的 UI 线程阻塞）。
-
-为了优化性能，V5.2 引入了**描述内容解耦模式**。
-
-### 5.2 存储规范
-
-`descriptions.json` 是一个顶级数组，存储所有具有富文本描述的节点内容。系统会按需通过 `innerId` 查询此文件入库后的数据。
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `nodeId` | string | ✅ | 关联节点 `innerId`（外键） |
-| `description_html` | string | 否 | 工艺描述 HTML 字符串 |
-| `safety_notice` | string | 否 | 安全预防措施 |
-| `technical_requirement` | string | 否 | 技术要求/标准说明 |
-
-### 5.3 示例
-
-```json
-[
-  {
-    "nodeId": "proc_v8_engine_op01",
-    "description_html": "<h3>工序描述</h3><p>本工序主要负责 V8 发动机缸体的基础组装，包含...</p>",
-    "safety_notice": "操作时必须佩戴静电手环和劳保手套。"
-  },
-  {
-    "nodeId": "proc_v8_engine_op01_s01",
-    "description_html": "<p>使用高压喷淋设备冲洗缸体内部油道...</p>"
-  }
-]
-```
-
-### 5.4 加载策略
-
-1. **导入期**：解压缩并在后台将内容存入 `t_node_content` 数据库表。
-2. **预览期**：`process_tree.json` 加载时不包含这些内容，UI 界面仅在用户点击“展开”行时，通过 `nodeId` 异步查询数据库并渲染。
-          "name": "缸体预处理",
-          "targetClassId": "Step",
           "classId": "",
           "tabs_top": "group_step_view",
           "tabs_bottom": "group_bottom_step",
@@ -263,7 +210,7 @@ Process（工艺）
     }
   ],
   "version": "3.0.0",
-  "stateName": "设计中",
+  "stateName": "已发布",
   "modifyById": "U20260101001",
   "modifyById_display": "张三",
   "modifyTime": "2026-03-21 14:06:17",
@@ -285,25 +232,65 @@ Process（工艺）
   "partPhaseId_display": "试样阶段",
   "partSecretId": "10",
   "partSecretId_display": "公开",
-  "partStateName": "设计中",
+  "partStateName": "已发布",
   "partFullversionNo": "A.1"
 }
 ```
 
 ---
 
-## 5. data/attachment.json — 附件资源清单
+## 5. data/descriptions.json — 节点富文本内容 (V5.2)
 
-### 5.1 设计理念
+### 5.1 设计背景
+
+在大型工艺包中，节点（Process/Operation/Step）往往包含大量的 HTML 富文本描述、安全提示、工艺注意事项等。
+
+为了优化性能，V5.2 引入了**描述内容解耦模式**。
+
+### 5.2 存储规范
+
+`descriptions.json` 是一个顶级数组，存储所有具有富文本描述的节点内容。系统会按需通过 `innerId` 查询此文件入库后的数据。
+
+| 字段               | 类型   | 必填 | 说明                         |
+| ------------------ | ------ | ---- | ---------------------------- |
+| `nodeId`           | string | ✅   | 关联节点 `innerId`（外键）   |
+| `description_html` | string | 否   | 工艺描述 HTML 字符串         |
+
+### 5.3 示例
+
+```json
+[
+  {
+    "nodeId": "proc_v8_engine_op01",
+    "description_html": "<h3>工序描述</h3><p>本工序主要负责 V8 发动机缸体的基础组装，包含...</p>",
+  },
+  {
+    "nodeId": "proc_v8_engine_op01_s01",
+    "description_html": "<p>使用高压喷淋设备冲洗缸体内部油道...</p>"
+  }
+]
+```
+
+### 5.4 加载策略
+
+1. **导入期**：解压缩并在后台将内容存入 `t_node_content` 数据库表。
+2. **预览期**：`process_tree.json` 加载时不包含这些内容，UI 界面仅在用户点击“展开”行时，通过 `nodeId` 异步查询数据库并渲染。
+
+---
+
+## 6. data/attachment.json — 附件资源清单
+
+### 6.1 设计理念
 
 附件数据从工艺树中独立出来，以**平铺数组**的形式存储。每条附件记录通过 `nodeId` 字段关联到工艺树中的某个节点（`innerId`），实现一对多的关系映射。
 
 这种设计的优势：
+
 - **工艺树瘦身**：`process_tree.json` 不再包含大量附件信息，解析更快
 - **灵活查询**：导入后通过数据库 `SELECT * FROM t_resources WHERE node_id = ?` 即可快速检索
 - **向后兼容**：如果包内不存在此文件，系统会回退到从工艺树节点的 `attachment` 字段中提取
 
-### 5.2 字段说明
+### 6.2 字段说明
 
 `attachment.json` 是一个 JSON 数组，每个元素的结构如下：
 
@@ -319,7 +306,7 @@ Process（工艺）
 | `size` | number | 否 | 文件大小（字节） |
 | `description` | string | 否 | 资源描述 |
 
-### 5.3 资源类型枚举
+### 6.3 资源类型枚举
 
 | type 值 | 说明 | 常见扩展名 |
 |---------|------|------------|
@@ -329,7 +316,7 @@ Process（工艺）
 | `document` | 文档 | `.pdf` `.doc` `.docx` |
 | `cad` | CAD 图纸 | `.html`（内嵌 3D 查看器） |
 
-### 5.4 示例
+### 6.4 示例
 
 ```json
 [
@@ -362,9 +349,10 @@ Process（工艺）
 ]
 ```
 
+
 ---
 
-## 6. layout/groups.json — Tab 分组
+## 7. layout/tabs.json — Tab 分组 (原 groups.json)
 
 定义 UI 中的 Tab 区域分组。每个分组对应界面上的一个 Tab 容器（如左侧面板、上方视图区、下方详情区）。
 
@@ -374,11 +362,11 @@ Process（工艺）
 |------|------|------|------|
 | `id` | string | ✅ | 分组唯一 ID（被工艺树节点的 `tabs_top` / `tabs_bottom` 引用） |
 | `name` | string | ✅ | 分组显示名称 |
-| `type` | string | ✅ | 固定为 `"tab-group"` |
+| `type` | string | ✅ | 固定为 `"tabGroup"` |
 | `description` | string | 否 | 描述信息 |
 | `sort_order` | number | ✅ | 排序序号 |
 
-### 完整分组清单
+### 完整分组清单(当前测试包数据)
 
 系统定义了 7 个 Tab 分组，按 `sort_order` 排列：
 
@@ -392,56 +380,56 @@ Process（工艺）
 | 5 | `group_bottom_op` | 工序详情 | 下方详情区 | 选中 Operation 节点时显示 |
 | 6 | `group_bottom_step` | 工步详情 | 下方详情区 | 选中 Step 节点时显示 |
 
-### 示例
+### 分组定义示例
 
 ```json
 [
   {
     "id": "group_process_mgmt",
     "name": "工艺管理",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Left Panel Group",
     "sort_order": 0
   },
   {
     "id": "group_process_view",
     "name": "工艺视图",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Selected Process View (Middle Top)",
     "sort_order": 1
   },
   {
     "id": "group_procedure_view",
     "name": "工序视图",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Selected Procedure View (Middle Top)",
     "sort_order": 2
   },
   {
     "id": "group_step_view",
     "name": "工步视图",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Selected Step View (Middle Top)",
     "sort_order": 3
   },
   {
     "id": "group_bottom_proc",
     "name": "工艺详情",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Selected Process Details (Middle Bottom)",
     "sort_order": 4
   },
   {
     "id": "group_bottom_op",
     "name": "工序详情",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Selected Procedure Details (Middle Bottom)",
     "sort_order": 5
   },
   {
     "id": "group_bottom_step",
     "name": "工步详情",
-    "type": "tab-group",
+    "type": "tabGroup",
     "description": "Selected Step Details (Middle Bottom)",
     "sort_order": 6
   }
@@ -471,7 +459,7 @@ Process（工艺）
 
 ---
 
-## 7. layout/tabs.json — Tab 页签
+## 8. layout/tab.json — Tab 页签 (原 tabs.json)
 
 定义各分组内的具体 Tab 页签。每个 Tab 属于某个 Group，内部可挂载多个 Component。
 
@@ -480,11 +468,11 @@ Process（工艺）
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `id` | string | ✅ | Tab 唯一 ID |
-| `group_id` | string | ✅ | 所属分组 ID（引用 `groups.json` 中的 `id`） |
+| `group_id` | string | ✅ | 所属分组 ID（引用 `tabs.json` 中的 `id`） |
 | `title` | string | ✅ | Tab 显示标题 |
 | `sort_order` | number | ✅ | 在分组内的排序序号 |
 
-### 完整页签清单
+### 完整页签清单（当前测试包数据）
 
 按分组归类如下：
 
@@ -575,7 +563,7 @@ Process（工艺）
 
 ---
 
-## 8. layout/components.json — UI 组件配置
+## 9. layout/components.json — UI 组件配置
 
 定义挂载在各 Tab 下的具体 UI 组件及其数据绑定方式。
 
@@ -584,7 +572,7 @@ Process（工艺）
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `id` | string | ✅ | 组件唯一 ID |
-| `tab_id` | string | ✅ | 所挂载的 Tab ID（引用 `tabs.json` 中的 `id`） |
+| `tab_id` | string | ✅ | 所挂载的 Tab ID（引用 `tab.json` 中的 `id`） |
 | `type` | string | ✅ | 组件类型，见下表 |
 | `title` | string | ✅ | 组件显示标题 |
 | `sort_order` | number | ✅ | 在 Tab 内的排序序号 |
@@ -594,9 +582,10 @@ Process（工艺）
 
 | type 值 | 说明 | 典型用途 |
 |---------|------|----------|
-| `tableTree` | 工艺树组件 | 左侧导航树 |
-| `table` | 数据表格 | 列表型数据展示（工序/工步列表） |
-| `infoView` | 信息视图（键值对） | 节点基本信息展示 |
+| `tableTree` | 工艺树组件 | 左侧导航树，支持展开/收起、行选中 |
+| `table` | 数据表格 | 列表型数据展示（工序/工步列表），支持 `cellType` 扩展 |
+| `infoView` | 信息视图（键值对） | 节点基本信息展示，支持多列布局 |
+| `richText` | 富文本 | 富文本描述、安全注意事项等长文本展示 |
 | `list` | 简单列表 | 工具/物料清单 |
 
 ### config 配置详解
@@ -660,11 +649,26 @@ Process（工艺）
 | `comp_procedure_info` | `tab_procedure_info` | `infoView` | 工序详情 |
 | `comp_procedure_list` | `tab_procedure_children` | `table` | 工步列表 |
 | `comp_step_basic` | `tab_step_info` | `infoView` | 基本信息 |
+| `comp_step_desc` | `tab_step_info` | `richText` | 操作描述 |
+| `comp_step_tools` | `tab_step_resources` | `list` | 工具清单 |
+| `comp_step_materials` | `tab_step_resources` | `list` | 物料清单 |
 | `comp_bottom_proc_info` | `tab_bottom_proc_ov` | `infoView` | 工艺概览 |
 | `comp_bottom_proc_product` | `tab_bottom_proc_product` | `infoView` | 关联产品 |
+| `comp_bottom_proc_desc` | `tab_bottom_proc_product` | `richText` | 工艺说明 |
 | `comp_bottom_proc_quality` | `tab_bottom_proc_quality` | `infoView` | 质量标准 |
+| `comp_bottom_proc_checkitems` | `tab_bottom_proc_quality` | `list` | 质检要点 |
 | `comp_bottom_op_info` | `tab_bottom_op_ov` | `infoView` | 工序概览 |
+| `comp_bottom_op_desc` | `tab_bottom_op_ov` | `richText` | 工序描述 |
+| `comp_bottom_op_tools` | `tab_bottom_op_tools` | `list` | 所需工具 |
+| `comp_bottom_op_materials` | `tab_bottom_op_tools` | `list` | 所需物料 |
+| `comp_bottom_op_safety` | `tab_bottom_op_safety` | `richText` | 安全注意事项 |
+| `comp_bottom_op_safety_items` | `tab_bottom_op_safety` | `list` | 安全检查项 |
 | `comp_bottom_step_info` | `tab_bottom_step_ov` | `infoView` | 工步基本信息 |
+| `comp_bottom_step_desc` | `tab_bottom_step_ov` | `richText` | 操作说明 |
+| `comp_bottom_step_tools` | `tab_bottom_step_tools` | `list` | 所需工具 |
+| `comp_bottom_step_materials` | `tab_bottom_step_tools` | `list` | 所需物料 |
+| `comp_bottom_step_checklist` | `tab_bottom_step_checklist` | `list` | 操作检查项 |
+| `comp_bottom_step_notes` | `tab_bottom_step_checklist` | `richText` | 注意事项 |
 
 ### 完整组件示例
 
@@ -703,6 +707,59 @@ Process（工艺）
     ]
   }
 }
+```
+
+### 组件与数据联动机制
+
+组件的数据在运行时通过以下流程获取和绑定：
+
+#### 1. 初始化阶段：静态数据加载
+
+```
+导入数据包 → 解析 components.json → 为每个组件创建 ComponentVM
+  → 根据 config.dataSource 判断数据来源
+  → 若 dataSource 为 { type: "table", name: "t_process" }
+    → 从本地数据库加载全量表数据 → 填充到 comp.data
+  → 若 dataSource 为 "tableTree" 类型组件
+    → 加载后追加 enrichNodeForDisplay() 处理（计算显示名等）
+```
+
+#### 2. 节点选中阶段：动态数据分发
+
+当用户在工艺树中选中某个节点时，系统执行以下联动逻辑：
+
+```
+用户点击节点 → 获取 node.tabs_top / node.tabs_bottom
+  → 切换上方/下方可见的 Tab Group
+  → 遍历当前可见 Group 下的所有组件
+  → 根据 dataSource 填充数据：
+     ├─ "self"        → comp.data = [当前选中节点自身]
+     ├─ "children"    → comp.data = 节点的 children 数组
+     ├─ "description" → comp.data = 从 t_node_content 异步查询的富文本
+     ├─ "tools"       → comp.data = 节点的 tools 子数据
+     ├─ "materials"   → comp.data = 节点的 materials 子数据
+     └─ 其他字符串     → comp.data = 从节点属性中按名称提取
+```
+
+#### 3. 各组件类型的渲染行为
+
+| 组件类型 | 接收数据格式 | 渲染行为 |
+|----------|------------|----------|
+| `tableTree` | `UTSJSONObject[]`（扁平化树节点） | 渲染为可展开/收起的树形表格，支持行选中、列宽拖拽 |
+| `table` | `UTSJSONObject[]`（数据行数组） | 根据 `columns` 配置渲染表格列；`cellType: "richtext"` 列会渲染展开/收起按钮 |
+| `infoView` | `UTSJSONObject`（单个数据对象） | 根据 `fields` 配置渲染键值对面板，支持多列布局 |
+| `richText` | `UTSJSONObject[]`（取 `[0].text` 或 `[0].description_html`） | 渲染为富文本段落，适合长文本描述、带格式文本 |
+| `list` | `UTSJSONObject[]`（取每项 `.text`） | 渲染为简单列表，每项一行 |
+
+#### 4. 附件资源联动
+
+附件资源独立于组件配置系统，直接通过节点 `innerId` 关联：
+
+```
+节点选中 → 通过 innerId 查询 t_resources 表
+  → 构建 ResourceItem[] 数组
+  → 传递给 resource-list 组件展示缩略图列表
+  → 用户点击资源项 → resource-preview 组件加载预览
 ```
 
 ---
@@ -807,13 +864,13 @@ Process（工艺）
 ```
 manifest.json
     │
-    ├── files.groups ──────────► layout/groups.json
+    ├── files.tabs ────────────► layout/tabs.json
     │                               │
-    │                               └── groups[].id ◄──── tabs[].group_id
+    │                               └── tabs[].id ◄────── tab[].group_id
     │                                                          │
-    ├── files.tabs ────────────► layout/tabs.json              │
+    ├── files.tab ─────────────► layout/tab.json               │
     │                               │                          │
-    │                               └── tabs[].id ◄──── components[].tab_id
+    │                               └── tab[].id ◄───── components[].tab_id
     │                                                          │
     ├── files.components ──────► layout/components.json        │
     │                               │                          │
@@ -856,5 +913,9 @@ manifest.json
 | V1-V3 | 旧版格式，manifest 中内联所有数据 |
 | V4 | 引入四级工艺树、`layout/` 独立目录、`resources` 字段 |
 | V5 | `resources` 重命名为 `attachment`；附件从工艺树剥离至独立的 `data/attachment.json`；移除废弃字段（`description_html`、`processDescription`、`productName`、`productModel`、`targetVehicle`、`qualityLevel`、`inspectionType`、`qualityChecks`）；工艺树 `status` 字段移除，统一使用 `stateName` |
+| V5.2 | 引入 `data/descriptions.json` 节点富文本解耦；引入 `cellType` 单元格渲染类型扩展 |
+| V5.3 | 规范化文件命名：`groups.json` -> `tabs.json`，`tabs.json` -> `tab.json`，`tab-group` -> `tabGroup`；组件类型重命名：`process-tree` → `tableTree`、`key-value` → `infoView`、`text-block` → `richText`；补充 `richText` 组件类型文档；新增「组件与数据联动机制」章节 |
 
 > **向后兼容**：V5 客户端可以正常导入 V4 及更早版本的数据包。当检测到包内不存在 `data/attachment.json` 时，系统会自动回退到从工艺树节点的 `attachment`（或旧版 `resources`）字段中递归提取附件。
+>
+> **组件类型兼容**：SRD 包生成脚本（`create_v5_srd.py` / `create_v52_srd.py`）会自动将旧版组件类型 `key-value` 转换为 `infoView`。如果需要支持旧版 `process-tree` 类型，需在生成脚本中添加相应的转换逻辑。

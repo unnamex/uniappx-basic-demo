@@ -600,12 +600,13 @@ function extractAndParseAndroid(
 				return jsonFiles.get(altPath2) || null
 			}
 			
-			if (files.groups != null) {
-				const content = findJsonFile(files.groups)
-				if (content != null) groups = JSON.parse(content)
-			}
 			if (files.tabs != null) {
 				const content = findJsonFile(files.tabs)
+				if (content != null) groups = JSON.parse(content)
+			}
+			
+			if (files.tab != null) {
+				const content = findJsonFile(files.tab)
 				if (content != null) tabs = JSON.parse(content)
 			}
 			if (files.components != null) {
@@ -903,21 +904,21 @@ function processHarmonyExtractedFiles(
 		if (isV2 && manifest.files != null) {
 			const files = manifest.files
 			
-			if (files.groups != null) {
-				try {
-					const content = readJsonFileHarmony(files.groups)
-					groups = JSON.parse(content) as TabGroup[]
-				} catch (e: any) {
-					console.warn('Harmony: groups 文件读取失败:', e)
-				}
-			}
-			
 			if (files.tabs != null) {
 				try {
 					const content = readJsonFileHarmony(files.tabs)
-					tabs = JSON.parse(content) as TabConfig[]
+					groups = JSON.parse(content) as TabGroup[]
 				} catch (e: any) {
 					console.warn('Harmony: tabs 文件读取失败:', e)
+				}
+			}
+			
+			if (files.tab != null) {
+				try {
+					const content = readJsonFileHarmony(files.tab)
+					tabs = JSON.parse(content) as TabConfig[]
+				} catch (e: any) {
+					console.warn('Harmony: tab 文件读取失败:', e)
 				}
 			}
 			
@@ -949,8 +950,9 @@ function processHarmonyExtractedFiles(
 				}
 			} else {
 			// V1: 从 manifest 内联数据读取
-			groups = manifest.groups ?? []
-			tabs = manifest.tabs ?? []
+			// Mock 中，仍作为 mock 的局部变量从 manifest 分配
+			groups = manifest.tabs ?? []
+			tabs = manifest.tab ?? []
 			components = manifest.components ?? []
 			records = manifest.records ?? []
 		}
@@ -1281,25 +1283,25 @@ function extractAndParseWeb(
 					return zip.file(altPath2)
 				}
 				
-				if (files.groups != null) {
-					const groupsFile = findZipFile(files.groups)
+				if (files.tabs != null) {
+					const groupsFile = findZipFile(files.tabs)
 					if (groupsFile != null) {
 						const content = await groupsFile.async("string")
 						groups = JSON.parse(content) as TabGroup[]
-						console.log('Web: Loaded groups:', groups.length);
+						console.log('Web: Loaded tabs (groups):', groups.length);
 					} else {
-						console.warn('Web: groups file not found:', files.groups)
+						console.warn('Web: tabs file not found:', files.tabs)
 					}
 				}
 				
-				if (files.tabs != null) {
-					const tabsFile = findZipFile(files.tabs)
+				if (files.tab != null) {
+					const tabsFile = findZipFile(files.tab)
 					if (tabsFile != null) {
 						const content = await tabsFile.async("string")
 						tabs = JSON.parse(content) as TabConfig[]
-						console.log('Web: Loaded tabs:', tabs.length);
+						console.log('Web: Loaded tab (tabs):', tabs.length);
 					} else {
-						console.warn('Web: tabs file not found:', files.tabs)
+						console.warn('Web: tab file not found:', files.tab)
 					}
 				}
 				

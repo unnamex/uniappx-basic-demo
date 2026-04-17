@@ -21,8 +21,8 @@ export type PackageManifest = {
  * 所有布局配置使用 layout/ 前缀，工艺树为单文件
  */
 export type ManifestFileRefs = {
-	groups: string          // layout/groups.json
 	tabs: string            // layout/tabs.json
+	tab: string             // layout/tab.json
 	components: string      // layout/components.json
 	icons: string | null    // layout/icons.json（可选）
 	records: string         // data/records.json
@@ -42,17 +42,19 @@ export type NodeDescription = {
 
 
 /**
- * Tab 分组 (对应 layout/groups.json)
+ * Tab 分组 (对应 layout/tabs.json)
  */
 export type TabGroup = {
 	id: string
 	name: string
+	type: string
+
 	description: string
 	sort_order: number
 }
 
 /**
- * Tab 配置 (对应 layout/tabs.json)
+ * Tab 配置 (对应 layout/tab.json)
  */
 export type TabConfig = {
 	id: string
@@ -68,7 +70,7 @@ export type TabConfig = {
 export type ComponentConfig = {
 	id: string
 	tab_id: string
-	type: string // 'table' | 'collapse' | 'tableTree' | 'infoView' | 'text-block' | 'list'
+	type: string // 'table' | 'collapse' | 'tableTree' | 'infoView' | 'richText' | 'list'
 	title: string
 	config: any // 组件自定义配置（JSON）
 	sort_order: number

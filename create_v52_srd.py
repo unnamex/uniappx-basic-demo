@@ -115,9 +115,10 @@ def main():
                     print(f'  已更新 manifest.json (v5.2)')
                 
                 elif name == 'layout/components.json':
-                    # 将 key-value 转换为 infoView，适配最新的 UI 开发逻辑
+                    # 将旧版组件类型转换为最新命名，适配最新的 UI 开发逻辑
                     components = json.loads(content.decode('utf-8'))
                     for comp in components:
+                        # key-value → infoView
                         if comp.get('type') == 'key-value':
                             comp['type'] = 'infoView'
                             print(f'  转换组件类型: {comp.get("id")} key-value → infoView')
@@ -128,6 +129,10 @@ def main():
                                         f['vModel'] = f.pop('key')
                                 if 'columns' not in config:
                                     config['columns'] = 2
+                        # process-tree → tableTree
+                        if comp.get('type') == 'process-tree':
+                            comp['type'] = 'tableTree'
+                            print(f'  转换组件类型: {comp.get("id")} process-tree → tableTree')
                     out_zf.writestr(name, json.dumps(components, ensure_ascii=False, indent=2))
 
                 else:

@@ -99,6 +99,11 @@ def clean_components(components):
                 if 'columns' not in config:
                     config['columns'] = 2
 
+        # process-tree → tableTree 转换
+        if comp.get('type') == 'process-tree':
+            comp['type'] = 'tableTree'
+            print(f'  转换组件类型: {comp_id} process-tree → tableTree')
+
         cleaned.append(comp)
     
     return cleaned

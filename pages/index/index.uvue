@@ -75,8 +75,8 @@
 									/>
 									
 									<!-- Text Block Component -->
-									<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
-										<text class="info-desc">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无描述' }}</text>
+									<view v-else-if="comp.type == 'richText'" class="node-info-panel" style="width: 100%;">
+										<ux-richtext :content="comp.data.length > 0 ? (comp.data[0]['text'] ?? comp.data[0]['description_html'] ?? '无描述') : '无描述'"></ux-richtext>
 									</view>
 									
 									<!-- List Component -->
@@ -131,8 +131,8 @@
 											/>
 											
 											<!-- Text Block Component -->
-											<view v-else-if="comp.type == 'text-block'" class="node-info-panel">
-												<text class="info-desc">{{ comp.data.length > 0 ? comp.data[0]['text'] : '无描述' }}</text>
+											<view v-else-if="comp.type == 'richText'" class="node-info-panel" style="width:100%;">
+												<ux-richtext :content="comp.data.length > 0 ? (comp.data[0]['text'] ?? comp.data[0]['description_html'] ?? '无描述') : '无描述'"></ux-richtext>
 											</view>
 											
 											<!-- List Component -->
