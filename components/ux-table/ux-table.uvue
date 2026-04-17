@@ -684,6 +684,7 @@
 		color: #64748B;
 		lines: 1;
 		overflow: hidden;
+		flex: 1;
 	}
 
 	.richtext-loading-box {
@@ -698,12 +699,25 @@
 		font-style: italic;
 	}
 	
-	/* 列拖拽分隔线 */
+	/* 列伸缩交互热区：保证足够的真实宽度(16px)，定位在单元格最右侧 */
+	.resize-handle {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		width: 16px;
+		flex-direction: row;
+		justify-content: flex-end;
+		align-items: center;
+		cursor: col-resize;
+		z-index: 10;
+	}
+
+	/* 可视分隔线：极细 */
 	.separator-line {
 		width: 1px;
 		height: 16px;
 		background-color: #CBD5E1;
-		margin-right: 2px;
 	}
 
 	/* 展开/收起全部 — 浮动操作按钮 */
