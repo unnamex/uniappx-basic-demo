@@ -3,6 +3,7 @@
 		:initLeftWidth="340" 
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
+		:initMainTopHeight="Math.floor(windowInfo.windowHeight * 0.52)"
 		:initRightWidth="450"
 		:maxRightWidth="800"
 		:initRightTopHeight="windowInfo.windowHeight - 250"
