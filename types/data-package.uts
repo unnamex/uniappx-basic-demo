@@ -68,7 +68,7 @@ export type TabConfig = {
 export type ComponentConfig = {
 	id: string
 	tab_id: string
-	type: string // 'table' | 'collapse' | 'process-tree' | 'key-value' | 'text-block' | 'list'
+	type: string // 'table' | 'collapse' | 'tableTree' | 'infoView' | 'text-block' | 'list'
 	title: string
 	config: any // 组件自定义配置（JSON）
 	sort_order: number

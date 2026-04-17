@@ -676,7 +676,7 @@
 			// Bind to template refs for compatibility
 			if (group.tabs.length > 0 && group.tabs[0].components.length > 0) {
 				const treeComp = group.tabs[0].components[0]
-				if (treeComp.type == 'process-tree') {
+				if (treeComp.type == 'tableTree') {
 					tableData.value = treeComp.data
 					columns.value = getColumnsFromConfig(treeComp.config)
 					// console.log('Left panel tree loaded:', tableData.value.length, 'nodes')
@@ -728,7 +728,7 @@
 							comp.data = await loadTableData(dsName)
 							
 							// 特殊处理：如果是工艺树，需要 enrichment
-							if (comp.type == 'process-tree') {
+							if (comp.type == 'tableTree') {
 								comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
 							}
 						}

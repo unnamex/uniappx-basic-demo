@@ -594,7 +594,7 @@ Process（工艺）
 
 | type 值 | 说明 | 典型用途 |
 |---------|------|----------|
-| `process-tree` | 工艺树组件 | 左侧导航树 |
+| `tableTree` | 工艺树组件 | 左侧导航树 |
 | `table` | 数据表格 | 列表型数据展示（工序/工步列表） |
 | `infoView` | 信息视图（键值对） | 节点基本信息展示 |
 | `list` | 简单列表 | 工具/物料清单 |
@@ -653,7 +653,7 @@ Process（工艺）
 
 | id | tab_id | type | title |
 |----|--------|------|-------|
-| `comp_process_tree` | `left_panel` | `process-tree` | 工艺树 |
+| `comp_process_tree` | `left_panel` | `tableTree` | 工艺树 |
 | `comp_process_table` | `tab_process_list` | `table` | 工艺总览表 |
 | `comp_proc_info` | `tab_proc_info` | `infoView` | 工艺基本信息 |
 | `comp_proc_list` | `tab_proc_children` | `table` | 工序列表 |

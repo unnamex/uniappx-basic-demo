@@ -2,7 +2,7 @@
   {
     "id": "comp_process_tree",
     "tab_id": "left_panel",
-    "type": "process-tree",
+    "type": "tableTree",
     "title": "工艺树",
     "sort_order": 0,
     "config": {
