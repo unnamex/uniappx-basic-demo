@@ -3,7 +3,7 @@ import { ProcessNode } from '@/types/process'
 import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
-import { saveResource, extractResourcesFromNode, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
+import { saveResource, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
 // #ifdef APP-ANDROID
 import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
 // #endif
@@ -600,6 +600,14 @@ function extractAndParseAndroid(
 				return jsonFiles.get(altPath2) || null
 			}
 			
+			// V5 规范：工艺树路径固定为 data/process_tree.json
+			const treeContent = findJsonFile('data/process_tree.json')
+			if (treeContent != null) {
+				processNode = JSON.parse(treeContent)
+			} else {
+				console.error('Android: 未找到核心工艺树文件 data/process_tree.json')
+			}
+
 			if (files.tabs != null) {
 				const content = findJsonFile(files.tabs)
 				if (content != null) groups = JSON.parse(content)
@@ -617,13 +625,7 @@ function extractAndParseAndroid(
 				const content = findJsonFile(files.records)
 				if (content != null) records = JSON.parse(content)
 			}
-			if (files.processTree != null) {
-				const content = findJsonFile(files.processTree)
-				if (content != null) processNode = JSON.parse(content)
-			} else {
-				const content = findJsonFile('data/process_tree.json')
-				if (content != null) processNode = JSON.parse(content)
-			}
+
 			let descriptions: NodeDescription[] = []
 			if (files.descriptions != null) {
 				const content = findJsonFile(files.descriptions)
@@ -652,7 +654,7 @@ function extractAndParseAndroid(
 			
 			if (manifest?.files != null) {
 				const files = manifest.files as ManifestFileRefs
-				const attPath = files.attachment ?? 'data/attachment.json'
+				const attPath = files.attachment // V5 强制存在
 				const attContent = findJsonFile(attPath)
 				if (attContent != null) {
 					const indRes = parseAttachmentFile(attContent)
@@ -661,14 +663,7 @@ function extractAndParseAndroid(
 					}
 				}
 			}
-			
-			if (processNode != null) {
-				const processObj = processNode
-				const extractedResources = extractResourcesFromNode(processObj)
-				for (const res of extractedResources) {
-				    rawResources.push(res)
-				}
-			}
+
 			
 			for (const res of rawResources) {
 				const originalPath = res.originalPath
@@ -892,82 +887,69 @@ function processHarmonyExtractedFiles(
 			})
 		}
 		
-		// 2. 检测格式版本
-		const isV2 = manifest.files != null
-		
-		// 3. 读取 UI 配置
+		// 3. 读取 UI 配置 (V5 规范下必须存在 files 映射)
 		let groups: TabGroup[] = []
 		let tabs: TabConfig[] = []
 		let components: ComponentConfig[] = []
 		let records: DataRecord[] = []
+		let descriptions: NodeDescription[] = []
 		
-		if (isV2 && manifest.files != null) {
-			const files = manifest.files
-			
-			if (files.tabs != null) {
-				try {
-					const content = readJsonFileHarmony(files.tabs)
-					groups = JSON.parse(content) as TabGroup[]
-				} catch (e: any) {
-					console.warn('Harmony: tabs 文件读取失败:', e)
-				}
+		const files = manifest.files as ManifestFileRefs
+		
+		if (files.tabs != null) {
+			try {
+				const content = readJsonFileHarmony(files.tabs)
+				groups = JSON.parse(content) as TabGroup[]
+			} catch (e: any) {
+				console.warn('Harmony: tabs 文件读取失败:', e)
 			}
-			
-			if (files.tab != null) {
-				try {
-					const content = readJsonFileHarmony(files.tab)
-					tabs = JSON.parse(content) as TabConfig[]
-				} catch (e: any) {
-					console.warn('Harmony: tab 文件读取失败:', e)
-				}
-			}
-			
-			if (files.components != null) {
-				try {
-					const content = readJsonFileHarmony(files.components)
-					components = JSON.parse(content) as ComponentConfig[]
-				} catch (e: any) {
-					console.warn('Harmony: components 文件读取失败:', e)
-				}
-			}
-			
-				if (files.records != null) {
-					try {
-						const content = readJsonFileHarmony(files.records)
-						records = JSON.parse(content) as DataRecord[]
-					} catch (e: any) {
-						console.warn('Harmony: records 文件读取失败:', e)
-					}
-				}
-
-				if (files.descriptions != null) {
-					try {
-						const content = readJsonFileHarmony(files.descriptions)
-						descriptions = JSON.parse(content) as NodeDescription[]
-					} catch (e: any) {
-						console.warn('Harmony: descriptions 文件读取失败:', e)
-					}
-				}
-			} else {
-			// V1: 从 manifest 内联数据读取
-			// Mock 中，仍作为 mock 的局部变量从 manifest 分配
-			groups = manifest.tabs ?? []
-			tabs = manifest.tab ?? []
-			components = manifest.components ?? []
-			records = manifest.records ?? []
 		}
 		
-		// 4. 解析工艺树
+		if (files.tab != null) {
+			try {
+				const content = readJsonFileHarmony(files.tab)
+				tabs = JSON.parse(content) as TabConfig[]
+			} catch (e: any) {
+				console.warn('Harmony: tab 文件读取失败:', e)
+			}
+		}
+		
+		if (files.components != null) {
+			try {
+				const content = readJsonFileHarmony(files.components)
+				components = JSON.parse(content) as ComponentConfig[]
+			} catch (e: any) {
+				console.warn('Harmony: components 文件读取失败:', e)
+			}
+		}
+		
+		if (files.records != null) {
+			try {
+				const content = readJsonFileHarmony(files.records)
+				records = JSON.parse(content) as DataRecord[]
+			} catch (e: any) {
+				console.warn('Harmony: records 文件读取失败:', e)
+			}
+		}
+
+		if (files.descriptions != null) {
+			try {
+				const content = readJsonFileHarmony(files.descriptions)
+				descriptions = JSON.parse(content) as NodeDescription[]
+			} catch (e: any) {
+				console.warn('Harmony: descriptions 文件读取失败:', e)
+			}
+		}
+		
+		// 4. 解析工艺树 (V5 固定路径)
 		let processNode: ProcessNode | null = null
 		
-		if (isV2 && manifest.files != null) {
-			try {
-				const treeFile = manifest.files.processTree ?? 'data/process_tree.json'
-				const content = readJsonFileHarmony(treeFile)
-				processNode = JSON.parse(content)
-			} catch (e) {
-				console.warn('Harmony: 工艺树解析失败', e)
-			}
+		try {
+			const treeFile = 'data/process_tree.json'
+			const content = readJsonFileHarmony(treeFile)
+			processNode = JSON.parse(content)
+		} catch (e) {
+			console.warn('Harmony: 工艺树解析失败', e)
 		}
 		
 		if (onProgress != null) {
@@ -1006,9 +988,13 @@ function processHarmonyExtractedFiles(
 			const allResources: ResourceItem[] = []
 			const rawResources: ResourceItem[] = []
 			
+			let resourceCount = 0
+			const allResources: ResourceItem[] = []
+			const rawResources: ResourceItem[] = []
+			
 			if (manifest?.files != null) {
 				const files = manifest.files as ManifestFileRefs
-				const attPath = files.attachment ?? 'data/attachment.json'
+				const attPath = files.attachment // V5 强制存在
 				try {
 					const attContent = readJsonFileHarmony(attPath)
 					const indRes = parseAttachmentFile(attContent)
@@ -1016,15 +1002,7 @@ function processHarmonyExtractedFiles(
 					    rawResources.push(res)
 					}
 				} catch (e: any) {
-					console.warn('Harmony: 独立资源文件引索为空或拉取失败', e)
-				}
-			}
-			
-			if (processNode != null) {
-				const processObj = JSON.parse(JSON.stringify(processNode)) as UTSJSONObject
-				const extractedResources = extractResourcesFromNode(processObj)
-				for (const res of extractedResources) {
-				    rawResources.push(res)
+					console.warn('Harmony: 独立资源文件读取失败', e)
 				}
 			}
 			
@@ -1045,7 +1023,6 @@ function processHarmonyExtractedFiles(
 					}
 				}
 				
-				// 处理缩略图路径
 				if (res.thumbnail != '') {
 					const thumbPath = savedAssetPaths.get(res.thumbnail)
 					if (thumbPath != null) {
@@ -1254,133 +1231,85 @@ function extractAndParseWeb(
 				return
 			}
 			
-			// 2. 检测是 V2 (分离文件) 还是 V1 (内联) 格式
-			const isV2 = manifest.files != null
-			console.log('Web: Package format:', isV2 ? 'V2 (separated)' : 'V1 (inline)');
-			
-			// 3. 读取 UI 配置
+			// 3. 读取 UI 配置 (V5 强制要求分离文件)
 			let groups: TabGroup[] = []
 			let tabs: TabConfig[] = []
 			let components: ComponentConfig[] = []
 			let records: DataRecord[] = []
 			let iconConfig: UTSJSONObject | null = null
 			
-			if (isV2 && manifest.files != null) {
-				// V2: 从分离文件中读取
-				const files = manifest.files
-				
-				// 辅助函数：从 ZIP 中查找文件（兼容正斜杠和反斜杠）
-				const findZipFile = (path: string): any => {
-					// 先尝试原路径
-					let file = zip.file(path)
-					if (file != null) return file
-					// 尝试替换斜杠
-					const altPath = path.replace(/\//g, '\\')
-					file = zip.file(altPath)
-					if (file != null) return file
-					// 尝试另一种替换
-					const altPath2 = path.replace(/\\/g, '/')
-					return zip.file(altPath2)
-				}
-				
-				if (files.tabs != null) {
-					const groupsFile = findZipFile(files.tabs)
-					if (groupsFile != null) {
-						const content = await groupsFile.async("string")
-						groups = JSON.parse(content) as TabGroup[]
-						console.log('Web: Loaded tabs (groups):', groups.length);
-					} else {
-						console.warn('Web: tabs file not found:', files.tabs)
-					}
-				}
-				
-				if (files.tab != null) {
-					const tabsFile = findZipFile(files.tab)
-					if (tabsFile != null) {
-						const content = await tabsFile.async("string")
-						tabs = JSON.parse(content) as TabConfig[]
-						console.log('Web: Loaded tab (tabs):', tabs.length);
-					} else {
-						console.warn('Web: tab file not found:', files.tab)
-					}
-				}
-				
-				if (files.components != null) {
-					const componentsFile = findZipFile(files.components)
-					if (componentsFile != null) {
-						const content = await componentsFile.async("string")
-						components = JSON.parse(content) as ComponentConfig[]
-						console.log('Web: Loaded components:', components.length);
-					} else {
-						console.warn('Web: components file not found:', files.components)
-					}
-				}
-				
-				if (files.records != null) {
-					const recordsFile = findZipFile(files.records)
-					if (recordsFile != null) {
-						const content = await recordsFile.async("string")
-						records = JSON.parse(content) as DataRecord[]
-						console.log('Web: Loaded records:', records.length);
-					} else {
-						console.warn('Web: records file not found:', files.records)
-					}
-				}
-
-				if (files.descriptions != null) {
-					const descFile = findZipFile(files.descriptions)
-					if (descFile != null) {
-						const content = await descFile.async("string")
-						const descriptions = JSON.parse(content) as NodeDescription[]
-						
-						await webClearStore('t_node_content')
-						for (const desc of descriptions) {
-							await webPutData('t_node_content', {
-								node_id: desc.nodeId,
-								content_json: JSON.stringify(desc)
-							})
-						}
-						console.log('Web: Loaded descriptions:', descriptions.length);
-					}
-				}
-				
-				// 加载图标配置（图标文件在 static/icons/ 目录，数据包只存配置）
-				if (files.icons != null) {
-					const iconsFile = findZipFile(files.icons)
-					if (iconsFile != null) {
-						const content = await iconsFile.async("string")
-						iconConfig = JSON.parse(content) as UTSJSONObject
-						console.log('Web: Loaded icons config');
-					}
-				}
-			} else {
-				// V1: 从 manifest 内联数据读取
-				groups = manifest.groups ?? []
-				tabs = manifest.tabs ?? []
-				components = manifest.components ?? []
-				records = manifest.records ?? []
-			}
+			const files = manifest.files as ManifestFileRefs
 			
-			const findProcessFile = (path: string): any => {
+			// 辅助函数：从 ZIP 中查找文件（兼容正斜杠和反斜杠）
+			const findZipFile = (path: string): any => {
 				let file = zip.file(path)
 				if (file != null) return file
-				const altPath = path.replace(/\//g, '\\\\')
+				const altPath = path.replace(/\//g, '\\')
 				file = zip.file(altPath)
 				if (file != null) return file
-				const altPath2 = path.replace(/\\\\/g, '/')
+				const altPath2 = path.replace(/\\/g, '/')
 				return zip.file(altPath2)
 			}
 			
-			// 4. 解析 processTree (V4)
-			let processNode: ProcessNode | null = null
-			let processTreeEntry = zip.file('data/process_tree.json')
-			if (processTreeEntry == null) {
-				const keys = Object.keys(zip.files)
-				const treeFile = keys.find((name: string): boolean => name.endsWith('process_tree.json') && !zip.files[name].dir)
-				if (treeFile != null) {
-					processTreeEntry = zip.file(treeFile as string)
+			if (files.tabs != null) {
+				const groupsFile = findZipFile(files.tabs)
+				if (groupsFile != null) {
+					const content = await groupsFile.async("string")
+					groups = JSON.parse(content) as TabGroup[]
 				}
 			}
+			
+			if (files.tab != null) {
+				const tabsFile = findZipFile(files.tab)
+				if (tabsFile != null) {
+					const content = await tabsFile.async("string")
+					tabs = JSON.parse(content) as TabConfig[]
+				}
+			}
+			
+			if (files.components != null) {
+				const componentsFile = findZipFile(files.components)
+				if (componentsFile != null) {
+					const content = await componentsFile.async("string")
+					components = JSON.parse(content) as ComponentConfig[]
+				}
+			}
+			
+			if (files.records != null) {
+				const recordsFile = findZipFile(files.records)
+				if (recordsFile != null) {
+					const content = await recordsFile.async("string")
+					records = JSON.parse(content) as DataRecord[]
+				}
+			}
+
+			if (files.descriptions != null) {
+				const descFile = findZipFile(files.descriptions)
+				if (descFile != null) {
+					const content = await descFile.async("string")
+					const descriptions = JSON.parse(content) as NodeDescription[]
+					
+					await webClearStore('t_node_content')
+					for (const desc of descriptions) {
+						await webPutData('t_node_content', {
+							node_id: desc.nodeId,
+							content_json: JSON.stringify(desc)
+						})
+					}
+				}
+			}
+			
+			if (files.icons != null) {
+				const iconsFile = findZipFile(files.icons)
+				if (iconsFile != null) {
+					const content = await iconsFile.async("string")
+					iconConfig = JSON.parse(content) as UTSJSONObject
+				}
+			}
+			
+			// 4. 解析工艺树 (V5 固定路径)
+			let processNode: ProcessNode | null = null
+			const processTreeEntry = zip.file('data/process_tree.json')
 			
 			if (processTreeEntry != null) {
 				try {
@@ -1391,47 +1320,39 @@ function extractAndParseWeb(
 				}
 			}
 			
-			// 5. 保存到数据库 (Web 使用 IndexedDB)
-			console.log('Web: Saving to database via IndexedDB...');
+			// 5. 保存到数据库
+			console.log('Web: Saving to database...');
 			
 			try {
-				// 先清空旧数据
-				console.log('Web: Clearing old data...');
 				await webClearStore('meta_tab_groups')
 				await webClearStore('meta_tabs')
 				await webClearStore('meta_components')
 				await webClearStore('data_records')
 				await webClearStore('t_process')
 				await webClearStore('t_icon_config')
-				console.log('Web: Old data cleared');
 				
 				let uiConfigCount = 0
 				
-				// 保存 UI 分组
 				for (const g of groups) {
 					await webPutData('meta_tab_groups', g)
 					uiConfigCount++
 				}
 				
-				// 保存 Tabs
 				for (const t of tabs) {
 					await webPutData('meta_tabs', t)
 					uiConfigCount++
 				}
 				
-				// 保存组件
 				for (const c of components) {
 					await webPutData('meta_components', c)
 					uiConfigCount++
 				}
 				
-				// 保存数据记录
 				for (const r of records) {
 					await webPutData('data_records', r)
 					uiConfigCount++
 				}
 				
-				// 保存图标配置（只存配置，图标文件在 static/icons/）
 				if (iconConfig != null) {
 					const nodeIcons = iconConfig['nodeIcons'] as UTSJSONObject
 					if (nodeIcons != null) {
@@ -1444,51 +1365,38 @@ function extractAndParseWeb(
 							})
 						}
 					}
-					console.log('Web: Saved icon config');
 				}
 				
-				// 保存工艺数据
 				if (processNode != null) {
 					await webPutData('t_process', processNode)
 				}
 				
-				// 提取并保存资源
+				// 资源处理
 				let resourceCount = 0
 				await webClearStore('t_resources')
 				clearBlobUrls()
 				
 				const rawResources: ResourceItem[] = []
-				
-				if (manifest?.files != null) {
-					const files = manifest.files as ManifestFileRefs
-					const attPath = files.attachment ?? 'data/attachment.json'
-					const attFile = findProcessFile(attPath)
-					if (attFile != null && !attFile.dir) {
-						try {
-							const attContent = await attFile.async("string")
-							const indRes = parseAttachmentFile(attContent)
-							for (const res of indRes) {
-							    rawResources.push(res)
-							}
-						} catch (e) {
-							console.warn('Web: Failed to parse attachment.json', e)
+				const attPath = files.attachment // V5 强制
+				const attFile = findZipFile(attPath)
+				if (attFile != null) {
+					try {
+						const attContent = await attFile.async("string")
+						const indRes = parseAttachmentFile(attContent)
+						for (const res of indRes) {
+							rawResources.push(res)
 						}
+					} catch (e) {
+						console.warn('Web: Failed to parse attachment.json', e)
 					}
 				}
-				
-				if (processNode != null) {
-					const processObj = JSON.parse(JSON.stringify(processNode)) as UTSJSONObject
-					const extractedResources = extractResourcesFromNode(processObj)
-					for (const res of extractedResources) {
-						rawResources.push(res)
-					}
-				}
+
 				
 				for (const res of rawResources) {
 					const resourcePath = res.originalPath
 					if (resourcePath == '') continue
 					
-					const resourceFile = findProcessFile(resourcePath) || findProcessFile(resourcePath.replace(/\/\//g, '\\\\'))
+					const resourceFile = findZipFile(resourcePath) || findZipFile(resourcePath.replace(/\/\//g, '\\\\'))
 					if (resourceFile != null && !resourceFile.dir) {
 						try {
 							const blob = await resourceFile.async("blob")
@@ -1497,7 +1405,7 @@ function extractAndParseWeb(
 							
 							let thumbBlobData = null
 							if (res.thumbnail != '') {
-								const thumbFile = findProcessFile(res.thumbnail) || findProcessFile(res.thumbnail.replace(/\/\//g, '\\\\'))
+								const thumbFile = findZipFile(res.thumbnail) || findZipFile(res.thumbnail.replace(/\/\//g, '\\\\'))
 								if (thumbFile != null) {
 									const thumbBlob = await thumbFile.async("blob")
 									const thumbUrl = storeBlobAndGetUrl(res.id + '_thumb', thumbBlob)

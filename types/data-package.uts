@@ -1,5 +1,5 @@
 /**
- * MPM 工艺预览系统 - V4 数据包类型定义
+ * MPM 工艺预览系统 - V5 数据包类型定义
  * @description 定义 SRD 数据包的清单与配置类型
  */
 
@@ -7,8 +7,8 @@
  * 数据包清单 (manifest.json)
  */
 export type PackageManifest = {
-	name: string | null
-	version: string
+	name: string
+	version: string         // 应该为 "5.0" 或更高
 	description: string | null
 	exportTime: string | null
 	source: string | null
@@ -17,18 +17,17 @@ export type PackageManifest = {
 }
 
 /**
- * V4 文件引用
- * 所有布局配置使用 layout/ 前缀，工艺树为单文件
+ * V5 文件引用
+ * 所有布局配置使用 layout/ 前缀，工艺树为固定路径 data/process_tree.json 不再此处解析
  */
 export type ManifestFileRefs = {
-	tabs: string            // layout/tabs.json
-	tab: string             // layout/tab.json
+	tabs: string            // layout/tabs.json (原 groups.json)
+	tab: string             // layout/tab.json (原 tabs.json)
 	components: string      // layout/components.json
 	icons: string | null    // layout/icons.json（可选）
-	records: string         // data/records.json
-	processTree: string     // data/process_tree.json
-	descriptions: string | null // data/descriptions.json（可选，V5 新增）
-	attachment: string | null   // data/attachment.json (新版独立附件列表)
+	records: string | null  // data/records.json
+	descriptions: string | null // data/descriptions.json（可选，V5.2 新增）
+	attachment: string      // data/attachment.json (V5 强制独立附件列表)
 	assets: string | null   // 资源目录路径 "assets/"
 }
 

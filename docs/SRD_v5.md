@@ -2,7 +2,6 @@
 
 > **文档版本**: 5.4  
 > **最后更新**: 2026-04-20  
-> **适用对象**: MPM 离线工艺预览系统 — 数据包制作与集成开发人员
 
 ---
 
@@ -63,7 +62,7 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 | `icons` | string | 否 | 图标配置文件路径 |
 | `records` | string | 否 | 静态数据记录文件路径 |
 | `assets` | string | 否 | 资源文件根目录路径 |
-| `attachment` | string | ✅ | 独立附件清单文件路径 |
+| `attachment` | string | 否 | 独立附件清单文件路径 |
 | `descriptions` | string | 否 | 节点富文本内容文件路径 |
 
 > **注意**：`data/process_tree.json` 为固定路径，不在 `files` 中显式声明，系统自动从该路径加载工艺树。
@@ -143,7 +142,7 @@ Process（工艺）
 | `phaseId_display` | string | 工艺阶段中文名（如 `"试样阶段"`） |
 | `secretId` | string | 密级 ID |
 | `secretId_display` | string | 密级中文名（如 `"公开"`） |
-| `stateName` | string | 工艺状态名称（如 `"设计中"`、`"已发布"`） |
+| `stateName` | string | 工艺状态名称（如 `"设计中"`、`"受控中"`） |
 | `fullversionNo` | string | 完整版本号（如 `"A.1"`） |
 
 #### 关联部件信息
@@ -283,11 +282,6 @@ Process（工艺）
 ### 6.1 设计理念
 
 附件数据从工艺树中独立出来，以**平铺数组**的形式存储。每条附件记录通过 `nodeId` 字段关联到工艺树中的某个节点（`innerId`），实现一对多的关系映射。
-
-这种设计的优势：
-
-- **工艺树瘦身**：`process_tree.json` 不再包含大量附件信息，解析更快
-- **灵活查询**：导入后通过数据库 `SELECT * FROM t_resources WHERE node_id = ?` 即可快速检索
 
 ### 6.2 字段说明
 
@@ -597,7 +591,6 @@ Process（工艺）
 | `"database"` | string | **[V5.4新增]** 系统根据当前组件类型智能匹配查询特定的全量数据库表（如 tableTree 会映射为查 `t_process`） |
 | `"self"` | string | 当前选中节点自身数据 |
 | `"children"` | string | 当前选中节点的子节点列表 |
-| `{ type, name }` | object | **[已废弃]** 引用特定数据库表（如 `t_process`） |
 
 #### fields（用于 infoView 类型）
 
@@ -785,7 +778,7 @@ Process（工艺）
 {
   "nodeIcons": {
     "process": { "icon": "process", "fallback": "📋" },
-    "procedure": { "icon": "procedure", "fallback": "🔧" },
+    "operation": { "icon": "procedure", "fallback": "🔧" },
     "step": { "icon": "step", "fallback": "⚙️" },
     "default": { "icon": "default", "fallback": "📄" }
   }

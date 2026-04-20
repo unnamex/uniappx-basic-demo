@@ -470,60 +470,8 @@ export function clearBlobUrls(): void {
 }
 // #endif
 
-/**
- * 从工艺节点数据中提取资源列表
- * @param node 工艺节点（递归包含子节点）
- * @returns 资源列表（扁平化）
- */
-export function extractResourcesFromNode(node: UTSJSONObject): ResourceItem[] {
-	const resources: ResourceItem[] = []
-	
-	extractResourcesRecursive(node, resources)
-	
-	return resources
-}
-
-/**
- * 递归提取资源
- */
-function extractResourcesRecursive(node: UTSJSONObject, resources: ResourceItem[]): void {
-	const nodeId = node['innerId'] as string
-	// 优先读取 attachment（V4+），向后兼容 resources（V3）
-	const nodeResources = node['attachment'] ?? node['resources']
-	
-	if (nodeResources != null && Array.isArray(nodeResources)) {
-		const resList = nodeResources as UTSJSONObject[]
-		let sortOrder = 0
-		
-		for (const res of resList) {
-			const item: ResourceItem = {
-				id: res['id'] as string ?? `res_${nodeId}_${sortOrder}`,
-				type: res['type'] as string ?? inferResourceType(res['path'] as string ?? ''),
-				name: res['name'] as string ?? '未命名资源',
-				path: '',  // 导入时更新为本地路径
-				originalPath: res['path'] as string ?? '',
-				thumbnail: res['thumbnail'] as string ?? '',
-				duration: res['duration'] as number ?? 0,
-				size: res['size'] as number ?? 0,
-				description: res['description'] as string ?? '',
-				nodeId: nodeId,
-				sortOrder: sortOrder
-			}
-			
-			resources.push(item)
-			sortOrder++
-		}
-	}
-	
-	// 递归处理子节点
-	const children = node['children']
-	if (children != null && Array.isArray(children)) {
-		const childList = children as UTSJSONObject[]
-		for (const child of childList) {
-			extractResourcesRecursive(child, resources)
-		}
-	}
-}
+// V5 规范中附件数据已完全从工艺树剥离，此处不再保留从节点递归提取的逻辑。
+// 所有附件信息均由 parseAttachmentFile 处理 attachment.json 获得。
 
 /**
  * 解析独立的 attachment.json 附件文件
