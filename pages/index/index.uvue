@@ -606,7 +606,6 @@
 			await webClearStore('meta_tab_groups')
 			await webClearStore('meta_tabs')
 			await webClearStore('meta_components')
-			await webClearStore('data_records')
 			await webClearStore('t_process')
 			await webClearStore('t_icon_config')
 			await webClearStore('t_resources')  // V3: 清空资源表
@@ -617,7 +616,6 @@
 			await executeSQL('DELETE FROM meta_tab_groups')
 			await executeSQL('DELETE FROM meta_tabs')
 			await executeSQL('DELETE FROM meta_components')
-			await executeSQL('DELETE FROM data_records')
 			await executeSQL('DELETE FROM t_process')
 			await executeSQL('DELETE FROM t_icon_config')
 			await executeSQL('DELETE FROM t_resources')  // V3: 清空资源表

@@ -22,7 +22,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 ├── data/
 │   ├── process_tree.json          # 工艺树结构（核心）
 │   ├── attachment.json            # 附件资源清单（独立于工艺树）
-│   ├── records.json               # 静态数据记录
+│   └── descriptions.json          # 节点富文本内容（可选）
+├── layout/
 │   ├── tabs.json                  # Tab 分组定义
 │   ├── tab.json                   # Tab 页签定义
 │   ├── components.json            # UI 组件配置
@@ -61,7 +62,7 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 | `tab` | string | ✅ | Tab 页签文件路径 |
 | `components` | string | ✅ | UI 组件配置文件路径 |
 | `icons` | string | 否 | 图标配置文件路径 |
-| `records` | string | 否 | 静态数据记录文件路径 |
+
 | `assets` | string | 否 | 资源文件根目录路径 |
 | `attachment` | string | ✅ | 独立附件清单文件路径 |
 | `descriptions` | string | 否 | 节点富文本内容文件路径 |
@@ -81,7 +82,6 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
     "tab": "layout/tab.json",
     "components": "layout/components.json",
     "icons": "layout/icons.json",
-    "records": "data/records.json",
     "assets": "assets/",
     "attachment": "data/attachment.json",
     "descriptions": "data/descriptions.json"
@@ -872,9 +872,7 @@ manifest.json
     │                                                          │
     ├── files.components ──────► layout/components.json        │
     │                               │                          │
-    │                               └── comp.id ◄──── records[].component_id
-    │                                                          │
-    ├── files.records ─────────► data/records.json             │
+    │                               └── comp.id ◄──────────────┤
     │                                                          │
     ├── files.attachment ──────► data/attachment.json           │
     │                               │                          │

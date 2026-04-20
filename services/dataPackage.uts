@@ -1,4 +1,4 @@
-import { ComponentConfig, DataRecord, ImportProgress, ImportResult, ManifestFileRefs, NodeDescription, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
+import { ComponentConfig, ImportProgress, ImportResult, ManifestFileRefs, NodeDescription, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ProcessNode } from '@/types/process'
 import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
@@ -621,10 +621,7 @@ function extractAndParseAndroid(
 				const content = findJsonFile(files.components)
 				if (content != null) components = JSON.parse(content)
 			}
-			if (files.records != null) {
-				const content = findJsonFile(files.records)
-				if (content != null) records = JSON.parse(content)
-			}
+
 
 			let descriptions: NodeDescription[] = []
 			if (files.descriptions != null) {
@@ -638,7 +635,7 @@ function extractAndParseAndroid(
 		
 		try {
 			// 保存 UI 配置（链式调用）
-			saveUiConfigurationToDatabase(groups, tabs, components, records)
+			saveUiConfigurationToDatabase(groups, tabs, components)
 				.then((uiConfigCount: number) => {
 					// 保存节点内容 (V5)
 					return saveNodeContentsToDatabase(descriptions).then((descCount: number) => {
@@ -891,7 +888,6 @@ function processHarmonyExtractedFiles(
 		let groups: TabGroup[] = []
 		let tabs: TabConfig[] = []
 		let components: ComponentConfig[] = []
-		let records: DataRecord[] = []
 		let descriptions: NodeDescription[] = []
 		
 		const files = manifest.files as ManifestFileRefs
@@ -923,14 +919,7 @@ function processHarmonyExtractedFiles(
 			}
 		}
 		
-		if (files.records != null) {
-			try {
-				const content = readJsonFileHarmony(files.records)
-				records = JSON.parse(content) as DataRecord[]
-			} catch (e: any) {
-				console.warn('Harmony: records 文件读取失败:', e)
-			}
-		}
+
 
 		if (files.descriptions != null) {
 			try {
@@ -1064,7 +1053,7 @@ function processHarmonyExtractedFiles(
 			}
 			
 			// 使用 Promise 链式调用保存 UI 配置，确保所有 SQL 顺序执行完毕后再继续
-			saveUiConfigurationToDatabase(groups, tabs, components, records)
+			saveUiConfigurationToDatabase(groups, tabs, components)
 				.then((uiConfigCount: number) => {
 					// 保存节点内容
 					return saveNodeContentsToDatabase(descriptions).then(() => uiConfigCount)
@@ -1235,7 +1224,6 @@ function extractAndParseWeb(
 			let groups: TabGroup[] = []
 			let tabs: TabConfig[] = []
 			let components: ComponentConfig[] = []
-			let records: DataRecord[] = []
 			let iconConfig: UTSJSONObject | null = null
 			
 			const files = manifest.files as ManifestFileRefs
@@ -1275,13 +1263,7 @@ function extractAndParseWeb(
 				}
 			}
 			
-			if (files.records != null) {
-				const recordsFile = findZipFile(files.records)
-				if (recordsFile != null) {
-					const content = await recordsFile.async("string")
-					records = JSON.parse(content) as DataRecord[]
-				}
-			}
+
 
 			if (files.descriptions != null) {
 				const descFile = findZipFile(files.descriptions)
@@ -1327,7 +1309,6 @@ function extractAndParseWeb(
 				await webClearStore('meta_tab_groups')
 				await webClearStore('meta_tabs')
 				await webClearStore('meta_components')
-				await webClearStore('data_records')
 				await webClearStore('t_process')
 				await webClearStore('t_icon_config')
 				
@@ -1348,10 +1329,7 @@ function extractAndParseWeb(
 					uiConfigCount++
 				}
 				
-				for (const r of records) {
-					await webPutData('data_records', r)
-					uiConfigCount++
-				}
+
 				
 				if (iconConfig != null) {
 					const nodeIcons = iconConfig['nodeIcons'] as UTSJSONObject
@@ -1468,8 +1446,7 @@ function extractAndParseWeb(
 function saveUiConfigurationToDatabase(
 	groups: TabGroup[],
 	tabs: TabConfig[],
-	components: ComponentConfig[],
-	records: DataRecord[]
+	components: ComponentConfig[]
 ): Promise<number> {
 	return new Promise<number>((resolve: (value: number) => void, reject: (reason: any) => void) => {
 		// 收集所有需要执行的 SQL 及参数
@@ -1509,17 +1486,7 @@ function saveUiConfigurationToDatabase(
 			}
 		}
 		
-		// 导入数据记录
-		if (records.length > 0) {
-			for (let i = 0; i < records.length; i++) {
-				const r = records[i]
-				const dataJson = r.data != null ? JSON.stringify(r.data) : ''
-				sqlQueue.push({
-					sql: "INSERT OR REPLACE INTO data_records (record_id, component_id, data_json, created_at) VALUES (?, ?, ?, ?)",
-					params: [r.record_id, r.component_id, dataJson, Date.now()]
-				})
-			}
-		}
+
 		
 		// 使用递归 .then() 链逐条执行 SQL，确保顺序
 		let completed = 0

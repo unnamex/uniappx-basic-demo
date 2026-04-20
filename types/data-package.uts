@@ -25,7 +25,6 @@ export type ManifestFileRefs = {
 	tab: string             // layout/tab.json (原 tabs.json)
 	components: string      // layout/components.json
 	icons: string | null    // layout/icons.json（可选）
-	records: string | null  // data/records.json
 	descriptions: string | null // data/descriptions.json（可选，V5.2 新增）
 	attachment: string      // data/attachment.json (V5 强制独立附件列表)
 	assets: string | null   // 资源目录路径 "assets/"
@@ -75,14 +74,7 @@ export type ComponentConfig = {
 	sort_order: number
 }
 
-/**
- * 数据记录 (对应 data/records.json)
- */
-export type DataRecord = {
-	record_id: string
-	component_id: string
-	data: any // 数据内容（JSON）
-}
+
 
 /**
  * 导入进度类型
