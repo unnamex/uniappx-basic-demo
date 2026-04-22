@@ -60,7 +60,7 @@
 </template>
 
 <script lang="uts">
-	import { ProcessNode } from '@/types/process'
+	import { ProcessEntity } from '@/types/process'
 	import { PageParams, PageResult } from '@/types/common'
 	import { getProcessList, searchProcess } from '@/services/processService'
 	import { initDatabase } from '@/services/database'
@@ -72,7 +72,7 @@
 				keyword: '',
 				
 				// 工艺列表
-				processList: [] as ProcessNode[],
+				processList: [] as ProcessEntity[],
 				
 				// 总数
 				totalCount: 0,
@@ -141,7 +141,7 @@
 				}
 				
 				getProcessList(params)
-					.then((result: PageResult<ProcessNode>) => {
+					.then((result: PageResult<ProcessEntity>) => {
 						this.isLoading = false
 						this.totalCount = result.total
 						
@@ -203,7 +203,7 @@
 			/**
 			 * 点击工艺卡片
 			 */
-			handleCardClick(item: ProcessNode) {
+			handleCardClick(item: ProcessEntity) {
 				// 跳转回首页并携带工艺 ID
 				uni.reLaunch({
 					url: '/pages/index/index?id=' + item.innerId

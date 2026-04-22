@@ -76,7 +76,7 @@
 									
 									<!-- Text Block Component -->
 									<view v-else-if="comp.type == 'richText'" class="node-info-panel" style="width: 100%;">
-										<ux-richtext :content="comp.data.length > 0 ? (comp.data[0]['text'] ?? comp.data[0]['description_html'] ?? '无描述') : '无描述'"></ux-richtext>
+										<ux-richtext :content="comp.data.length > 0 ? ((comp.data[0]['content'] as string | null) ?? '无描述') : '无描述'"></ux-richtext>
 									</view>
 									
 									<!-- List Component -->
@@ -132,7 +132,7 @@
 											
 											<!-- Text Block Component -->
 											<view v-else-if="comp.type == 'richText'" class="node-info-panel" style="width:100%;">
-												<ux-richtext :content="comp.data.length > 0 ? (comp.data[0]['text'] ?? comp.data[0]['description_html'] ?? '无描述') : '无描述'"></ux-richtext>
+												<ux-richtext :content="comp.data.length > 0 ? ((comp.data[0]['content'] as string | null) ?? '无描述') : '无描述'"></ux-richtext>
 											</view>
 											
 											<!-- List Component -->
@@ -333,6 +333,7 @@
 
 	import { ResourceItem } from '@/types/resource'
 	import { getResourcesByNodeId, clearAllResources } from '@/services/resourceService.uts'
+	import { queryNodeById, queryChildrenByParentId } from '@/services/processService.uts'
 
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
@@ -448,7 +449,8 @@
 			result.push(node)
 			const children = node['children']
 			if (children != null && Array.isArray(children)) {
-				const flatChildren = flattenTree(children as UTSJSONObject[])
+				const childNodes = children as UTSJSONObject[]
+				const flatChildren = flattenTree(childNodes)
 				for (let j = 0; j < flatChildren.length; j++) {
 					result.push(flatChildren[j])
 				}
@@ -606,7 +608,11 @@
 			await webClearStore('meta_tab_groups')
 			await webClearStore('meta_tabs')
 			await webClearStore('meta_components')
+			await webClearStore('meta_process_tree')
 			await webClearStore('t_process')
+			await webClearStore('t_operation')
+			await webClearStore('t_step')
+			await webClearStore('t_action')
 			await webClearStore('t_icon_config')
 			await webClearStore('t_resources')  // V3: 清空资源表
 			console.log('All data cleared')
@@ -616,7 +622,11 @@
 			await executeSQL('DELETE FROM meta_tab_groups')
 			await executeSQL('DELETE FROM meta_tabs')
 			await executeSQL('DELETE FROM meta_components')
+			await executeSQL('DELETE FROM meta_process_tree')
 			await executeSQL('DELETE FROM t_process')
+			await executeSQL('DELETE FROM t_operation')
+			await executeSQL('DELETE FROM t_step')
+			await executeSQL('DELETE FROM t_action')
 			await executeSQL('DELETE FROM t_icon_config')
 			await executeSQL('DELETE FROM t_resources')  // V3: 清空资源表
 			// #endif
@@ -707,33 +717,43 @@
 		}
 	}
 	
-	// 通用：为 Group 中的组件加载初始数据 (用于 static data sources 如全量表)
+	// 通用：为 Group 中的组件加载初始数据 (仅处理需要全量的如 tableTree)
 	const loadDataForGroup = async (group: GroupVM) => {
 		for (const tab of group.tabs) {
 			for (const comp of tab.components) {
-				const config = comp.config as UTSJSONObject
-				const dataSource = config['dataSource']
-				
-				// 检查是否配置了数据源
-				if (dataSource != null) {
-					// 现代化语义解析模式 (dataSource == "database")
-					if (typeof dataSource == 'string' && dataSource == 'database') {
-						// 策略1：如果是 tableTree 组件，必然需要全量工艺树数据
-						if (comp.type == 'tableTree') {
-							comp.data = await loadTableData('t_process')
-							comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
-						} else {
-							// 策略2：预留其他需要直接取全量表的组件 (如未来新增全局列表等)
-							comp.data = []
-							console.warn("未知组件类型请求了全局 database 数据: " + comp.id)
-						}
-					}
+				if (comp.type == 'tableTree') {
+					comp.data = await loadTableTreeFromMeta()
+					comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
 				}
 			}
 		}
 	}
 	
 	// 加载整表数据
+	
+	// 加载导航轻量工艺树
+	const loadTableTreeFromMeta = async (): Promise<UTSJSONObject[]> => {
+		let data: UTSJSONObject[] = []
+		// #ifdef WEB
+		try {
+			const rows = await webGetAll('meta_process_tree')
+			if (rows.length > 0 && rows[0]['data_json'] != null) {
+				try { data = JSON.parse(rows[0]['data_json'] as string) as UTSJSONObject[] } catch(e){}
+			}
+		} catch (e) { }
+		// #endif
+		
+		// #ifndef WEB
+		try {
+			const rows = await querySQL(`SELECT * FROM meta_process_tree WHERE id = 'process_tree'`)
+			if (rows.length > 0 && rows[0]['data_json'] != null) {
+				try { data = JSON.parse(rows[0]['data_json'] as string) as UTSJSONObject[] } catch(e){}
+			}
+		} catch (e) { }
+		// #endif
+		return data
+	}
+
 	const loadTableData = async (tableName: string): Promise<UTSJSONObject[]> => {
 		let data: UTSJSONObject[] = []
 		// #ifdef WEB
@@ -747,16 +767,33 @@
 		// #ifndef WEB
 		try {
 			const rows = await querySQL(`SELECT * FROM ${tableName}`)
-			data = rows.map((p: UTSJSONObject): UTSJSONObject => {
-				// SQL 中嵌套结构等字段可能是字符串格式，需要尝试解析其原始完整 JSON
-				const content = p['data_json'] ?? p['data'] ?? p['config_json']
-				if (content != null && typeof content == 'string') {
-					try {
-						// 大部分保存的 json 结构体本身包含了 id 等元数据，因此直接覆盖返回即可
-						return JSON.parse(content as string) as UTSJSONObject
-					} catch(e) { return p }
+			data = rows.map((p: any): UTSJSONObject => {
+				const row = p as UTSJSONObject
+				const obj: UTSJSONObject = {}
+				
+				// 将 snake_case 转换为 camelCase
+				for (const key in row) {
+					if (key != 'extra_json') {
+						const camelKey = key.replace(/_([a-z])/g, (match: string, letter: string): string => letter.toUpperCase())
+						obj[camelKey] = row[key]
+					}
 				}
-				return p
+				
+				// 合并 extra_json
+				const extraStr = row['extra_json'] as string | null
+				if (extraStr != null && extraStr != '') {
+					try {
+						const extra = JSON.parse(extraStr) as UTSJSONObject
+						for (const k in extra) {
+							obj[k] = extra[k]
+						}
+					} catch (e: any) { }
+				}
+				
+				// 兼容：确保有 innerId 字段，即使是从旧数据里也读出来
+				if (obj['innerId'] != null) obj['innerId'] = obj['innerId'].toString()
+				
+				return obj
 			})
 		} catch (e) { console.error('SQL load table failed:', tableName, e) }
 		// #endif
@@ -794,7 +831,7 @@
 		if (node['type'] == null && node['targetClassId'] != null) {
 			const targetCls = node['targetClassId'] as string
 			if (targetCls == 'Process') node['type'] = 'process'
-			else if (targetCls == 'Operation') node['type'] = 'procedure'
+			else if (targetCls == 'Operation') node['type'] = 'operation'
 			else if (targetCls == 'Step') node['type'] = 'step'
 			else if (targetCls == 'ActionUnit') node['type'] = 'action-unit'
 			else node['type'] = targetCls.toLowerCase()
@@ -813,7 +850,7 @@
 		} else {
 			// 默认配置
 			if (nodeType == 'process') { iconName = 'process'; fallbackEmoji = '📋' }
-			else if (nodeType == 'procedure') { iconName = 'procedure'; fallbackEmoji = '🔧' }
+			else if (nodeType == 'operation') { iconName = 'operation'; fallbackEmoji = '🔧' }
 			else if (nodeType == 'step') { iconName = 'step'; fallbackEmoji = '⚙️' }
 		}
 		
@@ -1099,27 +1136,42 @@
 	}
 
 	const handleRowClick = async (row: UTSJSONObject) => {
-		selectedRow.value = row
-		// console.log('Row clicked:', row['id'], row['type'], row['name'])
+		// 如果是骨架节点（缺少业务字段），尝试从数据库获取完整记录
+		let fullRow = row
+		const nodeId = getNodeId(row)
+		const nodeType = (row['type'] as string) ?? ''
 		
-		statusMessage.value = `选中: ${row['name']} (${row['type']})`
-		updateSelectedNodeInfo(row)
+		if (row['tabs_top'] == null || row['tabs_top'] == '') {
+			const dbRecord = await queryNodeById(nodeType, nodeId)
+			if (dbRecord != null) {
+				fullRow = dbRecord
+				// 继承骨架中的 children (如果是树节点点击)
+				if (row['children'] != null) {
+					fullRow['children'] = row['children']
+				}
+			}
+		}
+
+		selectedRow.value = fullRow
+		// console.log('Row clicked:', fullRow['id'], fullRow['type'], fullRow['name'])
+		
+		statusMessage.value = `选中: ${fullRow['name']} (${fullRow['type']})`
+		updateSelectedNodeInfo(fullRow)
 		
 		// 更新面包屑
-		updateBreadcrumbs(row)
+		updateBreadcrumbs(fullRow)
 		
 		// 从节点的 tabs_top / tabs_bottom 字段动态读取关联的 group ID
-		const nodeId = getNodeId(row)
-		const nodeName = row['name'] as string
-		const tabsTopId = (row['tabs_top'] as string) ?? ''
-		const tabsBottomId = (row['tabs_bottom'] as string) ?? ''
+		const nodeName = (fullRow['name'] as string) ?? ''
+		const tabsTopId = (fullRow['tabs_top'] as string) ?? ''
+		const tabsBottomId = (fullRow['tabs_bottom'] as string) ?? ''
 		
 		// 加载上方 Tab Group
 		if (tabsTopId != '') {
 			const group = await loadGroup(tabsTopId)
 			if (group != null) {
 				// 将当前节点数据绑定到 Group 的组件中
-				bindDataToGroup(group, row)
+				await bindDataToGroup(group, fullRow)
 				topGroup.value = group
 				
 				// 默认选中第一个 Tab
@@ -1135,7 +1187,7 @@
 		if (tabsBottomId != '') {
 			const group = await loadGroup(tabsBottomId)
 			if (group != null) {
-				bindDataToGroup(group, row)
+				await bindDataToGroup(group, fullRow)
 				bottomGroup.value = group
 				
 				// 默认选中第一个 Tab
@@ -1148,12 +1200,14 @@
 		}
 		
 		// 加载节点关联的资源列表
-		const nodeType = (row['type'] as string) ?? ''
 		await loadNodeResources(nodeId, nodeName, nodeType)
 	}
 	
 	// 将节点数据绑定到 Group 中的各个组件
-	const bindDataToGroup = (group: GroupVM, node: UTSJSONObject) => {
+	const bindDataToGroup = async (group: GroupVM, node: UTSJSONObject) => {
+		const nodeType = (node['type'] as string) ?? ''
+		const nodeId = getNodeId(node)
+
 		for (let i = 0; i < group.tabs.length; i++) {
 			const tab = group.tabs[i]
 			for (let j = 0; j < tab.components.length; j++) {
@@ -1161,34 +1215,35 @@
 				// 始终先重置数据，防止任何残留
 				comp.data = []
 
-				let dataSource = ''
-				if (comp.config != null) {
-					if (!Array.isArray(comp.config)) {
-						const configObj = comp.config as UTSJSONObject
-						const ds = configObj['dataSource']
-						if (ds != null) {
-							// dataSource 可能是字符串或对象，仅处理字符串类型响应点击联动
-							if (typeof ds == 'string') {
-								dataSource = ds as string
-							}
-							// 对象类型的 dataSource (如 { type: 'table' }) 忽略，
-							// 这些组件数据由独立的 loadDataForGroup 函数去查询整表填充
+				if (comp.type == 'infoView' || comp.type == 'richText') {
+					// 查自身
+					const record = await queryNodeById(nodeType, nodeId)
+					if (record != null) {
+						comp.data = [record]
+					} else {
+						// Fallback: 如果数据库没查到，显示当前节点对象兜底
+						comp.data = [node]
+					}
+				} else if (comp.type == 'table' || comp.type == 'list') {
+					// 查子节点列表
+					const children = await queryChildrenByParentId(nodeType, nodeId)
+					// 如果外键未匹配到（可能是更底层的 action），fallback 为拿内存节点的 children
+					if (children.length > 0) {
+						comp.data = children.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
+					} else {
+						const memoryChildren = node['children']
+						if (memoryChildren != null && Array.isArray(memoryChildren)) {
+							const list = memoryChildren as UTSJSONObject[]
+							comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 						}
 					}
-				}
-				
-				// 针对右侧列表/下方列表的组件，根据 dataSource 填充
-				if (dataSource == 'self') {
-					// 自身数据，作为单条记录放入数组
-					comp.data.push(node)
-				} else if (dataSource == 'children' || dataSource == '') {
-					// 子节点列表 (未配置 dataSource 时兼容旧包，默认显示节点的直接子节点)
-					const children = node['children']
-					if (children != null && Array.isArray(children)) {
-						const list = children as UTSJSONObject[]
-						// 确保子节点也有显示用字段
-						comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
-					}
+					
+					// 按照 sortOrder 排序
+					comp.data.sort((a, b) => {
+					    const sa = a['sortOrder'] as number | null ?? 0
+					    const sb = b['sortOrder'] as number | null ?? 0
+					    return sa - sb
+					})
 				}
 			}
 		}
@@ -1231,7 +1286,7 @@
 	// 获取节点类型的中文标签
 	const getNodeTypeLabel = (nodeType: string): string => {
 		if (nodeType == 'process') return '工艺'
-		if (nodeType == 'procedure') return '工序'
+		if (nodeType == 'operation') return '工序'
 		if (nodeType == 'step') return '工步'
 		return nodeType
 	}
@@ -1242,8 +1297,8 @@
 		const nodeType = node['type'] as string
 		if (nodeType == 'process') {
 			console.log('Selected process:', node['name'])
-		} else if (nodeType == 'procedure') {
-			console.log('Selected procedure:', node['name'])
+		} else if (nodeType == 'operation') {
+			console.log('Selected operation:', node['name'])
 		} else if (nodeType == 'step') {
 			console.log('Selected step:', node['name'])
 		}

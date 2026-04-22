@@ -1,28 +1,91 @@
 /**
- * MPM 工艺预览系统 - 工艺数据服务
- * @description 提供工艺数据的查询和管理功能（V4 纯树形结构）
+ * MPM 工艺预览系统 - 工艺数据服务 (V6 关系型)
  */
 
-import { ProcessNode } from '@/types/process'
+import { ProcessEntity, OperationEntity, StepEntity, ActionEntity } from '@/types/process'
 import { PageParams, PageResult } from '@/types/common'
 import { querySQL, executeSQL } from '@/services/database'
 
+// #ifdef WEB
+import { webGetAll, webGetByIndex, webClearStore } from '@/services/database'
+// #endif
+
 /**
- * 获取工艺列表 (查询顶级 Process)
- * @param params - 分页参数
- * @returns Promise<PageResult<ProcessNode>> 分页结果
+ * 辅助：将数据库 snake_case 行数据并入 camelCase，并合并 extra_json (Native 适用)
  */
-export function getProcessList(params: PageParams): Promise<PageResult<ProcessNode>> {
-	return new Promise((resolve: (value: PageResult<ProcessNode>) => void, reject: (reason: any) => void) => {
+function mapRelationalRow(row: any): UTSJSONObject {
+    const raw = row as UTSJSONObject
+    const obj: UTSJSONObject = {}
+    
+    for (const key in raw) {
+        if (key != 'extra_json') {
+            const camelKey = key.replace(/_([a-z])/g, (match: string, letter: string): string => letter.toUpperCase())
+            obj[camelKey] = raw[key]
+        }
+    }
+    
+    const extraStr = raw['extra_json'] as string | null
+    if (extraStr != null && extraStr != '') {
+        try {
+            const extra = JSON.parse(extraStr) as UTSJSONObject
+            for (const key in extra) {
+                obj[key] = extra[key]
+            }
+        } catch (e: any) { }
+    }
+    
+    // 一些数字到字符串的安全转换
+    if (obj['innerId'] != null) obj['innerId'] = obj['innerId'].toString()
+    
+    return obj
+}
+
+/**
+ * 获取工艺列表
+ * @param params - 分页参数
+ */
+export function getProcessList(params: PageParams): Promise<PageResult<ProcessEntity>> {
+	return new Promise((resolve, reject) => {
+		// #ifdef WEB
+		webGetAll('t_process').then(res => {
+			let list = res as UTSJSONObject[]
+			if (params.keyword != '') {
+				list = list.filter(item => {
+					const name = (item['name'] as string) || ''
+					const code = (item['code'] as string) || ''
+					return name.includes(params.keyword) || code.includes(params.keyword)
+				})
+			}
+			// 内存排序(更新时间倒序)
+			list.sort((a, b) => {
+				const timeA = (a['updated_at'] as number) || 0
+				const timeB = (b['updated_at'] as number) || 0
+				return timeB - timeA
+			})
+			
+			const total = list.length
+			const offset = (params.page - 1) * params.pageSize
+			const pageList = list.slice(offset, offset + params.pageSize)
+			
+			const entityList: ProcessEntity[] = []
+			for (let i = 0; i < pageList.length; i++) {
+				entityList.push(JSON.parse<ProcessEntity>(JSON.stringify(pageList[i]))!)
+			}
+			
+			resolve({
+				list: entityList,
+				total: total,
+				page: params.page,
+				pageSize: params.pageSize
+			})
+		}).catch(e => reject(e))
+		// #endif
+
+		// #ifndef WEB
 		const offset = (params.page - 1) * params.pageSize
-		
 		let countSQL = 'SELECT COUNT(*) as total FROM t_process'
-		let querySQL_str = `
-			SELECT inner_id, class_id, code, name, updated_at, data_json 
-			FROM t_process
-		`
+		let querySQL_str = `SELECT * FROM t_process`
 		
-		// 添加搜索条件
 		if (params.keyword != '') {
 			const whereClause = ` WHERE name LIKE '%${params.keyword}%' OR code LIKE '%${params.keyword}%'`
 			countSQL += whereClause
@@ -31,32 +94,17 @@ export function getProcessList(params: PageParams): Promise<PageResult<ProcessNo
 		
 		querySQL_str += ` ORDER BY updated_at DESC LIMIT ${params.pageSize} OFFSET ${offset}`
 		
-		// 查询总数
 		querySQL(countSQL)
 			.then((countResult: any[]) => {
 				const total = countResult.length > 0 ? (countResult[0]['total'] as number) : 0
-				
-				// 查询列表数据
 				querySQL(querySQL_str)
 					.then((listResult: any[]) => {
-						const list: ProcessNode[] = []
-						
+						const list: ProcessEntity[] = []
 						for (let i = 0; i < listResult.length; i++) {
-							const row = listResult[i]
-							// 从 data_json 中反序列化出完整的 ProcessNode
-							const dataJson = row['data_json'] as string
-							if (dataJson && dataJson != '') {
-								try {
-									const node = JSON.parse<ProcessNode>(dataJson)
-									if (node != null) {
-										list.push(node as ProcessNode)
-									}
-								} catch (e: any) {
-									console.error('反序列化工艺树失败', e)
-								}
-							}
+							const mapped = mapRelationalRow(listResult[i])
+							const node = JSON.parse<ProcessEntity>(JSON.stringify(mapped))
+							if (node != null) list.push(node)
 						}
-						
 						resolve({
 							list: list,
 							total: total,
@@ -64,115 +112,296 @@ export function getProcessList(params: PageParams): Promise<PageResult<ProcessNo
 							pageSize: params.pageSize
 						})
 					})
-					.catch((e: any | null) => {
-						reject(new Error(JSON.stringify(e)))
-					})
+					.catch((e: any | null) => reject(new Error(JSON.stringify(e))))
 			})
-			.catch((e: any | null) => {
-				reject(new Error(JSON.stringify(e)))
-			})
+			.catch((e: any | null) => reject(new Error(JSON.stringify(e))))
+		// #endif
 	})
 }
 
 /**
  * 搜索工艺
- * @param keyword - 搜索关键词
- * @returns Promise<ProcessNode[]> 搜索结果
  */
-export function searchProcess(keyword: string): Promise<ProcessNode[]> {
-	return new Promise((resolve: (value: ProcessNode[]) => void, reject: (reason: any) => void) => {
+export function searchProcess(keyword: string): Promise<ProcessEntity[]> {
+	return new Promise((resolve, reject) => {
 		if (keyword == '') {
 			resolve([])
 			return
 		}
-		
-		const sql = `
-			SELECT data_json 
-			FROM t_process 
-			WHERE name LIKE '%${keyword}%' OR code LIKE '%${keyword}%'
-			ORDER BY updated_at DESC LIMIT 20
-		`
-		
+		// #ifdef WEB
+		webGetAll('t_process').then(res => {
+			let list = res as UTSJSONObject[]
+			list = list.filter(item => {
+				const name = (item['name'] as string) || ''
+				const code = (item['code'] as string) || ''
+				return name.includes(keyword) || code.includes(keyword)
+			})
+			const entityList: ProcessEntity[] = []
+			for (let i = 0; i < list.length && i < 20; i++) {
+				entityList.push(JSON.parse<ProcessEntity>(JSON.stringify(list[i]))!)
+			}
+			resolve(entityList)
+		}).catch(e => reject(e))
+		// #endif
+
+		// #ifndef WEB
+		const sql = `SELECT * FROM t_process WHERE name LIKE '%${keyword}%' OR code LIKE '%${keyword}%' LIMIT 20`
 		querySQL(sql)
 			.then((result: any[]) => {
-				const list: ProcessNode[] = []
+				const list: ProcessEntity[] = []
 				for (let i = 0; i < result.length; i++) {
-					const dataJson = result[i]['data_json'] as string
-					if (dataJson && dataJson != '') {
-						try {
-							const node = JSON.parse<ProcessNode>(dataJson)
-							if (node != null) {
-								list.push(node as ProcessNode)
-							}
-						} catch (e: any) {
-							console.error('解析 JSON 失败', e)
-						}
-					}
+					const mapped = mapRelationalRow(result[i])
+					const node = JSON.parse<ProcessEntity>(JSON.stringify(mapped))
+					if (node != null) list.push(node)
 				}
 				resolve(list)
 			})
-			.catch((e: any | null) => {
-				reject(e)
-			})
+			.catch((e: any | null) => reject(e))
+		// #endif
 	})
 }
 
 /**
- * 根据 innerId 树形查找特定节点（内存查找）
- * 通常在页面加载完整 Process 树后在内存中调用
+ * 获取具体的一条记录 (通过 inner_id 查询)
  */
-export function findNodeByInnerId(root: ProcessNode, innerId: string): ProcessNode | null {
-	if (root.innerId == innerId) {
-		return root
-	}
-	
-	for (const child of root.children) {
-		const found = findNodeByInnerId(child, innerId)
-		if (found != null) {
-			return found
-		}
-	}
-	
-	return null
+export function getProcessDetail(id: string): Promise<ProcessEntity | null> {
+    return new Promise((resolve, reject) => {
+        // #ifdef WEB
+        webGetByIndex('t_process', 'inner_id', id).then(res => {
+            if (res.length > 0) {
+                resolve(JSON.parse<ProcessEntity>(JSON.stringify(res[0])))
+            } else {
+                resolve(null)
+            }
+        }).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        querySQL(`SELECT * FROM t_process WHERE inner_id = '${id}'`)
+            .then((result: any[]) => {
+                if (result.length > 0) {
+                    const mapped = mapRelationalRow(result[0])
+                    resolve(JSON.parse<ProcessEntity>(JSON.stringify(mapped)))
+                } else {
+                    resolve(null)
+                }
+            })
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
 }
 
 /**
- * 获取所有的节点偏平列表（从树形结构展开），可用于搜索或快捷导航
+ * 根据所属工艺ID，查询所有关联的工序
  */
-export function flattenProcessTree(root: ProcessNode): ProcessNode[] {
-	const result: ProcessNode[] = []
-	
-	function traverse(node: ProcessNode) {
-		result.push(node)
-		for (const child of node.children) {
-			traverse(child)
-		}
-	}
-	
-	traverse(root)
-	return result
+export function getOperationsByProcessId(processId: string): Promise<OperationEntity[]> {
+    return new Promise((resolve, reject) => {
+        // #ifdef WEB
+        webGetByIndex('t_operation', 'process_id', processId).then(res => {
+            const list: OperationEntity[] = []
+            for (let i = 0; i < res.length; i++) {
+                list.push(JSON.parse<OperationEntity>(JSON.stringify(res[i]))!)
+            }
+            resolve(list)
+        }).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        querySQL(`SELECT * FROM t_operation WHERE process_id = '${processId}' ORDER BY sort_order ASC`)
+            .then((result: any[]) => {
+                const list: OperationEntity[] = []
+                for (let i = 0; i < result.length; i++) {
+                    const mapped = mapRelationalRow(result[i])
+                    const node = JSON.parse<OperationEntity>(JSON.stringify(mapped))
+                    if (node != null) list.push(node)
+                }
+                resolve(list)
+            })
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
 }
 
-export function getProcessDetail(id: string): Promise<ProcessNode | null> {
-	return new Promise((resolve, reject) => {
-		querySQL(`SELECT data_json FROM t_process WHERE inner_id = '${id}'`)
-			.then(res => {
-				if (res.length > 0) {
-					try {
-						resolve(JSON.parse(res[0]['data_json'] as string) as ProcessNode)
-					} catch(e) { resolve(null) }
-				} else {
-					resolve(null)
-				}
-			})
-			.catch(e => reject(e as Error))
-	})
+/**
+ * 根据所属工序ID，查询所有关联的工步
+ */
+export function getStepsByOperationId(operationId: string): Promise<StepEntity[]> {
+    return new Promise((resolve, reject) => {
+        // #ifdef WEB
+        webGetByIndex('t_step', 'operation_id', operationId).then(res => {
+            const list: StepEntity[] = []
+            for (let i = 0; i < res.length; i++) {
+                list.push(JSON.parse<StepEntity>(JSON.stringify(res[i]))!)
+            }
+            resolve(list)
+        }).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        querySQL(`SELECT * FROM t_step WHERE operation_id = '${operationId}' ORDER BY sort_order ASC`)
+            .then((result: any[]) => {
+                const list: StepEntity[] = []
+                for (let i = 0; i < result.length; i++) {
+                    const mapped = mapRelationalRow(result[i])
+                    const node = JSON.parse<StepEntity>(JSON.stringify(mapped))
+                    if (node != null) list.push(node)
+                }
+                resolve(list)
+            })
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
+}
+
+/**
+ * 根据所属工步ID，查询所有关联的动作
+ */
+export function getActionsByStepId(stepId: string): Promise<ActionEntity[]> {
+    return new Promise((resolve, reject) => {
+        // #ifdef WEB
+        webGetByIndex('t_action', 'step_id', stepId).then(res => {
+            const list: ActionEntity[] = []
+            for (let i = 0; i < res.length; i++) {
+                list.push(JSON.parse<ActionEntity>(JSON.stringify(res[i]))!)
+            }
+            resolve(list)
+        }).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        querySQL(`SELECT * FROM t_action WHERE step_id = '${stepId}' ORDER BY sort_order ASC`)
+            .then((result: any[]) => {
+                const list: ActionEntity[] = []
+                for (let i = 0; i < result.length; i++) {
+                    const mapped = mapRelationalRow(result[i])
+                    const node = JSON.parse<ActionEntity>(JSON.stringify(mapped))
+                    if (node != null) list.push(node)
+                }
+                resolve(list)
+            })
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
 }
 
 export function clearAllProcesses(): Promise<void> {
-	return new Promise((resolve, reject) => {
-		executeSQL('DELETE FROM t_process')
-			.then(() => resolve())
-			.catch(e => reject(e as Error))
-	})
+    return new Promise((resolve, reject) => {
+        // #ifdef WEB
+        Promise.all([
+            webClearStore('t_process'),
+            webClearStore('t_operation'),
+            webClearStore('t_step'),
+            webClearStore('t_action')
+        ]).then(() => resolve()).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        executeSQL('DELETE FROM t_process')
+            .then(() => executeSQL('DELETE FROM t_operation'))
+            .then(() => executeSQL('DELETE FROM t_step'))
+            .then(() => executeSQL('DELETE FROM t_action'))
+            .then(() => resolve())
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
+}
+
+/**
+ * 按主键查单条记录（返回 camelCase 的 UTSJSONObject）
+ * @param nodeType 节点类型 (process, operation, step, action)
+ * @param nodeId 节点 ID
+ */
+export function queryNodeById(nodeType: string, nodeId: string): Promise<UTSJSONObject | null> {
+    return new Promise((resolve, reject) => {
+        let tableName = ''
+        const type = nodeType.toLowerCase()
+        if (type == 'process' || type == 'operation' || type == 'step' || type == 'action') {
+            tableName = `t_${type}`
+        } else {
+            resolve(null)
+            return
+        }
+
+        // #ifdef WEB
+        // Web 使用 webGetByKey 按主键精确查找
+        import('@/services/database').then((db) => {
+            db.webGetByKey(tableName, nodeId).then((res) => {
+                if (res != null) {
+                    resolve(res)
+                } else {
+                    resolve(null)
+                }
+            }).catch(e => reject(e as Error))
+        }).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        querySQL(`SELECT * FROM ${tableName} WHERE inner_id = '${nodeId}'`)
+            .then((result: any[]) => {
+                if (result.length > 0) {
+                    const mapped = mapRelationalRow(result[0])
+                    resolve(mapped)
+                } else {
+                    resolve(null)
+                }
+            })
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
+}
+
+/**
+ * 按父节点类型和ID查子节点列表（返回 camelCase 的 UTSJSONObject 数组）
+ * @param parentType 父节点类型
+ * @param parentId 父节点 ID
+ */
+export function queryChildrenByParentId(parentType: string, parentId: string): Promise<UTSJSONObject[]> {
+    return new Promise((resolve, reject) => {
+        let childTableName = ''
+        let foreignKey = ''
+        const pType = parentType.toLowerCase()
+
+        if (pType == 'process') {
+            childTableName = 't_operation'
+            foreignKey = 'process_id'
+        } else if (pType == 'operation') {
+            childTableName = 't_step'
+            foreignKey = 'operation_id'
+        } else if (pType == 'step') {
+            childTableName = 't_action'
+            foreignKey = 'step_id'
+        } else {
+            // 如果不支持查询子节点，直接返回空
+            resolve([])
+            return
+        }
+
+        // #ifdef WEB
+        import('@/services/database').then((db) => {
+            db.webGetByIndex(childTableName, foreignKey, parentId).then((res) => {
+                const list = res as UTSJSONObject[]
+                // Web 端查询回来的是对象数组，按照 sortOrder 排序
+                list.sort((a, b) => {
+                    const sa = (a['sortOrder'] as number | null) ?? 0
+                    const sb = (b['sortOrder'] as number | null) ?? 0
+                    return sa - sb
+                })
+                resolve(list)
+            }).catch(e => reject(e as Error))
+        }).catch(e => reject(e as Error))
+        // #endif
+
+        // #ifndef WEB
+        querySQL(`SELECT * FROM ${childTableName} WHERE ${foreignKey} = '${parentId}' ORDER BY sort_order ASC`)
+            .then((result: any[]) => {
+                const list: UTSJSONObject[] = []
+                for (let i = 0; i < result.length; i++) {
+                    const mapped = mapRelationalRow(result[i])
+                    list.push(mapped)
+                }
+                resolve(list)
+            })
+            .catch((e: any | null) => reject(e as Error))
+        // #endif
+    })
 }

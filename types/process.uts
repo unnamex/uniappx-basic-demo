@@ -1,20 +1,15 @@
 /**
- * MPM 工艺预览系统 - V4 工艺树类型定义
- * @description 定义四级工艺树节点的核心类型：Process → Operation → Step → ActionUnit
+ * MPM 工艺预览系统 - V6 工艺数据类型定义
+ * @description 定义四级别独立实体关系：Process → Operation → Step → Action
  */
 
-/**
- * 节点层级标识常量
- * targetClassId 的合法取值
- */
 export const NodeLevel_PROCESS = 'Process'
 export const NodeLevel_OPERATION = 'Operation'
 export const NodeLevel_STEP = 'Step'
 export const NodeLevel_ACTION_UNIT = 'ActionUnit'
 
 /**
- * 节点关联资源类型
- * 用于右侧查看器加载
+ * 关联资源类型 (V5/V6 均使用)
  */
 export type NodeResource = {
 	id: string              // 资源唯一 ID
@@ -22,95 +17,155 @@ export type NodeResource = {
 	name: string            // 显示名称
 	path: string            // 包内路径（导入后更新为本地路径）
 	thumbnail: string       // 缩略图路径
-	duration: number        // 时长（秒），视频/音频使用，其他为 0
+	duration: number        // 时长（秒）
 	description: string     // 描述
 }
 
 /**
- * 四级工艺树通用节点类型
- * Process / Operation / Step / ActionUnit 均使用此类型
- *
- * 层级约束（不可跳级）：
- * - Process 的 children 只能是 Operation
- * - Operation 的 children 只能是 Step
- * - Step 的 children 只能是 ActionUnit
- * - ActionUnit 的 children 必须为空
+ * process_tree.json (导航树) 节点定义
+ * V6 中轻量化树结构
  */
-export type ProcessNode = {
-	classId: string            // 类型标识（自定义分类，如 JJGY、ZPGY）
-	innerId: string            // 唯一标识（全局唯一）
-	name: string               // 名称
-	code: string               // 编号
-	targetClassId: string      // 层级标识（固定为 Process / Operation / Step / ActionUnit）
-	tabs_top: string           // 上方 Tab 组 ID（引用 groups.json 中的 id）
-	tabs_bottom: string        // 下方 Tab 组 ID（为空字符串则隐藏下方区域）
-	attachment: NodeResource[]  // 关联附件列表
-	children: ProcessNode[]    // 子节点列表（严格下一级）
+export type ProcessTreeNode = {
+	innerId: string
+	code: string
+	name: string
+	targetClassId: string
+	classId: string
+	tabs_top: string
+	tabs_bottom: string
+	children: ProcessTreeNode[]
 }
 
 /**
- * 校验节点层级合法性
- * @param node 待校验节点
- * @returns 是否合法
+ * ---------------------------------------------------------
+ * 数据实体型 (Database Entities)
+ * 所有对应表的字段在此定义，扩展字段统一回退到 extra_json 取
+ * ---------------------------------------------------------
  */
-export function validateNodeHierarchy(node: ProcessNode): boolean {
-	const level = node.targetClassId
 
-	// 校验 children 的 targetClassId 是否合法
-	if (node.children.length > 0) {
-		let expectedChildLevel = ''
-		if (level == NodeLevel_PROCESS) {
-			expectedChildLevel = NodeLevel_OPERATION
-		} else if (level == NodeLevel_OPERATION) {
-			expectedChildLevel = NodeLevel_STEP
-		} else if (level == NodeLevel_STEP) {
-			expectedChildLevel = NodeLevel_ACTION_UNIT
-		} else if (level == NodeLevel_ACTION_UNIT) {
-			// ActionUnit 不能有子节点
-			console.error('校验失败: ActionUnit 不能有子节点, innerId =', node.innerId)
-			return false
-		}
-
-		for (const child of node.children) {
-			if (child.targetClassId != expectedChildLevel) {
-				console.error('校验失败: 期望子节点层级', expectedChildLevel,
-					'实际', child.targetClassId, ', 父节点 innerId =', node.innerId)
-				return false
-			}
-			// 递归校验
-			if (!validateNodeHierarchy(child)) {
-				return false
-			}
-		}
-	}
-
-	return true
+/** 工艺实体 */
+export type ProcessEntity = {
+	inner_id: string
+	code: string
+	name: string
+	class_id: string | null
+	class_id_display: string | null
+	class_id_business_icon: string | null
+	class_id_icon: string | null
+	version: string | null
+	full_version_no: string | null
+	state_name: string | null
+	
+	checkout_state: string | null
+	checkout_state_display: string | null
+	modify_by_id: string | null
+	modify_by_id_display: string | null
+	modify_time: string | null
+	create_by_id: string | null
+	create_by_id_display: string | null
+	create_time: string | null
+	create_time_display: string | null
+	context_name: string | null
+	context_id: string | null
+	context_id_display: string | null
+	department_name: string | null
+	workshop_name: string | null
+	personalworkspace: string | null
+	personalworkspace_display: string | null
+	folder_path: string | null
+	phase_id: string | null
+	phase_id_display: string | null
+	secret_id: string | null
+	secret_id_display: string | null
+	life_cycle_template: string | null
+	life_cycle_template_display: string | null
+	task_name: string | null
+	route_content: string | null
+	mfg_node_name: string | null
+	process_characteristics: string | null
+	note: string | null
+	
+	part_code: string | null
+	part_name: string | null
+	part_class_id: string | null
+	part_class_id_display: string | null
+	part_class_id_business_icon: string | null
+	part_modify_by_id: string | null
+	part_modify_by_id_display: string | null
+	part_modify_time: string | null
+	part_context_name: string | null
+	part_phase_id: string | null
+	part_phase_id_display: string | null
+	part_secret_id: string | null
+	part_secret_id_display: string | null
+	part_state_name: string | null
+	part_full_version_no: string | null
+	
+	tabs_top: string | null
+	tabs_bottom: string | null
+	sort_order: number
+	extra_json: string | null
+	created_at: string | null
+	updated_at: string | null
 }
 
-/**
- * 校验所有 innerId 全局唯一
- * @param node 根节点
- * @returns 是否全部唯一
- */
-export function validateInnerIdUnique(node: ProcessNode): boolean {
-	const idSet = new Set<string>()
-	return collectAndCheckIds(node, idSet)
+/** 工序实体 */
+export type OperationEntity = {
+	inner_id: string
+	process_id: string
+	code: string | null
+	name: string
+	serial_number: string | null
+	class_id: string | null
+	class_id_display: string | null
+	is_key: string | null
+	is_key_display: string | null
+	content: string | null
+	tabs_top: string | null
+	tabs_bottom: string | null
+	sort_order: number
+	extra_json: string | null
+	created_at: string | null
+	updated_at: string | null
 }
 
-/**
- * 递归收集并检查 innerId 唯一性
- */
-function collectAndCheckIds(node: ProcessNode, idSet: Set<string>): boolean {
-	if (idSet.has(node.innerId)) {
-		console.error('innerId 重复:', node.innerId)
-		return false
-	}
-	idSet.add(node.innerId)
+/** 工步实体 */
+export type StepEntity = {
+	inner_id: string
+	operation_id: string
+	process_id: string
+	code: string | null
+	name: string
+	serial_number: string | null
+	class_id: string | null
+	class_id_display: string | null
+	note: string | null
+	content: string | null
+	tabs_top: string | null
+	tabs_bottom: string | null
+	sort_order: number
+	extra_json: string | null
+	created_at: string | null
+	updated_at: string | null
+}
 
-	for (const child of node.children) {
-		if (!collectAndCheckIds(child, idSet)) {
-			return false
-		}
-	}
-	return true
+/** 动作实体 */
+export type ActionEntity = {
+	inner_id: string
+	step_id: string
+	operation_id: string
+	process_id: string
+	code: string | null
+	name: string
+	serial_number: string | null
+	class_id: string | null
+	class_id_display: string | null
+	note: string | null
+	content: string | null
+	tabs_top: string | null
+	tabs_bottom: string | null
+	sort_order: number
+	extra_json: string | null
+	created_at: string | null
+	updated_at: string | null
 }

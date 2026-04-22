@@ -45,7 +45,7 @@ export type PreviewState = {
 export type NodeResources = {
 	nodeId: string           // 节点ID
 	nodeName: string         // 节点名称
-	nodeType: string         // 节点类型: process | procedure | step
+	nodeType: string         // 节点类型: process | operation | step
 	attachment: ResourceItem[] // 附件列表
 }
 

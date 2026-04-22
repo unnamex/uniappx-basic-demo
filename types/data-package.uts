@@ -1,5 +1,5 @@
 /**
- * MPM 工艺预览系统 - V5 数据包类型定义
+ * MPM 工艺预览系统 - V6 数据包类型定义
  * @description 定义 SRD 数据包的清单与配置类型
  */
 
@@ -8,7 +8,7 @@
  */
 export type PackageManifest = {
 	name: string
-	version: string         // 应该为 "5.0" 或更高
+	version: string         // 应该为 "6.0" 或更高
 	description: string | null
 	exportTime: string | null
 	source: string | null
@@ -17,25 +17,22 @@ export type PackageManifest = {
 }
 
 /**
- * V5 文件引用
- * 所有布局配置使用 layout/ 前缀，工艺树为固定路径 data/process_tree.json 不再此处解析
+ * V6 文件引用
+ * 所有布局配置使用 layout/ 前缀，工艺表存放在 data/ 路径下
  */
 export type ManifestFileRefs = {
 	tabs: string            // layout/tabs.json (原 groups.json)
 	tab: string             // layout/tab.json (原 tabs.json)
 	components: string      // layout/components.json
 	icons: string | null    // layout/icons.json（可选）
-	descriptions: string | null // data/descriptions.json（可选，V5.2 新增）
-	attachment: string      // data/attachment.json (V5 强制独立附件列表)
+	attachment: string      // data/attachment.json (独立附件列表)
 	assets: string | null   // 资源目录路径 "assets/"
-}
-
-/**
- * 节点富文本内容记录 (对应 data/descriptions.json)
- */
-export type NodeDescription = {
-	nodeId: string          // 关联的工艺节点 innerId
-	[key: string]: any      // 存储在此节点的富文本/长文本，如 description_html, safety_notice 等
+    
+    // V6 新增工艺表数据文件
+    process: string | null  // data/process.json
+    operation: string | null // data/operation.json
+    step: string | null      // data/step.json
+    action: string | null    // data/action.json
 }
 
 

@@ -110,7 +110,6 @@
 
 <script lang="uts">
 	import { PropType } from 'vue'
-	import { getNodeContent } from '@/services/nodeContentService'
 
 	type TableRow = {
 		id : string
@@ -300,39 +299,22 @@
 					}
 				}
 			},
-			/** 异步获取展开内容 */
+			/** 获取展开内容 */
 			fetchExpandContent(rowId: string) {
-				if (this.loadingRowIds.indexOf(rowId) >= 0) return
-				
-				this.loadingRowIds.push(rowId)
-				getNodeContent(rowId).then((res) => {
-					if (res != null) {
-						// 根据数据包规范，内容可能存在 description_html 字段，或者整体就是富文本
-						// 这里统一尝试读取 description_html，如果不存在则找第一个 string 字段
-						let content = ""
-						if (res['description_html'] != null) {
-							content = res['description_html'] as string
-						} else {
-							// 兜底：寻找第一个非 nodeId 的字符串字段
-							const keys = Object.keys(res)
-							for (const key of keys) {
-								if (key != 'nodeId' && typeof res[key] == 'string') {
-									content = res[key] as string
-									break
-								}
-							}
-						}
-						this.expandContentCache.set(rowId, content)
-					} else {
-						this.expandContentCache.set(rowId, "")
+				const row = this.findRowById(rowId)
+				if (row != null) {
+					// 优先使用 V6 标准字段 content，如果为空再尝试兼容旧版 description_html/text
+					let content = row.originData['content'] as string | null
+					if (content == null || content == '') {
+						content = row.originData['description_html'] as string | null
 					}
-				}).catch(err => {
-					console.error('Fetch expand content failed:', err)
-					this.expandContentCache.set(rowId, "加载失败，请重试")
-				}).finally(() => {
-					const lIdx = this.loadingRowIds.indexOf(rowId)
-					if (lIdx >= 0) this.loadingRowIds.splice(lIdx, 1)
-				})
+					if (content == null || content == '') {
+						content = row.originData['text'] as string | null
+					}
+					this.expandContentCache.set(rowId, content ?? "")
+				} else {
+					this.expandContentCache.set(rowId, "")
+				}
 			},
 			/** 判断行是否展开 */
 			isRowExpanded(rowId: string): boolean {

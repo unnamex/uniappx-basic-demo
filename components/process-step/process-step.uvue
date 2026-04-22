@@ -75,7 +75,7 @@
 </template>
 
 <script lang="uts">
-	import { ProcessNode } from '@/types/process'
+	import { ProcessEntity } from '@/types/process'
 	
 	/**
 	 * 工艺步骤组件
@@ -86,7 +86,7 @@
 		emits: ['toggle'],
 		props: {
 			step: {
-				type: Object as PropType<ProcessNode>,
+				type: Object as PropType<ProcessEntity>,
 				required: true
 			},
 			expanded: {

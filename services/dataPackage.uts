@@ -1,5 +1,4 @@
-import { ComponentConfig, ImportProgress, ImportResult, ManifestFileRefs, NodeDescription, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
-import { ProcessNode } from '@/types/process'
+import { ComponentConfig, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ResourceItem, inferResourceType } from '@/types/resource'
 import { decryptPackage } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
@@ -585,12 +584,69 @@ function extractAndParseAndroid(
 		const inputStream = new ByteArrayInputStream(new Int8Array(zipData) as ByteArray)
 		const zipStream = new ZipInputStream(inputStream)
 		
-		let processNode: ProcessNode | null = null
+		let manifest: PackageManifest | null = null
+		const jsonFiles = new Map<string, string>()
+		const savedAssetPaths = new Map<string, string>()
+		const assetsBasePath = getAssetsBasePath()
 		
-		if (manifest.files != null) {
-			const files = manifest.files
+		let entry = zipStream.getNextEntry()
+		while (entry != null) {
+			const entryName = entry.getName()
+			if (entryName.endsWith('.json')) {
+				const outputStream = new ByteArrayOutputStream()
+				const buffer = new ByteArray(4096)
+				let len = zipStream.read(buffer)
+				while (len > 0) {
+					outputStream.write(buffer, 0, len)
+					len = zipStream.read(buffer)
+				}
+				const content = outputStream.toString('UTF-8')
+				if (entryName == 'manifest.json') {
+					manifest = JSON.parse(content) as PackageManifest
+				} else {
+					jsonFiles.set(entryName, content)
+				}
+			} else if (isAssetFile(entryName)) {
+				const relPath = getRelativeAssetPath(entryName)
+				const targetPath = assetsBasePath + '/' + relPath
+				ensureDirectory(targetPath.substring(0, targetPath.lastIndexOf('/')))
+				
+				const outputStream = new ByteArrayOutputStream()
+				const buffer = new ByteArray(4096)
+				let len = zipStream.read(buffer)
+				while (len > 0) {
+					outputStream.write(buffer, 0, len)
+					len = zipStream.read(buffer)
+				}
+				writeFileBytes(targetPath, outputStream.toByteArray())
+				savedAssetPaths.set(entryName, targetPath)
+			}
+			entry = zipStream.getNextEntry()
+		}
+		
+		if (manifest == null) {
+			reject(new Error("未找到 manifest.json"))
+			return
+		}
+		
+		// V6 限制
+		if (manifest!.version < '6.0') {
+			reject(new Error("不支持低于 V6.0 版本的旧数据包"))
+			return
+		}
+		
+		let groups: TabGroup[] = []
+		let tabs: TabConfig[] = []
+		let components: ComponentConfig[] = []
+		let processRecords: UTSJSONObject[] = []
+		let operationRecords: UTSJSONObject[] = []
+		let stepRecords: UTSJSONObject[] = []
+		let actionRecords: UTSJSONObject[] = []
+
+		if (manifest!.files != null) {
+			const files = manifest!.files as ManifestFileRefs
 			
-			const findJsonFile = (path) => {
+			const findJsonFile = (path: string): string | null => {
 				let content = jsonFiles.get(path)
 				if (content != null) return content
 				const altPath = path.replace(/\/\//g, '\\\\')
@@ -599,37 +655,39 @@ function extractAndParseAndroid(
 				const altPath2 = path.replace(/\\\\/g, '/')
 				return jsonFiles.get(altPath2) || null
 			}
-			
-			// V5 规范：工艺树路径固定为 data/process_tree.json
-			const treeContent = findJsonFile('data/process_tree.json')
-			if (treeContent != null) {
-				processNode = JSON.parse(treeContent)
-			} else {
-				console.error('Android: 未找到核心工艺树文件 data/process_tree.json')
-			}
 
 			if (files.tabs != null) {
 				const content = findJsonFile(files.tabs)
-				if (content != null) groups = JSON.parse(content)
+				if (content != null) groups = JSON.parse(content) as TabGroup[]
 			}
-			
 			if (files.tab != null) {
 				const content = findJsonFile(files.tab)
-				if (content != null) tabs = JSON.parse(content)
+				if (content != null) tabs = JSON.parse(content) as TabConfig[]
 			}
 			if (files.components != null) {
 				const content = findJsonFile(files.components)
-				if (content != null) components = JSON.parse(content)
+				if (content != null) components = JSON.parse(content) as ComponentConfig[]
 			}
-
-
-			let descriptions: NodeDescription[] = []
-			if (files.descriptions != null) {
-				const content = findJsonFile(files.descriptions)
-				if (content != null) descriptions = JSON.parse(content) as NodeDescription[]
-			}
+			
+			// 读取 V6 数据表
+			const processJson = findJsonFile('data/process.json')
+			if (processJson != null) processRecords = JSON.parse(processJson) as UTSJSONObject[]
+			
+			const opJson = findJsonFile('data/operation.json')
+			if (opJson != null) operationRecords = JSON.parse(opJson) as UTSJSONObject[]
+			
+			const stepJson = findJsonFile('data/step.json')
+			if (stepJson != null) stepRecords = JSON.parse(stepJson) as UTSJSONObject[]
+			
+			const actionJson = findJsonFile('data/action.json')
+			if (actionJson != null) actionRecords = JSON.parse(actionJson) as UTSJSONObject[]
 		}
 		
+		const PROCESS_FIELDS = ['innerId', 'code', 'name', 'classId', 'classId_display', 'classId_business_icon', 'classId_icon', 'version', 'fullversionNo', 'stateName', 'checkoutState', 'checkoutState_display', 'modifyById', 'modifyById_display', 'modifyTime', 'createById', 'createById_display', 'createTime', 'createTime_display', 'contextName', 'contextId', 'contextId_display', 'departmentName', 'workshopName', 'personalworkspace', 'personalworkspace_display', 'folderPath', 'phaseId', 'phaseId_display', 'secretId', 'secretId_display', 'lifeCycleTemplate', 'lifeCycleTemplate_display', 'taskName', 'routeContent', 'mfgNodeName', 'processCharacteristics', 'note', 'partCode', 'partName', 'partClassId', 'partClassId_display', 'partClassId_business_icon', 'partModifyById', 'partModifyById_display', 'partModifyTime', 'partContextName', 'partPhaseId', 'partPhaseId_display', 'partSecretId', 'partSecretId_display', 'partStateName', 'partFullversionNo', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const OPERATION_FIELDS = ['innerId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'isKey', 'isKey_display', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const STEP_FIELDS = ['innerId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const ACTION_FIELDS = ['innerId', 'stepId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+
 		// 开始事务
 		beginTransaction()
 		
@@ -637,90 +695,89 @@ function extractAndParseAndroid(
 			// 保存 UI 配置（链式调用）
 			saveUiConfigurationToDatabase(groups, tabs, components)
 				.then((uiConfigCount: number) => {
-					// 保存节点内容 (V5)
-					return saveNodeContentsToDatabase(descriptions).then((descCount: number) => {
-						return { uiConfigCount, descCount }
-					})
+					return executeSQL('INSERT OR REPLACE INTO meta_process_tree (id, data_json) VALUES (?, ?)', ['process_tree', processTreeStr]).then(() => saveRelationalDataToDatabase('t_process', processRecords, PROCESS_FIELDS)).then(()=>uiConfigCount)
 				})
-				.then((counts: any) => {
-					const uiConfigCount = counts.uiConfigCount as number
-
-			let resourceCount = 0
-			const allResources: ResourceItem[] = []
-			const rawResources: ResourceItem[] = []
-			
-			if (manifest?.files != null) {
-				const files = manifest.files as ManifestFileRefs
-				const attPath = files.attachment // V5 强制存在
-				const attContent = findJsonFile(attPath)
-				if (attContent != null) {
-					const indRes = parseAttachmentFile(attContent)
-					for (const res of indRes) {
-					    rawResources.push(res)
-					}
-				}
-			}
-
-			
-			for (const res of rawResources) {
-				const originalPath = res.originalPath
-				const localPath = savedAssetPaths.get(originalPath) || savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
-				
-				if (localPath != null) {
-					res.path = localPath
-				} else {
-					continue
-				}
-				
-				if (res.thumbnail != '') {
-					const thumbPath = savedAssetPaths.get(res.thumbnail)
-					if (thumbPath != null) res.thumbnail = thumbPath
-					else res.thumbnail = ''
-				}
-				allResources.push(res)
-			}
-			
-			const executeDbSave = async () => {
-				try {
-					if (processNode != null) {
-						await saveProcessTreeToDatabase(processNode)
-					}
-					for (const res of allResources) {
-						await saveResource(res)
-						resourceCount++
-					}
-					console.log('Android: Saved resources:', resourceCount)
+				.then((uiConfigCount: number) => {
+					return saveRelationalDataToDatabase('t_operation', operationRecords, OPERATION_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					return saveRelationalDataToDatabase('t_step', stepRecords, STEP_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					return saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					let resourceCount = 0
+					const allResources: ResourceItem[] = []
+					const rawResources: ResourceItem[] = []
 					
-					setTransactionSuccessful()
-					resolve({
-						success: true,
-						message: '导入成功',
-						nodeCount: processNode != null ? 1 : 0,
-						uiConfigCount: uiConfigCount,
-						resourceCount: resourceCount,
-						importTime: 0
-					})
-				} catch(e: any | null) {
-					endTransaction()
-					reject(new Error(e != null ? e.toString() : '数据库保存失败'))
-				}
-			}
-			executeDbSave().then(()=>{}).catch((e: any | null)=>{})
+					if (manifest?.files != null) {
+						const files = manifest!.files as ManifestFileRefs
+						const attPath = files.attachment // V6 强制存在
+						let attContent = jsonFiles.get(attPath)
+						if (attContent == null) attContent = jsonFiles.get(attPath.replace(/\/\//g, '\\\\'))
+						if (attContent == null) attContent = jsonFiles.get(attPath.replace(/\\\\/g, '/'))
+						
+						if (attContent != null) {
+							const indRes = parseAttachmentFile(attContent)
+							for (const res of indRes) {
+								rawResources.push(res)
+							}
+						}
+					}
+
+					for (const res of rawResources) {
+						const originalPath = res.originalPath
+						const localPath = savedAssetPaths.get(originalPath) || savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
+						
+						if (localPath != null) {
+							res.path = localPath
+						} else {
+							continue
+						}
+						
+						if (res.thumbnail != '') {
+							const thumbPath = savedAssetPaths.get(res.thumbnail)
+							if (thumbPath != null) res.thumbnail = thumbPath
+							else res.thumbnail = ''
+						}
+						allResources.push(res)
+					}
+					
+					const executeDbSave = async () => {
+						try {
+							for (const res of allResources) {
+								await saveResource(res)
+								resourceCount++
+							}
+							console.log('Android: Saved resources:', resourceCount)
+							
+							setTransactionSuccessful()
+							resolve({
+								success: true,
+								message: '导入成功',
+								nodeCount: processRecords.length,
+								uiConfigCount: uiConfigCount,
+								resourceCount: resourceCount,
+								importTime: 0
+							})
+						} catch(e: any | null) {
+							endTransaction()
+							reject(new Error(e != null ? e.toString() : '数据库保存失败'))
+						}
+					}
+					// @ts-ignore
+					executeDbSave().then(()=>{}).catch((e: any | null)=>{})
 				})
 				.catch((uiErr: any) => {
 					endTransaction()
-					reject(new Error('UI配置保存失败: ' + (uiErr != null ? uiErr.toString() : 'unknown')))
+					reject(new Error('数据入库失败: ' + (uiErr != null ? uiErr.toString() : 'unknown')))
 				})
 				
 		} catch (e: any) {
 			endTransaction()
 			reject(new Error('数据库保存失败: ' + e.toString()))
 		}
-			
-	} catch (e: any) {
-		reject(new Error('解析数据包失败：' + e.toString()))
-	}
-}
 
 /**
  * 判断是否为资源文件
@@ -875,6 +932,11 @@ function processHarmonyExtractedFiles(
 		const manifestData = readJsonFileHarmony('manifest.json')
 		const manifest = JSON.parse(manifestData) as PackageManifest
 		
+		if (manifest.version < '6.0') {
+			reject(new Error("不支持低于 V6.0 版本的旧数据包"))
+			return
+		}
+		
 		if (onProgress != null) {
 			onProgress({
 				current: 55,
@@ -884,11 +946,15 @@ function processHarmonyExtractedFiles(
 			})
 		}
 		
-		// 3. 读取 UI 配置 (V5 规范下必须存在 files 映射)
+		// 3. 读取 UI 配置 (V6 规范下必须存在 files 映射)
 		let groups: TabGroup[] = []
 		let tabs: TabConfig[] = []
 		let components: ComponentConfig[] = []
-		let descriptions: NodeDescription[] = []
+		
+		let processRecords: UTSJSONObject[] = []
+		let operationRecords: UTSJSONObject[] = []
+		let stepRecords: UTSJSONObject[] = []
+		let actionRecords: UTSJSONObject[] = []
 		
 		const files = manifest.files as ManifestFileRefs
 		
@@ -919,26 +985,26 @@ function processHarmonyExtractedFiles(
 			}
 		}
 		
-
-
-		if (files.descriptions != null) {
-			try {
-				const content = readJsonFileHarmony(files.descriptions)
-				descriptions = JSON.parse(content) as NodeDescription[]
-			} catch (e: any) {
-				console.warn('Harmony: descriptions 文件读取失败:', e)
-			}
-		}
-		
-		// 4. 解析工艺树 (V5 固定路径)
-		let processNode: ProcessNode | null = null
-		
+		// 4. 解析工艺数据表 (V6)
 		try {
-			const treeFile = 'data/process_tree.json'
-			const content = readJsonFileHarmony(treeFile)
-			processNode = JSON.parse(content)
-		} catch (e) {
-			console.warn('Harmony: 工艺树解析失败', e)
+			if (files['process'] != null) {
+				const content = readJsonFileHarmony(files['process'] as string)
+				processRecords = JSON.parse(content) as UTSJSONObject[]
+			}
+			if (files['operation'] != null) {
+				const content = readJsonFileHarmony(files['operation'] as string)
+				operationRecords = JSON.parse(content) as UTSJSONObject[]
+			}
+			if (files['step'] != null) {
+				const content = readJsonFileHarmony(files['step'] as string)
+				stepRecords = JSON.parse(content) as UTSJSONObject[]
+			}
+			if (files['action'] != null) {
+				const content = readJsonFileHarmony(files['action'] as string)
+				actionRecords = JSON.parse(content) as UTSJSONObject[]
+			}
+		} catch(e) {
+			console.warn('Harmony: V6 表数据解析异常', e)
 		}
 		
 		if (onProgress != null) {
@@ -968,8 +1034,11 @@ function processHarmonyExtractedFiles(
 		}
 		
 		// 6. 保存到数据库
-		
-		// 开始事务
+		const PROCESS_FIELDS = ['innerId', 'code', 'name', 'classId', 'classId_display', 'classId_business_icon', 'classId_icon', 'version', 'fullversionNo', 'stateName', 'checkoutState', 'checkoutState_display', 'modifyById', 'modifyById_display', 'modifyTime', 'createById', 'createById_display', 'createTime', 'createTime_display', 'contextName', 'contextId', 'contextId_display', 'departmentName', 'workshopName', 'personalworkspace', 'personalworkspace_display', 'folderPath', 'phaseId', 'phaseId_display', 'secretId', 'secretId_display', 'lifeCycleTemplate', 'lifeCycleTemplate_display', 'taskName', 'routeContent', 'mfgNodeName', 'processCharacteristics', 'note', 'partCode', 'partName', 'partClassId', 'partClassId_display', 'partClassId_business_icon', 'partModifyById', 'partModifyById_display', 'partModifyTime', 'partContextName', 'partPhaseId', 'partPhaseId_display', 'partSecretId', 'partSecretId_display', 'partStateName', 'partFullversionNo', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const OPERATION_FIELDS = ['innerId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'isKey', 'isKey_display', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const STEP_FIELDS = ['innerId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const ACTION_FIELDS = ['innerId', 'stepId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+
 		beginTransaction()
 		
 		try {
@@ -977,13 +1046,9 @@ function processHarmonyExtractedFiles(
 			const allResources: ResourceItem[] = []
 			const rawResources: ResourceItem[] = []
 			
-			let resourceCount = 0
-			const allResources: ResourceItem[] = []
-			const rawResources: ResourceItem[] = []
-			
 			if (manifest?.files != null) {
 				const files = manifest.files as ManifestFileRefs
-				const attPath = files.attachment // V5 强制存在
+				const attPath = files.attachment // V6 强制存在
 				try {
 					const attContent = readJsonFileHarmony(attPath)
 					const indRes = parseAttachmentFile(attContent)
@@ -1024,65 +1089,60 @@ function processHarmonyExtractedFiles(
 				allResources.push(res)
 			}
 			
-			// 封装一个保存资源文件的递归逻辑
-			const saveNextResourceAsync = (index: number, uiCount: number, resolveData: (value: ImportResult) => void) => {
-				if (index >= allResources.length) {
-					console.log('Harmony: 保存资源条数:', resourceCount)
-					setTransactionSuccessful()
-					endTransaction()
-					resolveData({
-						success: true,
-						message: '导入成功',
-						nodeCount: 1,
-						uiConfigCount: uiCount,
-						resourceCount: resourceCount,
-						importTime: 0
-					})
-					return
-				}
-				
-				saveResource(allResources[index])
-					.then(() => {
-						resourceCount++
-						saveNextResourceAsync(index + 1, uiCount, resolveData)
-					})
-					.catch((resErr: any) => {
-						console.error('Harmony: 保存单一资源失败:', resErr)
-						saveNextResourceAsync(index + 1, uiCount, resolveData)
-					})
-			}
-			
-			// 使用 Promise 链式调用保存 UI 配置，确保所有 SQL 顺序执行完毕后再继续
+			// 使用 Promise 链式调用保存表和 UI 配置
 			saveUiConfigurationToDatabase(groups, tabs, components)
 				.then((uiConfigCount: number) => {
-					// 保存节点内容
-					return saveNodeContentsToDatabase(descriptions).then(() => uiConfigCount)
+					return saveRelationalDataToDatabase('t_process', processRecords, PROCESS_FIELDS).then(()=>uiConfigCount)
 				})
 				.then((uiConfigCount: number) => {
-					console.log('Harmony: UI配置保存完成, count:', uiConfigCount)
-					// UI 配置保存完毕后，保存工艺树和资源
-					if (processNode != null) {
-						saveProcessTreeToDatabase(processNode)
+					return saveRelationalDataToDatabase('t_operation', operationRecords, OPERATION_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					return saveRelationalDataToDatabase('t_step', stepRecords, STEP_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					return saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					console.log('Harmony: 数据存储完成, 开始保存资源')
+					
+					const saveNextResourceAsync = (index: number, uiCount: number, resolveData: (value: ImportResult) => void) => {
+						if (index >= allResources.length) {
+							console.log('Harmony: 保存资源条数:', resourceCount)
+							setTransactionSuccessful()
+							endTransaction()
+							resolveData({
+								success: true,
+								message: '导入成功',
+								nodeCount: processRecords.length,
+								uiConfigCount: uiCount,
+								resourceCount: resourceCount,
+								importTime: 0
+							})
+							return
+						}
+						
+						saveResource(allResources[index])
 							.then(() => {
-								console.log('Harmony: 工艺树保存完成')
-								saveNextResourceAsync(0, uiConfigCount, resolve)
+								resourceCount++
+								saveNextResourceAsync(index + 1, uiCount, resolveData)
 							})
-							.catch((dbErr: any) => {
-								console.error('Harmony: 数据库保存 Process 基础异常:', dbErr)
-								endTransaction()
-								const errMsg = dbErr instanceof Error ? dbErr.message : (dbErr != null ? dbErr.toString() : 'unknown')
-								reject(new Error('数据入库异常: ' + errMsg))
+							.catch((resErr: any) => {
+								console.error('Harmony: 保存单一资源失败:', resErr)
+								saveNextResourceAsync(index + 1, uiCount, resolveData)
 							})
-					} else {
-						saveNextResourceAsync(0, uiConfigCount, resolve)
 					}
+					
+					saveNextResourceAsync(0, uiConfigCount, resolve)
 				})
-				.catch((uiErr: any) => {
-					console.error('Harmony: UI配置保存异常:', uiErr)
+				.catch((dbErr: any) => {
+					console.error('Harmony: 数据库保存异常:', dbErr)
 					endTransaction()
-					const errMsg = uiErr instanceof Error ? uiErr.message : (uiErr != null ? uiErr.toString() : 'unknown')
-					reject(new Error('UI配置入库异常: ' + errMsg))
+					const errMsg = dbErr instanceof Error ? dbErr.message : (dbErr != null ? dbErr.toString() : 'unknown')
+					reject(new Error('数据入库异常: ' + errMsg))
 				})
+				
+
 
 		} catch (e: any) {
 			console.error('Harmony: 解析数据包环境构建异常:', e)
@@ -1220,11 +1280,21 @@ function extractAndParseWeb(
 				return
 			}
 			
-			// 3. 读取 UI 配置 (V5 强制要求分离文件)
+			if (manifest!.version < '6.0') {
+				reject(new Error("不支持低于 V6.0 版本的旧数据包"))
+				return
+			}
+			
+			// 3. 读取数据和UI配置
 			let groups: TabGroup[] = []
 			let tabs: TabConfig[] = []
 			let components: ComponentConfig[] = []
 			let iconConfig: UTSJSONObject | null = null
+			
+			let processRecords: UTSJSONObject[] = []
+			let operationRecords: UTSJSONObject[] = []
+			let stepRecords: UTSJSONObject[] = []
+			let actionRecords: UTSJSONObject[] = []
 			
 			const files = manifest.files as ManifestFileRefs
 			
@@ -1263,44 +1333,37 @@ function extractAndParseWeb(
 				}
 			}
 			
-
-
-			if (files.descriptions != null) {
-				const descFile = findZipFile(files.descriptions)
-				if (descFile != null) {
-					const content = await descFile.async("string")
-					const descriptions = JSON.parse(content) as NodeDescription[]
-					
-					await webClearStore('t_node_content')
-					for (const desc of descriptions) {
-						await webPutData('t_node_content', {
-							node_id: desc.nodeId,
-							content_json: JSON.stringify(desc)
-						})
-					}
-				}
-			}
-			
 			if (files.icons != null) {
-				const iconsFile = findZipFile(files.icons)
+				const iconsFile = findZipFile(files.icons as string)
 				if (iconsFile != null) {
 					const content = await iconsFile.async("string")
 					iconConfig = JSON.parse(content) as UTSJSONObject
 				}
 			}
 			
-			// 4. 解析工艺树 (V5 固定路径)
-			let processNode: ProcessNode | null = null
-			const processTreeEntry = zip.file('data/process_tree.json')
-			
-			if (processTreeEntry != null) {
-				try {
-					const content = await processTreeEntry.async("string")
-					processNode = JSON.parse(content) as ProcessNode
-				} catch(e) {
-					console.error('Web: Failed to parse process_tree.json', e)
+			// 4. 解析工艺数据表 (V6)
+			const readTableFile = async (pathKey: string | null, defPath: string): Promise<UTSJSONObject[]> => {
+				const p = pathKey ?? defPath
+				const fileEntry = findZipFile(p)
+				if (fileEntry != null) {
+					try {
+						const content = await fileEntry.async("string")
+						return JSON.parse(content) as UTSJSONObject[]
+					} catch(e) { console.warn('Web parse failed for', p, e) }
 				}
+				return []
 			}
+			
+            let processTreeStr = ''
+            const pTreeFile = findZipFile((files['process_tree'] as string | null) ?? '') || findZipFile('data/process_tree.json')
+            if (pTreeFile != null) {
+                try { processTreeStr = await pTreeFile.async("string") } catch(e:any){}
+            }
+            processRecords = await readTableFile(files['process'] as string | null, 'data/process.json')
+    
+			operationRecords = await readTableFile(files['operation'] as string | null, 'data/operation.json')
+			stepRecords = await readTableFile(files['step'] as string | null, 'data/step.json')
+			actionRecords = await readTableFile(files['action'] as string | null, 'data/action.json')
 			
 			// 5. 保存到数据库
 			console.log('Web: Saving to database...');
@@ -1309,7 +1372,12 @@ function extractAndParseWeb(
 				await webClearStore('meta_tab_groups')
 				await webClearStore('meta_tabs')
 				await webClearStore('meta_components')
+				
 				await webClearStore('t_process')
+				await webClearStore('t_operation')
+				await webClearStore('t_step')
+				await webClearStore('t_action')
+				
 				await webClearStore('t_icon_config')
 				
 				let uiConfigCount = 0
@@ -1329,8 +1397,6 @@ function extractAndParseWeb(
 					uiConfigCount++
 				}
 				
-
-				
 				if (iconConfig != null) {
 					const nodeIcons = iconConfig['nodeIcons'] as UTSJSONObject
 					if (nodeIcons != null) {
@@ -1345,8 +1411,27 @@ function extractAndParseWeb(
 					}
 				}
 				
-				if (processNode != null) {
-					await webPutData('t_process', processNode)
+				// Web 端 IndexedDB 暂不使用 standard_fields 拆分写入，直接写入整条 JSON 记录（底层用 KV 或 Document 模式）
+				await webPutData('meta_process_tree', {id: 'process_tree', data_json: processTreeStr})
+				for (const row of processRecords) {
+					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					if ((row['inner_id'] as string) === '') continue;
+					try { await webPutData('t_process', row) } catch(e) { console.error('Failed to put t_process:', e) }
+				}
+				for (const row of operationRecords) {
+					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					if ((row['inner_id'] as string) === '') continue;
+					try { await webPutData('t_operation', row) } catch(e) { console.error('Failed to put t_operation:', e) }
+				}
+				for (const row of stepRecords) {
+					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					if ((row['inner_id'] as string) === '') continue;
+					try { await webPutData('t_step', row) } catch(e) { console.error('Failed to put t_step:', e) }
+				}
+				for (const row of actionRecords) {
+					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					if ((row['inner_id'] as string) === '') continue;
+					try { await webPutData('t_action', row) } catch(e) { console.error('Failed to put t_action:', e) }
 				}
 				
 				// 资源处理
@@ -1418,7 +1503,7 @@ function extractAndParseWeb(
 				resolve({
 					success: true,
 					message: '导入成功',
-					nodeCount: processNode != null ? 1 : 0,
+					nodeCount: processRecords.length,
 					uiConfigCount: uiConfigCount,
 					resourceCount: resourceCount,
 					importTime: 0
@@ -1514,52 +1599,44 @@ function saveUiConfigurationToDatabase(
 }
 
 /**
- * 保存工艺数据到数据库
+ * 智能分拣并保存数据到数据库 (V6 核心机制)
  */
-function saveProcessTreeToDatabase(processNode: ProcessNode): Promise<void> {
-	return new Promise<void>((resolve, reject) => {
-		const insertProcessSQL = `
-			INSERT OR REPLACE INTO t_process 
-			(inner_id, class_id, code, name, created_at, updated_at, data_json)
-			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`
-
-		const processParams: any[] = [
-			processNode.innerId,
-			processNode.classId,
-			processNode.code,
-			processNode.name,
-			Date.now().toString(),
-			Date.now().toString(),
-			JSON.stringify(processNode)
-		]
-
-		executeSQL(insertProcessSQL, processParams)
-			.then((_) => {
-				resolve()
-			})
-			.catch((e: any) => {
-				reject(new Error(e.toString()))
-			})
-	})
-}
-
-/**
- * 保存节点描述内容到数据库
- */
-function saveNodeContentsToDatabase(descriptions: NodeDescription[]): Promise<number> {
-	return new Promise<number>((resolve: (value: number) => void, reject: (reason: any) => void) => {
-		if (descriptions.length == 0) {
+export function saveRelationalDataToDatabase(
+	tableName: string, 
+	records: UTSJSONObject[], 
+	standardFields: string[]
+): Promise<number> {
+	return new Promise<number>((resolve, reject) => {
+		if (records.length == 0) {
 			resolve(0)
 			return
 		}
-		
 		const sqlQueue: UTSJSONObject[] = []
-		for (let i = 0; i < descriptions.length; i++) {
-			const d = descriptions[i]
+		for (let i = 0; i < records.length; i++) {
+			const row = records[i]
+			const extra: UTSJSONObject = {}
+			const params: any[] = []
+			
+			for (let j = 0; j < standardFields.length; j++) {
+				const jsonKey = standardFields[j]
+				params.push(row[jsonKey] ?? null)
+			}
+			
+			for (const key in row) {
+				if (!standardFields.includes(key)) {
+					extra[key] = row[key]
+				}
+			}
+			params.push(JSON.stringify(extra))
+			
+			const placeholders = params.map(():string => '?').join(',')
+			const dbCols = standardFields.map((s:string):string => {
+				return s.replace(/[A-Z]/g, (letter:string):string => '_' + letter.toLowerCase())
+			}).join(',') + ',extra_json'
+			
 			sqlQueue.push({
-				sql: "INSERT OR REPLACE INTO t_node_content (node_id, content_json) VALUES (?, ?)",
-				params: [d.nodeId, JSON.stringify(d)]
+				sql: "INSERT OR REPLACE INTO " + tableName + " (" + dbCols + ") VALUES (" + placeholders + ")",
+				params: params
 			})
 		}
 		
@@ -1571,14 +1648,14 @@ function saveNodeContentsToDatabase(descriptions: NodeDescription[]): Promise<nu
 			}
 			const item = sqlQueue[index]
 			const sql = item['sql'] as string
-			const params = item['params'] as any[]
-			executeSQL(sql, params)
+			const paramsList = item['params'] as any[]
+			executeSQL(sql, paramsList)
 				.then((_: any) => {
 					completed++
 					executeNext(index + 1)
 				})
 				.catch((e: any) => {
-					console.error('saveNodeContents SQL 失败:', sql, e)
+					console.error(tableName + ' insert error:', sql, e)
 					executeNext(index + 1)
 				})
 		}

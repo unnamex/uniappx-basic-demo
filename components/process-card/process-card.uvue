@@ -24,7 +24,7 @@
 </template>
 
 <script lang="uts">
-	import { ProcessNode } from '@/types/process'
+	import { ProcessEntity } from '@/types/process'
 	
 	/**
 	 * 工艺卡片组件
@@ -35,7 +35,7 @@
 		emits: ['click'],
 		props: {
 			item: {
-				type: Object as PropType<ProcessNode>,
+				type: Object as PropType<ProcessEntity>,
 				required: true
 			}
 		},
