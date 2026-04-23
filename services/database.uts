@@ -197,7 +197,7 @@ function createTables(): Promise<void> {
 				class_id_business_icon TEXT,
 				class_id_icon TEXT,
 				version TEXT,
-				full_version_no TEXT,
+				fullversion_no TEXT,
 				state_name TEXT,
 				checkout_state TEXT,
 				checkout_state_display TEXT,
@@ -241,7 +241,7 @@ function createTables(): Promise<void> {
 				part_secret_id TEXT,
 				part_secret_id_display TEXT,
 				part_state_name TEXT,
-				part_full_version_no TEXT,
+				part_fullversion_no TEXT,
 				tabs_top TEXT,
 				tabs_bottom TEXT,
 				sort_order INTEGER DEFAULT 0,
@@ -355,7 +355,6 @@ function createTables(): Promise<void> {
 		`
 		
 
-		
 		const createPackageTableSQL = `
 			CREATE TABLE IF NOT EXISTS t_import_package (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -431,6 +430,7 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)")
 				dbInstance!.execSQL(createComponentsTableSQL)
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)")
+				dbInstance!.execSQL(createProcessTreeTableSQL)
 
 				console.log('数据表创建成功')
 				resolve()
@@ -467,7 +467,8 @@ function createTables(): Promise<void> {
 					createTabsTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)",
 					createComponentsTableSQL,
-					"CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)"
+					"CREATE INDEX IF NOT EXISTS idx_comp_tab ON meta_components(tab_id)",
+					createProcessTreeTableSQL
 				]
 				
 				// 顺序执行每条 SQL

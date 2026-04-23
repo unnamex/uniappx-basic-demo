@@ -65,16 +65,22 @@
 		"distribute": {
 			"modules": {
 				"entry": {
-					"abilities": [
-						{
-							"name": "EntryAbility",
-							"orientation": "auto_rotation"
-						}
-					]
+					"abilities": [{
+						"name": "EntryAbility",
+						"orientation": "auto_rotation"
+					}]
 				}
 			},
-			"icons": {},
-			"splashScreens": {}
+			"icons": {
+				"foreground": "C:/Users/94498/.gemini/antigravity/brain/f194d6ef-9ca1-4f58-a8f9-8df24b57f135/industrial_app_icon_1776417579888.png",
+				"background": "C:/Users/94498/.gemini/antigravity/brain/f194d6ef-9ca1-4f58-a8f9-8df24b57f135/industrial_app_icon_1776417579888.png"
+			},
+			"splashScreens": {},
+			"deviceTypes": [
+				"tablet",
+				"2in1",
+				"tv"
+			]
 		}
 	},
 	"web": {

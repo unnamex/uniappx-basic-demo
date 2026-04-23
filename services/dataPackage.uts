@@ -7,7 +7,6 @@ import { saveResource, parseAttachmentFile, getAssetsBasePath } from '@/services
 import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
 // #endif
 // #ifdef APP-HARMONY
-import zlib from '@ohos.zlib';
 import { ensureDirectory as ensureDirectoryHarmony } from '@/services/resourceService'
 // #endif
 // #ifdef WEB
@@ -207,9 +206,11 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 				// 尝试解密，如果失败则假设为未加密的ZIP
 				let zipData = encryptedData
 				const decryptResult = decryptPackage(encryptedData)
-				console.log('validatePackage: 解密结果 success =', decryptResult.success, ' msg =', decryptResult.errorMessage)
 				if (decryptResult.success && decryptResult.data != null) {
+					console.log('validatePackage: 数据包解密成功')
 					zipData = decryptResult.data!
+				} else {
+					console.log('validatePackage: 数据包未加密或解密跳过，尝试以原始ZIP解析')
 				}
 				
 				// 解压并读取清单文件
@@ -915,15 +916,21 @@ function processHarmonyExtractedFiles(
 	try {
 		// 辅助函数：查找并读取 JSON 文件（兼容正斜杠和反斜杠）
 		const readJsonFileHarmony = (path: string): string => {
+			const fullPath = extractDir + '/' + path
 			try {
-				return uni.getFileSystemManager().readFileSync(extractDir + '/' + path, 'utf-8') as string
+				return uni.getFileSystemManager().readFileSync(fullPath, 'utf-8') as string
 			} catch (e1: any) {
 				try {
 					const altPath = path.replace(/\//g, '\\')
 					return uni.getFileSystemManager().readFileSync(extractDir + '/' + altPath, 'utf-8') as string
 				} catch (e2: any) {
-					const altPath2 = path.replace(/\\/g, '/')
-					return uni.getFileSystemManager().readFileSync(extractDir + '/' + altPath2, 'utf-8') as string
+					try {
+						const altPath2 = path.replace(/\\/g, '/')
+						return uni.getFileSystemManager().readFileSync(extractDir + '/' + altPath2, 'utf-8') as string
+					} catch (e3 : any) {
+						console.error('Harmony: 文件读取失败! 路径=' + path + ', 完整路径=' + fullPath)
+						return ''
+					}
 				}
 			}
 		}
@@ -955,6 +962,7 @@ function processHarmonyExtractedFiles(
 		let operationRecords: UTSJSONObject[] = []
 		let stepRecords: UTSJSONObject[] = []
 		let actionRecords: UTSJSONObject[] = []
+		let processTreeContent: string = ''
 		
 		const files = manifest.files as ManifestFileRefs
 		
@@ -986,23 +994,42 @@ function processHarmonyExtractedFiles(
 		}
 		
 		// 4. 解析工艺数据表 (V6)
+		console.log('Harmony: 开始解析工艺数据, 正在检索 manifest.files...')
+		
+		// 动态寻找 Key 的辅助函数
+		const findKeyFuzzy = (map: UTSJSONObject, target: string) : string | null => {
+			const keys = Object.keys(map)
+			console.log('Harmony: 检查 Key:', target, '在集合中:', JSON.stringify(keys))
+			if (map[target] != null) return target
+			// 模糊匹配: 如果有 keys 包含 target
+			for (let i = 0; i < keys.length; i++) {
+				if (keys[i].toLowerCase().includes(target.toLowerCase())) return keys[i]
+			}
+			return null
+		}
+
 		try {
-			if (files['process'] != null) {
-				const content = readJsonFileHarmony(files['process'] as string)
-				processRecords = JSON.parse(content) as UTSJSONObject[]
-			}
-			if (files['operation'] != null) {
-				const content = readJsonFileHarmony(files['operation'] as string)
-				operationRecords = JSON.parse(content) as UTSJSONObject[]
-			}
-			if (files['step'] != null) {
-				const content = readJsonFileHarmony(files['step'] as string)
-				stepRecords = JSON.parse(content) as UTSJSONObject[]
-			}
-			if (files['action'] != null) {
-				const content = readJsonFileHarmony(files['action'] as string)
-				actionRecords = JSON.parse(content) as UTSJSONObject[]
-			}
+			const processKey = findKeyFuzzy(files, 'process')
+			const processContent = readJsonFileHarmony(processKey != null ? files[processKey] as string : 'data/process.json')
+			if (processContent != '') processRecords = JSON.parse(processContent) as UTSJSONObject[]
+
+			const opKey = findKeyFuzzy(files, 'operation')
+			const opContent = readJsonFileHarmony(opKey != null ? files[opKey] as string : 'data/operation.json')
+			if (opContent != '') operationRecords = JSON.parse(opContent) as UTSJSONObject[]
+
+			const stepKey = findKeyFuzzy(files, 'step')
+			const stepContent = readJsonFileHarmony(stepKey != null ? files[stepKey] as string : 'data/step.json')
+			if (stepContent != '') stepRecords = JSON.parse(stepContent) as UTSJSONObject[]
+
+			const actionKey = findKeyFuzzy(files, 'action')
+			const actionContent = readJsonFileHarmony(actionKey != null ? files[actionKey] as string : 'data/action.json')
+			if (actionContent != '') actionRecords = JSON.parse(actionContent) as UTSJSONObject[]
+			
+			const pTreeKey = findKeyFuzzy(files, 'process_tree')
+			processTreeContent = readJsonFileHarmony(pTreeKey != null ? files[pTreeKey] as string : 'data/process_tree.json')
+			
+			console.log('Harmony解析完成: process=' + processRecords.length + ', op=' + operationRecords.length + ', step=' + stepRecords.length + ', action=' + actionRecords.length)
+			console.log('Harmony布局解析: groups=' + groups.length + ', tabs=' + tabs.length + ', components=' + components.length)
 		} catch(e) {
 			console.warn('Harmony: V6 表数据解析异常', e)
 		}
@@ -1092,19 +1119,41 @@ function processHarmonyExtractedFiles(
 			// 使用 Promise 链式调用保存表和 UI 配置
 			saveUiConfigurationToDatabase(groups, tabs, components)
 				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_process', processRecords, PROCESS_FIELDS).then(()=>uiConfigCount)
+					console.log('Harmony: UI配置存储成功, count=' + uiConfigCount)
+					return saveRelationalDataToDatabase('t_process', processRecords, PROCESS_FIELDS).then(() => uiConfigCount)
 				})
 				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_operation', operationRecords, OPERATION_FIELDS).then(()=>uiConfigCount)
+					console.log('Harmony: t_process存储成功, count=' + processRecords.length)
+					return saveRelationalDataToDatabase('t_operation', operationRecords, OPERATION_FIELDS).then(() => uiConfigCount)
 				})
 				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_step', stepRecords, STEP_FIELDS).then(()=>uiConfigCount)
+					console.log('Harmony: t_operation存储成功, count=' + operationRecords.length)
+					return saveRelationalDataToDatabase('t_step', stepRecords, STEP_FIELDS).then(() => uiConfigCount)
 				})
 				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS).then(()=>uiConfigCount)
+					console.log('Harmony: t_step存储成功, count=' + stepRecords.length)
+					return saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS).then(() => uiConfigCount)
 				})
 				.then((uiConfigCount: number) => {
-					console.log('Harmony: 数据存储完成, 开始保存资源')
+					console.log('Harmony: t_action存储成功, count=' + actionRecords.length)
+					return new Promise<number>((res) => {
+						if (processTreeContent != '') {
+							executeSQL("INSERT OR REPLACE INTO meta_process_tree (id, data_json) VALUES (?, ?)", ['process_tree', processTreeContent])
+								.then(() => {
+									console.log('Harmony: meta_process_tree 存储成功')
+									res(uiConfigCount)
+								})
+								.catch((e) => {
+									console.warn('Harmony: meta_process_tree 存储失败', e)
+									res(uiConfigCount)
+								})
+						} else {
+							res(uiConfigCount)
+						}
+					})
+				})
+				.then((uiConfigCount: number) => {
+					console.log('Harmony: 业务数据存储全部完成, 开始保存资源')
 					
 					const saveNextResourceAsync = (index: number, uiCount: number, resolveData: (value: ImportResult) => void) => {
 						if (index >= allResources.length) {
