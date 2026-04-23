@@ -1,12 +1,12 @@
 <template>
 	<outsider-layout 
-		:initLeftWidth="340" 
+		:initLeftWidth="adaptiveLeftWidth" 
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
-		:initMainTopHeight="Math.floor(windowInfo.windowHeight * 0.52)"
-		:initRightWidth="450"
+		:initMainTopHeight="adaptiveMainTopHeight"
+		:initRightWidth="adaptiveRightWidth"
 		:maxRightWidth="800"
-		:initRightTopHeight="windowInfo.windowHeight - 250"
+		:initRightTopHeight="adaptiveRightTopHeight"
 		:minRightTopHeight="200"
 		:showMainBottom="true"
 		:showRightBottom="true"
@@ -348,6 +348,34 @@
 	const statusBarHeight = ref(0)
 	const windowInfo = uni.getWindowInfo()
 	statusBarHeight.value = windowInfo.statusBarHeight
+
+	// ============ 自适应布局计算 (响应式) ============
+	const adaptiveLeftWidth = computed((): number => {
+		// 左侧工艺树：占宽目标的 22%
+		const ideal = windowInfo.windowWidth * 0.22
+		if (ideal < 240) return 240   // 最小值防止字挤
+		if (ideal > 340) return 340   // 最大值防止太宽
+		return Math.floor(ideal)
+	})
+
+	const adaptiveRightWidth = computed((): number => {
+		// 右侧查看器：建议占宽 33%
+		const ideal = windowInfo.windowWidth * 0.33
+		if (ideal < 360) return 360   // 最小值保证预览清晰
+		if (ideal > 500) return 500   // 最大值限制
+		return Math.floor(ideal)
+	})
+
+	const adaptiveMainTopHeight = computed((): number => {
+		// 中间主区域：上半部（基本信息）占 52%，稍微压低底部概览
+		return Math.floor(windowInfo.windowHeight * 0.52)
+	})
+
+	const adaptiveRightTopHeight = computed((): number => {
+		// 确保下方列表有足够空间显示卡片标题，同时避免出现巨大空白
+		return Math.floor(windowInfo.windowHeight * 0.60)
+	})
+	// ===========================================
 
 	// 面包屑项类型
 	type BreadcrumbItem = {
@@ -2082,6 +2110,32 @@
 		display: flex;
 		flex-direction: row;
 		padding: 8px;
+	}
+
+	/* 面板容器基础样式 */
+	.left-panel {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		border-right: 1px solid #E2E6ED;
+		background-color: #FFFFFF;
+	}
+
+	.right-panel {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		background-color: #FFFFFF;
+	}
+
+	.right-panel-bottom {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		background-color: #FFFFFF;
+		padding-bottom: 8px; /* 缩减边距，释放高度给卡片文字 */
+		overflow: hidden;
 	}
 	
 	.fullscreen-preview {
