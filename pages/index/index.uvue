@@ -52,7 +52,7 @@
 				<ux-tabs :modelValue="activeTabs.get(topGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(topGroup?.id ?? '', $event)">
 					<ux-tab-pane v-for="tab in topGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
 						<view style="flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-							<view class="tab-content-wrap" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+							<scroll-view class="tab-content-wrap" :show-scrollbar="false" style="flex: 1; display: flex; flex-direction: column;">
 								<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper" :style="{ flex: comp.type == 'table' ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
 									<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
 									
@@ -88,7 +88,7 @@
 									</view>
 									
 								</view>
-							</view>
+							</scroll-view>
 						</view>
 					</ux-tab-pane>
 				</ux-tabs>
@@ -108,7 +108,7 @@
 						<ux-tabs :modelValue="activeTabs.get(bottomGroup?.id ?? '') ?? ''" @update:modelValue="onTabChange(bottomGroup?.id ?? '', $event)">
 							<ux-tab-pane v-for="tab in bottomGroup!.tabs" :key="tab.id" :label="tab.title" :name="tab.id">
 								<view style="flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden;">
-									<view class="tab-content-wrap" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+									<scroll-view class="tab-content-wrap" :show-scrollbar="false" style="flex: 1; display: flex; flex-direction: column;">
 										<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper" :style="{ flex: comp.type == 'table' ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
 											<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
 											
@@ -144,7 +144,7 @@
 											</view>
 											
 										</view>
-									</view>
+									</scroll-view>
 								</view>
 							</ux-tab-pane>
 						</ux-tabs>
