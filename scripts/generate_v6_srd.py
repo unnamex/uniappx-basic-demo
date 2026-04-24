@@ -310,7 +310,7 @@ def create_v6_srd(output_path):
                     {"label": "序号", "prop": "serialNumber", "width": 80},
                     {"label": "代码", "prop": "code", "width": 180},
                     {"label": "名称", "prop": "displayName", "width": -1},
-                    {"label": "说明", "prop": "content", "width": 100, "cellType": "richtext"},
+                    {"label": "说明", "prop": "content", "width": 100, "type": "richText"},
                     {"label": "关键", "prop": "isKey_display", "width": 80}
                 ]
             }

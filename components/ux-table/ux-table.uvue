@@ -58,7 +58,7 @@
 						
 						<view v-else class="cell-content-wrapper">
 							<!-- 富文本列：仅显示展开/收起按钮 -->
-							<view v-if="getCellType(col) == 'richtext'" class="richtext-cell">
+							<view v-if="getCellType(col) == 'richText'" class="richtext-cell">
 								<view class="richtext-toggle-btn" @click.stop="toggleRowExpand(row.id)">
 									<text class="richtext-toggle-icon">{{ isRowExpanded(row.id) ? '▼' : '▶' }}</text>
 									<text class="richtext-toggle-label">{{ isRowExpanded(row.id) ? '收起' : '展开' }}</text>
@@ -72,7 +72,7 @@
 				<!-- 展开区域：如果该行有可展开列且已展开，则在行下方显示完整内容 -->
 				<view v-if="hasExpandableColumn && isRowExpanded(row.id)" class="richtext-expand-area">
 					<!-- 目前根据可展开类型进行渲染，暂时只有 richtext -->
-					<template v-if="expandableCellType == 'richtext'">
+					<template v-if="expandableCellType == 'richText'">
 						<!-- 无内容时显示紧凑提示 -->
 						<view v-if="row.expandContent == ''" class="richtext-empty-hint">
 							<text class="richtext-empty-text">暂无内容</text>
@@ -179,14 +179,14 @@
 			hasExpandableColumn() : boolean {
 				return this.expandableCellType != ''
 			},
-			/** 获取第一个可展开列的cellType */
+			/** 获取第一个可展开列的 type */
 			expandableCellType() : string {
 				const col = this.columns.find((c: UTSJSONObject): boolean => {
-					const type = c['cellType'] as string | null
-					return type === 'richtext' // 这里未来可以加其他需要整行展开的类型
+					const type = c['type'] as string | null
+					return type === 'richText' // 这里未来可以加其他需要整行展开的类型
 				})
 				if (col != null) {
-					return (col['cellType'] as string) ?? ''
+					return (col['type'] as string) ?? ''
 				}
 				return ''
 			},
@@ -253,9 +253,9 @@
 				if (val == null) return ''
 				return val.toString()
 			},
-			/** 获取列的 cellType */
+			/** 获取列的 type */
 			getCellType(col: UTSJSONObject): string {
-				const type = col['cellType']
+				const type = col['type']
 				if (type != null) {
 					return type as string
 				}

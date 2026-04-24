@@ -590,7 +590,7 @@ export type ResourceItem = {
 | `label` | string | 列标题 |
 | `prop` | string | 数据绑定字段名 (camelCase) |
 | `width` | number | 列宽（rpx）。-1 表示弹性填充（flex: 1） |
-| `cellType` | string | 单元格渲染类型。可选值：`"richtext"` |
+| `type` | string | 单元格渲染附加类型。可选值：`"richText"` |
 
 ### 8.4 标准组件清单
 
