@@ -9,7 +9,7 @@
 		<view class="table-scroll-container" :style="{ overflowX: showExpand ? 'hidden' : 'auto', overflowY: 'auto' }">
 		<!-- #endif -->
 		<!-- #ifndef WEB -->
-		<scroll-view :scroll-x="!showExpand" scroll-y="true" class="table-scroll-container">
+		<scroll-view scroll-x="true" scroll-y="true" class="table-scroll-container">
 		<!-- #endif -->
 			<view class="table-inner" :style="{ minWidth: tableMinWidth + 'px' }">
 				<view class="header">
@@ -74,7 +74,7 @@
 					<!-- 目前根据可展开类型进行渲染，暂时只有 richtext -->
 					<template v-if="expandableCellType == 'richtext'">
 						<!-- 无内容时显示紧凑提示 -->
-						<view v-if="getExpandContent(row) == ''" class="richtext-empty-hint">
+						<view v-if="row.expandContent == ''" class="richtext-empty-hint">
 							<text class="richtext-empty-text">暂无内容</text>
 						</view>
 						<!-- 有内容时显示完整富文本 -->
@@ -88,11 +88,11 @@
 							<view v-if="loadingRowIds.indexOf(row.id) >= 0" class="richtext-loading-box">
 								<text class="richtext-loading-text">加载中...</text>
 							</view>
-							<scroll-view v-else scroll-y="true" class="richtext-expand-scroll">
+							<view v-else class="richtext-expand-scroll">
 								<view class="richtext-expand-content">
-									<ux-richtext :content="getExpandContent(row)"></ux-richtext>
+									<ux-richtext :content="row.expandContent"></ux-richtext>
 								</view>
-							</scroll-view>
+							</view>
 						</view>
 					</template>
 				</view>
@@ -121,6 +121,7 @@
 		// 方便计算显示
 		isShow : boolean
 		loadedChildren : boolean
+		expandContent : string
 	}
 	
 	type DragState = {
@@ -164,8 +165,6 @@
 				isAllExpanded: false, // 懒加载模式下默认收起
 				/** 存储展开了内容的行ID列表 */
 				expandedRowIds: [] as string[],
-				/** 展开内容缓存 Map<InnerId, ContentHTML> */
-				expandContentCache: new Map<string, string>(),
 				/** 正在加载内容的节点ID */
 				loadingRowIds: [] as string[]
 			}
@@ -293,8 +292,9 @@
 					this.expandedRowIds.splice(idx, 1)
 				} else {
 					this.expandedRowIds.push(rowId)
-					// 如果是展开，且缓存中没有内容，则发起请求
-					if (!this.expandContentCache.has(rowId)) {
+					// 如果是展开，且内容未缓存，则发起请求并在 row 对象上赋值
+					const row = this.findRowById(rowId)
+					if (row != null && row.expandContent == "") {
 						this.fetchExpandContent(rowId)
 					}
 				}
@@ -304,25 +304,23 @@
 				const row = this.findRowById(rowId)
 				if (row != null) {
 					// 优先使用 V6 标准字段 content，如果为空再尝试兼容旧版 description_html/text
-					let content = row.originData['content'] as string | null
+					let content = (row.originData['content'] as string | null) ?? row.originData.getString('content')
 					if (content == null || content == '') {
-						content = row.originData['description_html'] as string | null
+						content = (row.originData['description_html'] as string | null) ?? row.originData.getString('description_html')
 					}
 					if (content == null || content == '') {
-						content = row.originData['text'] as string | null
+						content = (row.originData['text'] as string | null) ?? row.originData.getString('text')
 					}
-					this.expandContentCache.set(rowId, content ?? "")
-				} else {
-					this.expandContentCache.set(rowId, "")
+					// 调试保障：如果还为空，把 originData 序列化输出看里面是否有该字段
+					if (content == null || content == '') {
+						content = "没有读取到内容，节点数据为：" + JSON.stringify(row.originData)
+					}
+					row.expandContent = content
 				}
 			},
 			/** 判断行是否展开 */
 			isRowExpanded(rowId: string): boolean {
 				return this.expandedRowIds.indexOf(rowId) >= 0
-			},
-			/** 获取行的展开内容 */
-			getExpandContent(row: TableRow): string {
-				return this.expandContentCache.get(row.id) ?? ""
 			},
 			initTableData(treeData : UTSJSONObject[]) {
 				this.allRows = []
@@ -337,7 +335,6 @@
 				}
 				// 节点内容按需加载，不再初始化时自动标记展开（除非是非常小的包，但为了性能一致性，此处改为手动触发）
 				this.expandedRowIds = []
-				this.expandContentCache.clear()
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
 				list.forEach((item, index) => {
@@ -366,7 +363,8 @@
 						parentId: parentId,
 						originData: item,
 						isShow: true,
-						loadedChildren: shouldLoadChildren
+						loadedChildren: shouldLoadChildren,
+						expandContent: ""
 					}
 					
 					this.allRows.push(row)
@@ -399,7 +397,8 @@
 						parentId: parentId,
 						originData: item,
 						isShow: true,
-						loadedChildren: false
+						loadedChildren: false,
+						expandContent: ""
 					}
 					
 					this.allRows.splice(currentInsertIdx, 0, row);
@@ -631,7 +630,7 @@
 	
 	.table-inner {
 		flex-direction: column;
-		width: 100%;
+		/* 去除 width: 100%，以支持内容宽度大于容器时的横向滚动 */
 	}
 
 	/* 表头：白色背景 + 底部细分隔线，与内容区一体化 */
@@ -888,9 +887,7 @@
 	}
 
 	.richtext-expand-scroll {
-		max-height: 300px;
 		width: 100%;
-		flex: 1;
 	}
 
 	.richtext-expand-content {

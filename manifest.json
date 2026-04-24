@@ -1,5 +1,5 @@
 {
-	"name": "avpbc-pop",
+	"name": "CraftX",
 	"appid": "__UNI__9A011F1",
 	"description": "",
 	"versionName": "1.0.1",
@@ -72,8 +72,8 @@
 				}
 			},
 			"icons": {
-				"foreground": "C:/Users/94498/.gemini/antigravity/brain/f194d6ef-9ca1-4f58-a8f9-8df24b57f135/industrial_app_icon_1776417579888.png",
-				"background": "C:/Users/94498/.gemini/antigravity/brain/f194d6ef-9ca1-4f58-a8f9-8df24b57f135/industrial_app_icon_1776417579888.png"
+				"foreground": "C:/Users/94498/Desktop/logo2.png",
+				"background": "C:/Users/94498/Desktop/logo2.png"
 			},
 			"splashScreens": {},
 			"deviceTypes": [
