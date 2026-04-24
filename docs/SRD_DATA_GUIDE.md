@@ -1,13 +1,17 @@
 # SRD 数据包制作指南
 
+> **文档版本**: 6.3  
+> **最后更新**: 2026-04-24  
+> **适用对象**: 负责制作和维护 SRD 数据包的内容编辑人员及后端开发
+
 ---
 
 ## 一、SRD 包是什么？
 
 SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。  
-系统导入后，里面的数据会存进手机/平板本地数据库，供离线查看。
+系统导入后，里面的数据会存进设备本地数据库（Android/HarmonyOS/Web），供**完全离线**查看。
 
-你需要按规定的文件夹结构组织数据，最后压缩成 `.srd` 文件交给开发导入。
+你需要按规定的文件夹结构组织数据，最后压缩成 `.srd` 文件交给客户端导入。
 
 ---
 
@@ -19,14 +23,14 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 ├── manifest.json           ← ① 包的说明文件（必须有）
 │
 ├── data/                   ← ② 工艺数据（核心）
-│   ├── process_tree.json   ← 工艺树结构（导航用）
+│   ├── process_tree.json   ← 工艺树结构（导航用，必须）
 │   ├── process.json        ← 工艺详细信息
 │   ├── operation.json      ← 工序详细信息
 │   ├── step.json           ← 工步详细信息
-│   ├── action.json         ← 动作单元（可选）
+│   ├── action.json         ← 动作单元（可选，无数据时填 []）
 │   └── attachment.json     ← 附件资源清单
 │
-├── layout/                 ← ③ 页面布局配置（通常由开发提供模板，不用自己写）
+├── layout/                 ← ③ 页面布局配置（由开发提供模板，通常不用自己改动）
 │   ├── tabs.json
 │   ├── tab.json
 │   ├── components.json
@@ -36,11 +40,12 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
     ├── images/
     ├── videos/
     ├── audios/
-    └── documents/
+    ├── documents/
+    └── cad/
 ```
 
-> **重点**：你主要负责填写 `data/` 目录下的 5 个 JSON 文件，以及准备 `assets/` 里的素材文件。  
-> `layout/` 文件夹由定义一次后，通常不需要改动。
+> **重点**：你主要负责填写 `data/` 目录下的 6 个 JSON 文件，以及准备 `assets/` 里的素材文件。  
+> `layout/` 文件夹由开发定义一次后，通常不需要改动。
 
 ---
 
@@ -55,24 +60,28 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
   "name": "V8发动机总装工艺包",
   "version": "6.0",
   "description": "V8发动机总装线工艺操作指导",
-  "exportTime": "2026-04-22T10:00:00+08:00",
+  "exportTime": "2026-04-24T10:00:00+08:00",
   "files": {
     "tabs": "layout/tabs.json",
     "tab": "layout/tab.json",
     "components": "layout/components.json",
     "icons": "layout/icons.json",
-    "attachment": "data/attachment.json"
+    "attachment": "data/attachment.json",
+    "process": "data/process.json",
+    "operation": "data/operation.json",
+    "step": "data/step.json",
+    "action": "data/action.json"
   }
 }
 ```
 
 **注意事项：**
-- `version` 必须填 `"6.0"` 或更高，否则系统拒绝导入
+- `version` 必须填 `"6.0"` 或更高，否则系统**拒绝导入**
 - `name` 填你的工艺包名称
-- `files` 部分直接复制上面的格式，路径不要改
+- `files` 中的 `process`/`operation`/`step`/`action` 四个路径**建议显式声明**（如上所示）
 
 > **关于数据文件路径：**  
-> `data/process.json`、`data/operation.json`、`data/step.json`、`data/action.json`、`data/process_tree.json` 这五个文件的路径是**系统内置固定读取的**，不需要在 manifest 中声明。只要把文件放在正确的 `data/` 目录下并且命名正确，系统就能自动找到并导入。
+> `process`、`operation`、`step`、`action`、`process_tree` 这五个字段若省略不写，三端（Android/HarmonyOS/Web）均有 fallback 机制，会自动从固定路径 `data/*.json` 加载。但**强烈建议显式声明**，尤其在鸿蒙端，显式声明可避免模糊匹配到 `files` 中其他含 `process` 字符串的 key，导致路径解析错误。
 
 ---
 
@@ -86,6 +95,8 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
         └── 工步（step）
               └── 动作（action-unit）—— 可选
 ```
+
+> ⚠️ **重要**：`process_tree.json` 中的节点**不需要包含业务详情字段**（如 content、版本号等），只需包含以下骨架字段。详细业务信息由对应的 `process.json`、`operation.json` 等关系表提供。
 
 **格式如下：**
 
@@ -147,9 +158,10 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 
 ## 五、③ 工艺数据 `data/process.json`
 
-存放每个工艺的**详细信息**，是一个数组，每条对应树里的一个 `process` 节点。
+存放每个工艺的**详细信息**，是一个数组，每条对应工艺树里的一个 `process` 节点。
 
-**`innerId` 必须与工艺树中的 `innerId` 完全一致！**
+> ⚠️ **`innerId` 必须与工艺树中的 `innerId` 完全一致！**  
+> ⚠️ **此文件中不能有 `children` 字段**，子级工序通过 `operation.json` 中的 `processId` 关联。
 
 **所有支持的字段（共 56 个）：**
 
@@ -162,13 +174,14 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `name` | ✅ | 工艺名称 |
 | `tabs_top` | ✅ | 固定填 `"group_process_view"` |
 | `tabs_bottom` | ✅ | 固定填 `"group_bottom_proc"` |
+| `sortOrder` | ✅ | 排序号，从 0 开始 |
 | `classId` | 否 | 工艺类型 ID |
 | `classId_display` | 否 | 工艺类型显示名（如"装配工艺"） |
 | `classId_business_icon` | 否 | 业务图标 |
 | `classId_icon` | 否 | 类型图标 |
 | `version` | 否 | 版本号 |
 | `fullversionNo` | 否 | 完整版本号（如"ENG-V8-V1.0"） |
-| `stateName` | 否 | 状态（如"正式版""草稿"） |
+| `stateName` | 否 | 状态（如"正式版"、"草稿"） |
 | `checkoutState` | 否 | 检出状态 ID |
 | `checkoutState_display` | 否 | 检出状态显示名 |
 | `modifyById` | 否 | 最后修改人 ID |
@@ -189,7 +202,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `phaseId` | 否 | 阶段 ID |
 | `phaseId_display` | 否 | 阶段显示名 |
 | `secretId` | 否 | 密级 ID |
-| `secretId_display` | 否 | 密级显示名（如"内部""公开"） |
+| `secretId_display` | 否 | 密级显示名（如"内部"、"公开"） |
 | `lifeCycleTemplate` | 否 | 生命周期模板 ID |
 | `lifeCycleTemplate_display` | 否 | 生命周期模板名称 |
 | `taskName` | 否 | 任务名称 |
@@ -197,6 +210,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `mfgNodeName` | 否 | 制造节点名称 |
 | `processCharacteristics` | 否 | 工艺特性说明 |
 | `note` | 否 | 备注信息 |
+| `content` | 否 | 富文本工艺说明（HTML格式） |
 | `partCode` | 否 | 关联部件编号 |
 | `partName` | 否 | 关联部件名称 |
 | `partClassId` | 否 | 部件类型 ID |
@@ -212,7 +226,6 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `partSecretId_display` | 否 | 部件密级显示名 |
 | `partStateName` | 否 | 部件状态名称 |
 | `partFullversionNo` | 否 | 部件完整版本号 |
-| `sortOrder` | 否 | 排序号，从 0 开始 |
 
 **JSON 示例（包含常用字段）：**
 
@@ -234,6 +247,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
     "partCode": "ENG-V8-001",
     "partName": "V8发动机",
     "partStateName": "已发布",
+    "content": "<h3>工艺总览</h3><p>V8发动机总装工艺，包含缸体准备、曲轴安装等关键工序。</p>",
     "note": "适用于V8发动机全系列",
     "tabs_top": "group_process_view",
     "tabs_bottom": "group_bottom_proc",
@@ -247,6 +261,8 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 ## 六、④ 工序数据 `data/operation.json`
 
 存放每个工序（operation）的详细信息，通过 `processId` 关联到上级工艺。
+
+> ⚠️ **此文件中不能有 `children` 字段**，子级工步通过 `step.json` 中的 `operationId` 关联。
 
 ```json
 [
@@ -269,19 +285,24 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 
 **关键字段：**
 
-| 字段 | 说明 |
-|------|------|
-| `innerId` | ⚠️ 唯一ID，必须与工艺树一致 |
-| `processId` | ⚠️ 填写所属工艺的 `innerId` |
-| `serialNumber` | 工序番号（如 "010"、"020"） |
-| `isKey_display` | 是否关键工序（"关键工序" / "普通工序"） |
-| `content` | 富文本描述，支持 HTML 格式 |
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `innerId` | ✅ | 唯一ID，必须与工艺树一致 |
+| `processId` | ✅ | 填写所属工艺的 `innerId` |
+| `tabs_top` | ✅ | 固定填 `"group_operation_view"` |
+| `tabs_bottom` | ✅ | 固定填 `"group_bottom_op"` |
+| `sortOrder` | ✅ | 排序号，从 0 开始 |
+| `serialNumber` | 否 | 工序番号（如 "010"、"020"） |
+| `isKey_display` | 否 | 是否关键工序（"关键工序" / "普通工序"） |
+| `content` | 否 | 富文本描述，支持 HTML 格式 |
 
 ---
 
 ## 七、⑤ 工步数据 `data/step.json`
 
 存放每个工步（step）的详细信息。
+
+> ⚠️ **此文件中不能有 `children` 字段**，子级动作通过 `action.json` 中的 `stepId` 关联。
 
 ```json
 [
@@ -304,19 +325,22 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 
 **关键字段：**
 
-| 字段 | 说明 |
-|------|------|
-| `innerId` | ⚠️ 唯一ID，必须与工艺树一致 |
-| `operationId` | ⚠️ 填写所属工序的 `innerId` |
-| `processId` | ⚠️ 填写所属工艺的 `innerId` |
-| `note` | 简短的注意事项提示 |
-| `content` | 详细操作说明，支持 HTML 富文本 |
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `innerId` | ✅ | 唯一ID，必须与工艺树一致 |
+| `operationId` | ✅ | 填写所属工序的 `innerId` |
+| `processId` | ✅ | 填写所属工艺的 `innerId` |
+| `tabs_top` | ✅ | 固定填 `"group_step_view"` |
+| `tabs_bottom` | ✅ | 固定填 `"group_bottom_step"` |
+| `sortOrder` | ✅ | 排序号，从 0 开始 |
+| `note` | 否 | 简短的注意事项提示 |
+| `content` | 否 | 详细操作说明，支持 HTML 富文本 |
 
 ---
 
 ## 八、⑥ 动作数据 `data/action.json`（可选）
 
-如果工步下还需要更细的操作步骤，可以添加动作单元。结构与工步类似：
+如果工步下还需要更细的操作步骤，可以添加动作单元。
 
 ```json
 [
@@ -329,10 +353,25 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
     "name": "喷涂清洗剂",
     "serialNumber": "01",
     "content": "<p>均匀喷涂清洗剂，用量约50ml。</p>",
+    "tabs_top": "group_step_view",
+    "tabs_bottom": "group_bottom_step",
     "sortOrder": 0
   }
 ]
 ```
+
+**关键字段：**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `innerId` | ✅ | 唯一ID |
+| `stepId` | ✅ | 填写所属工步的 `innerId` |
+| `operationId` | ✅ | 填写所属工序的 `innerId` |
+| `processId` | ✅ | 填写所属工艺的 `innerId` |
+| `tabs_top` | ✅ | 固定填 `"group_step_view"` |
+| `tabs_bottom` | ✅ | 固定填 `"group_bottom_step"` |
+| `sortOrder` | ✅ | 排序号，从 0 开始 |
+| `content` | 否 | 详细动作说明，支持 HTML 富文本 |
 
 **如果没有动作数据，文件内容填 `[]` 即可。**
 
@@ -377,12 +416,14 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 **资源类型对照：**
 
 | `type` 值 | 说明 | 常见格式 |
-|-----------|------|---------|
-| `image` | 图片 | `.png` `.jpg` `.jpeg` `.gif` `.webp` |
-| `video` | 视频 | `.mp4` `.webm` `.mov` |
-| `audio` | 音频 | `.mp3` `.wav` `.aac` |
-| `document` | 文档 | `.pdf` `.doc` `.docx` `.xls` `.xlsx` |
-| `cad` | CAD图纸（HTML格式） | `.html` `.htm` |
+|-----------|------|---------| 
+| `image` | 图片 | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp` `.svg` |
+| `video` | 视频 | `.mp4` `.webm` `.mov` `.avi` `.mkv` |
+| `audio` | 音频 | `.mp3` `.wav` `.aac` `.ogg` `.m4a` |
+| `document` | 文档 | `.pdf` `.doc` `.docx` `.xls` `.xlsx` `.ppt` `.pptx` `.txt` `.wps` |
+| `cad` | CAD图纸（HTML格式查看器） | `.html` `.htm` |
+
+> **提示**：如果 `type` 字段填写不准确或省略，系统会根据文件扩展名自动推断资源类型。
 
 ---
 
@@ -395,16 +436,18 @@ assets/
 ├── images/      ← 图片放这里
 ├── videos/      ← 视频放这里
 ├── audios/      ← 音频放这里
-└── documents/   ← PDF和文档放这里
+├── documents/   ← PDF和文档放这里
+└── cad/         ← CAD图纸（HTML格式）放这里
 ```
 
-文件名**不要包含中文和特殊字符**，建议用英文+数字+下划线。
+- 文件名**不要包含中文和特殊字符**，建议用英文+数字+下划线
+- `assets/icons/` 目录下的文件（图标SVG）在导入时会被**自动跳过**，不会占用存储空间
 
 ---
 
 ## 十一、关于 `content` 富文本字段
 
-`operation.json`、`step.json`、`action.json` 中的 `content` 字段用于展示详细操作说明，支持 HTML 格式。
+`process.json`、`operation.json`、`step.json`、`action.json` 中的 `content` 字段用于展示详细操作说明，支持 HTML 格式。
 
 **常用 HTML 标签：**
 
@@ -426,6 +469,9 @@ assets/
 
 <!-- 粗体强调 -->
 <p><strong>重要提示：</strong>操作前必须断电。</p>
+
+<!-- 标题 -->
+<h3>工艺总览</h3>
 ```
 
 如果没有特别的排版需求，简单的文字内容也可以直接用：
@@ -441,15 +487,19 @@ assets/
 
 - [ ] `manifest.json` 中 `version` 填写了 `"6.0"` 或以上
 - [ ] 所有节点的 `innerId` 在整个包内全局唯一，没有重复
+- [ ] `process_tree.json` 中每个节点都有 `tabs_top` 和 `tabs_bottom` 字段
+- [ ] `process.json`、`operation.json`、`step.json`、`action.json` 中**没有 `children` 字段**
 - [ ] `operation.json` 中每条记录的 `processId` 与工艺树中对应工艺的 `innerId` 一致
-- [ ] `step.json` 中每条记录的 `operationId` 与工艺树中对应工序的 `innerId` 一致
+- [ ] `step.json` 中每条记录的 `operationId` 与对应工序的 `innerId` 一致
+- [ ] `action.json` 中每条记录的 `stepId` 与对应工步的 `innerId` 一致
+- [ ] 四张关系表（process/operation/step/action）中都包含 `tabs_top` 和 `tabs_bottom` 字段
 - [ ] `attachment.json` 中每个 `path` 对应的文件真实存在于 `assets/` 目录下
 - [ ] 所有 JSON 文件格式正确（可用在线工具如 [jsonlint.com](https://jsonlint.com) 验证）
 - [ ] 整体打包为 ZIP 后将扩展名改为 `.srd`
 
 ---
 
-## 十三、快速参考：`innerId` 关联关系
+## 十三、快速参考：`innerId` 关联关系图
 
 ```
 process_tree.json                  关系表数据文件
@@ -457,14 +507,106 @@ process_tree.json                  关系表数据文件
 proc_001 (process)    ←→  process.json  中 innerId = "proc_001"
   │
   └── op_001 (operation) ←→  operation.json 中 innerId = "op_001"
-                                               processId = "proc_001"
+                                              processId = "proc_001"
         │
         └── step_001 (step) ←→  step.json 中 innerId = "step_001"
-                                              operationId = "op_001"
-                                              processId = "proc_001"
+                                             operationId = "op_001"
+                                             processId = "proc_001"
+                │
+                └── act_001 (action) ←→  action.json 中 innerId = "act_001"
+                                                         stepId = "step_001"
+                                                         operationId = "op_001"
+                                                         processId = "proc_001"
 ```
 
-**一句话记住：树里的 `innerId` = 数据表里的 `innerId`，子节点数据表里还要填父节点的 `innerId` 作为外键。**
+**一句话记住：树里的 `innerId` = 数据表里的 `innerId`，子节点数据表里还要填所有上级父节点的 `innerId` 作为外键。**
+
+---
+
+## 十四、为什么关系表也需要 `tabs_top` / `tabs_bottom`？
+
+你可能会疑问：工艺树骨架 (`process_tree.json`) 里已经有了 `tabs_top`/`tabs_bottom`，为什么工序/工步等关系表里也要填一遍？
+
+**因为用户不只会点树节点。** 当用户在工艺视图的"工序列表"表格中直接点击某一行工序时，该行数据来自 `t_operation` 数据库查询结果，系统需要依靠该记录自身的 `tabs_top` 字段来判断应该渲染哪组 UI 视图。如果关系表中缺少这两个字段，点击列表中的工序将导致 UI 区域变空白，什么也不显示。
+
+**结论**：`tabs_top` / `tabs_bottom` 是每个业务实体自带的"UI路由声明"，无论该实体从哪个入口被访问（树节点点击/列表点击/搜索结果点击），系统都能正确切换视图。请务必在四张关系表中一并提供这两个字段。
+
+---
+
+## 十五、数据包加密打包规范（后端开发参考）
+
+V6 引入了可选的 **AES-256-CBC** 加密机制，用于防止 U 盘传输过程中工艺数据被直接解压查看。
+
+### 15.1 加密文件格式
+
+加密后的文件**不含任何魔数头部**，直接按如下两段式结构组织：
+
+```
+[0~15字节]   IV（16字节随机数）
+[16字节~结尾] AES-256-CBC 密文（原始ZIP数据）
+```
+
+> ⚠️ 注意：与部分旧版设计文档描述不同，当前客户端实现（`utils/crypto.uts`）**不含 SRDE 魔数或 SHA-256 校验头**，只有 IV + 密文两段结构。请严格按本文档实现。
+
+### 15.2 加密密钥
+
+```
+MPM_OFFLINE_2026_SECURE_KEY_256B
+```
+（取前32字节作为AES-256密钥，加解密双端必须完全一致）
+
+### 15.3 Java 加密实现
+
+```java
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.io.ByteArrayOutputStream;
+
+public class SrdEncryptor {
+    private static final String PRESET_KEY = "MPM_OFFLINE_2026_SECURE_KEY_256B";
+
+    public static byte[] encryptZip(byte[] zipData) throws Exception {
+        // 1. 随机生成 16 字节 IV
+        byte[] iv = new byte[16];
+        new SecureRandom().nextBytes(iv);
+
+        // 2. 构建 AES-256 密钥（取前 32 字节）
+        byte[] keyBytes = PRESET_KEY.substring(0, 32)
+                .getBytes(StandardCharsets.UTF_8);
+        SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+        // 3. AES/CBC/PKCS5Padding 加密
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+        byte[] encryptedData = cipher.doFinal(zipData);
+
+        // 4. 组装：IV（16字节）+ 密文
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.write(iv);
+        out.write(encryptedData);
+        return out.toByteArray();
+    }
+}
+```
+
+### 15.4 集成方式
+
+```java
+// 正常构建 ZIP
+byte[] zipArray = buildZip();
+
+// 可选：加密封装
+byte[] srdArray = SrdEncryptor.encryptZip(zipArray);
+
+// 写入文件
+Files.write(Paths.get("V8发动机总装工艺包.srd"), srdArray);
+```
+
+> **兼容说明**：加密是在打出原始 ZIP 后追加的"外壳"，不影响包内的任何 JSON 结构和文件路径。客户端解密失败时会自动回退按未加密 ZIP 处理，因此**不加密的 ZIP 改扩展名为 `.srd` 同样可以正常导入**。
 
 ---
 
@@ -489,97 +631,10 @@ V8发动机工艺包/
     ├── images/
     │   ├── engine_exploded.png
     │   └── block_clean.jpg
-    └── videos/
-        └── clean_process.mp4
+    ├── videos/
+    │   └── clean_process.mp4
+    └── documents/
+        └── assembly_spec.pdf
 ```
 
 将 `V8发动机工艺包/` 整个文件夹压缩为 ZIP，然后将扩展名从 `.zip` 改为 `.srd`，交付即可。
-
----
-
-## 十四、数据包加密打包规范
-
-为了防止现场 U 盘传输过程中工艺数据泄露（第三方直接解压查看内容），V6.2 起引入了 **SRDE 数据包加密机制**。
-数据准备后端必须在生成 `.srd` 之前对其进行 AES-256 加密。
-
-加密对业务结构无任何影响，仅仅是对最终落盘的 ZIP 字节流进行加密封装。
-
-### 14.1 加密流程
-
-在后端的打包服务（Java）中，按照如下步骤处理：
-1. 生成 JSON 数据并打好 ZIP（原逻辑不变）
-2. 计算原 ZIP 的 SHA-256 哈希值
-3. 随机生成 16 字节 IV
-4. 使用预置密钥进行 `AES/CBC/PKCS5Padding` 加密
-5. 按照 `[魔数4字节] + [版本1字节] + [标志1字节] + [保留2字节] + [IV 16字节] + [SHA-256 32字节] + [加密数据]` 的格式组装最终文件
-6. 生成最终的 `.srd` 交付文件
-
-### 14.2 核心 Java 实现类
-
-可直接复制以下工具类到您的工程中使用，无需添加额外依赖包（`javax.crypto` 为 JDK 原生类）：
-
-```java
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-
-public class SrdEncryptor {
-    // ⚠️ 此密钥必须与移动端彻底一致，请勿随意修改
-    private static final String PRESET_KEY = "MPM_OFFLINE_2026_SECURE_KEY_256B"; 
-    // 魔数 SRDE
-    private static final byte[] MAGIC = {0x53, 0x52, 0x44, 0x45};
-    private static final byte FORMAT_VERSION = 0x01;
-
-    public static byte[] encryptZip(byte[] zipData) throws Exception {
-        // 1. 原数据 SHA-256
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-        byte[] hash = sha256.digest(zipData);
-
-        // 2. 随机 IV
-        byte[] iv = new byte[16];
-        new SecureRandom().nextBytes(iv);
-
-        // 3. 构建 AES 密钥
-        byte[] keyBytes = PRESET_KEY.getBytes(StandardCharsets.UTF_8);
-        SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "AES");
-        IvParameterSpec ivSpec = new IvParameterSpec(iv);
-
-        // 4. AES-256-CBC 加密
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
-        byte[] encryptedData = cipher.doFinal(zipData);
-
-        // 5. 组装 SRDE 头部 (共 56 字节) 和主体
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        out.write(MAGIC);
-        out.write(FORMAT_VERSION);
-        out.write(0x00);
-        out.write(new byte[]{0x00, 0x00});
-        out.write(iv);
-        out.write(hash);
-        out.write(encryptedData);
-
-        return out.toByteArray();
-    }
-}
-```
-
-### 14.3 集成示例
-
-```java
-// 您原本组装出 zipArray 的地方：
-byte[] zipArray = buildZip(); 
-
-// 现在加上加密：
-byte[] srdArray = SrdEncryptor.encryptZip(zipArray);
-
-// 将 srdArray 写入文件，交给前场
-Files.write(Paths.get("V8发动机总装工艺包.srd"), srdArray);
-```
-
-> **兼容提示**：即使使用了加密，原来验证 `manifest.json` 或者梳理目录结构的过程是完全不用改变的。加密是在打出最后的 zip 文件后再进行的一层“外套”包装！
-

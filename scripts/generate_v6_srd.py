@@ -23,7 +23,11 @@ def create_v6_srd(output_path):
             "tab": "layout/tab.json",
             "components": "layout/components.json",
             "icons": "layout/icons.json",
-            "attachment": "data/attachment.json"
+            "attachment": "data/attachment.json",
+            "process": "data/process.json",
+            "operation": "data/operation.json",
+            "step": "data/step.json",
+            "action": "data/action.json"
         }
     }
 

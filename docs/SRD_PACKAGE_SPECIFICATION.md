@@ -1,7 +1,7 @@
 # SRD 数据包规范说明 (V6)
 
-> **文档版本**: 6.2  
-> **最后更新**: 2026-04-22  
+> **文档版本**: 6.3  
+> **最后更新**: 2026-04-24  
 > **适用对象**: MPM 离线工艺预览系统 — 数据包制作与集成开发人员
 
 ---
@@ -29,7 +29,14 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 
 ### 1.2 加密支持
 
-数据包支持可选的加密封装。导入时系统会先尝试使用 `decryptPackage()` 解密，失败则回退按未加密 ZIP 处理。
+数据包支持可选的 **AES-256-CBC** 加密封装。加密文件结构为：前 16 字节为 IV，后续为密文。导入时系统会先尝试使用 `decryptPackage()` 解密，失败则回退按未加密 ZIP 处理。
+
+各平台的加密实现（`utils/crypto.uts`）：
+- **Android**: 使用 `javax.crypto.Cipher` (AES/CBC/PKCS5Padding)
+- **HarmonyOS**: 使用 `@ohos.security.cryptoFramework` (AES256|CBC|PKCS7)
+- **Web**: 待实现（当前回退为明文处理）
+
+完整性校验使用 MD5 算法（通过 `verifyChecksum()` 函数），各平台使用原生 API 实现。
 
 ---
 
@@ -75,7 +82,7 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 | `description` | string | 否 | 包的简要描述 |
 | `exportTime` | string | 否 | 导出时间（ISO 8601 格式） |
 | `source` | string | 否 | 数据来源标识 |
-| `checksum` | string | 否 | 校验和 |
+| `checksum` | string | 否 | 校验和（MD5） |
 | `files` | ManifestFileRefs | ✅ | 文件路径映射表 |
 
 ### 3.2 files 对象字段 (ManifestFileRefs)
@@ -95,20 +102,51 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
 
 > **注意**：`process`/`operation`/`step`/`action` 字段为 V6 新增。若未显式声明，系统自动从 `data/` 固定路径加载。
 
-### 3.3 示例
+### 3.3 对应类型定义 (`types/data-package.uts`)
+
+```typescript
+export type PackageManifest = {
+    name: string
+    version: string
+    description: string | null
+    exportTime: string | null
+    source: string | null
+    files: ManifestFileRefs
+    checksum: string | null
+}
+
+export type ManifestFileRefs = {
+    tabs: string
+    tab: string
+    components: string
+    icons: string | null
+    attachment: string
+    assets: string | null
+    process: string | null
+    operation: string | null
+    step: string | null
+    action: string | null
+}
+```
+
+### 3.4 示例
 
 ```json
 {
-  "name": "V6 标准测试数据包",
+  "name": "发动机总装工艺数据包",
   "version": "6.0",
-  "description": "符合 SRD V6 规范的标准测试数据包",
-  "exportTime": "2026-04-21T20:00:00+08:00",
+  "description": "符合 SRD V6 规范的标准数据包",
+  "exportTime": "2026-04-24T09:00:00+08:00",
   "files": {
     "tabs": "layout/tabs.json",
     "tab": "layout/tab.json",
     "components": "layout/components.json",
     "icons": "layout/icons.json",
-    "attachment": "data/attachment.json"
+    "attachment": "data/attachment.json",
+    "process": "data/process.json",
+    "operation": "data/operation.json",
+    "step": "data/step.json",
+    "action": "data/action.json"
   }
 }
 ```
@@ -153,9 +191,28 @@ sortOrder              →  sort_order
 | `code` | string | 节点编号 |
 | `name` | string | 节点名称 |
 | `type` | string | 层级类型 (`process` / `operation` / `step` / `action-unit`) |
+| `targetClassId` | string | 类型标识（兼容字段，用于推导 `type`）|
+| `classId` | string | 类型 ID |
 | `tabs_top` | string | 选中时上方显示的 Tab 分组 ID |
 | `tabs_bottom` | string | 选中时下方显示的 Tab 分组 ID |
 | `children` | array | 包含子节点的递归数组 |
+
+> **类型推导**：若 `type` 字段缺失，系统通过 `targetClassId` 自动映射：`Process` → `process`、`Operation` → `operation`、`Step` → `step`、`ActionUnit` → `action-unit`。
+
+#### 骨架树节点对应的类型定义 (`types/process.uts`)
+
+```typescript
+export type ProcessTreeNode = {
+    innerId: string
+    code: string
+    name: string
+    targetClassId: string
+    classId: string
+    tabs_top: string
+    tabs_bottom: string
+    children: ProcessTreeNode[]
+}
+```
 
 #### 骨架树示例
 
@@ -229,6 +286,8 @@ sortOrder              →  sort_order
 | `partStateName` / `partFullversionNo` | `part_state_name` / `part_full_version_no` | 部件状态/版本 |
 | `tabs_top` / `tabs_bottom` | `tabs_top` / `tabs_bottom` | UI 关联分组 |
 | `sortOrder` | `sort_order` | 排序序号 |
+
+> 数据库还自动附加 `extra_json`、`created_at`、`updated_at` 三列。
 
 ### 4.4 `data/operation.json` (工序表 → `t_operation`)
 
@@ -310,12 +369,30 @@ sortOrder              →  sort_order
 | `image` | 图片 | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp` `.svg` |
 | `video` | 视频 | `.mp4` `.webm` `.mov` `.avi` `.mkv` `.m4v` |
 | `audio` | 音频 | `.mp3` `.wav` `.aac` `.ogg` `.m4a` `.flac` |
-| `document` | 文档 | `.pdf` `.doc` `.docx` `.xls` `.xlsx` `.ppt` `.pptx` `.txt` `.wps` 等 |
+| `document` | 文档 | `.pdf` `.doc` `.docx` `.xls` `.xlsx` `.ppt` `.pptx` `.txt` `.wps` `.wpt` `.et` `.ett` `.dps` `.dpt` |
 | `cad` | CAD 图纸 | `.html` `.htm`（内嵌 3D 查看器） |
 
-> **类型推断**：若 `type` 字段缺失，系统通过 `inferResourceType()` 根据文件扩展名自动推断。
+> **类型推断**：若 `type` 字段缺失，系统通过 `inferResourceType()` 根据文件扩展名自动推断（定义于 `types/resource.uts`）。
 
-### 5.4 示例
+### 5.4 对应类型定义 (`types/resource.uts`)
+
+```typescript
+export type ResourceItem = {
+    id: string
+    type: string
+    name: string
+    path: string
+    originalPath: string    // 原始包内路径
+    thumbnail: string
+    duration: number
+    size: number
+    description: string
+    nodeId: string
+    sortOrder: number
+}
+```
+
+### 5.5 示例
 
 ```json
 [
@@ -323,9 +400,9 @@ sortOrder              →  sort_order
     "id": "res_proc_1_img",
     "nodeId": "proc_1",
     "type": "image",
-    "name": "V8发动机爆炸图",
+    "name": "发动机爆炸图",
     "path": "assets/images/engine_exploded.png",
-    "description": "V8发动机总装爆炸视图"
+    "description": "发动机总装爆炸视图"
   },
   {
     "id": "res_op1_img",
@@ -354,7 +431,7 @@ sortOrder              →  sort_order
 | `description` | string | 否 | 描述信息 |
 | `sort_order` | number | ✅ | 排序序号 |
 
-### 6.2 完整分组清单（当前标准数据包）
+### 6.2 标准分组清单
 
 | sort_order | id | name | 位置 | 说明 |
 |------------|------|------|------|------|
@@ -403,7 +480,7 @@ sortOrder              →  sort_order
 | `sort_order` | number | ✅ | 排序序号 |
 | `visible_condition` | string | 否 | 可见条件表达式 |
 
-### 7.2 完整页签清单（当前标准数据包）
+### 7.2 标准页签清单
 
 #### 左侧面板（group_process_mgmt）
 
@@ -482,10 +559,10 @@ sortOrder              →  sort_order
 
 #### 获取数据规则（根据组件 type 自动获取）
 
-目前系统废弃了 `dataSource` 配置字段。中间区域的组件会根据自身的 `type` 自动执行对应的数据库精确查询：
+系统废弃了旧版 `dataSource` 配置字段。中间区域的组件会根据自身的 `type` 自动执行对应的数据库精确查询：
 
 | type | 查询模式 |
-|------|---------|
+|------|---------| 
 | `tableTree` | 查询工艺树骨架表全量数据 |
 | `infoView`, `richText` | 根据当前选中节点 ID 查其自身记录表 |
 | `table`, `list` | 根据当前节点 ID 查其子级记录表 |
@@ -515,7 +592,7 @@ sortOrder              →  sort_order
 | `width` | number | 列宽（rpx）。-1 表示弹性填充（flex: 1） |
 | `cellType` | string | 单元格渲染类型。可选值：`"richtext"` |
 
-### 8.4 完整组件清单（当前标准数据包）
+### 8.4 标准组件清单
 
 | id | tab_id | type | title |
 |----|--------|------|-------|
@@ -570,7 +647,7 @@ sortOrder              →  sort_order
 
 > **路径引用规则**：`attachment.json` 中的 `path` 字段应使用相对于包根目录的路径，如 `"assets/images/engine_exploded.png"`。
 >
-> **icons 排除规则**：`assets/icons/` 目录下的文件在导入时被显式排除，不会复制到本地存储。
+> **icons 排除规则**：`assets/icons/` 目录下的文件在导入时被显式排除（由 `isAssetFile()` 函数处理），不会复制到本地存储。
 
 ---
 
@@ -602,6 +679,15 @@ sortOrder              →  sort_order
 | `t_import_package` | `id` (AUTOINCREMENT) | 导入记录 |
 | `t_assets` | `id` | 静态资源二进制/Base64 |
 | `t_icon_config` | `node_type` | 图标配置映射 |
+
+### 11.4 数据库平台实现差异
+
+| 方面 | Android | HarmonyOS | Web |
+|------|---------|-----------|-----|
+| 引擎 | SQLiteDatabase | relationalStore.RdbStore | IndexedDB (IDBDatabase) |
+| 数据库名 | `mpm_offline.db` | `mpm_offline.db` | `mpm_offline.db` (v8) |
+| 建表方式 | `execSQL()` 同步 | `executeSql()` 顺序异步链 | `onupgradeneeded` 事件 |
+| 事务控制 | `beginTransaction()` / `setTransactionSuccessful()` / `endTransaction()` | `BEGIN TRANSACTION` / `COMMIT` / `ROLLBACK` SQL | 不支持（自动隔离） |
 
 ---
 
@@ -649,7 +735,7 @@ manifest.json
 ```
 1. 选择 .srd 文件（通过 uni.chooseFile 或 HTML Input）
 2. 读取为 ArrayBuffer
-3. 尝试 decryptPackage() 解密，失败则视为明文 ZIP
+3. 尝试 decryptPackage() 解密（AES-256-CBC），失败则视为明文 ZIP
 4. 解压 ZIP 读取 manifest.json → 版本校验（必须 ≥ 6.0）
 5. 解析 layout/ 下的 UI 配置 (tabs.json, tab.json, components.json, icons.json)
 6. 解析 data/ 下的业务表 (process.json, operation.json, step.json, action.json)
@@ -692,18 +778,47 @@ manifest.json
 |------|------|
 | `services/dataPackage.uts` | 数据包选择、验证、解压、导入全流程 |
 | `services/database.uts` | 数据库初始化、SQL 执行、事务控制、Web IndexedDB 封装 |
-| `services/processService.uts` | 工艺数据查询（getProcessList/Detail、getOperationsByProcessId、**queryNodeById**、**queryChildrenByParentId** 等） |
+| `services/processService.uts` | 工艺数据查询（getProcessList/Detail、getOperationsByProcessId、getStepsByOperationId、getActionsByStepId、**queryNodeById**、**queryChildrenByParentId** 等） |
 | `services/resourceService.uts` | 资源存储、检索、Blob 缓存管理 |
 | `services/fileService.uts` | 文件系统操作辅助 |
+| `utils/crypto.uts` | AES-256-CBC 加解密、MD5 校验（三平台原生实现） |
 
 ### 14.2 类型定义清单
 
 | 文件 | 定义内容 |
-|------|---------|
+|------|---------| 
 | `types/data-package.uts` | PackageManifest, ManifestFileRefs, TabGroup, TabConfig, ComponentConfig, ImportProgress, ImportResult, PackageInfo |
-| `types/process.uts` | ProcessTreeNode, ProcessEntity, OperationEntity, StepEntity, ActionEntity, NodeResource |
-| `types/resource.uts` | ResourceItem, PreviewState, NodeResources, 工具函数 |
+| `types/process.uts` | ProcessTreeNode, ProcessEntity, OperationEntity, StepEntity, ActionEntity, NodeResource, NodeLevel 常量 |
+| `types/resource.uts` | ResourceItem, PreviewState, NodeResources, inferResourceType, getResourceTypeIcon/Label, formatDuration/FileSize |
 | `types/common.uts` | ApiResponse, PageParams, PageResult, FileInfo |
+
+### 14.3 页面路由
+
+| 页面路径 | 标题 | 说明 |
+|----------|------|------|
+| `pages/index/index` | (自定义导航栏) | 主工艺预览页面，包含左侧树、中间视图/详情区、右侧资源预览 |
+| `pages/process/list` | 工艺列表 | 工艺搜索与列表展示 |
+| `pages/import/import` | 数据导入 | 数据包选择、验证、导入操作 |
+| `pages/video/player` | 视频播放 | 全屏视频播放器 |
+| `pages/settings/settings` | 设置 | 应用设置 |
+
+### 14.4 自定义组件清单
+
+| 组件目录 | 说明 |
+|----------|------|
+| `components/ux-table/` | 数据表格（支持树形展开、富文本单元格） |
+| `components/ux-tabs/` | Tab 选项卡容器 |
+| `components/ux-tab-pane/` | Tab 面板 |
+| `components/ux-info-view/` | 键值对信息视图（多列布局） |
+| `components/ux-richtext/` | 富文本渲染组件 |
+| `components/ux-breadcrumb/` | 面包屑导航 |
+| `components/ux-collapse/` | 折叠面板容器 |
+| `components/ux-collapse-item/` | 折叠面板项 |
+| `components/ux-tag/` | 标签组件 |
+| `components/resource-list/` | 资源缩略图列表 |
+| `components/resource-preview/` | 资源预览组件（图片/视频/音频/文档/CAD） |
+| `components/process-card/` | 工艺卡片组件 |
+| `components/process-step/` | 工艺步骤组件 |
 
 ---
 
@@ -723,7 +838,9 @@ V6.2 废弃了旧版的 `dataSource` 配置字段，改为**由组件 `type` 自
       → 遍历 Group 下所有组件
       → comp.type == 'tableTree'
           → loadTableTreeFromMeta()  // 从 meta_process_tree 读骨架
+          → enrichNodeForDisplay()   // 为每个节点补充显示字段（图标等）
           → 填充左侧工艺树
+  → 自动选中第一个节点（或通过 targetNodeId 定位）
 ```
 
 ### 15.3 节点选中阶段（点击树节点）
@@ -748,18 +865,19 @@ V6.2 废弃了旧版的 `dataSource` 配置字段，改为**由组件 `type` 自
   → loadNodeResources(nodeId)
       → 通过 innerId 查 t_resources 表
       → 构建 ResourceItem[] 数组给右侧资源区域
+  → 更新面包屑导航（工艺信息/部件信息/状态标签）
 ```
 
 ### 15.4 精确查询函数说明
 
-`processService.uts` 中新增以下两个通用查询函数，供联动机制使用：
+`processService.uts` 中提供以下通用查询函数，供联动机制使用：
 
 #### `queryNodeById(nodeType, nodeId)`
 
 | 平台 | 实现 |
 |------|------|
 | Native (Android/HarmonyOS) | `SELECT * FROM t_{type} WHERE inner_id = ?` → `mapRelationalRow()` 转 camelCase |
-| Web | IndexedDB `webGetByKey(tableName, nodeId)` |
+| Web | 动态 import `database.uts` → `webGetByKey(tableName, nodeId)` |
 
 支持的 `nodeType` 值：`process`、`operation`、`step`、`action`（大小写不敏感）
 
@@ -772,7 +890,19 @@ V6.2 废弃了旧版的 `dataSource` 配置字段，改为**由组件 `type` 自
 | `step` | `t_action` | `step_id = ?` |
 
 Native 端：`SELECT * FROM {table} WHERE {fk} = ? ORDER BY sort_order ASC`  
-Web 端：`webGetByIndex(table, fkField, parentId)` + 内存排序
+Web 端：动态 import → `webGetByIndex(table, fkField, parentId)` + 内存按 `sortOrder` 排序
+
+#### 其他专用查询函数
+
+| 函数名 | 说明 |
+|--------|------|
+| `getProcessList(params)` | 分页查询工艺列表（支持关键字搜索） |
+| `getProcessDetail(id)` | 按 ID 查询单条工艺完整记录 |
+| `getOperationsByProcessId(processId)` | 按工艺 ID 查工序列表 |
+| `getStepsByOperationId(operationId)` | 按工序 ID 查工步列表 |
+| `getActionsByStepId(stepId)` | 按工步 ID 查动作列表 |
+| `searchProcess(keyword)` | 搜索工艺（限制返回 20 条） |
+| `clearAllProcesses()` | 清空所有四级业务表 |
 
 ### 15.5 richText 内容字段约定
 
@@ -791,13 +921,21 @@ Web 端：`webGetByIndex(table, fkField, parentId)` + 内存排序
   → 构建 ResourceItem[] 数组
   → 传递给 resource-list 组件展示缩略图列表
   → 用户点击资源项 → resource-preview 组件加载预览
+  → 支持全屏预览模式：
+      → 图片：缩放/旋转/重置工具栏
+      → 视频/音频/文档/CAD：使用原组件预览
+      → 左右切换资源导航
 ```
+
+### 15.7 节点导航
+
+主页面提供"上一步/下一步"导航按钮，通过 `flattenTree()` 将树形结构扁平化为有序列表，支持在所有节点间顺序导航。
 
 ---
 
 ## 16. 数据包生成工具
 
-项目提供 Python 脚本 `scripts/generate_v6_srd.py` 用于生成符合 V6 规范的测试数据包。
+项目提供 Python 脚本 `scripts/generate_v6_srd.py` 用于生成符合 V6 规范的数据包。
 
 使用方法：
 
@@ -806,6 +944,8 @@ python scripts/generate_v6_srd.py
 ```
 
 生成内容包括：manifest.json、工艺树骨架、四级关系表、附件清单、UI 布局全套配置及虚拟资源文件。
+
+同时提供 `scripts/clean_datasource.py` 脚本用于清理旧版数据包中的 `dataSource` 字段。
 
 ---
 
@@ -819,5 +959,6 @@ python scripts/generate_v6_srd.py
 | V5.2 | 引入 `data/descriptions.json` |
 | V6 | **[重大重构]** 移除嵌套工艺树设计，改为 4 张平面关系表 + 独立骨架树；弃用 descriptions.json，富文本合入对应实体的 `content` 字段；移除遗留 V4 及之前的残存兼容；全面升级为 SQLite/RDB/IndexedDB 平面查询架构；数据包 JSON 统一使用 camelCase 字段名；新增 `group_operation_view` 替代旧的 `group_procedure_view`；ManifestFileRefs 新增 process/operation/step/action 可选路径字段 |
 | V6.2 | **[架构优化]** 废弃 `dataSource` 配置字段；UI 组件改为按自身 `type` 自动推导查询模式（`infoView`/`richText` 按主键查自身，`table`/`list` 按外键查子节点），不再依赖内存全表缓存；`processService.uts` 新增 `queryNodeById` 和 `queryChildrenByParentId` 通用查询函数；`richText` 组件统一从 `content` 字段取值 |
+| V6.3 | **[功能完善]** 新增 AES-256-CBC 加密支持（三平台原生实现）与 MD5 完整性校验；补充 `targetClassId` → `type` 自动映射机制；完善资源全屏预览（图片变换工具栏、左右切换）；新增面包屑导航与节点上下步导航；新增状态标签映射；processService 新增 `getStepsByOperationId`、`getActionsByStepId` 专用查询函数 |
 
 **注意**：从 V6 版本起，系统不再支持 V5 及更早版本的兼容模式。导入时若 `manifest.version < "6.0"` 将直接报错拒绝。
