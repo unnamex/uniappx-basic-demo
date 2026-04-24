@@ -1469,16 +1469,22 @@ function extractAndParseWeb(
 				}
 				for (const row of operationRecords) {
 					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					row['process_id'] = row['process_id'] ?? row['processId'] ?? ''
 					if ((row['inner_id'] as string) === '') continue;
 					try { await webPutData('t_operation', row) } catch(e) { console.error('Failed to put t_operation:', e) }
 				}
 				for (const row of stepRecords) {
 					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					row['operation_id'] = row['operation_id'] ?? row['operationId'] ?? ''
+					row['process_id'] = row['process_id'] ?? row['processId'] ?? ''
 					if ((row['inner_id'] as string) === '') continue;
 					try { await webPutData('t_step', row) } catch(e) { console.error('Failed to put t_step:', e) }
 				}
 				for (const row of actionRecords) {
 					row['inner_id'] = row['inner_id'] ?? row['innerId'] ?? ''
+					row['step_id'] = row['step_id'] ?? row['stepId'] ?? ''
+					row['operation_id'] = row['operation_id'] ?? row['operationId'] ?? ''
+					row['process_id'] = row['process_id'] ?? row['processId'] ?? ''
 					if ((row['inner_id'] as string) === '') continue;
 					try { await webPutData('t_action', row) } catch(e) { console.error('Failed to put t_action:', e) }
 				}

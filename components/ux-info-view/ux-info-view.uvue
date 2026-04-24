@@ -1,10 +1,15 @@
 <template>
 	<view class="ux-info-view">
-		<view v-for="(row, rowIdx) in fieldRows" :key="rowIdx" class="info-view-row">
-			<view v-for="(field, colIdx) in row" :key="colIdx" class="info-view-cell"
-				:style="{ width: cellWidth }">
-				<text class="info-view-label">{{ field['label'] ?? '' }}：</text>
-				<text class="info-view-value">{{ getFieldValue(field) }}</text>
+		<view v-for="(row, rowIdx) in intelligentRows" :key="rowIdx" class="info-view-row">
+			<view v-for="(field, colIdx) in row.fields" :key="colIdx" 
+				class="info-view-cell"
+				:class="{ 'info-view-cell-rich': row.isFullWidth }"
+				:style="{ width: row.isFullWidth ? '100%' : cellWidth }">
+				<text class="info-view-label" :class="{ 'info-view-label-rich': row.isFullWidth }">{{ field['label'] ?? '' }}：</text>
+				<view v-if="field['type'] == 'richText'" class="info-view-value-rich">
+					<ux-richtext :content="getFieldValue(field)"></ux-richtext>
+				</view>
+				<text v-else class="info-view-value">{{ getFieldValue(field) }}</text>
 			</view>
 		</view>
 		<!-- 无字段时的占位提示 -->
@@ -16,6 +21,11 @@
 
 <script lang="uts">
 	import { PropType } from 'vue'
+
+	type InfoViewRow = {
+		isFullWidth: boolean;
+		fields: UTSJSONObject[];
+	}
 
 	export default {
 		name: "ux-info-view",
@@ -37,20 +47,43 @@
 			}
 		},
 		computed: {
-			/** 将fields按columns分组为二维数组 */
-			fieldRows(): UTSJSONObject[][] {
-				const rows = [] as UTSJSONObject[][]
+			/** 智能排布的行，遇到富文本自动分作全宽单行 */
+			intelligentRows(): InfoViewRow[] {
+				const rows = [] as InfoViewRow[]
 				const cols = this.columns > 0 ? this.columns : 2
 				let currentRow = [] as UTSJSONObject[]
 				for (let i = 0; i < this.fields.length; i++) {
-					currentRow.push(this.fields[i])
-					if (currentRow.length >= cols) {
-						rows.push(currentRow)
-						currentRow = [] as UTSJSONObject[]
+					const field = this.fields[i]
+					let isRichText = field['type'] == 'richText'
+					
+					if (isRichText) {
+						if (currentRow.length > 0) {
+							rows.push({
+								isFullWidth: false,
+								fields: currentRow
+							} as InfoViewRow)
+							currentRow = [] as UTSJSONObject[]
+						}
+						rows.push({
+							isFullWidth: true,
+							fields: [field]
+						} as InfoViewRow)
+					} else {
+						currentRow.push(field)
+						if (currentRow.length >= cols) {
+							rows.push({
+								isFullWidth: false,
+								fields: currentRow
+							} as InfoViewRow)
+							currentRow = [] as UTSJSONObject[]
+						}
 					}
 				}
 				if (currentRow.length > 0) {
-					rows.push(currentRow)
+					rows.push({
+						isFullWidth: false,
+						fields: currentRow
+					} as InfoViewRow)
 				}
 				return rows
 			},
@@ -104,6 +137,12 @@
 		border-right-style: solid;
 		border-right-color: #F0F2F5;
 	}
+	
+	/* 富文本单元格：纵向排列 */
+	.info-view-cell-rich {
+		flex-direction: column;
+		align-items: flex-start;
+	}
 
 	/* label 不换行，固定宽度收缩 */
 	.info-view-label {
@@ -112,12 +151,23 @@
 		lines: 1;
 		flex-shrink: 0;
 	}
+	
+	/* 富文本的label：下方留白 */
+	.info-view-label-rich {
+		margin-bottom: 8px;
+	}
 
 	/* value 占剩余空间，过长自动折行 */
 	.info-view-value {
 		font-size: 14px;
 		color: #1E293B;
 		flex: 1;
+	}
+	
+	/* 富文本的value：占满宽度 */
+	.info-view-value-rich {
+		width: 100%;
+		flex-direction: column;
 	}
 
 	.info-view-empty {

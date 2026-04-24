@@ -2,7 +2,6 @@
 
 > **文档版本**: 6.3  
 > **最后更新**: 2026-04-24  
-> **适用对象**: 负责制作和维护 SRD 数据包的内容编辑人员及后端开发
 
 ---
 
@@ -77,11 +76,10 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 
 **注意事项：**
 - `version` 必须填 `"6.0"` 或更高，否则系统**拒绝导入**
-- `name` 填你的工艺包名称
-- `files` 中的 `process`/`operation`/`step`/`action` 四个路径**建议显式声明**（如上所示）
+- `name` 填工艺包名称
+- `****files` 中的 `process`/`operation`/`step`/`action` 四个路径**显式声明**（如上所示）****
 
-> **关于数据文件路径：**  
-> `process`、`operation`、`step`、`action`、`process_tree` 这五个字段若省略不写，三端（Android/HarmonyOS/Web）均有 fallback 机制，会自动从固定路径 `data/*.json` 加载。但**强烈建议显式声明**，尤其在鸿蒙端，显式声明可避免模糊匹配到 `files` 中其他含 `process` 字符串的 key，导致路径解析错误。
+
 
 ---
 
@@ -96,7 +94,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
               └── 动作（action-unit）—— 可选
 ```
 
-> ⚠️ **重要**：`process_tree.json` 中的节点**不需要包含业务详情字段**（如 content、版本号等），只需包含以下骨架字段。详细业务信息由对应的 `process.json`、`operation.json` 等关系表提供。
+> ⚠️ **重要**：最新V6版`process_tree.json` 中的节点**可以不包含业务详情字段**（如 content、版本号等），**只需包含以下骨架字段**。详细业务信息由对应的 `process.json`、`operation.json` 等关系表提供。
 
 **格式如下：**
 
@@ -142,17 +140,9 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `type` | ✅ 必填 | 层级类型，只能填 `process` / `operation` / `step` / `action-unit` |
 | `code` | ✅ 必填 | 节点编号（如工艺号、工序号） |
 | `name` | ✅ 必填 | 节点显示名称 |
-| `tabs_top` | ✅ 必填 | 固定填写，见下面的对照表 |
-| `tabs_bottom` | ✅ 必填 | 固定填写，见下面的对照表 |
+| `tabs_top` | ✅ 必填 | **建模获取** |
+| `tabs_bottom` | ✅ 必填 | **建模获取** |
 | `children` | ✅ 必填 | 子节点数组，没有子节点时填 `[]` |
-
-**📌 tabs_top / tabs_bottom 固定对照表（直接复制填写）：**
-
-| 节点类型 | `tabs_top` 填写 | `tabs_bottom` 填写 |
-|---------|---------------|-----------------|
-| `process`（工艺） | `"group_process_view"` | `"group_bottom_proc"` |
-| `operation`（工序） | `"group_operation_view"` | `"group_bottom_op"` |
-| `step`（工步） | `"group_step_view"` | `"group_bottom_step"` |
 
 ---
 
@@ -172,8 +162,8 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `innerId` | ✅ | 全局唯一ID，必须与工艺树一致 |
 | `code` | ✅ | 工艺编号 |
 | `name` | ✅ | 工艺名称 |
-| `tabs_top` | ✅ | 固定填 `"group_process_view"` |
-| `tabs_bottom` | ✅ | 固定填 `"group_bottom_proc"` |
+| `tabs_top` | ✅ | 建模获取 |
+| `tabs_bottom` | ✅ | 建模获取 |
 | `sortOrder` | ✅ | 排序号，从 0 开始 |
 | `classId` | 否 | 工艺类型 ID |
 | `classId_display` | 否 | 工艺类型显示名（如"装配工艺"） |
@@ -289,10 +279,10 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 |------|------|------|
 | `innerId` | ✅ | 唯一ID，必须与工艺树一致 |
 | `processId` | ✅ | 填写所属工艺的 `innerId` |
-| `tabs_top` | ✅ | 固定填 `"group_operation_view"` |
-| `tabs_bottom` | ✅ | 固定填 `"group_bottom_op"` |
+| `tabs_top` | ✅ | **建模获取** |
+| `tabs_bottom` | ✅ | **建模获取** |
 | `sortOrder` | ✅ | 排序号，从 0 开始 |
-| `serialNumber` | 否 | 工序番号（如 "010"、"020"） |
+| `serialNumber` | 否 | 工序番号（如 "10"、"20"） |
 | `isKey_display` | 否 | 是否关键工序（"关键工序" / "普通工序"） |
 | `content` | 否 | 富文本描述，支持 HTML 格式 |
 
@@ -330,8 +320,8 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `innerId` | ✅ | 唯一ID，必须与工艺树一致 |
 | `operationId` | ✅ | 填写所属工序的 `innerId` |
 | `processId` | ✅ | 填写所属工艺的 `innerId` |
-| `tabs_top` | ✅ | 固定填 `"group_step_view"` |
-| `tabs_bottom` | ✅ | 固定填 `"group_bottom_step"` |
+| `tabs_top` | ✅ | **建模获取** |
+| `tabs_bottom` | ✅ | **建模获取** |
 | `sortOrder` | ✅ | 排序号，从 0 开始 |
 | `note` | 否 | 简短的注意事项提示 |
 | `content` | 否 | 详细操作说明，支持 HTML 富文本 |
@@ -368,8 +358,8 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 | `stepId` | ✅ | 填写所属工步的 `innerId` |
 | `operationId` | ✅ | 填写所属工序的 `innerId` |
 | `processId` | ✅ | 填写所属工艺的 `innerId` |
-| `tabs_top` | ✅ | 固定填 `"group_step_view"` |
-| `tabs_bottom` | ✅ | 固定填 `"group_bottom_step"` |
+| `tabs_top` | ✅ | **建模获取** |
+| `tabs_bottom` | ✅ | **建模获取** |
 | `sortOrder` | ✅ | 排序号，从 0 开始 |
 | `content` | 否 | 详细动作说明，支持 HTML 富文本 |
 
@@ -416,7 +406,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 **资源类型对照：**
 
 | `type` 值 | 说明 | 常见格式 |
-|-----------|------|---------| 
+|-----------|------|---------|
 | `image` | 图片 | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp` `.svg` |
 | `video` | 视频 | `.mp4` `.webm` `.mov` `.avi` `.mkv` |
 | `audio` | 音频 | `.mp3` `.wav` `.aac` `.ogg` `.m4a` |
@@ -444,6 +434,195 @@ assets/
 - `assets/icons/` 目录下的文件（图标SVG）在导入时会被**自动跳过**，不会占用存储空间
 
 ---
+
+## 十一、layout/ 布局配置文件说明
+
+> **说明**：`layout/` 目录下的四个文件是**页面的 UI 骨架配置**，决定了应用界面展示哪些 Tab 区域、哪些展示组件。已有标准模板，**无特殊情况无需改动**。了解其结构有助于理解 `tabs_top`/`tabs_bottom` 字段的含义，以及当需要新增节点类型时如何协同扩展。
+
+---
+
+### 11.1 `layout/tabs.json` — Tab 分组（区域定义）
+
+这个文件定义了界面上所有的**区域容器**，每个区域有唯一的 ID，会被工艺树节点的 `tabs_top`/`tabs_bottom` 字段所引用。
+
+**界面布局示意：**
+
+```
+┌──────────────┬───────────────────────────────────┐
+│  左侧面板     │   上方视图区  (tabs_top 指向此组)   │
+│              │                                   │
+│   工艺树      ├───────────────────────────────────┤
+│   工艺列表    │   下方详情区  (tabs_bottom 指向此组)│
+└──────────────┴───────────────────────────────────┘
+```
+
+**文件格式：**
+
+```json
+[
+  { "id": "group_process_mgmt",   "name": "工艺管理", "type": "tabGroup", "sort_order": 0 },
+  { "id": "group_process_view",   "name": "工艺视图", "type": "tabGroup", "sort_order": 1 },
+  { "id": "group_operation_view", "name": "工序视图", "type": "tabGroup", "sort_order": 2 },
+  { "id": "group_step_view",      "name": "工步视图", "type": "tabGroup", "sort_order": 3 },
+  { "id": "group_bottom_proc",    "name": "工艺详情", "type": "tabGroup", "sort_order": 4 },
+  { "id": "group_bottom_op",      "name": "工序详情", "type": "tabGroup", "sort_order": 5 },
+  { "id": "group_bottom_step",    "name": "工步详情", "type": "tabGroup", "sort_order": 6 }
+]
+```
+
+**标准分组 ID 与界面位置对照（当前测试包数据）：**
+
+| 分组 ID | 显示名称 | 所在位置 | 哪类节点使用 |
+|---------|---------|---------|-------------|
+| `group_process_mgmt` | 工艺管理 | 左侧面板 | 始终显示 |
+| `group_process_view` | 工艺视图 | 上方视图区 | 工艺节点选中时 |
+| `group_operation_view` | 工序视图 | 上方视图区 | 工序节点选中时 |
+| `group_step_view` | 工步视图 | 上方视图区 | 工步/动作节点选中时 |
+| `group_bottom_proc` | 工艺详情 | 下方详情区 | 工艺节点选中时 |
+| `group_bottom_op` | 工序详情 | 下方详情区 | 工序节点选中时 |
+| `group_bottom_step` | 工步详情 | 下方详情区 | 工步/动作节点选中时 |
+
+> 这就是为什么工艺树节点要填 `tabs_top`/`tabs_bottom`：点击节点时，系统读取这两个值来决定**切换到哪个 UI 区域**。
+
+**字段说明：**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `id` | ✅ | 分组唯一 ID，对应工艺节点的 `tabs_top`/`tabs_bottom` |
+| `name` | ✅ | 分组显示名称 |
+| `type` | ✅ | 固定填 `"tabGroup"` |
+| `sort_order` | ✅ | 排序序号，从 0 开始 |
+
+---
+
+### 11.2 `layout/tab.json` — Tab 页签
+
+这个文件定义了每个分组区域内的**具体页签（标签栏）**，类似于浏览器的多标签页。每个页签通过 `group_id` 归属于某个分组区域。
+
+**文件格式：**
+
+```json
+[
+  { "id": "left_panel", 
+   "group_id": "group_process_mgmt",
+   "title": "工艺结构树", 
+   "sort_order": 0 
+  },
+  { "id": "tab_process_list", 
+   "group_id": "group_process_mgmt",  
+   "title": "工艺列表",  
+   "sort_order": 1 
+  },
+  { "id": "tab_proc_info",  
+   "group_id": "group_process_view", 
+   "title": "基本信息",  
+   "sort_order": 0 
+  }
+]
+```
+
+**字段说明：**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `id` | ✅ | 页签唯一 ID，被 components.json 中的组件引用 |
+| `group_id` | ✅ | 所属分组的 ID（来自 tabs.json） |
+| `title` | ✅ | 页签显示文字 |
+| `sort_order` | ✅ | 分组内排序序号 |
+
+---
+
+### 11.3 `layout/components.json` — UI 组件配置
+
+这个文件定义了每个页签内具体**展示什么内容**，以及如何从数据库中取到数据。每个组件通过 `tab_id` 归属于某个页签。
+
+**文件格式：**
+
+```json
+[
+  {
+    "id": "comp_proc_info",
+    "tab_id": "tab_proc_info",
+    "type": "infoView",
+    "title": "工艺基本信息",
+    "sort_order": 0,
+    "config": {
+      "fields": [
+        { "label": "工艺代码", "vModel": "code" },
+        { "label": "工艺名称", "vModel": "name" },
+        { "label": "版本",     "vModel": "fullversionNo" },
+        { "label": "状态",     "vModel": "stateName" }
+      ],
+      "columns": 2 // 显示为一行两列
+    }
+  },
+  {
+    "id": "comp_proc_list",
+    "tab_id": "tab_proc_children",
+    "type": "table",
+    "title": "工序列表",
+    "sort_order": 0,
+    "config": {
+      "columns": [
+        { "label": "序号", "prop": "serialNumber", "width": 80 },
+        { "label": "代码", "prop": "code",         "width": 180 },
+        { "label": "名称", "prop": "displayName",  "width": -1 }
+      ]
+    }
+  }
+]
+```
+
+**组件类型（`type` 字段）说明：**
+
+| type 值 | 说明 | 数据来源 |
+|---------|------|---------|
+| `tableTree` | 工艺树 / 工艺总览表 | 从 `meta_process_tree` 表加载全量骨架数据 |
+| `infoView` | 键值对信息卡片，多列布局 | 按节点 ID 查当前节点完整记录（自身） |
+| `richText` | 富文本展示区，渲染 HTML | 按节点 ID 查 `content` 字段（自身） |
+| `table` | 数据表格，可点击跳转 | 按当前节点 ID 查**子级**列表记录 |
+| `list` | 简单列表 | 按当前节点 ID 查**子级**列表记录 |
+
+> **数据绑定原则**：组件**不需要**配置 `dataSource`，系统根据 `type` 自动决定查询模式——`infoView`/`richText` 查自身，`table`/`list` 查子级列表。
+
+**`config` 中的关键配置：**
+
+- **`fields`**（用于 `infoView`）：数组，每项包含 `label`（显示标签）和 `vModel`（绑定数据字段名，camelCase）
+- **`columns`**（用于 `infoView`）：每行展示几列，默认值为 `2`
+- **`columns`**（用于 `table`）：数组，每项包含 `label`（列标题）、`prop`（绑定字段名）、`width`（列宽 px，填 **-1** 表示自适应填满剩余宽度）
+
+---
+
+### 11.4 `layout/icons.json` — 图标配置
+
+这个文件配置工艺树各节点类型在左侧树中显示的图标。系统优先从 `assets/icons/` 目录加载对应的 SVG 文件，无法加载时显示 `fallback` 中的 emoji 图标。
+
+**文件格式：**
+
+```json
+{
+  "nodeIcons": {
+    "process":     { "icon": "process",   "fallback": "📋" },
+    "operation":   { "icon": "operation", "fallback": "🔧" },
+    "step":        { "icon": "step",      "fallback": "⚙️" },
+    "action-unit": { "icon": "action",    "fallback": "▶️" },
+    "default":     { "icon": "default",   "fallback": "📄" }
+  }
+}
+```
+
+**字段说明：**
+
+| 字段 | 说明 |
+|------|------|
+| `icon` | SVG 图标文件名（不含扩展名），系统从 `assets/icons/{icon}.svg` 加载 |
+| `fallback` | 加载 SVG 失败时显示的 emoji 备用字符 |
+
+> **提示**：如需自定义图标，将 SVG 文件放入包内 `assets/icons/` 目录，并在此处配置对应的文件名。`assets/icons/` 中的文件在导入时不会被复制到本地存储，只在需要时由客户端引用项目内 `/static/icons/` 下的静态资源。
+
+---
+
+
 
 ## 十一、关于 `content` 富文本字段
 
@@ -487,14 +666,13 @@ assets/
 
 - [ ] `manifest.json` 中 `version` 填写了 `"6.0"` 或以上
 - [ ] 所有节点的 `innerId` 在整个包内全局唯一，没有重复
-- [ ] `process_tree.json` 中每个节点都有 `tabs_top` 和 `tabs_bottom` 字段
+- [ ] `process_tree.json` 中**每个节点都有 `tabs_top` 和 `tabs_bottom` 字段**
 - [ ] `process.json`、`operation.json`、`step.json`、`action.json` 中**没有 `children` 字段**
 - [ ] `operation.json` 中每条记录的 `processId` 与工艺树中对应工艺的 `innerId` 一致
 - [ ] `step.json` 中每条记录的 `operationId` 与对应工序的 `innerId` 一致
 - [ ] `action.json` 中每条记录的 `stepId` 与对应工步的 `innerId` 一致
-- [ ] 四张关系表（process/operation/step/action）中都包含 `tabs_top` 和 `tabs_bottom` 字段
+- [ ] **四张关系表（process/operation/step/action）中都包含 `tabs_top` 和 `tabs_bottom` 字段**
 - [ ] `attachment.json` 中每个 `path` 对应的文件真实存在于 `assets/` 目录下
-- [ ] 所有 JSON 文件格式正确（可用在线工具如 [jsonlint.com](https://jsonlint.com) 验证）
 - [ ] 整体打包为 ZIP 后将扩展名改为 `.srd`
 
 ---
@@ -521,23 +699,15 @@ proc_001 (process)    ←→  process.json  中 innerId = "proc_001"
 
 **一句话记住：树里的 `innerId` = 数据表里的 `innerId`，子节点数据表里还要填所有上级父节点的 `innerId` 作为外键。**
 
----
 
-## 十四、为什么关系表也需要 `tabs_top` / `tabs_bottom`？
-
-你可能会疑问：工艺树骨架 (`process_tree.json`) 里已经有了 `tabs_top`/`tabs_bottom`，为什么工序/工步等关系表里也要填一遍？
-
-**因为用户不只会点树节点。** 当用户在工艺视图的"工序列表"表格中直接点击某一行工序时，该行数据来自 `t_operation` 数据库查询结果，系统需要依靠该记录自身的 `tabs_top` 字段来判断应该渲染哪组 UI 视图。如果关系表中缺少这两个字段，点击列表中的工序将导致 UI 区域变空白，什么也不显示。
-
-**结论**：`tabs_top` / `tabs_bottom` 是每个业务实体自带的"UI路由声明"，无论该实体从哪个入口被访问（树节点点击/列表点击/搜索结果点击），系统都能正确切换视图。请务必在四张关系表中一并提供这两个字段。
 
 ---
 
-## 十五、数据包加密打包规范（后端开发参考）
+## 十四、数据包加密打包规范
 
 V6 引入了可选的 **AES-256-CBC** 加密机制，用于防止 U 盘传输过程中工艺数据被直接解压查看。
 
-### 15.1 加密文件格式
+### 14.1 加密文件格式
 
 加密后的文件**不含任何魔数头部**，直接按如下两段式结构组织：
 
@@ -548,14 +718,14 @@ V6 引入了可选的 **AES-256-CBC** 加密机制，用于防止 U 盘传输过
 
 > ⚠️ 注意：与部分旧版设计文档描述不同，当前客户端实现（`utils/crypto.uts`）**不含 SRDE 魔数或 SHA-256 校验头**，只有 IV + 密文两段结构。请严格按本文档实现。
 
-### 15.2 加密密钥
+### 14.2 加密密钥
 
 ```
 MPM_OFFLINE_2026_SECURE_KEY_256B
 ```
 （取前32字节作为AES-256密钥，加解密双端必须完全一致）
 
-### 15.3 Java 加密实现
+### 14.3 Java 加密实现
 
 ```java
 import javax.crypto.Cipher;
@@ -593,7 +763,7 @@ public class SrdEncryptor {
 }
 ```
 
-### 15.4 集成方式
+### 14.4 集成方式
 
 ```java
 // 正常构建 ZIP
@@ -609,6 +779,16 @@ Files.write(Paths.get("V8发动机总装工艺包.srd"), srdArray);
 > **兼容说明**：加密是在打出原始 ZIP 后追加的"外壳"，不影响包内的任何 JSON 结构和文件路径。客户端解密失败时会自动回退按未加密 ZIP 处理，因此**不加密的 ZIP 改扩展名为 `.srd` 同样可以正常导入**。
 
 ---
+
+## 备注：为什么关系表也需要 `tabs_top` / `tabs_bottom`？
+
+工艺树骨架 (`process_tree.json`) 里已经有了 `tabs_top`/`tabs_bottom`，为什么工序/工步等关系表里也要填一遍？
+
+**因为用户不只会点树节点。** 当用户在工艺视图的"工序列表"表格中直接点击某一行工序时，该行数据来自 `t_operation` 数据库查询结果，系统需要依靠该记录自身的 `tabs_top` 字段来判断应该渲染哪组 UI 视图。如果关系表中缺少这两个字段，点击列表中的工序将导致 UI 区域变空白，什么也不显示。
+
+**因此**：`tabs_top` / `tabs_bottom` 是每个业务实体自带的"UI路由声明"，无论该实体从哪个入口被访问（树节点点击/列表点击/搜索结果点击），系统都能正确切换视图。**请务必在四张关系表中一并提供这两个字段**。
+
+
 
 ## 附：完整目录结构示例
 
@@ -636,5 +816,3 @@ V8发动机工艺包/
     └── documents/
         └── assembly_spec.pdf
 ```
-
-将 `V8发动机工艺包/` 整个文件夹压缩为 ZIP，然后将扩展名从 `.zip` 改为 `.srd`，交付即可。
