@@ -584,11 +584,17 @@
 				this.dragState.startWidth = currentW
 				
 				// Bind global listeners
-				document.addEventListener('mousemove', this.onResizeMoveMouse)
-				document.addEventListener('mouseup', this.onResizeEndMouse)
+				window.addEventListener('mousemove', this.onResizeMoveMouse)
+				window.addEventListener('mouseup', this.onResizeEndMouse)
 			},
 			onResizeMoveMouse(e: MouseEvent) {
 				if (this.dragState.columnIndex < 0) return
+				
+				// 解决拖动时鼠标在外部或者被系统吞没mouseup事件导致的粘连问题
+				if (e.buttons === 0) {
+					this.onResizeEndMouse()
+					return
+				}
 				
 				const deltaPx = e.clientX - this.dragState.startX
 				
@@ -601,8 +607,8 @@
 			},
 			onResizeEndMouse() {
 				this.dragState.columnIndex = -1
-				document.removeEventListener('mousemove', this.onResizeMoveMouse)
-				document.removeEventListener('mouseup', this.onResizeEndMouse)
+				window.removeEventListener('mousemove', this.onResizeMoveMouse)
+				window.removeEventListener('mouseup', this.onResizeEndMouse)
 			}
 			// #endif
 		}
