@@ -1,5 +1,5 @@
 {
-	"name": "CraftX",
+	"name": "星工",
 	"appid": "__UNI__9A011F1",
 	"description": "",
 	"versionName": "1.0.1",
@@ -72,8 +72,8 @@
 				}
 			},
 			"icons": {
-				"foreground": "C:/Users/94498/Desktop/logo2.png",
-				"background": "C:/Users/94498/Desktop/logo2.png"
+				"foreground": "E:/下载/蓝.png",
+				"background": "E:/下载/蓝.png"
 			},
 			"splashScreens": {},
 			"deviceTypes": [
