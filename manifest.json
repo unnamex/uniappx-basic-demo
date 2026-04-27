@@ -72,10 +72,12 @@
 				}
 			},
 			"icons": {
-				"foreground": "E:/下载/蓝.png",
-				"background": "E:/下载/蓝.png"
+				"foreground": "static/logo.png",
+				"background": "static/logo.png"
 			},
-			"splashScreens": {},
+			"splashScreens": {
+				"startWindowIcon": "E:/下载/蓝.png"
+			},
 			"deviceTypes": [
 				"tablet",
 				"2in1",
