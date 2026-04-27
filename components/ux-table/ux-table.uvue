@@ -594,7 +594,9 @@
 				if (this.dragState.columnIndex < 0) return
 				
 				// 解决拖动时鼠标在外部或者被系统吞没mouseup事件导致的粘连问题
-				if (e.buttons === 0) {
+				// 绕过 UTS 编译器对 UniPointerEvent(MouseEvent) 缺少 buttons 声明的限制
+				const buttons = (e as any)['buttons'] as number | null
+				if (buttons === 0) {
 					this.onResizeEndMouse()
 					return
 				}
