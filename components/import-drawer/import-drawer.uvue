@@ -478,6 +478,8 @@
 		transition-property: background-color, border-color;
 		transition-duration: 0.2s;
 		align-items: center;
+		flex: 1;
+		justify-content: center;
 	}
 	
 	.file-picker-hover {

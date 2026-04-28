@@ -181,7 +181,7 @@
 			},
 			/** 是否存在可展开字段 */
 			hasExpandableField() : boolean {
-				return this.expandableFieldType != ''
+				return this.expandableCellType != ''
 			},
 			/** 获取第一个可展开列的 type */
 			expandableCellType() : string {
