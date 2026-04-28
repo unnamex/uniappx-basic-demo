@@ -174,8 +174,10 @@
 				expandedRowIds: [] as string[],
 				/** 正在加载内容的节点ID */
 				loadingRowIds: [] as string[],
-				/** 容器实际宽度（mounted 后测量，用于原生端确保表格填满容器） */
-				measuredContainerWidth: 0 as number
+				/** 容器实际宽度（由 UniResizeObserver 自动更新，用于原生端确保表格填满容器） */
+				measuredContainerWidth: 0 as number,
+				/** UniResizeObserver 实例引用，用于生命周期管理 */
+				resizeObserver: null as UniResizeObserver | null
 			}
 		},
 		computed: {
@@ -199,23 +201,29 @@
 				}
 				return ''
 			},
-			/** Web 端使用 min-width 确保列少时自然填充、列多时自动撑开启用横滚；原生端用 width + 容器测量值 */
+			/** Web 端使用 min-width；原生端使用 width 配合 UniResizeObserver 自动测量的容器宽度 */
 			tableInnerStyle() : string {
 				// #ifdef WEB
 				return 'min-width: ' + this.tableRealWidth + 'px'
 				// #endif
 				// #ifndef WEB
+				// 原生端：width = max(列宽总和, 容器实测宽度)
+				// 容器宽度由 UniResizeObserver 自动更新，确保面板折叠/展开/全屏后表格始终填满
 				return 'width: ' + this.tableRealWidth + 'px'
 				// #endif
 			},
-			/** 计算表格内容宽度：列宽总和与容器宽度取较大值，确保填满容器且列多时可横滚 */
-			tableRealWidth() : number {
+			/** 所有列的宽度总和（flex 列按默认 150px 计算） */
+			totalFixedWidth() : number {
 				let total = 0
 				for (let i = 0; i < this.fieldWidths.length; i++) {
 					const w = this.fieldWidths[i]
 					total += (w > 0 ? w : 150)
 				}
-				// 确保表格至少填满容器（已测量的容器宽度），列多时超出容器自动横滚
+				return total
+			},
+			/** 表格实际宽度：取列宽总和与容器测量宽度的较大值，确保填满容器且列多时可横滚 */
+			tableRealWidth() : number {
+				const total = this.totalFixedWidth
 				if (this.measuredContainerWidth > 0) {
 					return Math.max(total, this.measuredContainerWidth)
 				}
@@ -637,30 +645,33 @@
 				window.removeEventListener('mouseup', this.onResizeEndMouse)
 			},
 			// #endif
-			remeasureContainer() {
-				// #ifndef WEB
-				this.$nextTick(() => {
-					const el = this.$el as UniElement | null
-					if (el != null) {
-						const rect = el.getBoundingClientRect()
-						if (rect.width > 0) {
+		},
+		mounted() {
+			// #ifndef WEB
+			// 原生端：使用 UniResizeObserver 自动监听容器尺寸变化
+			const el = this.$el as UniElement | null
+			if (el != null) {
+				const observer = new UniResizeObserver((entries: UniResizeObserverEntry[]) => {
+					for (const entry of entries) {
+						const rect = entry.contentRect
+						// 仅在宽度确实变化时更新，避免无意义的响应式触发
+						if (rect.width > 0 && Math.abs(rect.width - this.measuredContainerWidth) > 2) {
 							this.measuredContainerWidth = rect.width
 						}
 					}
 				})
-				// #endif
+				observer.observe(el)
+				this.resizeObserver = observer
 			}
-		},
-		created() {
-			uni.$on('layout-resize', this.remeasureContainer)
+			// #endif
 		},
 		unmounted() {
-			uni.$off('layout-resize', this.remeasureContainer)
-		},
-		mounted() {
 			// #ifndef WEB
-			// 原生端：mounted 后测量容器实际宽度，用于 tableRealWidth 计算
-			this.remeasureContainer()
+			// 释放 UniResizeObserver
+			if (this.resizeObserver != null) {
+				this.resizeObserver!.disconnect()
+				this.resizeObserver = null
+			}
 			// #endif
 		}
 	}
