@@ -1470,7 +1470,6 @@
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		margin-right: 12px;
 	}
 
 	.header-process-icon {
@@ -2405,7 +2404,7 @@
 	.header-process-icon-img {
 		width: 32px;
 		height: 32px;
-		margin-right: 12px;
+		margin-right: 8px;
 		border-radius: 6px;
 	}
 </style>
