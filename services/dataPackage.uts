@@ -159,15 +159,7 @@ function selectFileWeb(
 			const target = event.target as HTMLInputElement
 			if (target.files != null && target.files.length > 0) {
 				const file = target.files[0]
-				selectedFilePath = URL.createObjectURL(file)
-				
-				resolve({
-					fileName: file.name,
-					fileSize: file.size,
-					manifest: null,
-					isValid: true,
-					errorMessage: ''
-				})
+				resolve(handleFileProcessWeb(file))
 			} else {
 				reject(new Error('未选择文件'))
 			}
@@ -177,6 +169,29 @@ function selectFileWeb(
 	} catch (e: any) {
 		reject(e)
 	}
+}
+
+/**
+ * Web 平台处理 File 对象并将关键路径存入全局变量
+ */
+function handleFileProcessWeb(file: File): PackageInfo {
+	selectedFilePath = URL.createObjectURL(file)
+	return {
+		fileName: file.name,
+		fileSize: file.size,
+		manifest: null,
+		isValid: true,
+		errorMessage: ''
+	} as PackageInfo
+}
+
+/**
+ * 暴露给组件用于处理拖拽进来的文件
+ * @param file 
+ * @returns 
+ */
+export function handleDroppedFileWeb(file: any): PackageInfo {
+	return handleFileProcessWeb(file as File)
 }
 // #endif
 

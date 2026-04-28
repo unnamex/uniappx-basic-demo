@@ -13,12 +13,25 @@
 			<view class="modal-body" v-if="importResult == null || importResult!.success != true">
 				
 				<!-- 未选择文件 -->
-				<view class="file-picker" @click="handleSelectFile" hover-class="file-picker-hover" v-if="packageInfo.fileName == ''">
-					<view class="icon-circle">
-						<text class="file-picker-icon">📂</text>
+				<view 
+					class="file-picker" 
+					@click="handleSelectFile" 
+					hover-class="file-picker-hover" 
+					v-if="packageInfo.fileName == ''"
+					:class="{'file-picker-dragging': isDragOver, 'file-picker-error': dragErrorMessage != ''}"
+					@dragover.prevent="handleDragOver"
+					@dragleave="handleDragLeave"
+					@drop.prevent="handleDrop"
+				>
+					<view class="icon-circle" :style="{backgroundColor: dragErrorMessage != '' ? '#FEF2F2' : ''}">
+						<text class="file-picker-icon">{{ dragErrorMessage != '' ? '⚠️' : '📂' }}</text>
 					</view>
-					<text class="file-picker-title">选择数据包</text>
-					<text class="file-picker-hint">点击选择 .srd 格式的文件</text>
+					<text class="file-picker-title" :style="{color: dragErrorMessage != '' ? '#EF4444' : ''}">
+						{{ dragErrorMessage != '' ? dragErrorMessage : (isDragOver ? '松开以选择' : '选择数据包') }}
+					</text>
+					<text class="file-picker-hint">
+						{{ dragErrorMessage != '' ? '请选择正确的 .srd 压缩包' : (isDragOver ? '松开手指自动解析' : '点击或拖拽 .srd 文件至此') }}
+					</text>
 				</view>
 
 				<!-- 预览：Bento Box Grid -->
@@ -116,6 +129,9 @@
 <script setup lang="uts">
 	import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/data-package.uts'
 	import { selectPackageFile, validatePackage, importPackage, ImportProgressCallback } from '@/services/dataPackage.uts'
+	// #ifdef WEB
+	import { handleDroppedFileWeb } from '@/services/dataPackage.uts'
+	// #endif
 	import { initDatabase } from '@/services/database.uts'
 	
 	const emit = defineEmits(['close', 'success'])
@@ -141,6 +157,9 @@
 	} as ImportProgress)
 	
 	const importResult = ref<ImportResult | null>(null)
+	const isDragOver = ref(false)
+	const dragErrorMessage = ref('')
+	let errorTimer: number | null = null
 	
 	/**
 	 * 初始化数据库
@@ -179,6 +198,40 @@
 	}
 
 	/**
+	 * 处理文件解析的核心逻辑
+	 */
+	const processFile = (info: PackageInfo) => {
+		// 在这里先呼出 Loading，防止解析期间导致界面坍塌闪烁
+		uni.showLoading({ title: '正在提取与解析...', mask: true })
+		
+		validatePackage('')
+			.then((manifestRes: PackageManifest) => {
+				uni.hideLoading()
+				// 解析成功后，一并赋值，让视图瞬间由“选择文件”切换为“Bento 预览”
+				packageInfo.fileName = info.fileName
+				packageInfo.fileSize = info.fileSize
+				packageInfo.manifest = manifestRes
+				packageInfo.isValid = true
+				packageInfo.errorMessage = ''
+				manifest.value = manifestRes
+			})
+			.catch((e: any | null) => {
+				uni.hideLoading()
+				// 解析失败时，恢复未选择状态并给出报错
+				packageInfo.fileName = ''
+				packageInfo.manifest = null
+				packageInfo.isValid = false
+				packageInfo.errorMessage = e != null ? (e as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误'
+				manifest.value = null
+				
+				uni.showToast({
+					title: '数据包解析失败',
+					icon: 'none'
+				})
+			})
+	}
+
+	/**
 	 * 选择文件
 	 */
 	const handleSelectFile = () => {
@@ -189,38 +242,57 @@
 		
 		selectPackageFile()
 			.then((info: PackageInfo) => {
-				// 在这里先呼出 Loading，防止解析期间导致界面坍塌闪烁
-				uni.showLoading({ title: '正在提取与解析...', mask: true })
-				
-				validatePackage('')
-					.then((manifestRes: PackageManifest) => {
-						uni.hideLoading()
-						// 解析成功后，一并赋值，让视图瞬间由“选择文件”切换为“Bento 预览”
-						packageInfo.fileName = info.fileName
-						packageInfo.fileSize = info.fileSize
-						packageInfo.manifest = manifestRes
-						packageInfo.isValid = true
-						packageInfo.errorMessage = ''
-						manifest.value = manifestRes
-					})
-					.catch((e: any | null) => {
-						uni.hideLoading()
-						// 解析失败时，恢复未选择状态并给出报错
-						packageInfo.fileName = ''
-						packageInfo.manifest = null
-						packageInfo.isValid = false
-						packageInfo.errorMessage = e != null ? (e as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误'
-						manifest.value = null
-						
-						uni.showToast({
-							title: '数据包解析失败',
-							icon: 'none'
-						})
-					})
+				processFile(info)
 			})
 			.catch((e: any | null) => {
 				console.error('选择文件失败/取消：', e)
 			})
+	}
+	
+	/**
+	 * 处理拖拽进入
+	 */
+	const handleDragOver = (e: any) => {
+		// #ifdef WEB
+		isDragOver.value = true
+		// #endif
+	}
+	
+	/**
+	 * 处理拖拽离开
+	 */
+	const handleDragLeave = (e: any) => {
+		// #ifdef WEB
+		isDragOver.value = false
+		// #endif
+	}
+	
+	/**
+	 * 处理文件拖放
+	 */
+	const handleDrop = (e: any) => {
+		// #ifdef WEB
+		isDragOver.value = false
+		dragErrorMessage.value = ''
+		
+		const files = (e as DragEvent).dataTransfer?.files
+		if (files != null && files.length > 0) {
+			const file = files[0]
+			if (file.name.endsWith('.srd')) {
+				const info = handleDroppedFileWeb(file)
+				processFile(info)
+			} else {
+				// 层级优化：除了 Toast，增加 UI 内部红色预警状态（双保险）
+				dragErrorMessage.value = '仅支持 .srd 格式数据包'
+				if (errorTimer != null) clearTimeout(errorTimer!)
+				errorTimer = setTimeout(() => {
+					dragErrorMessage.value = ''
+				}, 3000)
+				
+				uni.showToast({ title: '仅支持 .srd 格式数据包', icon: 'none' })
+			}
+		}
+		// #endif
 	}
 	
 	/**
@@ -324,7 +396,7 @@
 		right: 0;
 		bottom: 0;
 		background-color: rgba(17, 24, 39, 0.4);
-		z-index: 9999;
+		z-index: 900;
 	}
 	
 	/* ====== 条件容器布局 ====== */
@@ -411,6 +483,19 @@
 	.file-picker-hover {
 		background-color: #ECFEFF;
 		border-color: #0891B2;
+	}
+
+	.file-picker-dragging {
+		background-color: #ECFEFF;
+		border-color: #0891B2;
+		border-style: solid;
+		transform: scale(1.02);
+	}
+
+	.file-picker-error {
+		background-color: #FEF2F2 !important;
+		border-color: #EF4444 !important;
+		border-style: solid;
 	}
 	
 	.icon-circle {
