@@ -12,12 +12,12 @@
 		<scroll-view direction="vertical" scroll-y="true" class="table-scroll-container" :show-scrollbar="false">
 			<scroll-view direction="horizontal" scroll-x="true" class="table-scroll-x" :show-scrollbar="false">
 		<!-- #endif -->
-			<view class="table-inner" :style="{ width: tableRealWidth + 'px' }">
+			<view class="table-inner" :style="tableInnerStyle">
 				<view class="header">
 					<view class="header-row">
-						<view v-for="(col, index) in columns" :key="index" class="header-cell"
-							:style="{ flex: getColFlex(index), width: getColWidth(index) }">
-							<text class="header-text">{{ col['label'] }}</text>
+						<view v-for="(field, index) in fields" :key="index" class="header-cell"
+							:style="{ flex: getFieldFlex(index), width: getFieldWidth(index) }">
+							<text class="header-text">{{ field['label'] }}</text>
 							
 							<!-- #ifdef H5 -->
 							<view class="resize-handle" 
@@ -44,34 +44,34 @@
 			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex">
 				<!-- 行主体部分 -->
 				<view class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
-					<view v-for="(col, colIndex) in columns" :key="colIndex" class="cell"
-						:style="{ flex: getColFlex(colIndex), width: getColWidth(colIndex) }">
+					<view v-for="(field, fieldIndex) in fields" :key="fieldIndex" class="cell"
+						:style="{ flex: getFieldFlex(fieldIndex), width: getFieldWidth(fieldIndex) }">
 						
-						<view v-if="colIndex === 0" class="cell-content-wrapper">
+						<view v-if="fieldIndex === 0" class="cell-content-wrapper">
 							<!-- 仅树模式显示缩进和展开图标 -->
 							<view v-if="showExpand" :style="{ width: (row.level * 20) + 'px' }"></view>
 							<view v-if="showExpand" class="expand-icon" @click.stop="toggleExpand(row)">
 								<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
 								<text class="icon-text" v-else></text>
 							</view>
-							<text class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+							<text class="cell-text">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
 						</view>
 						
 						<view v-else class="cell-content-wrapper">
 							<!-- 富文本列：仅显示展开/收起按钮 -->
-							<view v-if="getCellType(col) == 'richText'" class="richtext-cell">
+							<view v-if="getCellType(field) == 'richText'" class="richtext-cell">
 								<view class="richtext-toggle-btn" @click.stop="toggleRowExpand(row.id)">
 									<text class="richtext-toggle-icon">{{ isRowExpanded(row.id) ? '▼' : '▶' }}</text>
 									<text class="richtext-toggle-label">{{ isRowExpanded(row.id) ? '收起' : '展开' }}</text>
 								</view>
 							</view>
 							<!-- 普通文本列 -->
-							<text v-else class="cell-text">{{ getStringValue(row.originData, col['prop'] as string) }}</text>
+							<text v-else class="cell-text">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
 						</view>
 					</view>
 				</view>
-				<!-- 展开区域：如果该行有可展开列且已展开，则在行下方显示完整内容 -->
-				<view v-if="hasExpandableColumn && isRowExpanded(row.id)" class="richtext-expand-area">
+				<!-- 展开区域：如果该行有可展开字段且已展开，则在行下方显示完整内容 -->
+				<view v-if="hasExpandableField && isRowExpanded(row.id)" class="richtext-expand-area">
 					<!-- 目前根据可展开类型进行渲染，暂时只有 richtext -->
 					<template v-if="expandableCellType == 'richText'">
 						<!-- 无内容时显示紧凑提示 -->
@@ -129,7 +129,7 @@
 	type DragState = {
 		startX : number
 		startWidth : number
-		columnIndex : number
+		fieldIndex : number
 	}
 
 	export default {
@@ -139,7 +139,7 @@
 				type: Array as PropType<UTSJSONObject[]>,
 				default: () => [] as UTSJSONObject[]
 			},
-			columns: {
+			fields: {
 				type: Array as PropType<UTSJSONObject[]>,
 				default: () => [] as UTSJSONObject[]
 			},
@@ -158,17 +158,19 @@
 			return {
 				allRows: [] as TableRow[],
 				selectedRowId: null as string | null,
-				columnWidths: [] as number[], // -1 indicates flex, >0 indicates rpx width
+				fieldWidths: [] as number[], // -1 indicates flex, >0 indicates px width
 				dragState: {
 					startX: 0,
 					startWidth: 0,
-					columnIndex: -1
+					fieldIndex: -1
 				} as DragState,
 				isAllExpanded: false, // 懒加载模式下默认收起
 				/** 存储展开了内容的行ID列表 */
 				expandedRowIds: [] as string[],
 				/** 正在加载内容的节点ID */
-				loadingRowIds: [] as string[]
+				loadingRowIds: [] as string[],
+				/** 容器实际宽度（mounted 后测量，用于原生端确保表格填满容器） */
+				measuredContainerWidth: 0 as number
 			}
 		},
 		computed: {
@@ -177,31 +179,42 @@
 					return row.isShow
 				})
 			},
-			/** 是否存在可展开列 */
-			hasExpandableColumn() : boolean {
-				return this.expandableCellType != ''
+			/** 是否存在可展开字段 */
+			hasExpandableField() : boolean {
+				return this.expandableFieldType != ''
 			},
 			/** 获取第一个可展开列的 type */
 			expandableCellType() : string {
-				const col = this.columns.find((c: UTSJSONObject): boolean => {
+				const field = this.fields.find((c: UTSJSONObject): boolean => {
 					const type = c['type'] as string | null
 					return type === 'richText' // 这里未来可以加其他需要整行展开的类型
 				})
-				if (col != null) {
-					return (col['type'] as string) ?? ''
+				if (field != null) {
+					return (field['type'] as string) ?? ''
 				}
 				return ''
 			},
-			/** 计算表格最小宽度并适配屏幕宽度，以强制解决原生端 flex: 1 导致 scroll-view 截断的问题 */
+			/** Web 端使用 min-width 确保列少时自然填充、列多时自动撑开启用横滚；原生端用 width + 容器测量值 */
+			tableInnerStyle() : string {
+				// #ifdef WEB
+				return 'min-width: ' + this.tableRealWidth + 'px'
+				// #endif
+				// #ifndef WEB
+				return 'width: ' + this.tableRealWidth + 'px'
+				// #endif
+			},
+			/** 计算表格内容宽度：列宽总和与容器宽度取较大值，确保填满容器且列多时可横滚 */
 			tableRealWidth() : number {
 				let total = 0
-				for (let i = 0; i < this.columnWidths.length; i++) {
-					const w = this.columnWidths[i]
+				for (let i = 0; i < this.fieldWidths.length; i++) {
+					const w = this.fieldWidths[i]
 					total += (w > 0 ? w : 150)
 				}
-				
-				const winW = uni.getWindowInfo().windowWidth
-				return Math.max(total, winW)
+				// 确保表格至少填满容器（已测量的容器宽度），列多时超出容器自动横滚
+				if (this.measuredContainerWidth > 0) {
+					return Math.max(total, this.measuredContainerWidth)
+				}
+				return total
 			}
 		},
 		watch: {
@@ -212,9 +225,9 @@
 				deep: true,
 				immediate: true
 			},
-			columns: {
-				handler(newCols : UTSJSONObject[]) {
-					this.initColumns(newCols)
+			fields: {
+				handler(newFields : UTSJSONObject[]) {
+					this.initFields(newFields)
 				},
 				deep: true,
 				immediate: true
@@ -231,21 +244,21 @@
 			}
 		},
 		methods: {
-			getColFlex(index: number): string {
-				const w = this.columnWidths[index]
+			getFieldFlex(index: number): string {
+				const w = this.fieldWidths[index]
 				if (w <= 0) return '1'
 				return 'none'
 			},
-			getColWidth(index: number): string {
-				const w = this.columnWidths[index]
+			getFieldWidth(index: number): string {
+				const w = this.fieldWidths[index]
 				if (w <= 0) return ''
 				return w + 'px'
 			},
-			initColumns(cols: UTSJSONObject[]) {
-				this.columnWidths = cols.map((col): number => {
-					const w = col['width']
+			initFields(fields: UTSJSONObject[]) {
+				this.fieldWidths = fields.map((field): number => {
+					const w = field['width']
 					if (w != null) {
-						// Ensure it is a number. col['width'] from JSON could be various types, assume number
+						// Ensure it is a number. field['width'] from JSON could be various types, assume number
 						return parseFloat(w.toString())
 					}
 					return -1 // Flag for flex
@@ -257,8 +270,8 @@
 				return val.toString()
 			},
 			/** 获取列的 type */
-			getCellType(col: UTSJSONObject): string {
-				const type = col['type']
+			getCellType(field: UTSJSONObject): string {
+				const type = field['type']
 				if (type != null) {
 					return type as string
 				}
@@ -549,16 +562,16 @@
 				if (e.touches.length == 0) return
 				const touch = e.touches[0]
 				this.dragState.startX = touch.clientX
-				this.dragState.columnIndex = index
+				this.dragState.fieldIndex = index
 				
-				let currentW = this.columnWidths[index]
+				let currentW = this.fieldWidths[index]
 				if (currentW <= 0) {
 					currentW = 150
 				}
 				this.dragState.startWidth = currentW
 			},
 			onResizeMove(e: UniTouchEvent) {
-				if (this.dragState.columnIndex < 0) return
+				if (this.dragState.fieldIndex < 0) return
 				if (e.touches.length == 0) return
 				
 				const touch = e.touches[0]
@@ -569,18 +582,18 @@
 				let newWidth = this.dragState.startWidth + deltaRpx
 				if (newWidth < 50) newWidth = 50
 				
-				this.columnWidths[this.dragState.columnIndex] = newWidth
+				this.fieldWidths[this.dragState.fieldIndex] = newWidth
 			},
 			onResizeEnd() {
-				this.dragState.columnIndex = -1
+				this.dragState.fieldIndex = -1
 			},
 			// #ifdef H5
 			onResizeStartMouse(index: number, e: MouseEvent) {
 				const startX = e.clientX
 				this.dragState.startX = startX
-				this.dragState.columnIndex = index
+				this.dragState.fieldIndex = index
 				
-				let currentW = this.columnWidths[index]
+				let currentW = this.fieldWidths[index]
 				if (currentW <= 0) {
 					currentW = 150
 				}
@@ -591,7 +604,7 @@
 				window.addEventListener('mouseup', this.onResizeEndMouse)
 			},
 			onResizeMoveMouse(e: MouseEvent) {
-				if (this.dragState.columnIndex < 0) return
+				if (this.dragState.fieldIndex < 0) return
 				
 				// 解决拖动时鼠标在外部或者被系统吞没mouseup事件导致的粘连问题
 				// 绕过 UTS 编译器对 UniPointerEvent(MouseEvent) 缺少 buttons 声明的限制
@@ -608,13 +621,25 @@
 				let newWidth = this.dragState.startWidth + deltaRpx
 				if (newWidth < 50) newWidth = 50
 				
-				this.columnWidths[this.dragState.columnIndex] = newWidth
+				this.fieldWidths[this.dragState.fieldIndex] = newWidth
 			},
 			onResizeEndMouse() {
-				this.dragState.columnIndex = -1
+				this.dragState.fieldIndex = -1
 				window.removeEventListener('mousemove', this.onResizeMoveMouse)
 				window.removeEventListener('mouseup', this.onResizeEndMouse)
 			}
+			// #endif
+		},
+		mounted() {
+			// #ifndef WEB
+			// 原生端：mounted 后测量容器实际宽度，用于 tableRealWidth 计算
+			this.$nextTick(() => {
+				const el = this.$el as UniElement | null
+				if (el != null) {
+					const rect = el.getBoundingClientRect()
+					this.measuredContainerWidth = rect.width
+				}
+			})
 			// #endif
 		}
 	}

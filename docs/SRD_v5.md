@@ -609,7 +609,7 @@ Process（工艺）
 }
 ```
 
-#### columns（用于 table 类型）
+#### fields（用于 table 类型）
 
 定义表格列配置：
 
@@ -623,7 +623,7 @@ Process（工艺）
 ```json
 {
   "dataSource": "children",
-  "columns": [
+  "fields": [
     { "label": "代码", "prop": "code", "width": 180 },
     { "label": "内容", "prop": "description_html", "width": -1, "cellType": "richtext" }
   ]
@@ -693,7 +693,7 @@ Process（工艺）
   "sort_order": 0,
   "config": {
     "dataSource": "children",
-    "columns": [
+    "fields": [
       { "label": "代码", "prop": "code", "width": 180 },
       { "label": "名称", "prop": "name", "width": 350 }
     ]
@@ -737,7 +737,7 @@ Process（工艺）
 | 组件类型 | 接收数据格式 | 渲染行为 |
 |----------|------------|----------|
 | `tableTree` | `UTSJSONObject[]`（扁平化树节点） | 渲染为可展开/收起的树形表格，支持行选中、列宽拖拽 |
-| `table` | `UTSJSONObject[]`（数据行数组） | 根据 `columns` 配置渲染表格列；`cellType: "richtext"` 列会渲染展开/收起按钮 |
+| `table` | `UTSJSONObject[]`（数据行数组） | 根据 `fields` 配置渲染表格列；`cellType: "richtext"` 列会渲染展开/收起按钮 |
 | `infoView` | `UTSJSONObject`（单个数据对象） | 根据 `fields` 配置渲染键值对面板，支持多列布局 |
 | `richText` | `UTSJSONObject[]`（取 `[0].text` 或 `[0].description_html`） | 渲染为富文本段落，适合长文本描述、带格式文本 |
 | `list` | `UTSJSONObject[]`（取每项 `.text`） | 渲染为简单列表，每项一行 |

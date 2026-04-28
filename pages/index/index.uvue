@@ -42,7 +42,7 @@
 
 		<template #left>
 			<view class="left-panel" style="flex: 1; display: flex; flex-direction: column; height: 100%;">
-				<ux-table style="flex: 1; height: 100%;" :data="tableData" :columns="columns" :selectedId="selectedRowId" @row-click="handleRowClick"></ux-table>
+				<ux-table style="flex: 1; height: 100%;" :data="tableData" :fields="fields" :selectedId="selectedRowId" @row-click="handleRowClick"></ux-table>
 			</view>
 		</template>
 		<!-- Main Top Area (Dynamic Group) -->
@@ -60,7 +60,7 @@
 									<view v-if="comp.type == 'table'" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 200px;">
 										<ux-table 
 											style="flex: 1; height: 100%; display: flex; flex-direction: column;"
-											:columns="getColumnsFromConfig(comp.config)" 
+											:fields="getFieldsFromConfig(comp.config)" 
 											:data="comp.data"
 											:showExpand="false"
 										></ux-table>
@@ -71,7 +71,7 @@
 										v-else-if="comp.type == 'infoView'"
 										:fields="getFieldsFromConfig(comp.config)"
 										:data="comp.data.length > 0 ? comp.data[0] : null"
-										:columns="getInfoViewColumns(comp.config)"
+										:columns="getInfoViewColumnCount(comp.config)"
 									/>
 									
 									<!-- Text Block Component -->
@@ -116,7 +116,7 @@
 											<view v-if="comp.type == 'table'" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 200px;">
 												<ux-table 
 													style="flex: 1; height: 100%; display: flex; flex-direction: column;"
-													:columns="getColumnsFromConfig(comp.config)" 
+													:fields="getFieldsFromConfig(comp.config)" 
 													:data="comp.data"
 													:showExpand="false"
 												></ux-table>
@@ -127,7 +127,7 @@
 												v-else-if="comp.type == 'infoView'"
 												:fields="getFieldsFromConfig(comp.config)"
 												:data="comp.data.length > 0 ? comp.data[0] : null"
-												:columns="getInfoViewColumns(comp.config)"
+												:columns="getInfoViewColumnCount(comp.config)"
 											/>
 											
 											<!-- Text Block Component -->
@@ -441,8 +441,8 @@
 	
 	// Left panel Tree Data (Ref to data in leftGroup for template compatibility)
 	const tableData = ref([] as UTSJSONObject[])
-	// 树表列配置 - 将从数据包中加载，此处为默认值
-	const columns = ref([] as UTSJSONObject[])
+	// 树表字段配置 - 将从数据包中加载，此处为默认值
+	const fields = ref([] as UTSJSONObject[])
 	const selectedRow = ref(null as UTSJSONObject | null)
 	
 	// 资源预览相关状态
@@ -727,7 +727,7 @@
 				const treeComp = group.tabs[0].components[0]
 				if (treeComp.type == 'tableTree') {
 					tableData.value = treeComp.data
-					columns.value = getColumnsFromConfig(treeComp.config)
+					fields.value = getFieldsFromConfig(treeComp.config)
 					// console.log('Left panel tree loaded:', tableData.value.length, 'nodes')
 					
 					// 自动选中逻辑
@@ -1290,24 +1290,11 @@
 		}
 	}
 	
-	// 从 config 中提取 columns (用于表格)
-	const getColumnsFromConfig = (config: any): UTSJSONObject[] => {
-		if (config == null) return []
-		const confObj = config as UTSJSONObject
-		// 检查是否有 columns 字段 (新的结构)
-		if (confObj['columns'] != null) {
-			const cols = confObj['columns']
-			if (Array.isArray(cols)) return cols as UTSJSONObject[]
-		}
-		// 兼容旧结构 (config本身就是数组)
-		if (Array.isArray(config)) return config as UTSJSONObject[]
-		return []
-	}
-	
-	// 从 config 中提取 fields (用于 InfoView)
+	// 从 config 中提取 fields (用于表格和 InfoView)
 	const getFieldsFromConfig = (config: any): UTSJSONObject[] => {
 		if (config == null) return []
 		const confObj = config as UTSJSONObject
+		// 只从 fields 字段读取
 		if (confObj['fields'] != null) {
 			const fields = confObj['fields']
 			if (Array.isArray(fields)) return fields as UTSJSONObject[]
@@ -1315,8 +1302,8 @@
 		return []
 	}
 	
-	// 从 config 中提取 columns 配置（用于 InfoView，默认 2 列）
-	const getInfoViewColumns = (config: any): number => {
+	// 从 config 中提取列数配置（用于 InfoView 布局，默认 2 列）
+	const getInfoViewColumnCount = (config: any): number => {
 		if (config == null) return 2
 		const confObj = config as UTSJSONObject
 		const cols = confObj['columns']

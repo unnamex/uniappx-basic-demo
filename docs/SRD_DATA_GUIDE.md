@@ -563,7 +563,7 @@ assets/
     "title": "工序列表",
     "sort_order": 0,
     "config": {
-      "columns": [
+      "fields": [
         { "label": "序号", "prop": "serialNumber", "width": 80 },
         { "label": "代码", "prop": "code",         "width": 180 },
         { "label": "名称", "prop": "displayName",  "width": -1 }
@@ -589,7 +589,7 @@ assets/
 
 - **`fields`**（用于 `infoView`）：数组，每项包含 `label`（显示标签）和 `vModel`（绑定数据字段名，camelCase）
 - **`columns`**（用于 `infoView`）：每行展示几列，默认值为 `2`
-- **`columns`**（用于 `table`）：数组，每项包含 `label`（列标题）、`prop`（绑定字段名）、`width`（列宽 px，填 **-1** 表示自适应填满剩余宽度）
+- **`fields`**（用于 `table`）：数组，每项包含 `label`（列标题）、`prop`（绑定字段名）、`width`（列宽 px，填 **-1** 表示自适应填满剩余宽度）
 
 ---
 

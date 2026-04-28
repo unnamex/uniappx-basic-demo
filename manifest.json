@@ -5,9 +5,7 @@
 	"versionName": "1.0.1",
 	"versionCode": "100",
 	"uni-app-x": {},
-	/* 快应用特有相关 */
 	"quickapp": {},
-	/* 小程序特有相关 */
 	"mp-weixin": {
 		"appid": "",
 		"setting": {
@@ -65,10 +63,12 @@
 		"distribute": {
 			"modules": {
 				"entry": {
-					"abilities": [{
-						"name": "EntryAbility",
-						"orientation": "auto_rotation"
-					}]
+					"abilities": [
+						{
+							"name": "EntryAbility",
+							"orientation": "auto_rotation"
+						}
+					]
 				}
 			},
 			"icons": {
@@ -76,7 +76,7 @@
 				"background": "static/logo.png"
 			},
 			"splashScreens": {
-				"startWindowIcon": "E:/下载/蓝.png"
+				"startWindowIcon": "static/start.png"
 			},
 			"deviceTypes": [
 				"tablet",

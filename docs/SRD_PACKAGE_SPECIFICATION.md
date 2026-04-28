@@ -583,7 +583,7 @@ export type ResourceItem = {
 }
 ```
 
-#### columns（用于 table 类型）
+#### fields（用于 table 类型）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|

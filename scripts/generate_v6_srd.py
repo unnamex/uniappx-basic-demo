@@ -87,6 +87,24 @@ def create_v6_srd(output_path):
                             "children": []
                         }
                     ]
+                },
+                {
+                    "innerId": "op_3",
+                    "type": "operation",
+                    "code": "OP-030",
+                    "name": "活塞组装",
+                    "tabs_top": "group_operation_view",
+                    "tabs_bottom": "group_bottom_op",
+                    "children": []
+                },
+                {
+                    "innerId": "op_4",
+                    "type": "operation",
+                    "code": "OP-040",
+                    "name": "气缸盖安装",
+                    "tabs_top": "group_operation_view",
+                    "tabs_bottom": "group_bottom_op",
+                    "children": []
                 }
             ]
         }
@@ -135,8 +153,8 @@ def create_v6_srd(output_path):
             "serialNumber": "010",
             "classId_display": "常规工序",
             "isKey": "true",
-            "isKey_display": "是",
-            "content": "<p>对发动机缸体进行清洁和检测，确保表面无残留物，尺寸精度合格。</p>",
+            "isKey_display": "否",
+            "content": "<div style=\"color: #333;\"><h4 style=\"margin:0;color:#0056b3;\">操作前置条件</h4><ul style=\"padding-left:20px;margin-top:5px;\"><li>确认缸体型号匹配</li><li>检查表面是否有明显划痕</li></ul><p style=\"color:#e74c3c; font-weight:bold;\">⚠️ 注意：必须佩戴护目镜进行高压水枪清洁！</p></div>",
             "tabs_top": "group_operation_view",
             "tabs_bottom": "group_bottom_op",
             "sortOrder": 0
@@ -150,10 +168,38 @@ def create_v6_srd(output_path):
             "classId_display": "关键工序",
             "isKey": "true",
             "isKey_display": "是",
-            "content": "<p>安装曲轴及主轴承盖，注意扭矩要求和润滑规范。</p>",
+            "content": "<div style=\"border-left: 4px solid #28a745; padding-left: 10px;\"><p><b>安装曲轴及主轴承盖</b></p><table border=\"1\" style=\"border-collapse:collapse; width:100%; text-align:center;\"><tr><th>项</th><th>标准值</th></tr><tr><td>扭矩</td><td>85 N·m</td></tr><tr><td>公差</td><td>±5%</td></tr></table><p style=\"margin-top:10px;\">安装后需手动盘车验证顺畅度。</p></div>",
             "tabs_top": "group_operation_view",
             "tabs_bottom": "group_bottom_op",
             "sortOrder": 1
+        },
+        {
+            "innerId": "op_3",
+            "processId": "proc_1",
+            "code": "OP-030",
+            "name": "活塞组装",
+            "serialNumber": "030",
+            "classId_display": "核心工序",
+            "isKey": "true",
+            "isKey_display": "是",
+            "content": "<div style=\"background-color:#f8f9fa; padding:10px; border-radius:4px;\"><p>将活塞连杆组件压入气缸。使用专用工具 <b>T-1029</b>。</p><ul><li>涂抹专用装配油</li><li>开口错开120度</li></ul></div>",
+            "tabs_top": "group_operation_view",
+            "tabs_bottom": "group_bottom_op",
+            "sortOrder": 2
+        },
+        {
+            "innerId": "op_4",
+            "processId": "proc_1",
+            "code": "OP-040",
+            "name": "气缸盖安装",
+            "serialNumber": "040",
+            "classId_display": "常规工序",
+            "isKey": "false",
+            "isKey_display": "否",
+            "content": "<p>按对角线顺序分三次拧紧气缸盖螺栓。第一次：30 N·m，第二次：90度，第三次：90度。</p>",
+            "tabs_top": "group_operation_view",
+            "tabs_bottom": "group_bottom_op",
+            "sortOrder": 3
         }
     ]
 
@@ -205,7 +251,7 @@ def create_v6_srd(output_path):
     action_data = []  # 本测试包暂无动作单元数据
 
     # ==================== 4. 附件资源清单 ====================
-    attachment_data = [
+    base_attachments = [
         {
             "id": "res_proc_1_img",
             "nodeId": "proc_1",
@@ -221,8 +267,66 @@ def create_v6_srd(output_path):
             "name": "缸体清洁示意图",
             "path": "assets/images/block_clean.png",
             "description": "缸体清洁操作示意图"
+        },
+        {
+            "id": "res_op2_img",
+            "nodeId": "op_2",
+            "type": "image",
+            "name": "曲轴安装规范",
+            "path": "assets/images/block_clean.png",
+            "description": "曲轴安装标准操作流程图"
+        },
+        {
+            "id": "res_op3_vid",
+            "nodeId": "op_3",
+            "type": "video",
+            "name": "活塞组装演示",
+            "path": "assets/videos/piston_asm.mp4",
+            "thumbnail": "assets/images/block_clean.png",
+            "description": "活塞销及连杆装配3D动画"
+        },
+        {
+            "id": "res_op4_doc",
+            "nodeId": "op_4",
+            "type": "document",
+            "name": "螺栓拧紧指导书",
+            "path": "assets/docs/bolt_guide.pdf",
+            "description": "气缸盖螺栓紧固力矩标准"
+        },
+        {
+            "id": "res_step1_img",
+            "nodeId": "step_1",
+            "type": "image",
+            "name": "清洁剂型号",
+            "path": "assets/images/block_clean.png",
+            "description": "工业清洗剂包装标识"
+        },
+        {
+            "id": "res_step2_img",
+            "nodeId": "step_2",
+            "type": "image",
+            "name": "测量点位图",
+            "path": "assets/images/block_clean.png",
+            "description": "三坐标测量仪接触点位说明"
+        },
+        {
+            "id": "res_step3_img",
+            "nodeId": "step_3",
+            "type": "image",
+            "name": "轴瓦方向标识",
+            "path": "assets/images/block_clean.png",
+            "description": "主轴承轴瓦防呆缺口位置指示"
         }
     ]
+
+    attachment_data = list(base_attachments)
+    # 为工艺节点(proc_1)挂载所有子节点的资源拷贝
+    for att in base_attachments:
+        if att["nodeId"] != "proc_1":
+            new_copy = dict(att)
+            new_copy["id"] = new_copy["id"] + "_copy"
+            new_copy["nodeId"] = "proc_1"
+            attachment_data.append(new_copy)
 
     # ==================== 5. UI 布局 - Tab 分组 ====================
     tabs_data = [
@@ -265,8 +369,8 @@ def create_v6_srd(output_path):
             "id": "comp_process_tree", "tab_id": "left_panel",
             "type": "tableTree", "title": "工艺树", "sort_order": 0,
             "config": {
-                "columns": [
-                    {"label": "名称", "prop": "displayName", "width": -1}
+                "fields": [
+                    {"label": "名称", "prop": "name", "width": -1}
                 ]
             }
         },
@@ -275,10 +379,8 @@ def create_v6_srd(output_path):
             "id": "comp_process_table", "tab_id": "tab_process_list",
             "type": "tableTree", "title": "工艺总览表", "sort_order": 0,
             "config": {
-                "columns": [
-                    {"label": "代码", "prop": "code", "width": 180},
-                    {"label": "名称", "prop": "name", "width": 350},
-                    {"label": "状态", "prop": "stateName", "width": 120}
+                "fields": [
+                    {"label": "名称", "prop": "name", "width": -1}
                 ]
             }
         },
@@ -306,11 +408,11 @@ def create_v6_srd(output_path):
             "id": "comp_proc_list", "tab_id": "tab_proc_children",
             "type": "table", "title": "工序列表", "sort_order": 0,
             "config": {
-                "columns": [
+                "fields": [
                     {"label": "序号", "prop": "serialNumber", "width": 80},
-                    {"label": "代码", "prop": "code", "width": 180},
-                    {"label": "名称", "prop": "displayName", "width": -1},
-                    {"label": "说明", "prop": "content", "width": 100, "type": "richText"},
+                    {"label": "代码", "prop": "code", "width": 120},
+                    {"label": "名称", "prop": "name", "width": 150},
+                    {"label": "说明", "prop": "content", "width": -1, "type": "richText"},
                     {"label": "关键", "prop": "isKey_display", "width": 80}
                 ]
             }
@@ -326,7 +428,8 @@ def create_v6_srd(output_path):
                     {"label": "工序名称", "vModel": "name"},
                     {"label": "序号", "vModel": "serialNumber"},
                     {"label": "类型", "vModel": "classId_display"},
-                    {"label": "关键工序", "vModel": "isKey_display"}
+                    {"label": "关键工序", "vModel": "isKey_display"},
+                    {"label": "详细说明", "vModel": "content", "type": "richText", "isFullWidth": True}
                 ],
                 "columns": 2
             }
@@ -335,10 +438,10 @@ def create_v6_srd(output_path):
             "id": "comp_operation_list", "tab_id": "tab_operation_children",
             "type": "table", "title": "工步列表", "sort_order": 0,
             "config": {
-                "columns": [
+                "fields": [
                     {"label": "序号", "prop": "serialNumber", "width": 80},
                     {"label": "代码", "prop": "code", "width": 180},
-                    {"label": "名称", "prop": "displayName", "width": -1}
+                    {"label": "名称", "prop": "name", "width": -1}
                 ]
             }
         },
@@ -495,4 +598,4 @@ def create_v6_srd(output_path):
 
 
 if __name__ == '__main__':
-    create_v6_srd('F:/workProject/avpbc-pop/final_test_v6_package.srd')
+    create_v6_srd('F:/workProject/avpbc-pop/test_v8_refactored.srd')
