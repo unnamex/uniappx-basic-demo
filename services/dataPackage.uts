@@ -1353,7 +1353,6 @@ function extractAndParseWeb(
 			let groups: TabGroup[] = []
 			let tabs: TabConfig[] = []
 			let components: ComponentConfig[] = []
-			let iconConfig: UTSJSONObject | null = null
 			
 			let processRecords: UTSJSONObject[] = []
 			let operationRecords: UTSJSONObject[] = []
@@ -1397,14 +1396,6 @@ function extractAndParseWeb(
 				}
 			}
 			
-			if (files.icons != null) {
-				const iconsFile = findZipFile(files.icons as string)
-				if (iconsFile != null) {
-					const content = await iconsFile.async("string")
-					iconConfig = JSON.parse(content) as UTSJSONObject
-				}
-			}
-			
 			// 4. 解析工艺数据表 (V6)
 			const readTableFile = async (pathKey: string | null, defPath: string): Promise<UTSJSONObject[]> => {
 				const p = pathKey ?? defPath
@@ -1442,8 +1433,6 @@ function extractAndParseWeb(
 				await webClearStore('t_step')
 				await webClearStore('t_action')
 				
-				await webClearStore('t_icon_config')
-				
 				let uiConfigCount = 0
 				
 				for (const g of groups) {
@@ -1459,20 +1448,6 @@ function extractAndParseWeb(
 				for (const c of components) {
 					await webPutData('meta_components', c)
 					uiConfigCount++
-				}
-				
-				if (iconConfig != null) {
-					const nodeIcons = iconConfig['nodeIcons'] as UTSJSONObject
-					if (nodeIcons != null) {
-						for (const nodeType of Object.keys(nodeIcons)) {
-							const cfg = nodeIcons[nodeType] as UTSJSONObject
-							await webPutData('t_icon_config', {
-								node_type: nodeType,
-								icon_name: cfg['icon'] ?? nodeType,
-								fallback: cfg['fallback'] ?? ''
-							})
-						}
-					}
 				}
 				
 				// Web 端 IndexedDB 暂不使用 standard_fields 拆分写入，直接写入整条 JSON 记录（底层用 KV 或 Document 模式）

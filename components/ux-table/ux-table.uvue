@@ -54,6 +54,11 @@
 								<text class="icon-text" v-if="row.hasChildren">{{ row.expanded ? '▼' : '▶' }}</text>
 								<text class="icon-text" v-else></text>
 							</view>
+							<!-- 新增：节点类型 SVG 图标 -->
+							<image v-if="showExpand && getNodeIconPath(row) != ''"
+								   class="node-type-icon"
+								   :src="getNodeIconPath(row)"
+								   mode="aspectFit" />
 							<text class="cell-text">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
 						</view>
 						
@@ -587,6 +592,9 @@
 			onResizeEnd() {
 				this.dragState.fieldIndex = -1
 			},
+			getNodeIconPath(row: TableRow): string {
+				return (row.originData['iconPath'] as string | null) ?? ''
+			},
 			// #ifdef H5
 			onResizeStartMouse(index: number, e: MouseEvent) {
 				const startX = e.clientX
@@ -823,6 +831,12 @@
 		justify-content: center;
 		align-items: center;
 		margin-right: 4px;
+	}
+
+	.node-type-icon {
+		width: 20px;
+		height: 20px;
+		margin-right: 6px;
 	}
 	
 	.icon-text {

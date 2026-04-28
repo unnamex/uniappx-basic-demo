@@ -14,10 +14,10 @@
 		<template #header>
 			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 0) + 'px' }">
 				<!-- 左侧：当前工艺大图标 -->
-				<view class="header-icon-area">
-					<view class="header-process-icon">
-						<text class="header-icon-text">{{ currentProcessIcon }}</text>
-					</view>
+				<view v-if="headerIconPath != ''" class="header-icon-area">
+					<image class="header-process-icon-img"
+						   :src="headerIconPath"
+						   mode="aspectFit" />
 				</view>
 				<!-- 右侧：面包屑区域（上下两行） -->
 				<view class="header-breadcrumb-area">
@@ -337,6 +337,7 @@
 	import { ResourceItem } from '@/types/resource'
 	import { getResourcesByNodeId, clearAllResources } from '@/services/resourceService.uts'
 	import { queryNodeById, queryChildrenByParentId } from '@/services/processService.uts'
+	import { getIconPath } from '@/utils/iconRegistry.uts'
 
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
@@ -453,9 +454,8 @@
 	const isResourceMaximized = ref(false)
 	const isFullscreenListVisible = ref(true)
 	
-	// ============ 面包屑相关状态 ============
-	// 当前工艺图标（左侧大图标）
-	const currentProcessIcon = ref('📋')
+	// 当前工艺图标（左侧大图标），由面包屑更新时赋值，空值则不显示
+	const headerIconPath = ref('')
 	// 上部分面包屑：部件编号/名称/生命周期/版本 > 工艺编号/名称/生命周期/版本
 	const topBreadcrumbItems = ref([] as BreadcrumbItem[])
 	// 下部分面包屑：部件类型|用户|时间|位置|密级 > 工艺类型|用户|时间|位置|密级
@@ -654,7 +654,6 @@
 			await webClearStore('t_operation')
 			await webClearStore('t_step')
 			await webClearStore('t_action')
-			await webClearStore('t_icon_config')
 			await webClearStore('t_resources')  // V3: 清空资源表
 			console.log('All data cleared')
 			// #endif
@@ -668,7 +667,6 @@
 			await executeSQL('DELETE FROM t_operation')
 			await executeSQL('DELETE FROM t_step')
 			await executeSQL('DELETE FROM t_action')
-			await executeSQL('DELETE FROM t_icon_config')
 			await executeSQL('DELETE FROM t_resources')  // V3: 清空资源表
 			// #endif
 			
@@ -681,7 +679,6 @@
 			bottomGroup.value = null
 			tableData.value = []
 			selectedRow.value = null
-			iconConfigs.clear()
 			activeTabs.clear()
 			
 			// 清空资源状态
@@ -690,7 +687,7 @@
 			previewResource.value = null
 			
 			// 清空面包屑状态
-			currentProcessIcon.value = '📋'
+			headerIconPath.value = ''
 			topBreadcrumbItems.value = []
 			bottomBreadcrumbItems.value = []
 			
@@ -715,9 +712,6 @@
 		const group = await loadGroup('group_process_mgmt')
 		if (group != null) {
 			leftGroup.value = group
-			
-			// Load icon configurations first
-			await loadIconConfigs()
 			
 			// Load initial data for components in this group (e.g. the Tree)
 			await loadDataForGroup(group)
@@ -842,33 +836,9 @@
 		return data
 	}
 	
-	// 图标配置缓存 (node_type -> { icon_name, fallback })
-	const iconConfigs = reactive(new Map<string, UTSJSONObject>())
-	
-	// 加载图标配置
-	const loadIconConfigs = async () => {
-		// #ifdef WEB
-		try {
-			const configs = await webGetAll('t_icon_config')
-			for (const cfg of configs) {
-				const nodeType = cfg['node_type'] as string
-				iconConfigs.set(nodeType, cfg as UTSJSONObject)
-			}
-			console.log('Loaded icon configs:', iconConfigs.size)
-		} catch (e) {
-			console.error('Failed to load icon configs:', e)
-		}
-		// #endif
-	}
-	
-	// 获取图标路径（基于 static/icons/ 目录）
-	const getIconPath = (iconName: string): string => {
-		return `/static/icons/${iconName}.svg`
-	}
-	
 	// 为节点添加显示字段（图标+名称，资源计数标签）
 	const enrichNodeForDisplay = (node: UTSJSONObject): UTSJSONObject => {
-		// 兼容 V4/V5 数据结构：尝试从 targetClassId 映射合成 type 字段
+		// 统一处理兼容 V4/V5 的 targetClassId 映射 (如果有遗漏)
 		if (node['type'] == null && node['targetClassId'] != null) {
 			const targetCls = node['targetClassId'] as string
 			if (targetCls == 'Process') node['type'] = 'process'
@@ -878,29 +848,12 @@
 			else node['type'] = targetCls.toLowerCase()
 		}
 		
-		// 获取图标配置
-		let fallbackEmoji = '📄'
-		let iconName = 'default'
+		// 图标：classId_icon 非空则查注册表，为空则不显示
+		const iconKey = (node['classId_icon'] as string | null) ?? ''
+		node['iconPath'] = getIconPath(iconKey)
 		
-		const nodeType = (node['type'] as string) ?? ''
-		const cfg = iconConfigs.get(nodeType) ?? iconConfigs.get('default')
-		
-		if (cfg != null) {
-			iconName = cfg['icon_name'] as string ?? nodeType
-			fallbackEmoji = cfg['fallback'] as string ?? '📄'
-		} else {
-			// 默认配置
-			if (nodeType == 'process') { iconName = 'process'; fallbackEmoji = '📋' }
-			else if (nodeType == 'operation') { iconName = 'operation'; fallbackEmoji = '🔧' }
-			else if (nodeType == 'step') { iconName = 'step'; fallbackEmoji = '⚙️' }
-		}
-		
-		// 存储图标路径（用于需要显示图片的场景）
-		node['iconPath'] = getIconPath(iconName)
-		
-		// 生成显示名称: emoji + 名称（表格文本列使用）
 		const name = node['name'] as string
-		node['displayName'] = `${fallbackEmoji} ${name}`
+		node['displayName'] = name
 		
 		// 生成资源计数标签: #(数量)
 		const resourceCount = node['resourceCount']
@@ -910,7 +863,7 @@
 			node['resourceLabel'] = ''
 		}
 		
-		// 递归处理子节点
+		// 递归处理嵌套子树
 		const children = node['children']
 		if (children != null && Array.isArray(children)) {
 			const childList = children as UTSJSONObject[]
@@ -1101,9 +1054,11 @@
 		const partContextName = (node['partContextName'] as string) ?? ''
 		const partPhaseIdDisplay = (node['partPhaseId_display'] as string) ?? ''
 
-		// 获取图标
-		const icon = (node['icon'] as string) ?? '📋'
-		currentProcessIcon.value = icon
+		// === 尝试获取 Header 业务大图标 ===
+		const partBusinessIcon = (node['partClassId_business_icon'] as string | null) ?? ''
+		const processBusinessIcon = (node['classId_business_icon'] as string | null) ?? ''
+		const businessIconKey = partBusinessIcon != '' ? partBusinessIcon : processBusinessIcon
+		headerIconPath.value = getIconPath(businessIconKey)
 
 		// === 上部分面包屑：部件编号/名称/版本 > 工艺编号/名称/版本 ===
 		const topItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
@@ -2444,6 +2399,14 @@
 		bottom: 0;
 		background-color: transparent;
 		z-index: 1999;
+	}
+
+	/* ========== 头部图标样式 ========== */
+	.header-process-icon-img {
+		width: 32px;
+		height: 32px;
+		margin-right: 12px;
+		border-radius: 6px;
 	}
 </style>
 

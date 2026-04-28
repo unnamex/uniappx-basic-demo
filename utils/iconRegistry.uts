@@ -1,0 +1,15 @@
+/**
+ * MPM 图标寻址工具
+ */
+
+/**
+ * 获取图标路径。如果未找到或名称为空，返回空字符串（用于控制组件不渲染图标）。
+ * @param name 对应的数据字典中的 icon 标识，例如 "process", "part"
+ */
+export function getIconPath(name: string): string {
+    if (name == null || name == '') {
+        return '';
+    }
+    // 直接动态组装统一路径
+    return `/static/icons/${name}.svg`;
+}

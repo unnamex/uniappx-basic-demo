@@ -376,14 +376,6 @@ function createTables(): Promise<void> {
 			)
 		`
 		
-		const createIconConfigTableSQL = `
-			CREATE TABLE IF NOT EXISTS t_icon_config (
-				node_type TEXT PRIMARY KEY,
-				asset_id TEXT,
-				fallback TEXT
-			)
-		`
-		
 		const createResourcesTableSQL = `
 			CREATE TABLE IF NOT EXISTS t_resources (
 				id TEXT PRIMARY KEY,
@@ -420,7 +412,6 @@ function createTables(): Promise<void> {
 				
 				// Assets and Icon Config Tables
 				dbInstance!.execSQL(createAssetsTableSQL)
-				dbInstance!.execSQL(createIconConfigTableSQL)
 				dbInstance!.execSQL(createResourcesTableSQL)
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
 				
@@ -460,7 +451,6 @@ function createTables(): Promise<void> {
 					"CREATE INDEX IF NOT EXISTS idx_action_process_id ON t_action(process_id)",
 					createPackageTableSQL,
 					createAssetsTableSQL,
-					createIconConfigTableSQL,
 					createResourcesTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)",
 					createTabGroupsTableSQL,
@@ -854,11 +844,6 @@ function initIndexedDB(): Promise<void> {
 				// 静态资源表 (V3)
 				if (!db.objectStoreNames.contains('t_assets')) {
 					db.createObjectStore('t_assets', { keyPath: 'id' })
-				}
-				
-				// 图标配置表 (V3)
-				if (!db.objectStoreNames.contains('t_icon_config')) {
-					db.createObjectStore('t_icon_config', { keyPath: 'node_type' })
 				}
 				
 				// V3: 资源元数据表

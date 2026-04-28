@@ -22,7 +22,6 @@ def create_v6_srd(output_path):
             "tabs": "layout/tabs.json",
             "tab": "layout/tab.json",
             "components": "layout/components.json",
-            "icons": "layout/icons.json",
             "attachment": "data/attachment.json",
             "process": "data/process.json",
             "operation": "data/operation.json",
@@ -38,6 +37,7 @@ def create_v6_srd(output_path):
             "type": "process",
             "code": "ASM-ENG-V8",
             "name": "V8发动机总装工艺",
+            "classId_icon": "process",
             "tabs_top": "group_process_view",
             "tabs_bottom": "group_bottom_proc",
             "children": [
@@ -46,6 +46,7 @@ def create_v6_srd(output_path):
                     "type": "operation",
                     "code": "OP-010",
                     "name": "缸体准备",
+                    "classId_icon": "operation",
                     "tabs_top": "group_operation_view",
                     "tabs_bottom": "group_bottom_op",
                     "children": [
@@ -54,6 +55,7 @@ def create_v6_srd(output_path):
                             "type": "step",
                             "code": "S-010-01",
                             "name": "缸体清洁",
+                            "classId_icon": "step",
                             "tabs_top": "group_step_view",
                             "tabs_bottom": "group_bottom_step",
                             "children": []
@@ -63,6 +65,7 @@ def create_v6_srd(output_path):
                             "type": "step",
                             "code": "S-010-02",
                             "name": "缸体检测",
+                            "classId_icon": "step",
                             "tabs_top": "group_step_view",
                             "tabs_bottom": "group_bottom_step",
                             "children": []
@@ -74,6 +77,7 @@ def create_v6_srd(output_path):
                     "type": "operation",
                     "code": "OP-020",
                     "name": "曲轴安装",
+                    "classId_icon": "operation",
                     "tabs_top": "group_operation_view",
                     "tabs_bottom": "group_bottom_op",
                     "children": [
@@ -82,6 +86,7 @@ def create_v6_srd(output_path):
                             "type": "step",
                             "code": "S-020-01",
                             "name": "轴瓦预装",
+                            "classId_icon": "step",
                             "tabs_top": "group_step_view",
                             "tabs_bottom": "group_bottom_step",
                             "children": []
@@ -93,6 +98,7 @@ def create_v6_srd(output_path):
                     "type": "operation",
                     "code": "OP-030",
                     "name": "活塞组装",
+                    "classId_icon": "operation",
                     "tabs_top": "group_operation_view",
                     "tabs_bottom": "group_bottom_op",
                     "children": []
@@ -102,6 +108,7 @@ def create_v6_srd(output_path):
                     "type": "operation",
                     "code": "OP-040",
                     "name": "气缸盖安装",
+                    "classId_icon": "operation",
                     "tabs_top": "group_operation_view",
                     "tabs_bottom": "group_bottom_op",
                     "children": []
@@ -122,6 +129,8 @@ def create_v6_srd(output_path):
             "version": "3.0.0",
             "fullversionNo": "V3.0.0",
             "stateName": "已发布",
+            "classId_business_icon": "process",
+            "partClassId_business_icon": "process",
             "modifyById_display": "张工",
             "modifyTime": "2026-04-20",
             "contextName": "航空发动机事业部",
@@ -583,7 +592,6 @@ def create_v6_srd(output_path):
         zf.writestr('layout/tabs.json', json.dumps(tabs_data, ensure_ascii=False, indent=2))
         zf.writestr('layout/tab.json', json.dumps(tab_data, ensure_ascii=False, indent=2))
         zf.writestr('layout/components.json', json.dumps(components_data, ensure_ascii=False, indent=2))
-        zf.writestr('layout/icons.json', json.dumps(icons_data, ensure_ascii=False, indent=2))
 
         # 虚拟资源文件
         zf.writestr('assets/images/engine_exploded.png', dummy_png)

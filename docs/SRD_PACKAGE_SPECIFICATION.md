@@ -261,8 +261,8 @@ export type ProcessTreeNode = {
 | `name` | `name` | 工艺名称 |
 | `classId` | `class_id` | 类型 ID |
 | `classId_display` | `class_id_display` | 类型显示名 |
-| `classId_business_icon` | `class_id_business_icon` | 业务图标 |
-| `classId_icon` | `class_id_icon` | 类型图标 |
+| `classId_business_icon` | `class_id_business_icon` | 业务大图标（优先显示在 Header 区域） |
+| `classId_icon` | `class_id_icon` | 树节点图标（对应客户端 `ICON_REGISTRY` 的 Key，如 `process`、`operation`。为空不显示） |
 | `version` | `version` | 版本号 |
 | `fullversionNo` | `fullversion_no` | 完整版本号 |
 | `stateName` | `state_name` | 状态名称 |
@@ -281,6 +281,7 @@ export type ProcessTreeNode = {
 | `taskName` / `routeContent` / `mfgNodeName` | 对应 snake_case | 任务名/工艺路线/制造节点 |
 | `processCharacteristics` / `note` | 对应 snake_case | 工艺特性/备注 |
 | `partCode` / `partName` | `part_code` / `part_name` | 部件代码/名称 |
+| `partClassId_business_icon` | `part_class_id_business_icon` | 业务大图标（显示在 Header 区域，优先级最高） |
 | `partClassId*` / `partModifyById*` / `partModifyTime` | 对应 snake_case | 部件类型/修改人/时间 |
 | `partContextName` / `partPhaseId*` / `partSecretId*` | 对应 snake_case | 部件上下文/阶段/密级 |
 | `partStateName` / `partFullversionNo` | `part_state_name` / `part_full_version_no` | 部件状态/版本 |
@@ -614,23 +615,15 @@ export type ResourceItem = {
 
 ---
 
-## 9. layout/icons.json — 图标配置
+## 9. layout/icons.json — 图标配置 **(已废弃)**
 
-定义工艺树各节点类型的图标映射。
+> [!WARNING]
+> 自 V3 版本起，`icons.json` 已被废弃。图标映射已内置于客户端的 `ICON_REGISTRY` 中。
+> 数据包不再需要提供 `icons.json`文件，若存在也会在导入时被忽略。
 
-```json
-{
-  "nodeIcons": {
-    "process": { "icon": "process", "fallback": "📋" },
-    "operation": { "icon": "operation", "fallback": "🔧" },
-    "step": { "icon": "step", "fallback": "⚙️" },
-    "action-unit": { "icon": "action", "fallback": "▶️" },
-    "default": { "icon": "default", "fallback": "📄" }
-  }
-}
-```
+### 旧版说明（仅作参考）
 
-系统会优先加载 `assets/icons/{icon}.svg`，加载失败时使用 `fallback` 字符。图标配置在 Web 端存入 `t_icon_config` 表。
+最初用于定义工艺树各节点类型的图标映射（`node_type` 到 `icon_name` 和 `fallback`）。现已由客户端根据 `classId_icon` 字段（对应图标注册表 Key）内置进行映射。
 
 ---
 
