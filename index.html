@@ -12,6 +12,24 @@
 		<title></title>
 		<!--preload-links-->
 		<!--app-context-->
+		<style>
+			/* Web 端滚动条策略：竖向滚动条隐藏（鼠标滚轮可滚动），横向滚动条按需显示 */
+			/* 全局竖向滚动条隐藏 */
+			*::-webkit-scrollbar {
+				width: 0px;
+				height: 6px;
+			}
+			*::-webkit-scrollbar-thumb {
+				background-color: rgba(148, 163, 184, 0.35);
+				border-radius: 3px;
+			}
+			*::-webkit-scrollbar-thumb:hover {
+				background-color: rgba(148, 163, 184, 0.6);
+			}
+			*::-webkit-scrollbar-track {
+				background: transparent;
+			}
+		</style>
 	</head>
 	<body>
 		<div id="app"><!--app-html--></div>

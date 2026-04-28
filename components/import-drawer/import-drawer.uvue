@@ -35,7 +35,7 @@
 				</view>
 
 				<!-- 预览：Bento Box Grid -->
-				<scroll-view class="bento-scroll" v-if="manifest != null">
+				<scroll-view class="bento-scroll" :show-scrollbar="false" v-if="manifest != null">
 					<view class="bento-grid">
 						<!-- Bento Item 1: 核心信息 (可点击重新挑选) -->
 						<view class="bento-item bento-main" @click="handleSelectFile" hover-class="bento-hover">
