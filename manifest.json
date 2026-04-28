@@ -1,5 +1,5 @@
 {
-	"name": "星工",
+	"name": "开物",
 	"appid": "__UNI__9A011F1",
 	"description": "",
 	"versionName": "1.0.1",
@@ -63,12 +63,10 @@
 		"distribute": {
 			"modules": {
 				"entry": {
-					"abilities": [
-						{
-							"name": "EntryAbility",
-							"orientation": "auto_rotation"
-						}
-					]
+					"abilities": [{
+						"name": "EntryAbility",
+						"orientation": "auto_rotation"
+					}]
 				}
 			},
 			"icons": {

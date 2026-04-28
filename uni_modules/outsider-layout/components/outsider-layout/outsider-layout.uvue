@@ -181,11 +181,13 @@
 	// Toggle Collapse Left
 	const toggleCollapse = () => {
 		isCollapsed.value = !isCollapsed.value
+		setTimeout(() => { uni.$emit('layout-resize') }, 150)
 	}
 	
 	// Toggle Collapse Right
 	const toggleRightCollapse = () => {
 		isRightCollapsed.value = !isRightCollapsed.value
+		setTimeout(() => { uni.$emit('layout-resize') }, 150)
 	}
 
 	// --- Left Sidebar Resize Logic ---
@@ -212,6 +214,7 @@
 
 	const onTouchEnd = (e: TouchEvent) => {
 		isDragging.value = false
+		setTimeout(() => { uni.$emit('layout-resize') }, 50)
 	}
 	
 	// Mouse Events (H5) - Left
@@ -244,6 +247,7 @@
 
 		const upHandler = (_: MouseEvent) => {
 			isDragging.value = false
+			setTimeout(() => { uni.$emit('layout-resize') }, 50)
 			window.removeEventListener('mousemove', moveHandler)
 			window.removeEventListener('mouseup', upHandler)
 		}
@@ -275,6 +279,7 @@
 	
 	const onTouchEndMain = (e: TouchEvent) => {
 		isDraggingMain.value = false
+		setTimeout(() => { uni.$emit('layout-resize') }, 50)
 	}
 	
 	// Mouse (H5) - Main
@@ -295,6 +300,7 @@
 
 		const upHandler = (_: MouseEvent) => {
 			isDraggingMain.value = false
+			setTimeout(() => { uni.$emit('layout-resize') }, 50)
 			window.removeEventListener('mousemove', moveHandler)
 			window.removeEventListener('mouseup', upHandler)
 		}
@@ -328,6 +334,7 @@
 
 	const onTouchEndRight = (e: TouchEvent) => {
 		isDraggingRight.value = false
+		setTimeout(() => { uni.$emit('layout-resize') }, 50)
 	}
 	
 	// Mouse (H5) - Right
@@ -351,6 +358,7 @@
 
 		const upHandler = (_: MouseEvent) => {
 			isDraggingRight.value = false
+			setTimeout(() => { uni.$emit('layout-resize') }, 50)
 			window.removeEventListener('mousemove', moveHandler)
 			window.removeEventListener('mouseup', upHandler)
 		}
@@ -381,6 +389,7 @@
 	
 	const onTouchEndRightMain = (e: TouchEvent) => {
 		isDraggingRightMain.value = false
+		setTimeout(() => { uni.$emit('layout-resize') }, 50)
 	}
 	
 	// Mouse (H5) - Right Split
@@ -401,6 +410,7 @@
 
 		const upHandler = (_: MouseEvent) => {
 			isDraggingRightMain.value = false
+			setTimeout(() => { uni.$emit('layout-resize') }, 50)
 			window.removeEventListener('mousemove', moveHandler)
 			window.removeEventListener('mouseup', upHandler)
 		}

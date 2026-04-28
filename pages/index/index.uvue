@@ -1010,6 +1010,7 @@
 	
 	const onTabChange = (groupId: string, tabId: any) => {
 		activeTabs.set(groupId, tabId as string)
+		setTimeout(() => { uni.$emit('layout-resize') }, 150)
 	}
 	
 

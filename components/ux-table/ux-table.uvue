@@ -635,19 +635,32 @@
 				this.dragState.fieldIndex = -1
 				window.removeEventListener('mousemove', this.onResizeMoveMouse)
 				window.removeEventListener('mouseup', this.onResizeEndMouse)
-			}
+			},
 			// #endif
+			remeasureContainer() {
+				// #ifndef WEB
+				this.$nextTick(() => {
+					const el = this.$el as UniElement | null
+					if (el != null) {
+						const rect = el.getBoundingClientRect()
+						if (rect.width > 0) {
+							this.measuredContainerWidth = rect.width
+						}
+					}
+				})
+				// #endif
+			}
+		},
+		created() {
+			uni.$on('layout-resize', this.remeasureContainer)
+		},
+		unmounted() {
+			uni.$off('layout-resize', this.remeasureContainer)
 		},
 		mounted() {
 			// #ifndef WEB
 			// 原生端：mounted 后测量容器实际宽度，用于 tableRealWidth 计算
-			this.$nextTick(() => {
-				const el = this.$el as UniElement | null
-				if (el != null) {
-					const rect = el.getBoundingClientRect()
-					this.measuredContainerWidth = rect.width
-				}
-			})
+			this.remeasureContainer()
 			// #endif
 		}
 	}
