@@ -197,7 +197,7 @@
 	<view v-if="isSettingsMenuVisible" class="settings-overlay" @click="closeSettingsMenu"></view>
 	
 	<!-- 设置下拉菜单 (固定定位在右上角) -->
-	<view v-if="isSettingsMenuVisible" class="settings-dropdown">
+	<view v-if="isSettingsMenuVisible" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px' }">
 		<view class="menu-item" @click="handleImportData">
 			<text class="menu-item-icon">📦</text>
 			<text class="menu-item-text">导入数据包</text>
@@ -351,6 +351,12 @@
 	const statusBarHeight = ref(0)
 	const windowInfo = uni.getWindowInfo()
 	statusBarHeight.value = windowInfo.statusBarHeight
+
+	const settingsMenuTop = computed((): number => {
+		// 基础偏移量（对应 Header 的高度）
+		const baseOffset = 50
+		return statusBarHeight.value + baseOffset
+	})
 
 	// ============ 自适应布局计算 (响应式) ============
 	const adaptiveLeftWidth = computed((): number => {
@@ -2392,7 +2398,7 @@
 	
 	.settings-dropdown {
 		position: fixed;
-		top: 50px;
+		/* top 由动态绑定计算，移除固定值以防冲突 */
 		right: 20px;
 		background-color: #FFFFFF;
 		border-radius: 10px;
