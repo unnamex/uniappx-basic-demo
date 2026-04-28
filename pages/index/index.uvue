@@ -323,6 +323,9 @@
 			</view>
 		</view>
 	</view>
+	
+	<!-- 导入包抽屉组件 -->
+	<import-drawer v-if="showImportDrawer" @close="showImportDrawer = false" @success="handleImportSuccess" />
 </template>
 
 <script setup lang="uts">
@@ -607,14 +610,18 @@
 		isSettingsMenuVisible.value = false
 	}
 	
+	const showImportDrawer = ref(false)
+	
+	const handleImportSuccess = () => {
+		initData(null)
+	}
+	
 	/**
-	 * 处理导入数据包 - 跳转到导入页面
+	 * 处理导入数据包 - 显示导入抽屉组件
 	 */
 	const handleImportData = () => {
 		closeSettingsMenu()
-		uni.navigateTo({
-			url: '/pages/import/import'
-		})
+		showImportDrawer.value = true
 	}
 	
 	/**

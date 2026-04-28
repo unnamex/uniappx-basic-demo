@@ -84,30 +84,30 @@
 				<text class="success-title">导入成功</text>
 				<view class="success-stats-box">
 					<!-- <text class="success-desc">已导入 {{ importResult!.processCount }} 条数据</text> -->
-					<text class="success-desc">耗时 {{ (importResult!.importTime / 1000).toFixed(1) }}s</text>
+					<text class="success-desc">耗时 {{ (importResult!.importTime / 1000).toFixed(1) }}s </text>
 				</view>
 			</view>
 
-			<!-- 底部操作区 (使用绝对定位确保占位，但在内容足够大时由内部撑开) -->
+			<!-- 底部操作区 -->
 			<view class="modal-footer">
-				<button 
+				<view 
 					class="btn-primary" 
-					hover-class="btn-hover"
-					:disabled="packageInfo.fileName == '' || isImporting"
-					@click="handleImport"
+					:hover-class="(packageInfo.fileName == '' || isImporting) ? '' : 'btn-hover'"
+					:class="{'btn-disabled': packageInfo.fileName == '' || isImporting}"
+					@click="(packageInfo.fileName == '' || isImporting) ? null : handleImport()"
 					v-if="importResult == null || importResult!.success != true"
 				>
-					<text class="btn-text">{{ isImporting ? '导入中' : '确认导入' }}</text>
-				</button>
+					<text class="btn-text" :class="{'text-disabled': packageInfo.fileName == '' || isImporting}">{{ isImporting ? '导入中' : '确认导入' }}</text>
+				</view>
 				
-				<button 
+				<view 
 					class="btn-success" 
 					hover-class="btn-hover"
 					v-if="importResult != null && importResult!.success == true"
 					@click="handleReturnHome"
 				>
-					<text class="btn-text">返回主页</text>
-				</button>
+					<text class="btn-text">完成</text>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -118,6 +118,8 @@
 	import { selectPackageFile, validatePackage, importPackage, ImportProgressCallback } from '@/services/dataPackage.uts'
 	import { initDatabase } from '@/services/database.uts'
 	
+	const emit = defineEmits(['close', 'success'])
+
 	// 状态定义
 	const packageInfo = reactive({
 		fileName: '',
@@ -158,8 +160,8 @@
 			})
 	}
 	
-	// 生命周期
-	onLoad(() => {
+	// 生命周期函数
+	onMounted(() => {
 		initDb()
 	})
 	
@@ -187,33 +189,37 @@
 		
 		selectPackageFile()
 			.then((info: PackageInfo) => {
-				packageInfo.fileName = info.fileName
-				packageInfo.fileSize = info.fileSize
-				packageInfo.manifest = info.manifest
-				packageInfo.isValid = info.isValid
-				packageInfo.errorMessage = info.errorMessage
-				
-				uni.showLoading({ title: '解析数据包...' })
+				// 在这里先呼出 Loading，防止解析期间导致界面坍塌闪烁
+				uni.showLoading({ title: '正在提取与解析...', mask: true })
 				
 				validatePackage('')
 					.then((manifestRes: PackageManifest) => {
 						uni.hideLoading()
-						manifest.value = manifestRes
+						// 解析成功后，一并赋值，让视图瞬间由“选择文件”切换为“Bento 预览”
+						packageInfo.fileName = info.fileName
+						packageInfo.fileSize = info.fileSize
 						packageInfo.manifest = manifestRes
 						packageInfo.isValid = true
+						packageInfo.errorMessage = ''
+						manifest.value = manifestRes
 					})
 					.catch((e: any | null) => {
 						uni.hideLoading()
+						// 解析失败时，恢复未选择状态并给出报错
+						packageInfo.fileName = ''
+						packageInfo.manifest = null
 						packageInfo.isValid = false
 						packageInfo.errorMessage = e != null ? (e as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误'
+						manifest.value = null
+						
 						uni.showToast({
-							title: '数据包验证失败',
+							title: '数据包解析失败',
 							icon: 'none'
 						})
 					})
 			})
 			.catch((e: any | null) => {
-				console.error('选择文件失败：', e)
+				console.error('选择文件失败/取消：', e)
 			})
 	}
 	
@@ -234,6 +240,9 @@
 		isImporting.value = true
 		importResult.value = null
 		
+		// 呼出系统级 Loading 遮罩，防止卡顿期间无反馈
+		uni.showLoading({ title: '正在提取与导入...', mask: true })
+		
 		const onProgress: ImportProgressCallback = (progress: ImportProgress) => {
 			importProgress.current = progress.current
 			importProgress.total = progress.total
@@ -243,10 +252,12 @@
 		
 		importPackage('', onProgress)
 			.then((result: ImportResult) => {
+				uni.hideLoading()
 				isImporting.value = false
 				importResult.value = result
 			})
 			.catch((e: any | null) => {
+				uni.hideLoading()
 				isImporting.value = false
 				const errResult : ImportResult = {
 					success: false,
@@ -288,51 +299,41 @@
 	}
 	
 	/**
-	 * 点击遮罩/关闭按钮 (拦截返回)
+	 * 点击遮罩/关闭按钮
 	 */
 	const handleClose = () => {
 		if (isImporting.value) return
-		uni.navigateBack({ delta: 1 })
+		emit('close')
 	}
 	
 	/**
 	 * 成功导入后返回主页并刷新
 	 */
 	const handleReturnHome = () => {
-		// 抛出全局事件供主页刷新
-		uni.$emit('onResourceImported')
-		
-		uni.navigateBack({ 
-			delta: 1,
-			fail: () => {
-				// 容错: 若无法返回则switchTab回首页（视您的真实路由配置决定）
-				uni.switchTab({ url: '/pages/index/index' })
-			}
-		})
+		emit('success')
+		emit('close')
 	}
 </script>
 
 <style>
 	/* ====== 基础遮罩背景 ====== */
 	.mask-bg {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-color: rgba(17, 24, 39, 0.4); /* 暗黑遮罩 */
+		background-color: rgba(17, 24, 39, 0.4);
+		z-index: 9999;
 	}
 	
 	/* ====== 条件容器布局 ====== */
-	
-	/* 通用外壳基础 */
 	.modal-content {
 		background-color: #FFFFFF;
 		display: flex;
 		flex-direction: column;
 	}
 	
-	/* 鸿蒙端/APP端 适用：底部弹出铺满半屏 */
 	.bottom-sheet {
 		position: absolute;
 		bottom: 0;
@@ -340,11 +341,9 @@
 		right: 0;
 		border-top-left-radius: 20px;
 		border-top-right-radius: 20px;
-		/* 考虑移动端底部安全区 */
 		padding-bottom: 24px;
 	}
 	
-	/* Web端 适用：右侧边抽屉 */
 	.side-drawer {
 		position: absolute;
 		top: 0;
@@ -357,8 +356,6 @@
 	}
 	
 	/* ====== 内部通用布局 ====== */
-	
-	/* 头部区域 */
 	.modal-header {
 		flex-direction: row;
 		justify-content: space-between;
@@ -390,18 +387,15 @@
 		color: #6B7280;
 	}
 	
-	/* 主体内间距 */
 	.modal-body {
 		padding: 20px;
 		flex-direction: column;
-		/* 允许抽屉模式内部独立滚动 */
 		flex: 1;
 		/* #ifdef WEB */
 		overflow-y: auto;
 		/* #endif */
 	}
 	
-	/* 文件选择器 (未选择时展示) */
 	.file-picker {
 		background-color: #FFFFFF;
 		border-radius: 16px;
@@ -445,9 +439,7 @@
 		color: #9CA3AF;
 	}
 	
-	/* ====== Bento Box Grid ====== */
 	.bento-scroll {
-		/* 在 APP 端限制高度以符合底部分屏展示 */
 		/* #ifndef WEB */
 		max-height: 380px;
 		/* #endif */
@@ -459,7 +451,6 @@
 		width: 100%;
 	}
 	
-	/* 通用 Bento Item */
 	.bento-item {
 		background-color: #F8FAFC;
 		border-radius: 12px;
@@ -475,7 +466,6 @@
 		opacity: 0.8;
 	}
 	
-	/* 主 Bento Item (左侧带 icon，右侧小字) */
 	.bento-main {
 		flex-direction: row;
 		align-items: center;
@@ -528,7 +518,6 @@
 		font-weight: 600;
 	}
 	
-	/* Bento Row 横向分布 */
 	.bento-row {
 		flex-direction: row;
 		width: 100%;
@@ -561,7 +550,6 @@
 		line-height: 1.4em;
 	}
 	
-	/* ====== 导入进度 ====== */
 	.progress-section {
 		margin-top: 8px;
 		flex-direction: column;
@@ -607,7 +595,6 @@
 		/* #endif */
 	}
 	
-	/* ====== 报错与成功状态 ====== */
 	.error-msg {
 		background-color: #FEF2F2;
 		padding: 12px;
@@ -668,16 +655,14 @@
 		margin-bottom: 4px;
 	}
 	
-	/* ====== 底部操作区 ====== */
 	.modal-footer {
 		padding: 16px 20px;
 		background-color: #F8FAFC;
 		border-top-width: 1px;
 		border-top-style: solid;
 		border-top-color: #E2E8F0;
-		/* 设置为与底部或下方贴合并占满宽度 */
 		width: 100%;
-		border-radius: 0; /* 覆写在右抽屉场景下的无缝过渡 */
+		border-radius: 0;
 	}
 	
 	.btn-primary {
@@ -687,6 +672,7 @@
 		justify-content: center;
 		align-items: center;
 		border-width: 0;
+		flex-direction: row;
 	}
 	
 	.btn-success {
@@ -696,6 +682,11 @@
 		justify-content: center;
 		align-items: center;
 		border-width: 0;
+		flex-direction: row;
+	}
+	
+	.btn-disabled {
+		background-color: #E2E8F0;
 	}
 	
 	.btn-hover {
@@ -709,5 +700,9 @@
 		color: #FFFFFF;
 		font-size: 16px;
 		font-weight: bold;
+	}
+	
+	.text-disabled {
+		color: #94A3B8;
 	}
 </style>

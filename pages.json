@@ -14,12 +14,7 @@
 			}
 		},
 
-		{
-			"path": "pages/import/import",
-			"style": {
-				"navigationBarTitleText": "数据导入"
-			}
-		},
+
 		{
 			"path": "pages/video/player",
 			"style": {
