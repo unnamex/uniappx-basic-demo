@@ -1,0 +1,2 @@
+// 鸿蒙端入口文件 — 引入原生嵌入组件注册
+import './KuxPDFView.ets';

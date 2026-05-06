@@ -72,7 +72,12 @@
 			</view>
 			<!-- #endif -->
 			<!-- #ifdef APP -->
+			<!-- #ifdef APP-HARMONY -->
+			<KuxHarmonyPdf :src="resPath" class="pdf-native-view"></KuxHarmonyPdf>
+			<!-- #endif -->
+			<!-- #ifndef APP-HARMONY -->
 			<web-view :id="webviewId" class="pdf-webview" :src="pdfWebViewSrc" @load="onPdfWebViewLoad"></web-view>
+			<!-- #endif -->
 			<view class="resource-info">
 				<text class="resource-name">{{ resName }}</text>
 			</view>
@@ -119,6 +124,7 @@
 </template>
 
 <script setup lang="uts">
+	import KuxHarmonyPdf from '@/uni_modules/kux-harmony-pdf/components/kux-harmony-pdf/kux-harmony-pdf.uvue'
 	import { ResourceItem, formatDuration } from '@/types/resource'
 	
 	// Props
@@ -689,6 +695,12 @@
 		flex: 1;
 		width: 100%;
 		background-color: #FFFFFF;
+	}
+
+	.pdf-native-view {
+		flex: 1;
+		width: 100%;
+		background-color: #F3F4F6;
 	}
 	
 	.cad-label {

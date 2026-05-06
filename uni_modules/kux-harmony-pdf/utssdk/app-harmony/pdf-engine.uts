@@ -1,0 +1,163 @@
+import { pdfService } from '@kit.PDFKit';
+import { image } from '@kit.ImageKit';
+import { fileIo } from '@kit.CoreFileKit';
+
+export type PDFPageData = {
+	src: string;
+	width: number;
+	height: number;
+};
+
+export class HarmonyPDFEngine {
+	private document: pdfService.PdfDocument | null = null;
+	private cacheDir: string = '';
+
+	constructor() {
+		// #ifdef APP-HARMONY
+		try {
+			const cachePath = uni.env.CACHE_PATH;
+			this.cacheDir = cachePath + (cachePath.endsWith('/') ? '' : '/') + 'pdf_cache';
+			const fs = uni.getFileSystemManager();
+			try {
+				fs.accessSync(this.cacheDir);
+			} catch (e) {
+				fs.mkdirSync(this.cacheDir, true);
+			}
+			console.log('PDF Engine Cache Dir:', this.cacheDir);
+		} catch (e) {
+			console.error('PDF Engine Constructor Error:', e);
+		}
+		// #endif
+	}
+
+	/**
+	 * 加载 PDF 文档
+	 * @param path 本地文件路径
+	 */
+	async open(path: string): Promise<number> {
+		console.log('HarmonyPDFEngine Opening Path:', path);
+		try {
+			// 确保清理旧文档
+			this.close();
+			
+			let targetPath = path;
+			// 处理 unifile 协议，在原生端需要转换为物理路径
+			if (targetPath.startsWith('unifile://')) {
+				const fs = uni.getFileSystemManager();
+				const tempPath = this.cacheDir + '/temp_document.pdf';
+				try {
+					console.log('Copying unifile to temp:', targetPath, '->', tempPath);
+					fs.copyFileSync(targetPath, tempPath);
+					targetPath = tempPath;
+				} catch (e) {
+					console.error('Copy unifile to temp error:', e);
+				}
+			}
+			
+			// 在 API 12 中，正确写法通常是创建 PdfDocument 实例
+			this.document = new pdfService.PdfDocument();
+			// 注意：loadDocument 在某些版本是同步的，返回 ParseResult
+			const loadResult = this.document.loadDocument(targetPath);
+			console.log('PDF Load Result:', loadResult);
+			
+			if (loadResult === pdfService.ParseResult.PARSE_SUCCESS || (loadResult as any) === 0) {
+				const count = this.document.getPageCount();
+				console.log('PDF Opened, Page Count:', count);
+				return count;
+			} else {
+				console.error('PDF Load Failed with result:', loadResult);
+			}
+		} catch (e) {
+			console.error('PDF Engine Open Error:', e);
+		}
+		return 0;
+	}
+
+	/**
+	 * 渲染指定页面为图片
+	 * @param index 页面索引 (0-based)
+	 */
+	async renderPage(index: number): Promise<string | null> {
+		if (this.document == null) {
+			console.error('PDF Engine Render Error: Document not opened');
+			return null;
+		}
+		
+		const outPath = `${this.cacheDir}/page_${index}.jpg`;
+		
+		try {
+			// 如果已经缓存，直接返回（简单缓存策略）
+			const fs = uni.getFileSystemManager();
+			let exists = false;
+			try {
+				fs.accessSync(outPath);
+				exists = true;
+			} catch (e) {}
+			
+			if (exists) {
+				return outPath;
+			}
+
+			// 获取页面
+			const page = this.document.getPage(index);
+			if (page == null) {
+				console.error(`PDF Engine Render Error: Page ${index} not found`);
+				return null;
+			}
+
+			// 渲染到 PixelMap
+			// 提示：可以根据屏幕宽度动态调整宽高
+			const pixelMap = await page.renderToPixelMap({
+				width: 1080,
+				height: 1527 // A4 比例
+			});
+
+			if (pixelMap != null) {
+				// 保存 PixelMap 到文件
+				await this.savePixelMapToFile(pixelMap, outPath);
+				// 注意：在 HarmonyOS 中，PixelMap 使用完后应手动释放
+				pixelMap.release();
+				return outPath;
+			} else {
+				console.error(`PDF Engine Render Error: Failed to render page ${index} to PixelMap`);
+			}
+		} catch (e) {
+			console.error(`PDF Engine Render Error on page ${index}:`, e);
+		}
+		return null;
+	}
+
+	/**
+	 * 将 PixelMap 保存为本地文件
+	 */
+	private async savePixelMapToFile(pixelMap: image.PixelMap, filePath: string): Promise<void> {
+		try {
+			const imagePacker = image.createImagePacker();
+			const packOpts: image.PackingOption = { format: "image/jpeg", quality: 90 };
+			
+			// 使用 fileIo 打开文件流
+			const file = fileIo.openSync(filePath, fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.CREATE | fileIo.OpenMode.TRUNC);
+			await imagePacker.packToFile(pixelMap, file.fd, packOpts);
+			fileIo.closeSync(file);
+			imagePacker.release();
+		} catch (e) {
+			console.error('PDF Engine Save File Error:', e);
+			throw e;
+		}
+	}
+	
+	/**
+	 * 关闭文档释放资源
+	 */
+	close() {
+		if (this.document != null) {
+			try {
+				this.document.releaseDocument();
+				console.log('PDF Document released');
+			} catch (e) {
+				console.error('PDF Engine Release Error:', e);
+			}
+			this.document = null;
+		}
+	}
+}

@@ -1,0 +1,271 @@
+<template>
+	<view class="kux-pdf-viewer">
+		<!-- #ifdef APP-HARMONY -->
+		<!-- 鸿蒙端：优先尝试使用原生 embed 组件 -->
+		<view v-if="useNative && nativeSrc != ''" class="pdf-native-wrapper">
+			<embed tag="kux-pdf-native" :options="pdfOptions" class="pdf-native-embed" @load="onNativeLoad" @error="onNativeError"></embed>
+		</view>
+		<!-- 降级方案：使用 web-view + pdfjs -->
+		<web-view v-else-if="webViewSrc != ''" :id="webviewId" class="pdf-webview-full" :src="webViewSrc" @load="onWebViewLoad"></web-view>
+		<!-- 加载中状态 -->
+		<view v-else-if="isLoading" class="loading-state">
+			<text class="loading-text">正在准备 PDF 文件...</text>
+		</view>
+		<!-- 错误状态 -->
+		<view v-else class="error-state">
+			<text class="error-text">{{ errorMsg }}</text>
+		</view>
+		<!-- #endif -->
+		
+		<!-- #ifndef APP-HARMONY -->
+		<web-view v-if="webViewSrc != ''" :src="webViewSrc" class="pdf-webview-full"></web-view>
+		<!-- #endif -->
+	</view>
+</template>
+
+<script setup lang="uts">
+	const props = defineProps<{
+		src: string
+	}>()
+
+	// #ifdef APP-HARMONY
+	const nativeSrc = ref('')
+	const isLoading = ref(true)
+	const errorMsg = ref('')
+	// 是否使用原生方案（默认尝试原生，失败后降级）
+	const useNative = ref(true)
+	// 标记原生组件是否已成功加载
+	const nativeLoaded = ref(false)
+	
+	// webview方案的源路径（降级方案使用）
+	const webviewId = 'pdf_harmony_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
+	const webViewSrc = ref('')
+	
+	// embed 组件的 options 属性，传递给原生 Builder
+	const pdfOptions = computed((): UTSJSONObject => {
+		const opts : UTSJSONObject = {
+			src: nativeSrc.value
+		}
+		return opts
+	})
+	
+	/**
+	 * 原生组件加载成功回调
+	 * 接收原生侧通过 onLoad 回调发出的事件
+	 */
+	function onNativeLoad(e : any) {
+		console.log('[KuxPDF] 原生组件加载成功', e);
+		nativeLoaded.value = true
+	}
+	
+	/**
+	 * 原生组件加载失败回调
+	 * 接收原生侧通过 onError 回调发出的事件
+	 */
+	function onNativeError(e : any) {
+		console.error('[KuxPDF] 原生组件加载失败，降级为 WebView 方案', e);
+		fallbackToWebView()
+	}
+	
+	/**
+	 * 降级到 WebView 方案
+	 */
+	function fallbackToWebView() {
+		useNative.value = false
+		// 使用 web-view 加载 PDF
+		setupWebViewSrc()
+	}
+	
+	/**
+	 * 设置 WebView 方案的路径
+	 * 将本地文件读取为 base64 后通过 pdfjs 渲染
+	 */
+	function setupWebViewSrc() {
+		const srcPath = props.src
+		if (srcPath == '') return
+		
+		// 对于本地路径，使用 pdfjs viewer
+		if (!srcPath.startsWith('http://') && !srcPath.startsWith('https://')) {
+			webViewSrc.value = '/static/pdf/pdfjs-viewer.html'
+		} else {
+			const encodedSrc = encodeURIComponent(srcPath)
+			webViewSrc.value = '/static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc
+		}
+		isLoading.value = false
+	}
+	
+	/**
+	 * WebView 加载完成后注入 base64 数据
+	 */
+	function onWebViewLoad() {
+		const srcPath = props.src
+		if (srcPath == '') return
+		if (srcPath.startsWith('http://') || srcPath.startsWith('https://')) return
+		
+		try {
+			const fs = uni.getFileSystemManager()
+			const base64Str = fs.readFileSync(srcPath, 'base64') as string
+			const instance = getCurrentInstance()
+			const wvContext = uni.createWebviewContext(webviewId, instance?.proxy)
+			wvContext.evalJS(`window.loadPdfFromBase64('${base64Str}')`)
+			console.log('[KuxPDF] WebView 方案: base64数据已注入');
+		} catch (err : any) {
+			console.error('[KuxPDF] WebView方案加载失败:', err)
+			errorMsg.value = 'PDF加载失败'
+		}
+	}
+	
+	/**
+	 * 初始化 PDF 查看
+	 * 鸿蒙原生 PdfView 组件需要沙箱路径，如果传入的是 unifile 协议路径，
+	 * 需要先拷贝到缓存目录再传给原生组件。
+	 */
+	async function initPDF() {
+		if (props.src == '') {
+			console.log('[KuxPDF] src 为空，跳过初始化');
+			return
+		}
+		
+		console.log('[KuxPDF] 开始初始化, src=', props.src);
+		isLoading.value = true
+		errorMsg.value = ''
+		
+		try {
+			let targetPath = props.src
+			
+			// 处理远程链接：先下载到本地
+			if (targetPath.startsWith('http://') || targetPath.startsWith('https://')) {
+				console.log('[KuxPDF] 下载远程PDF:', targetPath);
+				try {
+					const res = await uni.downloadFile({
+						url: targetPath
+					})
+					if (res.tempFilePath != null) {
+						targetPath = res.tempFilePath!
+						console.log('[KuxPDF] 下载完成:', targetPath);
+					} else {
+						throw new Error('下载失败，未获取到临时路径')
+					}
+				} catch (e) {
+					console.error('[KuxPDF] 下载PDF失败:', e);
+					errorMsg.value = '远程文件下载失败'
+					isLoading.value = false
+					return
+				}
+			}
+			
+			// 处理 unifile 协议路径，拷贝到缓存目录
+			if (targetPath.startsWith('unifile://')) {
+				try {
+					const cachePath = uni.env.CACHE_PATH
+					const cacheDir = cachePath + (cachePath.endsWith('/') ? '' : '/') + 'pdf_native'
+					const fs = uni.getFileSystemManager()
+					
+					// 确保缓存目录存在
+					try {
+						fs.accessSync(cacheDir)
+					} catch (e) {
+						fs.mkdirSync(cacheDir, true)
+					}
+					
+					const tempPath = cacheDir + '/view_document.pdf'
+					console.log('[KuxPDF] 拷贝文件到缓存:', targetPath, '->', tempPath);
+					fs.copyFileSync(targetPath, tempPath)
+					targetPath = tempPath
+				} catch (e) {
+					console.error('[KuxPDF] 拷贝文件失败:', e);
+					errorMsg.value = '文件准备失败'
+					isLoading.value = false
+					return
+				}
+			}
+			
+			if (useNative.value) {
+				console.log('[KuxPDF] 尝试原生方案, 设置路径:', targetPath);
+				nativeSrc.value = targetPath
+				isLoading.value = false
+				// 原生组件加载结果通过 @load 和 @error 事件回调处理
+				// 不再使用超时检测机制
+			} else {
+				// 直接使用 WebView 方案
+				setupWebViewSrc()
+			}
+		} catch (e : any) {
+			console.error('[KuxPDF] 初始化出错:', e);
+			errorMsg.value = '加载 PDF 出错: ' + (e.message ?? '未知错误')
+			isLoading.value = false
+		}
+	}
+	
+	onMounted(() => {
+		initPDF()
+	})
+	
+	watch(() => props.src, () => {
+		nativeSrc.value = ''
+		webViewSrc.value = ''
+		nativeLoaded.value = false
+		useNative.value = true
+		initPDF()
+	})
+	// #endif
+
+	// #ifndef APP-HARMONY
+	const webViewSrc = computed((): string => {
+		if (props.src == '') return ''
+		const encodedSrc = encodeURIComponent(props.src)
+		return '/static/pdf/pdfjs-viewer.html?file=' + encodedSrc
+	})
+	// #endif
+</script>
+
+<style>
+	.kux-pdf-viewer {
+		flex: 1;
+		width: 100%;
+		height: 100%;
+		background-color: #F3F4F6;
+	}
+	
+	.pdf-native-wrapper {
+		flex: 1;
+		width: 100%;
+		height: 100%;
+	}
+	
+	.pdf-native-embed {
+		flex: 1;
+		width: 100%;
+		height: 100%;
+	}
+	
+	.pdf-webview-full {
+		flex: 1;
+		width: 100%;
+		height: 100%;
+	}
+	
+	.loading-state {
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+	
+	.error-state {
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+	
+	.loading-text {
+		color: #6B7280;
+		font-size: 14px;
+	}
+	
+	.error-text {
+		color: #EF4444;
+		font-size: 14px;
+	}
+</style>

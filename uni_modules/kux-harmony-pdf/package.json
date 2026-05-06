@@ -1,0 +1,25 @@
+{
+  "id": "kux-harmony-pdf",
+  "name": "kux-harmony-pdf",
+  "version": "1.0.0",
+  "description": "鸿蒙原生PDF查看组件，解决WebView渲染抖动问题",
+  "main": "index.uts",
+  "keywords": ["pdf", "harmonyos", "native"],
+  "author": "Antigravity",
+  "license": "MIT",
+  "uni_modules": {
+    "dependencies": [],
+    "encrypt": [],
+    "platforms": {
+      "cloud": {
+        "tcb": "y",
+        "aliyun": "y"
+      },
+      "client": {
+        "App": {
+          "harmony": "y"
+        }
+      }
+    }
+  }
+}
