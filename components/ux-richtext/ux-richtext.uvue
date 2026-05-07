@@ -123,7 +123,7 @@
 					+ 'p{margin:4px 0;}'
 					+ '</style></head><body><div id="rich-wrap">'
 					+ this.content
-					+ '</div><script>function reportHeight(){var w=document.getElementById("rich-wrap");if(w){var h=w.offsetHeight;parent.postMessage({type:"ux-richtext-height",height:h},"*");}}window.addEventListener("load",reportHeight);setTimeout(reportHeight,100);setTimeout(reportHeight,500);</' + 'script>'
+					+ '</div><script>function reportHeight(){var wrap=document.getElementById("rich-wrap");if(wrap){var h=wrap.getBoundingClientRect().height;parent.postMessage({type:"ux-richtext-height",height:Math.ceil(h)},"*");}}window.addEventListener("load",reportHeight);setTimeout(reportHeight,100);setTimeout(reportHeight,500);if(window.ResizeObserver){var ro=new ResizeObserver(reportHeight);ro.observe(document.body);var wrap=document.getElementById("rich-wrap");if(wrap)ro.observe(wrap);}</' + 'script>'
 					+ '</body></html>'
 				
 				const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
@@ -138,8 +138,8 @@
 					if (data != null && data.type == 'ux-richtext-height') {
 						const h = data.height as number
 						if (h > 0) {
-							self.measuredHeight = h
-							iframe.style.height = h + 'px'
+							self.measuredHeight = h + 2
+							iframe.style.height = (h + 2) + 'px'
 						}
 						// 不移除监听，因为 iframe 内部会多次上报以确保准确
 					}
@@ -179,12 +179,14 @@
 
 <style>
 	.ux-richtext-container {
+		display: flex;
 		flex-direction: column;
 		width: 100%;
 		overflow: hidden;
 	}
 
 	.richtext-iframe-wrap {
+		display: flex;
 		flex: 1;
 		width: 100%;
 	}

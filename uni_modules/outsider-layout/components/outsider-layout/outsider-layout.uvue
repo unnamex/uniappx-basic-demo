@@ -27,11 +27,11 @@
 				<!-- Main Content -->
 				<view class="outsider-main">
 					<!-- Vertical Split Layout if main-bottom exists -->
-					<view v-if="showMainBottom" class="outsider-main-split-container">
-						<!-- Top Section -->
-						<scroll-view scroll-y class="outsider-main-top" :style="{ height: currentMainTopHeight + 'px' }">
+					<view v-if="showMainBottom" class="outsider-main-split-container" ref="mainSplitRef">
+						<!-- Top Section：使用 flex 比例控制高度，view 避免与内部 scroll-view 嵌套 -->
+						<view class="outsider-main-top" :style="{ flex: mainTopFlex }">
 							<slot></slot>
-						</scroll-view>
+						</view>
 
 						<!-- Horizontal Divider -->
 						<view :class="['outsider-main-divider-horizontal', isDraggingMain ? 'outsider-divider-drag-horizontal' : '']"
@@ -44,10 +44,10 @@
 							<view :class="['outsider-divider-handle-horizontal', isDraggingMain ? 'outsider-divider-handle-drag' : '']"></view>
 						</view>
 
-						<!-- Bottom Section -->
-						<scroll-view scroll-y class="outsider-main-bottom">
+						<!-- Bottom Section：使用 flex 比例控制高度，view 避免与内部 scroll-view 嵌套 -->
+						<view class="outsider-main-bottom" :style="{ flex: mainBottomFlex }">
 							<slot name="main-bottom"></slot>
-						</scroll-view>
+						</view>
 					</view>
 					
 					<!-- Standard Layout (Single Main Content) -->
@@ -108,6 +108,11 @@
 		<view class="outsider-footer">
 			<slot name="footer"></slot>
 		</view>
+
+		<!-- 拖拽全局遮罩：防止拖动过快时鼠标进入内部 iframe/webview 或原生组件，导致 mouseup 事件丢失 -->
+		<!-- #ifdef WEB -->
+		<view v-if="isDragging || isDraggingMain || isDraggingRight || isDraggingRightMain" class="outsider-drag-overlay"></view>
+		<!-- #endif -->
 	</view>
 </template>
 
@@ -121,8 +126,12 @@
 		initLeftWidth ?: number
 		minLeftWidth ?: number
 		maxLeftWidth ?: number
-		initMainTopHeight ?: number
-		minMainTopHeight ?: number
+		/** 中间区域上半部分初始占比（0-1之间），默认 0.52 */
+		initMainTopRatio ?: number
+		/** 中间区域上半部分最小占比（0-1之间），默认 0.15 */
+		minMainTopRatio ?: number
+		/** 中间区域上半部分最大占比（0-1之间），默认 0.85 */
+		maxMainTopRatio ?: number
 		initRightWidth ?: number
 		minRightWidth ?: number
 		maxRightWidth ?: number
@@ -139,8 +148,9 @@
 		initLeftWidth: 250,
 		minLeftWidth: 100,
 		maxLeftWidth: 500,
-		initMainTopHeight: 300,
-		minMainTopHeight: 100,
+		initMainTopRatio: 0.52,
+		minMainTopRatio: 0.15,
+		maxMainTopRatio: 0.85,
 		initRightWidth: 250,
 		minRightWidth: 100,
 		maxRightWidth: 500,
@@ -159,11 +169,39 @@
 	const startX = ref(0)
 	const startWidth = ref(0)
 	
-	// State - Main Split
-	const currentMainTopHeight = ref(props.initMainTopHeight)
+	// State - Main Split（使用比例值代替固定像素，自适应容器大小变化）
+	const mainTopRatio = ref(props.initMainTopRatio)
 	const isDraggingMain = ref(false)
 	const startY = ref(0)
-	const startHeight = ref(0)
+	const startRatio = ref(0)
+	const mainSplitRef = ref(null as any)
+
+	// 计算 flex 值：上半部分占比 mainTopRatio，下半部分占比 1 - mainTopRatio
+	// 使用整数化的 flex 值（乘以 1000）避免浮点精度问题
+	const mainTopFlex = computed((): string => {
+		return Math.round(mainTopRatio.value * 1000).toString()
+	})
+	const mainBottomFlex = computed((): string => {
+		return Math.round((1 - mainTopRatio.value) * 1000).toString()
+	})
+
+	/** 获取 main-split-container 的实际高度（像素） */
+	const getMainSplitHeight = (): number => {
+		// #ifdef WEB
+		if (mainSplitRef.value != null) {
+			const el = (mainSplitRef.value as any).$el as HTMLElement | null
+			if (el != null) {
+				return el.clientHeight
+			}
+		}
+		// 降级：使用窗口高度估算
+		return window.innerHeight * 0.7
+		// #endif
+		// #ifndef WEB
+		const info = uni.getWindowInfo()
+		return info.windowHeight * 0.7
+		// #endif
+	}
 	
 	// State - Right Sidebar
 	const currentRightWidth = ref(props.initRightWidth)
@@ -229,6 +267,7 @@
 		// #ifdef WEB
 		// In Web environment, e is MouseEvent
 		const mouseEvent = e as MouseEvent
+		mouseEvent.preventDefault()
 		isDragging.value = true
 		startX.value = mouseEvent.clientX
 		startWidth.value = currentLeftWidth.value
@@ -258,19 +297,20 @@
 	const onTouchStartMain = (e: TouchEvent) => {
 		isDraggingMain.value = true
 		startY.value = e.touches[0].clientY
-		startHeight.value = currentMainTopHeight.value
+		startRatio.value = mainTopRatio.value
 	}
 	
 	const onTouchMoveMain = (e: TouchEvent) => {
 		if (!isDraggingMain.value) return
 		const clientY = e.touches[0].clientY
 		const deltaY = clientY - startY.value
-		
-		let newHeight = startHeight.value + deltaY
-		if (newHeight < props.minMainTopHeight) newHeight = props.minMainTopHeight
-		// Max height constraint could be checked against container height if needed, skipping for now
-		
-		currentMainTopHeight.value = newHeight
+		const containerHeight = getMainSplitHeight()
+		if (containerHeight <= 0) return
+		// 将像素偏移转换为比例变化量
+		let newRatio = startRatio.value + deltaY / containerHeight
+		if (newRatio < props.minMainTopRatio) newRatio = props.minMainTopRatio
+		if (newRatio > props.maxMainTopRatio) newRatio = props.maxMainTopRatio
+		mainTopRatio.value = newRatio
 	}
 	
 	const onTouchEndMain = (e: TouchEvent) => {
@@ -281,16 +321,21 @@
 	const onMouseDownMain = (e: any) => {
 		// #ifdef WEB
 		const mouseEvent = e as MouseEvent
+		mouseEvent.preventDefault()
 		isDraggingMain.value = true
 		startY.value = mouseEvent.clientY
-		startHeight.value = currentMainTopHeight.value
+		startRatio.value = mainTopRatio.value
+		const containerHeight = getMainSplitHeight()
 		
 		const moveHandler = (moveEvent: MouseEvent) => {
 			if (!isDraggingMain.value) return
+			if (containerHeight <= 0) return
 			const deltaY = moveEvent.clientY - startY.value
-			let newHeight = startHeight.value + deltaY
-			if (newHeight < props.minMainTopHeight) newHeight = props.minMainTopHeight
-			currentMainTopHeight.value = newHeight
+			// 将像素偏移转换为比例变化量
+			let newRatio = startRatio.value + deltaY / containerHeight
+			if (newRatio < props.minMainTopRatio) newRatio = props.minMainTopRatio
+			if (newRatio > props.maxMainTopRatio) newRatio = props.maxMainTopRatio
+			mainTopRatio.value = newRatio
 		}
 
 		const upHandler = (_: MouseEvent) => {
@@ -334,6 +379,7 @@
 	const onMouseDownRight = (e: any) => {
 		// #ifdef WEB
 		const mouseEvent = e as MouseEvent
+		mouseEvent.preventDefault()
 		isDraggingRight.value = true
 		startXRight.value = mouseEvent.clientX
 		startWidthRight.value = currentRightWidth.value
@@ -387,6 +433,7 @@
 	const onMouseDownRightMain = (e: any) => {
 		// #ifdef WEB
 		const mouseEvent = e as MouseEvent
+		mouseEvent.preventDefault()
 		isDraggingRightMain.value = true
 		startYRight.value = mouseEvent.clientY
 		startHeightRight.value = currentRightTopHeight.value
@@ -528,6 +575,7 @@
 	}
 
 	.outsider-main {
+		display: flex;
 		flex: 1;
 		/* #ifdef WEB */
 	overflow: hidden;
@@ -541,7 +589,8 @@
 	}
 	
 	.outsider-main-split-container {
-			flex-direction: column;
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		height: 100%;
 		/* #ifdef WEB */
@@ -550,16 +599,19 @@
 	}
 	
 	.outsider-main-top {
-		flex: none; /* Controlled by height style */
+		display: flex;
+		/* flex 值由 :style 动态绑定控制 */
+		flex-direction: column;
 		/* #ifdef WEB */
 	overflow: hidden;
 	/* #endif */
 	}
 	
 	.outsider-main-divider-horizontal {
+		display: flex;
 		height: 8px;
 		background-color: transparent;
-			flex-direction: column;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		/* cursor: row-resize; */
@@ -594,6 +646,8 @@
 	}
 	
 	.outsider-main-bottom {
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		/* #ifdef WEB */
 	overflow: hidden;
@@ -601,6 +655,7 @@
 	}
 
 	.outsider-right {
+		display: flex;
 		flex: none;
 		/* #ifdef WEB */
 	overflow: hidden;
@@ -609,7 +664,8 @@
 	}
 	
 	.outsider-right-split-container {
-			flex-direction: column;
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		height: 100%;
 		/* #ifdef WEB */
@@ -618,6 +674,8 @@
 	}
 	
 	.outsider-right-top {
+		display: flex;
+		flex-direction: column;
 		flex: none;
 		/* #ifdef WEB */
 	overflow: hidden;
@@ -626,9 +684,10 @@
 	}
 	
 	.outsider-right-divider-horizontal {
+		display: flex;
 		height: 8px;
 		background-color: transparent;
-			flex-direction: column;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		/* cursor: row-resize; */
@@ -645,6 +704,8 @@
 	} */
 	
 	.outsider-right-bottom {
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		/* #ifdef WEB */
 	overflow: hidden;
@@ -657,7 +718,18 @@
 	}
 
 	.outsider-footer {
+		display: flex;
 		flex: none;
+	}
+
+	.outsider-drag-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 99999;
+		background-color: transparent;
 	}
 
 	.outsider-divider-handle-horizontal {

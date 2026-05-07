@@ -108,6 +108,7 @@
 <style>
 	/* Cloud Atlas 云图白主题 — Tab 组件 */
 	.ux-tabs {
+		display: flex;
 		flex-direction: column;
 		width: 100%;
 		flex: 1;
@@ -208,6 +209,7 @@
 	
 	.ux-tabs__content {
 		/* padding: 15px; */
+		display: flex;
 		flex: 1;
 		flex-direction: column;
 		background-color: #FFFFFF;

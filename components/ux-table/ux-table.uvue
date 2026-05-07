@@ -680,6 +680,7 @@
 <style>
 	/* Cloud Atlas 云图白主题 — 表格组件 (Slate/Cyan 设计语言) */
 	.ux-table {
+		display: flex;
 		flex-direction: column;
 		width: 100%;
 		flex: 1;
@@ -691,6 +692,7 @@
 	}
 	
 	.table-scroll-container {
+		display: flex;
 		flex: 1;
 		width: 100%;
 		height: 100%;

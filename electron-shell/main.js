@@ -34,18 +34,18 @@ function createWindow() {
   // 生产环境安全配置
   if (app.isPackaged) {
     // 移除默认菜单
-    Menu.setApplicationMenu(null)
+    // Menu.setApplicationMenu(null)
 
     // 禁用开发者工具快捷键
-    mainWindow.webContents.on('before-input-event', (event, input) => {
-      if (
-        input.key === 'F12' ||
-        (input.control && input.shift && input.key === 'I') ||
-        (input.control && input.shift && input.key === 'J')
-      ) {
-        event.preventDefault()
-      }
-    })
+    // mainWindow.webContents.on('before-input-event', (event, input) => {
+    //   if (
+    //     input.key === 'F12' ||
+    //     (input.control && input.shift && input.key === 'I') ||
+    //     (input.control && input.shift && input.key === 'J')
+    //   ) {
+    //     event.preventDefault()
+    //   }
+    // })
   }
 
   // 外部链接用系统浏览器打开
