@@ -1,0 +1,24 @@
+{
+  "name": "avpbc-pop-desktop",
+  "version": "1.0.1",
+  "description": "开物桌面版",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:web": "echo '请在 HBuilderX 中编译 H5 产物'",
+    "copy:dist": "node scripts/copy-dist.js",
+    "pack:win": "electron-builder --win --x64",
+    "pack:linux-x64": "electron-builder --linux --x64",
+    "pack:linux-arm64": "electron-builder --linux --arm64",
+    "pack:all": "electron-builder --win --linux"
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1",
+    "javascript-obfuscator": "^5.4.2",
+    "png-to-ico": "^3.0.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
+  }
+}

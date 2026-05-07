@@ -80,7 +80,19 @@
 				"tablet",
 				"2in1",
 				"tv"
-			]
+			],
+			"bundleName": "uni.app.UNI9A011F1",
+			"signingConfigs": {
+				"default": {
+					"certpath": "c:\\Users\\94498\\AppData\\Roaming\\HBuilder X\\extensions\\launcher\\agc-certs\\1778053921225.cer",
+					"keyAlias": "debugKey",
+					"keyPassword": "0000001B91AC5471C8F1D7017D42CABF66240BC15E51AF7E47F1E3A26DFA875D62EF1034FCC3C38462B3CD",
+					"profile": "c:\\Users\\94498\\AppData\\Roaming\\HBuilder X\\extensions\\launcher\\agc-certs\\1778053921225.p7b",
+					"signAlg": "SHA256withECDSA",
+					"storeFile": "c:\\Users\\94498\\AppData\\Roaming\\HBuilder X\\extensions\\launcher\\agc-certs\\1778053921225.p12",
+					"storePassword": "0000001B91AC5471C8F1D7017D42CABF66240BC15E51AF7E47F1E3A26DFA875D62EF1034FCC3C38462B3CD"
+				}
+			}
 		}
 	},
 	"web": {

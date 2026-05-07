@@ -1,0 +1,5 @@
+# Electron 壳项目忽略规则
+node_modules/
+dist/
+release/
+*.log
