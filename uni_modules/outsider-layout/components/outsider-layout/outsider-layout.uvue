@@ -76,25 +76,19 @@
 					<!-- Vertical Split Layout for Right Sidebar if right-bottom exists -->
 					<view v-if="showRightBottom" class="outsider-right-split-container">
 						<!-- Right Top Section -->
-						<scroll-view scroll-y class="outsider-right-top" :style="{ height: currentRightTopHeight + 'px' }">
+						<scroll-view scroll-y class="outsider-right-top">
 							<slot name="right"></slot>
 						</scroll-view>
 
 						<!-- Horizontal Divider -->
-						<view :class="['outsider-right-divider-horizontal', isDraggingRightMain ? 'outsider-divider-drag-horizontal' : '']"
-							@touchstart="onTouchStartRightMain"
-							@touchmove="onTouchMoveRightMain"
-							@touchend="onTouchEndRightMain"
-							@mousedown="onMouseDownRightMain"
-						>
-							<view :class="['outsider-divider-line-horizontal', isDraggingRightMain ? 'outsider-divider-line-drag-horizontal' : '']"></view>
-							<view :class="['outsider-divider-handle-horizontal', isDraggingRightMain ? 'outsider-divider-handle-drag' : '']"></view>
+						<view class="outsider-right-divider-horizontal">
+							<view class="outsider-divider-line-horizontal"></view>
 						</view>
 
-						<!-- Right Bottom Section -->
-						<scroll-view scroll-y class="outsider-right-bottom">
+						<!-- Right Bottom Section (Auto height based on content) -->
+						<view class="outsider-right-bottom">
 							<slot name="right-bottom"></slot>
-						</scroll-view>
+						</view>
 					</view>
 
 					<!-- Standard Layout (Single Right Content) -->
@@ -111,7 +105,7 @@
 
 		<!-- 拖拽全局遮罩：防止拖动过快时鼠标进入内部 iframe/webview 或原生组件，导致 mouseup 事件丢失 -->
 		<!-- #ifdef WEB -->
-		<view v-if="isDragging || isDraggingMain || isDraggingRight || isDraggingRightMain" class="outsider-drag-overlay"></view>
+		<view v-if="isDragging || isDraggingMain || isDraggingRight" class="outsider-drag-overlay"></view>
 		<!-- #endif -->
 	</view>
 </template>
@@ -224,12 +218,6 @@
 	const isDraggingRight = ref(false)
 	const startXRight = ref(0)
 	const startWidthRight = ref(0)
-	
-	// State - Right Sidebar Split
-	const currentRightTopHeight = ref(props.initRightTopHeight)
-	const isDraggingRightMain = ref(false)
-	const startYRight = ref(0)
-	const startHeightRight = ref(0)
 
 	// Toggle Collapse Left
 	const toggleCollapse = () => {
@@ -456,56 +444,7 @@
 		// #endif
 	}
 
-	// --- Right Sidebar Vertical Split Resize Logic ---
-	// Touch
-	const onTouchStartRightMain = (e: TouchEvent) => {
-		isDraggingRightMain.value = true
-		startYRight.value = e.touches[0].clientY
-		startHeightRight.value = currentRightTopHeight.value
-	}
-	
-	const onTouchMoveRightMain = (e: TouchEvent) => {
-		if (!isDraggingRightMain.value) return
-		const clientY = e.touches[0].clientY
-		const deltaY = clientY - startYRight.value
-		
-		let newHeight = startHeightRight.value + deltaY
-		if (newHeight < props.minRightTopHeight) newHeight = props.minRightTopHeight
-		
-		currentRightTopHeight.value = newHeight
-	}
-	
-	const onTouchEndRightMain = (e: TouchEvent) => {
-		isDraggingRightMain.value = false
-	}
-	
-	// Mouse (H5) - Right Split
-	const onMouseDownRightMain = (e: any) => {
-		// #ifdef WEB
-		const mouseEvent = e as MouseEvent
-		mouseEvent.preventDefault()
-		isDraggingRightMain.value = true
-		startYRight.value = mouseEvent.clientY
-		startHeightRight.value = currentRightTopHeight.value
-		
-		const moveHandler = (moveEvent: MouseEvent) => {
-			if (!isDraggingRightMain.value) return
-			const deltaY = moveEvent.clientY - startYRight.value
-			let newHeight = startHeightRight.value + deltaY
-			if (newHeight < props.minRightTopHeight) newHeight = props.minRightTopHeight
-			currentRightTopHeight.value = newHeight
-		}
 
-		const upHandler = (_: MouseEvent) => {
-			isDraggingRightMain.value = false
-			window.removeEventListener('mousemove', moveHandler)
-			window.removeEventListener('mouseup', upHandler)
-		}
-
-		window.addEventListener('mousemove', moveHandler)
-		window.addEventListener('mouseup', upHandler)
-		// #endif
-	}
 
 </script>
 
@@ -726,7 +665,7 @@
 	.outsider-right-top {
 		display: flex;
 		flex-direction: column;
-		flex: none;
+		flex: 1;
 		/* #ifdef WEB */
 	overflow: hidden;
 	/* #endif */
@@ -756,7 +695,7 @@
 	.outsider-right-bottom {
 		display: flex;
 		flex-direction: column;
-		flex: 1;
+		flex: none;
 		/* #ifdef WEB */
 	overflow: hidden;
 	/* #endif */

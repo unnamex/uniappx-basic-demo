@@ -6,8 +6,6 @@
 		:initMainTopRatio="0.52"
 		:initRightWidth="adaptiveRightWidth"
 		:maxRightWidth="800"
-		:initRightTopHeight="adaptiveRightTopHeight"
-		:minRightTopHeight="200"
 		:showMainBottom="true"
 		:showRightBottom="true"
 		:minMainWidthRatio="0.35"
@@ -397,12 +395,6 @@
 		return Math.floor(ideal)
 	})
 
-
-
-	const adaptiveRightTopHeight = computed((): number => {
-		// 确保下方列表有足够空间显示卡片标题，同时避免出现巨大空白
-		return Math.floor(windowInfo.windowHeight * 0.60)
-	})
 	// ===========================================
 
 	// 面包屑项类型
