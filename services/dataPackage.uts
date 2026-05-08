@@ -645,12 +645,6 @@ function extractAndParseAndroid(
 			return
 		}
 		
-		// V6 限制
-		if (manifest!.version < '6.0') {
-			reject(new Error("不支持低于 V6.0 版本的旧数据包"))
-			return
-		}
-		
 		let groups: TabGroup[] = []
 		let tabs: TabConfig[] = []
 		let components: ComponentConfig[] = []
@@ -953,11 +947,6 @@ function processHarmonyExtractedFiles(
 		// 1. 读取 manifest.json
 		const manifestData = readJsonFileHarmony('manifest.json')
 		const manifest = JSON.parse(manifestData) as PackageManifest
-		
-		if (manifest.version < '6.0') {
-			reject(new Error("不支持低于 V6.0 版本的旧数据包"))
-			return
-		}
 		
 		if (onProgress != null) {
 			onProgress({
@@ -1341,11 +1330,6 @@ function extractAndParseWeb(
 			} else {
 				console.warn('Web: manifest.json NOT found');
 				reject(new Error("数据包中未找到 manifest.json"))
-				return
-			}
-			
-			if (manifest!.version < '6.0') {
-				reject(new Error("不支持低于 V6.0 版本的旧数据包"))
 				return
 			}
 			

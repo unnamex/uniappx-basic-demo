@@ -57,7 +57,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 ```json
 {
   "name": "V8发动机总装工艺包",
-  "version": "6.0",
+  "version": "A.1",
   "description": "V8发动机总装线工艺操作指导",
   "exportTime": "2026-04-24T10:00:00+08:00",
   "files": {
@@ -75,7 +75,7 @@ SRD 包是一个 **ZIP 压缩文件**，后缀名改为 `.srd`。
 ```
 
 **注意事项：**
-- `version` 必须填 `"6.0"` 或更高，否则系统**拒绝导入**
+- `version` 填工艺的版本，如 `"A.1"`、`"B.2"` 等
 - `name` 填工艺包名称
 - `****files` 中的 `process`/`operation`/`step`/`action` 四个路径**显式声明**（如上所示）****
 
@@ -664,7 +664,7 @@ assets/
 
 在交付前请核对以下内容：
 
-- [ ] `manifest.json` 中 `version` 填写了 `"6.0"` 或以上
+- [ ] `manifest.json` 中 `version` 填写了工艺的版本（如 `"A.1"`、`"B.2"` 等）
 - [ ] 所有节点的 `innerId` 在整个包内全局唯一，没有重复
 - [ ] `process_tree.json` 中**每个节点都有 `tabs_top` 和 `tabs_bottom` 字段**
 - [ ] `process.json`、`operation.json`、`step.json`、`action.json` 中**没有 `children` 字段**
