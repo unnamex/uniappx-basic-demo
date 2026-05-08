@@ -2,7 +2,7 @@
   "name": "avpbc-pop-desktop",
   "version": "1.0.1",
   "description": "开物桌面版",
-  "author": "avpbc",
+  "author": "北京神舟航天软件技术股份有限公司",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

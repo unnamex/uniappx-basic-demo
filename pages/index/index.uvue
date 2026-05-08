@@ -10,6 +10,7 @@
 		:minRightTopHeight="200"
 		:showMainBottom="true"
 		:showRightBottom="true"
+		:minMainWidthRatio="0.35"
 	>
 		<template #header>
 			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 0) + 'px' }">
@@ -260,7 +261,7 @@
 					</view>
 					
 					<!-- 图片类型：自定义可变换预览 -->
-					<view v-if="previewResource != null && previewResource.type == 'image'" class="image-viewer-container">
+					<view v-if="previewResource != null && previewResource?.type == 'image'" class="image-viewer-container">
 						<scroll-view 
 							scroll-x="true" 
 							scroll-y="true" 
@@ -269,7 +270,7 @@
 							<view class="image-transform-wrapper" :style="imageTransformStyle">
 								<image 
 									class="fullscreen-image" 
-									:src="previewResource.path" 
+									:src="previewResource?.path ?? ''" 
 									mode="aspectFit"
 									@load="onFullscreenImageLoad"
 								/>

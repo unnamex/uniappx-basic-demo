@@ -19,7 +19,7 @@
 					>
 					<view :class="['outsider-divider-line', isDragging ? 'outsider-divider-line-drag' : '']"></view>
 					<view :class="['outsider-divider-handle-vertical', isDragging ? 'outsider-divider-handle-drag-vertical' : '']"></view>
-					<view class="outsider-toggle-btn" @click.stop="toggleCollapse">
+					<view class="outsider-toggle-btn" @click.stop="toggleCollapse" @mousedown.stop @touchstart.stop>
 						<text class="outsider-toggle-text">{{ isCollapsed ? '⟩' : '⟨' }}</text>
 					</view>
 				</view>
@@ -65,7 +65,7 @@
 					>
 					<view :class="['outsider-divider-line', isDraggingRight ? 'outsider-divider-line-drag' : '']"></view>
 					<view :class="['outsider-divider-handle-vertical', isDraggingRight ? 'outsider-divider-handle-drag-vertical' : '']"></view>
-					<view class="outsider-toggle-btn" @click.stop="toggleRightCollapse">
+					<view class="outsider-toggle-btn" @click.stop="toggleRightCollapse" @mousedown.stop @touchstart.stop>
 						<text class="outsider-toggle-text">{{ isRightCollapsed ? '⟨' : '⟩' }}</text>
 					</view>
 				</view>
@@ -137,11 +137,14 @@
 		maxRightWidth ?: number
 		initRightTopHeight ?: number
 		minRightTopHeight ?: number
-		// Slot presence indicators for Android native
 		showLeft ?: boolean
 		showRight ?: boolean
 		showMainBottom ?: boolean
 		showRightBottom ?: boolean
+		/** 中间区域的最小宽度，默认 200 */
+		minMainWidth ?: number
+		/** 中间区域最小占比（0-1之间），例如 0.4 表示 40% */
+		minMainWidthRatio ?: number
 	}
 
 	const props = withDefaults(defineProps<Props>(), {
@@ -159,7 +162,9 @@
 		showLeft: true,
 		showRight: true,
 		showMainBottom: false,
-		showRightBottom: false
+		showRightBottom: false,
+		minMainWidth: 200,
+		minMainWidthRatio: 0.4 // 默认按照 40% 的百分比保留中间区域，符合主流 APP 体验
 	})
 
 	// State - Left Sidebar
@@ -200,6 +205,16 @@
 		// #ifndef WEB
 		const info = uni.getWindowInfo()
 		return info.windowHeight * 0.7
+		// #endif
+	}
+
+	/** 获取窗口实际宽度 */
+	const getWindowWidth = (): number => {
+		// #ifdef WEB
+		return window.innerWidth
+		// #endif
+		// #ifndef WEB
+		return uni.getWindowInfo().windowWidth
 		// #endif
 	}
 	
@@ -245,6 +260,15 @@
 		if (newWidth < props.minLeftWidth) newWidth = props.minLeftWidth
 		if (newWidth > props.maxLeftWidth) newWidth = props.maxLeftWidth
 		
+		const rightWidth = (props.showRight && !isRightCollapsed.value) ? currentRightWidth.value : 0
+		
+		// 获取实际屏幕宽度和基于百分比的中间区域最小宽度
+		const winWidth = getWindowWidth()
+		const minMain = props.minMainWidthRatio != null && props.minMainWidthRatio! > 0 ? winWidth * props.minMainWidthRatio! : props.minMainWidth
+		
+		const dynamicMax = winWidth - rightWidth - minMain
+		if (newWidth > dynamicMax) newWidth = dynamicMax
+		
 		currentLeftWidth.value = newWidth
 	}
 
@@ -278,6 +302,15 @@
 			let newWidth = startWidth.value + deltaX
 			if (newWidth < props.minLeftWidth) newWidth = props.minLeftWidth
 			if (newWidth > props.maxLeftWidth) newWidth = props.maxLeftWidth
+			
+			const rightWidth = (props.showRight && !isRightCollapsed.value) ? currentRightWidth.value : 0
+			
+			const winWidth = getWindowWidth()
+			const minMain = props.minMainWidthRatio != null && props.minMainWidthRatio! > 0 ? winWidth * props.minMainWidthRatio! : props.minMainWidth
+			
+			const dynamicMax = winWidth - rightWidth - minMain
+			if (newWidth > dynamicMax) newWidth = dynamicMax
+			
 			currentLeftWidth.value = newWidth
 		}
 
@@ -368,6 +401,14 @@
 		if (newWidth < props.minRightWidth) newWidth = props.minRightWidth
 		if (newWidth > props.maxRightWidth) newWidth = props.maxRightWidth
 		
+		const leftWidth = (props.showLeft && !isCollapsed.value) ? currentLeftWidth.value : 0
+		
+		const winWidth = getWindowWidth()
+		const minMain = props.minMainWidthRatio != null && props.minMainWidthRatio! > 0 ? winWidth * props.minMainWidthRatio! : props.minMainWidth
+		
+		const dynamicMax = winWidth - leftWidth - minMain
+		if (newWidth > dynamicMax) newWidth = dynamicMax
+		
 		currentRightWidth.value = newWidth
 	}
 
@@ -392,6 +433,15 @@
 			
 			if (newWidth < props.minRightWidth) newWidth = props.minRightWidth
 			if (newWidth > props.maxRightWidth) newWidth = props.maxRightWidth
+			
+			const leftWidth = (props.showLeft && !isCollapsed.value) ? currentLeftWidth.value : 0
+			
+			const winWidth = getWindowWidth()
+			const minMain = props.minMainWidthRatio != null && props.minMainWidthRatio! > 0 ? winWidth * props.minMainWidthRatio! : props.minMainWidth
+			
+			const dynamicMax = winWidth - leftWidth - minMain
+			if (newWidth > dynamicMax) newWidth = dynamicMax
+			
 			currentRightWidth.value = newWidth
 		}
 
