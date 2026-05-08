@@ -334,7 +334,7 @@
 									<text v-else-if="item.type == 'audio'" class="fullscreen-thumb-icon">🎵</text>
 									<text v-else class="fullscreen-thumb-icon">📄</text>
 								</view>
-								<text class="thumb-name" :numberOfLines="1">{{ item.name }}</text>
+								<text class="thumb-name" :numberOfLines="1">{{ formatName(item.name) }}</text>
 							</view>
 						</view>
 					</scroll-view>
@@ -487,6 +487,14 @@
 		// transform 在 App 端可能不完全支持，但通过内联 style 设置通常可用
 		return `transform: scale(${imageScale.value}) rotate(${imageRotation.value}deg);`
 	})
+	
+	const formatName = (name: string): string => {
+		const lastDotIndex = name.lastIndexOf('.')
+		if (lastDotIndex > 0) {
+			return name.substring(0, lastDotIndex)
+		}
+		return name
+	}
 
 	// ====== 树节点扁平化及导航 ======
 	const flattenTree = (nodes: UTSJSONObject[]): UTSJSONObject[] => {

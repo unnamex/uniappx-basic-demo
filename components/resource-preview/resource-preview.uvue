@@ -142,7 +142,14 @@
 	
 	const resType = computed((): string => props.resource?.type ?? '')
 	const resPath = computed((): string => props.resource?.path ?? '')
-	const resName = computed((): string => props.resource?.name ?? '')
+	const resName = computed((): string => {
+		const name = props.resource?.name ?? ''
+		const lastDotIndex = name.lastIndexOf('.')
+		if (lastDotIndex > 0) {
+			return name.substring(0, lastDotIndex)
+		}
+		return name
+	})
 	const resDuration = computed((): number => props.resource?.duration ?? 0)
 	const resThumbnail = computed((): string => props.resource?.thumbnail ?? '')
 	const resDescription = computed((): string => props.resource?.description ?? '')

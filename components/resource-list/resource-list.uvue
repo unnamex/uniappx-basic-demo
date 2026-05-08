@@ -81,8 +81,8 @@
 					</view>
 					
 					<!-- 信息区域 -->
-					<view class="card-info">
-						<text class="card-name" :numberOfLines="1">{{ item.name }}</text>
+					<view :class="selectedId == item.id ? 'card-info-selected' : 'card-info'">
+						<text class="card-name" :numberOfLines="2">{{ formatName(item.name) }}</text>
 						<text v-if="item.duration > 0" class="card-duration">{{ formatTime(item.duration) }}</text>
 					</view>
 				</view>
@@ -145,6 +145,14 @@
 	// === 工具方法 ===
 	const getTypeLabel = (type: string): string => {
 		return getResourceTypeLabel(type)
+	}
+	
+	const formatName = (name: string): string => {
+		const lastDotIndex = name.lastIndexOf('.')
+		if (lastDotIndex > 0) {
+			return name.substring(0, lastDotIndex)
+		}
+		return name
 	}
 	
 	const formatTime = (seconds: number): string => {
@@ -367,7 +375,7 @@
 	
 	/* 缩略图区域 */
 	.card-thumbnail {
-		width: 90px;
+		width: 100%;
 		height: 56px;
 		position: relative;
 		overflow: hidden;
@@ -474,13 +482,20 @@
 	/* 信息区域 */
 	.card-info {
 		padding: 4px 6px;
-			flex-direction: column;
+		flex-direction: column;
+	}
+	
+	.card-info-selected {
+		padding: 4px 5px;
+		flex-direction: column;
 	}
 	
 	.card-name {
 		font-size: 11px;
 		color: #374151;
 		overflow: hidden;
+		lines: 2;
+		text-overflow: ellipsis;
 	}
 	
 	.card-duration {
