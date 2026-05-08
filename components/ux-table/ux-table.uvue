@@ -2,7 +2,7 @@
 	<view class="ux-table">
 		<!-- Header Action: Expand/Collapse All (Pinned floating on the table view overlay) -->
 		<view v-if="showExpand" class="header-action" @click="toggleAll" hover-class="header-action-hover">
-			<text class="action-text">{{ isAllExpanded ? '收起' : '展开' }}</text>
+			<text class="action-text">{{ computedIsAllExpanded ? '收起' : '展开' }}</text>
 		</view>
 
 		<!-- #ifdef WEB -->
@@ -186,6 +186,23 @@
 					return row.isShow
 				})
 			},
+			/** 动态计算当前树的展开状态 */
+			computedIsAllExpanded() : boolean {
+				let hasExpandable = false;
+				let allExpanded = true;
+				for (let i = 0; i < this.allRows.length; i++) {
+					const row = this.allRows[i];
+					if (row.hasChildren) {
+						hasExpandable = true;
+						if (!row.expanded) {
+							allExpanded = false;
+							break;
+						}
+					}
+				}
+				if (!hasExpandable) return false;
+				return allExpanded;
+			},
 			/** 是否存在可展开字段 */
 			hasExpandableField() : boolean {
 				return this.expandableCellType != ''
@@ -356,9 +373,9 @@
 				this.expandedRowIds = [] // 初始化时清空展开记录
 				this.flatten(treeData, 0, null)
 				if (!this.isAllExpanded) {
-					// Collapse all if global state is collapsed
+					// Collapse all if global state is collapsed, but keep level 0 and 1 expanded by default
 					this.allRows.forEach(row => { 
-						if(row.hasChildren && row.level > 0) row.expanded = false 
+						if(row.hasChildren && row.level > 1) row.expanded = false 
 					})
 					this.refreshVisibility()
 				}
@@ -381,8 +398,8 @@
 					// Only treat as having children if showExpand is enabled
 					const hasChildren = this.showExpand && children != null && children.length > 0
 					
-					// 懒展开：只有第 0 级（工艺）和第 1 级（工序）默认加载
-					const shouldLoadChildren = level < 1 || this.isAllExpanded
+					// 懒展开：第 0 级（工艺）和第 1 级（工序）默认加载，以显示出工步
+					const shouldLoadChildren = level < 2 || this.isAllExpanded
 
 					const row : TableRow = {
 						id: id.toString(),
@@ -455,8 +472,9 @@
 				this.updateChildrenVisibility(row)
 			},
 			toggleAll() {
-				this.isAllExpanded = !this.isAllExpanded
-				if (this.isAllExpanded) {
+				const targetState = !this.computedIsAllExpanded
+				this.isAllExpanded = targetState
+				if (targetState) {
 					// Force load all children dynamically
 					let i = 0;
 					while (i < this.allRows.length) {
