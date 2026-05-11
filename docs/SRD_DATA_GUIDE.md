@@ -460,7 +460,6 @@ assets/
 
 ```json
 [
-  { "id": "group_process_mgmt",   "name": "工艺管理", "type": "tabGroup", "sort_order": 0 },
   { "id": "group_process_view",   "name": "工艺视图", "type": "tabGroup", "sort_order": 1 },
   { "id": "group_operation_view", "name": "工序视图", "type": "tabGroup", "sort_order": 2 },
   { "id": "group_step_view",      "name": "工步视图", "type": "tabGroup", "sort_order": 3 },
@@ -474,7 +473,6 @@ assets/
 
 | 分组 ID | 显示名称 | 所在位置 | 哪类节点使用 |
 |---------|---------|---------|-------------|
-| `group_process_mgmt` | 工艺管理 | 左侧面板 | 始终显示 |
 | `group_process_view` | 工艺视图 | 上方视图区 | 工艺节点选中时 |
 | `group_operation_view` | 工序视图 | 上方视图区 | 工序节点选中时 |
 | `group_step_view` | 工步视图 | 上方视图区 | 工步/动作节点选中时 |
@@ -503,16 +501,6 @@ assets/
 
 ```json
 [
-  { "id": "left_panel", 
-   "group_id": "group_process_mgmt",
-   "title": "工艺结构树", 
-   "sort_order": 0 
-  },
-  { "id": "tab_process_list", 
-   "group_id": "group_process_mgmt",  
-   "title": "工艺列表",  
-   "sort_order": 1 
-  },
   { "id": "tab_proc_info",  
    "group_id": "group_process_view", 
    "title": "基本信息",  
@@ -577,7 +565,7 @@ assets/
 
 | type 值 | 说明 | 数据来源 |
 |---------|------|---------|
-| `tableTree` | 工艺树 / 工艺总览表 | 从 `meta_process_tree` 表加载全量骨架数据 |
+| `tableTree` | 独立工艺树 | 从 `meta_process_tree` 表加载全量骨架数据 |
 | `infoView` | 键值对信息卡片，多列布局 | 按节点 ID 查当前节点完整记录（自身） |
 | `richText` | 富文本展示区，渲染 HTML | 按节点 ID 查 `content` 字段（自身） |
 | `table` | 数据表格，可点击跳转 | 按当前节点 ID 查**子级**列表记录 |

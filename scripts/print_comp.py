@@ -10,7 +10,7 @@ def examine(srd_path):
                 data = json.loads(content)
                 res = []
                 for comp in data:
-                    if comp['id'] in ('comp_process_tree', 'comp_proc_list'):
+                    if comp['id'] in ('left_process_tree', 'comp_proc_list'):
                         res.append({
                             "id": comp['id'],
                             "config": comp.get('config')

@@ -375,7 +375,7 @@ def create_v6_srd(output_path):
         # ---- 左侧面板 ----
         # 工艺树: type 必须是 tableTree，dataSource 必须是 database
         {
-            "id": "comp_process_tree", "tab_id": "left_panel",
+            "id": "left_process_tree", "tab_id": "left_panel",
             "type": "tableTree", "title": "工艺树", "sort_order": 0,
             "config": {
                 "fields": [

@@ -634,7 +634,7 @@ Process（工艺）
 
 | id | tab_id | type | title |
 |----|--------|------|-------|
-| `comp_process_tree` | `left_panel` | `tableTree` | 工艺树 |
+| `left_process_tree` | `left_panel` | `tableTree` | 工艺树 |
 | `comp_process_table` | `tab_process_list` | `table` | 工艺总览表 |
 | `comp_proc_info` | `tab_proc_info` | `infoView` | 工艺基本信息 |
 | `comp_proc_list` | `tab_proc_children` | `table` | 工序列表 |

@@ -725,58 +725,94 @@
 	}
 	
 	const loadLeftPanel = async (targetNodeId: string | null = null) => {
-		// Load the "Management" group for the left panel
-		// Based on groups.json, id is 'group_process_mgmt'
-		const group = await loadGroup('group_process_mgmt')
-		if (group != null) {
-			leftGroup.value = group
+		// 首先获取左侧树数据
+		const treeData = await loadTableTreeFromMeta()
+		if (treeData.length > 0) {
+			// 将数据加工并直接赋值给左侧树
+			tableData.value = treeData.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
 			
-			// Load initial data for components in this group (e.g. the Tree)
-			await loadDataForGroup(group)
+			// 直接从 meta_components 读取 tableTree 配置，跳过 tabs 配置
+			fields.value = await loadTableTreeFields()
 			
-			// Bind to template refs for compatibility
-			if (group.tabs.length > 0 && group.tabs[0].components.length > 0) {
-				const treeComp = group.tabs[0].components[0]
-				if (treeComp.type == 'tableTree') {
-					tableData.value = treeComp.data
-					fields.value = getFieldsFromConfig(treeComp.config)
-					// console.log('Left panel tree loaded:', tableData.value.length, 'nodes')
-					
-					// 自动选中逻辑
-					if (tableData.value.length > 0) {
-						let targetRow: UTSJSONObject | null = null
-						
-						if (targetNodeId != null) {
-							// 在扁平化节点中查找匹配 ID 的节点
-							const found = flatNodes.value.find((n: UTSJSONObject): boolean => n['innerId'] == targetNodeId || n['id'] == targetNodeId)
-							if (found != null) {
-								targetRow = found
-							}
-						}
-						
-						// 如果没找到或没提供 ID，选第一个
-						if (targetRow == null) {
-							targetRow = tableData.value[0]
-						}
-						
-						// 延迟执行确保 UI 渲染完成
-						const finalRow = targetRow as UTSJSONObject
-						setTimeout(() => {
-							handleRowClick(finalRow)
-						}, 100)
+			// 自动选中逻辑
+			if (tableData.value.length > 0) {
+				let targetRow: UTSJSONObject | null = null
+				
+				if (targetNodeId != null) {
+					// 在扁平化节点中查找匹配 ID 的节点
+					const found = flatNodes.value.find((n: UTSJSONObject): boolean => n['innerId'] == targetNodeId || n['id'] == targetNodeId)
+					if (found != null) {
+						targetRow = found
 					}
 				}
+				
+				// 如果没找到或没提供 ID，选第一个
+				if (targetRow == null) {
+					targetRow = tableData.value[0]
+				}
+				
+				// 延迟执行确保 UI 渲染完成
+				const finalRow = targetRow as UTSJSONObject
+				setTimeout(() => {
+					handleRowClick(finalRow)
+				}, 100)
 			}
 		}
 	}
 	
+	// 从 meta_components 中加载左侧树表头配置，不依赖 tabs_groups
+	const loadTableTreeFields = async (): Promise<UTSJSONObject[]> => {
+		const defaultFields = [{"label": "名称", "prop": "name", "width": -1}] as UTSJSONObject[]
+		
+		// #ifdef WEB
+		try {
+			const allComps = await webGetAll('meta_components')
+			// 匹配左侧面板工艺树组件
+			let targetComp: any = null
+			for (let i = 0; i < allComps.length; i++) {
+				const c = allComps[i] as any
+				if (c.id == 'left_process_tree') {
+					targetComp = c
+					break
+				}
+			}
+			if (targetComp != null) {
+				return getFieldsFromConfig(targetComp.config)
+			}
+		} catch (e) { }
+		// #endif
+		
+		// #ifndef WEB
+		try {
+			const comps = await querySQL("SELECT * FROM meta_components WHERE id = 'left_process_tree' LIMIT 1")
+			if (comps.length > 0) {
+				const configStr = comps[0]['config_json'] as string
+				if (configStr != '') {
+					try {
+						const config = JSON.parse(configStr)
+						return getFieldsFromConfig(config)
+					} catch(e){}
+				}
+			}
+		} catch (e) { }
+		// #endif
+		
+		return defaultFields
+	}
+	
 	// 通用：为 Group 中的组件加载初始数据 (仅处理需要全量的如 tableTree)
-	const loadDataForGroup = async (group: GroupVM) => {
+	const loadDataForGroup = async (group: GroupVM, preloadedTree: UTSJSONObject[] | null = null) => {
 		for (const tab of group.tabs) {
 			for (const comp of tab.components) {
 				if (comp.type == 'tableTree') {
-					comp.data = await loadTableTreeFromMeta()
-					comp.data = comp.data.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
+					let treeData = preloadedTree
+					if (treeData == null) {
+						treeData = await loadTableTreeFromMeta()
+					}
+					// 为了避免改变原对象，enrichNodeForDisplay内部如果修改了引用可能会有问题，但原本的写法也是map()
+					// 这里我们需要深拷贝吗？不用，因为enrichNodeForDisplay会改变原对象，
+					// map本身只是浅拷贝数组，但里面的对象还是被修改了，这其实没问题。
+					comp.data = treeData.map((node: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(node))
 				}
 			}
 		}

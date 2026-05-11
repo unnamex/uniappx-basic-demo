@@ -30,7 +30,7 @@ def fix_srd_data(in_path, out_path):
                             # 2. Fix inner array
                             if 'fields' in config and isinstance(config['fields'], list):
                                 # If it's the process tree or process table, ensure it's STRICTLY one field: '名称' -> 'name'
-                                if comp.get('id') in ('comp_process_tree', 'comp_process_table'):
+                                if comp.get('id') in ('left_process_tree', 'comp_process_table'):
                                     config['fields'] = [
                                         {"label": "名称", "prop": "name", "width": -1}
                                     ]

@@ -436,13 +436,12 @@ export type ResourceItem = {
 
 | sort_order | id | name | 位置 | 说明 |
 |------------|------|------|------|------|
-| 0 | `group_process_mgmt` | 工艺管理 | 左侧面板 | 工艺结构树和工艺列表所在区域 |
-| 1 | `group_process_view` | 工艺视图 | 上方视图区 | 选中 Process 节点时显示 |
-| 2 | `group_operation_view` | 工序视图 | 上方视图区 | 选中 Operation 节点时显示 |
-| 3 | `group_step_view` | 工步视图 | 上方视图区 | 选中 Step 节点时显示 |
-| 4 | `group_bottom_proc` | 工艺详情 | 下方详情区 | 选中 Process 节点时显示 |
-| 5 | `group_bottom_op` | 工序详情 | 下方详情区 | 选中 Operation 节点时显示 |
-| 6 | `group_bottom_step` | 工步详情 | 下方详情区 | 选中 Step 节点时显示 |
+| 0 | `group_process_view` | 工艺视图 | 上方视图区 | 选中 Process 节点时显示 |
+| 1 | `group_operation_view` | 工序视图 | 上方视图区 | 选中 Operation 节点时显示 |
+| 2 | `group_step_view` | 工步视图 | 上方视图区 | 选中 Step 节点时显示 |
+| 3 | `group_bottom_proc` | 工艺详情 | 下方详情区 | 选中 Process 节点时显示 |
+| 4 | `group_bottom_op` | 工序详情 | 下方详情区 | 选中 Operation 节点时显示 |
+| 5 | `group_bottom_step` | 工步详情 | 下方详情区 | 选中 Step 节点时显示 |
 
 > **注意**：V6 中工序视图分组 ID 已从 `group_procedure_view` 改为 `group_operation_view`，与代码中的 `Operation` 实体命名一致。
 
@@ -452,9 +451,9 @@ export type ResourceItem = {
 ┌─────────────────────────────────────────────────────┐
 │  左侧面板              │    上方视图区 (tabs_top)     │
 │                        │  ┌────────────────────────┐│
-│  group_process_mgmt    │  │ group_process_view     ││
+│  (固定树组件不走分组)   │  │ group_process_view     ││
 │  ├─ 工艺结构树         │  │ group_operation_view   ││
-│  └─ 工艺列表           │  │ group_step_view        ││
+│                        │  │ group_step_view        ││
 │                        │  └────────────────────────┘│
 │                        │    下方详情区 (tabs_bottom)   │
 │                        │  ┌────────────────────────┐│
@@ -483,12 +482,7 @@ export type ResourceItem = {
 
 ### 7.2 标准页签清单
 
-#### 左侧面板（group_process_mgmt）
-
-| id | title | sort_order |
-|----|-------|------------|
-| `left_panel` | 工艺结构树 | 0 |
-| `tab_process_list` | 工艺列表 | 1 |
+*(注：左侧工艺树为独立组件配置，不再使用 Tab 页签体系)*
 
 #### 上方 — 工艺视图（group_process_view）
 
@@ -540,7 +534,7 @@ export type ResourceItem = {
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `id` | string | ✅ | 组件唯一 ID |
-| `tab_id` | string | ✅ | 所挂载的 Tab ID |
+| `tab_id` | string | 否 | 所挂载的 Tab ID（对于独立组件如 `left_process_tree` 不填或为空） |
 | `type` | string | ✅ | 组件类型，见下表 |
 | `title` | string | ✅ | 组件显示标题 |
 | `sort_order` | number | ✅ | 排序序号 |
@@ -597,8 +591,7 @@ export type ResourceItem = {
 
 | id | tab_id | type | title |
 |----|--------|------|-------|
-| `comp_process_tree` | `left_panel` | `tableTree` | 工艺树 |
-| `comp_process_table` | `tab_process_list` | `tableTree` | 工艺总览表 |
+| `left_process_tree` | `-` | `tableTree` | 工艺树 |
 | `comp_proc_info` | `tab_proc_info` | `infoView` | 工艺基本信息 |
 | `comp_proc_list` | `tab_proc_children` | `table` | 工序列表 |
 | `comp_operation_info` | `tab_operation_info` | `infoView` | 工序详情 |
