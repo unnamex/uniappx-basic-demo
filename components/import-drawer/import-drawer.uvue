@@ -4,13 +4,13 @@
 			<!-- 头部：标题与关闭按钮 -->
 			<view class="modal-header">
 				<text class="modal-title">导入数据包</text>
-				<view class="close-btn" @click="handleClose" v-if="!isImporting && (importResult == null || importResult!.success != true)">
+				<view class="close-btn" @click="handleClose" v-if="!isImporting">
 					<text class="close-icon">✕</text>
 				</view>
 			</view>
 
 			<!-- 状态一：选择文件及预览区 -->
-			<view class="modal-body" v-if="importResult == null || importResult!.success != true">
+			<view class="modal-body">
 				
 				<!-- 未选择文件 -->
 				<view 
@@ -88,19 +88,6 @@
 					<text class="error-text">{{ importResult!.message }}</text>
 				</view>
 			</view>
-
-			<!-- 状态二：成功导入 -->
-			<view class="modal-body success-body" v-if="importResult != null && importResult!.success == true">
-				<view class="success-icon-wrapper">
-					<text class="success-icon-symbol">✓</text>
-				</view>
-				<text class="success-title">导入成功</text>
-				<view class="success-stats-box">
-					<!-- <text class="success-desc">已导入 {{ importResult!.processCount }} 条数据</text> -->
-					<text class="success-desc">耗时 {{ (importResult!.importTime / 1000).toFixed(1) }}s </text>
-				</view>
-			</view>
-
 			<!-- 底部操作区 -->
 			<view class="modal-footer">
 				<view 
@@ -108,18 +95,8 @@
 					:hover-class="(packageInfo.fileName == '' || isImporting) ? '' : 'btn-hover'"
 					:class="{'btn-disabled': packageInfo.fileName == '' || isImporting}"
 					@click="(packageInfo.fileName == '' || isImporting) ? null : handleImport()"
-					v-if="importResult == null || importResult!.success != true"
 				>
 					<text class="btn-text" :class="{'text-disabled': packageInfo.fileName == '' || isImporting}">{{ isImporting ? '导入中' : '确认导入' }}</text>
-				</view>
-				
-				<view 
-					class="btn-success" 
-					hover-class="btn-hover"
-					v-if="importResult != null && importResult!.success == true"
-					@click="handleReturnHome"
-				>
-					<text class="btn-text">完成</text>
 				</view>
 			</view>
 		</view>
@@ -221,8 +198,18 @@
 				packageInfo.fileName = ''
 				packageInfo.manifest = null
 				packageInfo.isValid = false
-				packageInfo.errorMessage = e != null ? (e as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误'
+				const errMsg = e instanceof Error ? e.message : (e != null ? (e as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误')
+				packageInfo.errorMessage = errMsg
 				manifest.value = null
+				
+				importResult.value = {
+					success: false,
+					message: '解析失败: ' + errMsg,
+					nodeCount: 0,
+					uiConfigCount: 0,
+					resourceCount: 0,
+					importTime: 0
+				}
 				
 				uni.showToast({
 					title: '数据包解析失败',
@@ -326,14 +313,16 @@
 			.then((result: ImportResult) => {
 				uni.hideLoading()
 				isImporting.value = false
-				importResult.value = result
+				uni.showToast({ title: '导入成功', icon: 'success' })
+				handleReturnHome()
 			})
 			.catch((e: any | null) => {
 				uni.hideLoading()
 				isImporting.value = false
+				const errMsg = e instanceof Error ? e.message : (e != null ? (e as UTSJSONObject)['message'] as string ?? '导入失败' : '导入失败')
 				const errResult : ImportResult = {
 					success: false,
-					message: (e as UTSJSONObject)['message'] as string ?? '导入失败',
+					message: errMsg,
 					nodeCount: 0,
 					uiConfigCount: 0,
 					resourceCount: 0,
