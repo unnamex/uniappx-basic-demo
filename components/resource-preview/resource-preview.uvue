@@ -101,17 +101,19 @@
 		</view>
 		
 		<!-- 其他文档预览 -->
-		<view v-else-if="resType == 'document'" class="preview-container document-preview">
-			<view class="document-icon-wrap">
-				<text class="document-icon">📄</text>
-			</view>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-				<text class="resource-hint">点击下方按钮打开文档</text>
-			</view>
-			<button class="open-btn" @click="openDocument">
-				<text class="btn-text">打开文档</text>
-			</button>
+		<view v-else-if="resType == 'document'" class="preview-container pdf-preview">
+			<!-- #ifdef WEB -->
+			<view class="pdf-frame-container" ref="docFrame"></view>
+			<!-- #endif -->
+			<!-- #ifndef WEB -->
+			<web-view 
+				class="pdf-webview" 
+				:id="docWebviewId" 
+				:src="docWebViewSrc" 
+				@loaded="onDocWebViewLoad"
+				@error="onVideoError"
+			></web-view>
+			<!-- #endif -->
 		</view>
 		
 		<!-- 未知类型 -->
@@ -158,6 +160,7 @@
 	// #ifdef APP
 	const webviewId = 'pdf_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
 	const cadWebviewId = 'cad_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
+	const docWebviewId = 'doc_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
 
 	const pdfWebViewSrc = computed((): string => {
 		const res = props.resource
@@ -221,6 +224,38 @@
 		}
 		// #endif
 	}
+
+	const docWebViewSrc = computed((): string => {
+		const res = props.resource
+		if (res == null || res.path == '') return ''
+		// #ifdef APP-HARMONY
+		if (!res.path.startsWith('http://') && !res.path.startsWith('https://')) {
+			return '/static/ranuts-document/index.html'
+		}
+		// #endif
+		const encodedSrc = encodeURIComponent(res.path)
+		const encodedName = encodeURIComponent(res.name)
+		return '/static/ranuts-document/index.html?src=' + encodedSrc + '&name=' + encodedName
+	})
+
+	const onDocWebViewLoad = () => {
+		// #ifdef APP-HARMONY
+		const res = props.resource
+		if (res == null || res.path == '') return
+		if (res.path.startsWith('http://') || res.path.startsWith('https://')) return
+		
+		try {
+			const fs = uni.getFileSystemManager()
+			const base64Str = fs.readFileSync(res.path, 'base64') as string
+			const instance = getCurrentInstance()
+			const wvContext = uni.createWebviewContext(docWebviewId, instance?.proxy)
+			wvContext.evalJS(`if(window.openDocumentFromBase64){ window.openDocumentFromBase64('${base64Str}', '${res.name}') }`)
+		} catch (err: any) {
+			console.error("读取文档文件转 Base64 失败: ", err)
+			emit('error', '加载鸿蒙本地文档失败')
+		}
+		// #endif
+	}
 	// #endif
 
 	const isPlaying = ref(false)
@@ -246,6 +281,8 @@
 	const pdfFrame = ref<UniElement | null>(null)
 	// CAD预览容器引用
 	const cadFrame = ref<UniElement | null>(null)
+	// DOC预览容器引用
+	const docFrame = ref<UniElement | null>(null)
 	
 	function renderPdfIframe(src : string): void {
 		nextTick(() => {
@@ -278,6 +315,118 @@
 			}
 		})
 	}
+
+	function renderDocIframe(src : string): void {
+		nextTick(async () => {
+			const el = docFrame.value as any
+			if (el != null) {
+				const encodedName = encodeURIComponent(props.resource?.name ?? 'document')
+				
+				// 针对 Web 端的 blob: 跨域问题，如果为 blob，我们将先拉取并在父窗口转 base64
+				let base64Str = ''
+				console.log('[Parent] Preparing doc viewer for src:', src)
+				if (src.startsWith('blob:')) {
+					try {
+						const response = await fetch(src)
+						if (response == null) {
+							throw new Error('fetch returned null response')
+						}
+						const blob = await response.blob()
+						console.log('[Parent] Blob fetched, size:', blob.size)
+						base64Str = await new Promise<string>((resolve) => {
+							const reader = new FileReader()
+							reader.onloadend = () => {
+								const result = reader.result as string
+								resolve(result.substring(result.indexOf(',') + 1))
+							}
+							reader.readAsDataURL(blob)
+						})
+						console.log('[Parent] Base64 converted, length:', base64Str.length)
+					} catch (e) {
+						console.error('[Parent] Failed to convert blob to base64', e)
+					}
+				}
+				
+				let docUrl = src
+				if (base64Str === '') {
+					// 只有非 blob 或者读取失败时，才走 src 传参模式
+					if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('blob:')) {
+						docUrl = window.location.origin + (src.startsWith('/') ? '' : '/') + src
+					}
+				}
+				
+				const encodedSrc = encodeURIComponent(docUrl)
+				
+				// 确定 ranuts-document 的访问 URL 和 Electron 上下文
+				let targetUrl = './static/ranuts-document/index.html'
+				let electronPort = 0
+				const eApi = (window as any)['electronAPI']
+				
+				if (process.env.NODE_ENV === 'development') {
+					// 开发环境：使用独立静态服务器规避 Vite 崩溃问题
+					targetUrl = 'http://localhost:5163/index.html'
+				} else if (eApi != null) {
+					// 生产环境：检测 Electron，使用主进程内嵌的 HTTP 服务器
+					try {
+						const port = await (eApi['getRanutsDocPort'] as (() => Promise<number>))()
+						if (port > 0) {
+							electronPort = port
+							targetUrl = 'http://127.0.0.1:' + port + '/index.html'
+							console.log('[Doc] 使用 Electron 内嵌 HTTP 服务:', targetUrl)
+						}
+					} catch (e) {
+						console.warn('[Doc] 获取 ranuts-doc 端口失败，回退到相对路径', e)
+					}
+				}
+				
+				if (base64Str !== '' && eApi != null && electronPort > 0) {
+					// Electron 环境：将文档保存为临时文件，通过 HTTP URL 加载
+					// 这样 OnlyOffice 使用短 HTTP URL 而非将 3.7MB data URI 嵌入 URL 参数
+					try {
+						const saveFn = eApi['saveTempDoc'] as ((b64: string, name: string) => Promise<string>)
+						const docPath = await saveFn(base64Str, props.resource?.name ?? 'document')
+						const docHttpUrl = 'http://127.0.0.1:' + electronPort + docPath
+						console.log('[Doc] 文档已保存为临时文件，HTTP URL:', docHttpUrl)
+						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
+					} catch (e) {
+						console.error('[Doc] 保存临时文档失败:', e)
+					}
+				} else if (base64Str !== '') {
+					// 非 Electron Web 环境：通过 postMessage 发送 base64
+					const cacheBusterUrl = targetUrl + '?t=' + Date.now()
+					el.innerHTML = '<iframe id="ranuts-iframe" src="' + cacheBusterUrl + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
+					
+					let attempts = 0
+					const intervalId = setInterval(() => {
+						attempts++
+						const iframe = el.querySelector('#ranuts-iframe') as any
+						if (iframe && iframe.contentWindow) {
+							console.log(`[Parent] Sending loadDocumentBase64 message (attempt ${attempts})...`);
+							iframe.contentWindow.postMessage({
+								type: 'loadDocumentBase64',
+								base64: base64Str,
+								name: props.resource?.name ?? 'document'
+							}, '*')
+						}
+						if (attempts >= 10) {
+							clearInterval(intervalId)
+						}
+					}, 500)
+					
+					const ackListener = (event: MessageEvent) => {
+						if (event.data && event.data.type === 'documentLoadedACK') {
+							console.log('[Parent] Received ACK from iframe, clearing interval.')
+							clearInterval(intervalId)
+							window.removeEventListener('message', ackListener)
+						}
+					}
+					window.addEventListener('message', ackListener)
+				} else {
+					el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodedSrc + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;" frameborder="0"></iframe>'
+				}
+			}
+		})
+	}
 	
 	// 监听资源变化，渲染PDF
 	watch(() => props.resource, (newVal : ResourceItem | null) => {
@@ -286,6 +435,9 @@
 		}
 		if (newVal != null && newVal.type == 'cad') {
 			renderCadIframe(newVal.path)
+		}
+		if (newVal != null && newVal.type == 'document') {
+			renderDocIframe(newVal.path)
 		}
 	}, { immediate: true })
 	// #endif
