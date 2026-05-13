@@ -1,0 +1,13 @@
+# npm
+node_modules
+# common
+.temp
+cache
+# mac
+.DS_Store
+# eslint
+.eslintcache
+# vite
+vite.config.ts.timestamp*
+config.ts.timestamp*
+dist

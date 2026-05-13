@@ -1,0 +1,17 @@
+dist
+.github
+node_modules
+.git
+.vscode
+.idea
+*.log
+.eslintcache
+.oxlintrc.json
+.prettierignore
+.prettierrc.json
+readme.md
+README.md
+readme.zh.md
+docker-compose.yaml
+Dockerfile
+.DS_Store
