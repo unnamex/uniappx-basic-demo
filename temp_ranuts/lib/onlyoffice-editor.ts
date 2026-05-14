@@ -248,13 +248,18 @@ export function createEditorInstance(config: {
           url: dummyUrl, // 占位 URL，仅用于通过 api.js 的格式校验
           fileType: fileType,
           permissions: {
-            edit: true,
+            edit: false,
             chat: false,
             protect: false,
           },
         },
         editorConfig: {
+          mode: 'view',
           lang: editorLang,
+          user: {
+            id: 'local-user',
+            name: 'Guest',
+          },
           customization: {
             help: false,
             about: false,

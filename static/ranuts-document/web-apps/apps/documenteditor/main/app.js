@@ -20907,7 +20907,7 @@ function _extend_object(t, e) {
                   }
                 }
               },
-              getInitials: function (t) {
+              getInitials: function (t) { if (!t) return "";
                 for (var e = t.split(' '), i = e[0].substring(0, 1).toUpperCase(), n = e.length - 1; 0 < n; n--)
                   if ('(' !== e[n][0] && ')' !== e[n][0]) {
                     i += e[n].substring(0, 1).toUpperCase();
@@ -51874,7 +51874,7 @@ var FONT_TYPE_RECENT = 4,
           isCompact: function () {
             return this.isFolded;
           },
-          hasTabInvisible: function () {
+          hasTabInvisible: function () { if (!a || !a.length) return false;
             var t, e, i, n;
             return (
               !(a.length < 1) &&
