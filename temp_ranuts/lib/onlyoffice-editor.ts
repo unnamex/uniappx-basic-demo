@@ -248,9 +248,12 @@ export function createEditorInstance(config: {
           url: dummyUrl, // 占位 URL，仅用于通过 api.js 的格式校验
           fileType: fileType,
           permissions: {
-            edit: false,
-            chat: false,
-            protect: false,
+            edit: false,     // 禁用编辑
+            chat: false,     // 禁用聊天
+            protect: false,  // 禁用保护功能
+            print: false,    // 禁用打印
+            download: false, // 禁用下载
+            review: false,   // 禁用审阅
           },
         },
         editorConfig: {
@@ -263,7 +266,10 @@ export function createEditorInstance(config: {
           customization: {
             help: false,
             about: false,
+            feedback: false, // 隐藏反馈按钮
             hideRightMenu: true,
+            compactHeader: true, // 紧凑型顶部栏
+            toolbarNoTabs: true, // 隐藏顶部的标签栏（如文件、视图、插入等）
             features: {
               spellcheck: {
                 change: false,
@@ -296,6 +302,40 @@ export function createEditorInstance(config: {
             console.log(`${t('documentLoaded')}${fileName}`);
             // Note: For CSV files, the save dialog may show XLSX format,
             // but the actual save will be forced to CSV format in handleSaveDocument
+
+            // 注入脚本以隐藏特定的高级设置菜单项（如“反馈”、“下载文档”）
+            try {
+              const iframe = document.getElementById('iframe') as HTMLIFrameElement;
+              const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+              if (doc) {
+                const script = doc.createElement('script');
+                script.innerHTML = `
+                  (function() {
+                    var hideItems = function() {
+                      var items = document.querySelectorAll('.x-menu-item-text, .box-item-caption, span');
+                      for (var i = 0; i < items.length; i++) {
+                        var text = items[i].innerText || items[i].textContent;
+                        if (text === '反馈' || text === '下载文档' || text === 'Feedback' || text === 'Download Document' || text === 'Download as...') {
+                          var parent = items[i].closest('.x-menu-item') || items[i].closest('.box-item') || items[i].parentElement;
+                          if (parent) {
+                            parent.style.display = 'none';
+                            parent.style.setProperty('display', 'none', 'important');
+                          }
+                        }
+                      }
+                    };
+                    // 初始隐藏
+                    setTimeout(hideItems, 500);
+                    // 监听DOM变化，防止下拉菜单动态渲染时出现
+                    var observer = new MutationObserver(hideItems);
+                    observer.observe(document.body, { childList: true, subtree: true });
+                  })();
+                `;
+                doc.head.appendChild(script);
+              }
+            } catch (e) {
+              console.warn('Failed to inject hide UI script', e);
+            }
           },
           onSave: handleSaveDocument,
           // writeFile

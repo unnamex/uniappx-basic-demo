@@ -20547,7 +20547,6 @@ function _extend_object(t, e) {
                 }
               },
               getInitials: function (t) { if (!t) return "";
-                if (!t) return '';
                 for (var e = t.split(' '), i = e[0].substring(0, 1).toUpperCase(), s = e.length - 1; 0 < s; s--)
                   if ('(' !== e[s][0] && ')' !== e[s][0]) {
                     i += e[s].substring(0, 1).toUpperCase();

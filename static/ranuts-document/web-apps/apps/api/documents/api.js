@@ -202,11 +202,11 @@
                 var c = e.editorConfig.customization;
                 'object' == typeof c &&
                 (c.toolbarNoTabs || ('desktop' !== e.editorConfig.targetApp && (c.loaderName || c.loaderLogo)))
-                  ? (a = '/index_loader.html')
+                  ? (a = '/index.html')
                   : ('editdiagram' !== e.editorConfig.mode &&
                       'editmerge' !== e.editorConfig.mode &&
                       'editole' !== e.editorConfig.mode) ||
-                    (a = '/index_internal.html');
+                    (a = '/index.html');
               }
               return (n += a);
             })(e) +
