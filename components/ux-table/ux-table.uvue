@@ -726,9 +726,9 @@
 		/* 去除 width: 100%，以支持内容宽度大于容器时的横向滚动 */
 	}
 
-	/* 表头：白色背景 + 底部细分隔线，与内容区一体化 */
+	/* 表头：浅灰蓝背景 + 底部细分隔线 */
 	.header {
-		background-color: #FFFFFF;
+		background-color: #F8FAFC;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
 		border-bottom-color: #E2E8F0;
@@ -738,7 +738,7 @@
 
 	.header-row {
 		flex-direction: row;
-		height: 36px;
+		height: 40px;
 		align-items: stretch;
 		width: 100%;
 	}
@@ -803,7 +803,7 @@
 		position: absolute;
 		right: 0;
 		top: 0;
-		height: 37px;
+		height: 40px;
 		width: 56px;
 		justify-content: center;
 		align-items: center;

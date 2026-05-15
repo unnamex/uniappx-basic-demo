@@ -220,8 +220,8 @@
 		
 		// 如果从未触发过 onScroll（用户直接拖指示器），需要估算尺寸
 		if (cachedScrollWidth == 0 && props.resources.length > 0) {
-			// 每张卡片 90px 宽 + 8px 间距 = 98px
-			cachedScrollWidth = props.resources.length * 98
+			// 每张卡片 84px 宽 + 6px 间距 = 90px
+			cachedScrollWidth = props.resources.length * 90
 			cachedClientWidth = cachedTrackWidth + 40
 		}
 	}
@@ -297,7 +297,7 @@
 			flex-direction: column;
 		background-color: #FFFFFF;
 		border-radius: 6px;
-		padding: 6px;
+		padding: 4px;
 		height: 100%;
 		border-width: 1px;
 		border-style: solid;
@@ -344,15 +344,15 @@
 	
 	.list-content {
 		flex-direction: row;
-		padding-bottom: 8px;
+		padding-bottom: 4px;
 		align-self: flex-start;
 	}
 	
 	/* 资源卡片 */
 	.resource-card {
-		width: 90px;
+		width: 84px;
 		flex-shrink: 0;
-		margin-right: 8px;
+		margin-right: 6px;
 		background-color: #F3F4F6;
 		border-radius: 6px;
 		overflow: hidden;
@@ -362,9 +362,9 @@
 	}
 	
 	.resource-card-selected {
-		width: 90px;
+		width: 84px;
 		flex-shrink: 0;
-		margin-right: 8px;
+		margin-right: 6px;
 		background-color: #ECFEFF;
 		border-radius: 6px;
 		overflow: hidden;

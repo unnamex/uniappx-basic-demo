@@ -5,10 +5,10 @@
 		:maxLeftWidth="800"
 		:initMainTopRatio="0.52"
 		:initRightWidth="adaptiveRightWidth"
-		:maxRightWidth="800"
+		:maxRightWidth="1200"
 		:showMainBottom="true"
 		:showRightBottom="true"
-		:minMainWidthRatio="0.35"
+		:minMainWidthRatio="0.25"
 	>
 		<template #header>
 			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 0) + 'px' }">
@@ -388,10 +388,10 @@
 	})
 
 	const adaptiveRightWidth = computed((): number => {
-		// 右侧查看器：建议占宽 33%
-		const ideal = windowInfo.windowWidth * 0.33
+		// 右侧查看器：建议占宽 42%
+		const ideal = windowInfo.windowWidth * 0.42
 		if (ideal < 360) return 360   // 最小值保证预览清晰
-		if (ideal > 500) return 500   // 最大值限制
+		if (ideal > 800) return 800   // 最大值限制
 		return Math.floor(ideal)
 	})
 
@@ -1511,7 +1511,7 @@
 <style>
 	.header-container {
 		background-color: #FFFFFF;
-		border-bottom: 1px solid #E2E6ED;
+		border-bottom: 1px solid #E2E8F0;
 		flex-direction: row;
 		align-items: center;
 		padding-left: 16px;
@@ -1604,7 +1604,7 @@
 	}
 	
 	.main-content-top {
-		padding: 8px 12px;
+		padding: 0 0;
 		display: flex;
 		flex-direction: column;
 		flex: 1;
@@ -1709,14 +1709,6 @@
 	
 	/* 重复定义已移除，见下方 Right Header 区域 */
 
-	.right-panel {
-		width: 100%;
-		height: 100%;
-		background-color: #FFFFFF;
-		display: flex;
-		flex-direction: column;
-		padding: 10px;
-	}
 
 	.right-content {
 		padding: 15px;
@@ -1725,12 +1717,12 @@
 	}
 	
 	.right-panel-bottom {
-		padding: 6px;
+		padding: 4px;
 		background-color: #F5F7FA;
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		/* border-top: 1px solid #E2E6ED; */
+		/* border-top: 1px solid #E2E8F0; */
 	}
 	
 	.tab-content-wrap {
@@ -1796,7 +1788,7 @@
 		padding-top: 10px;
 		border-top-width: 1px;
 		border-top-style: solid;
-		border-top-color: #E2E6ED;
+		border-top-color: #E2E8F0;
 	}
 	
 	.info-item {
@@ -1849,7 +1841,7 @@
 	/* 底部区域样式 */
 	.bottom-header {
 		padding-bottom: 5px;
-		border-bottom: 1px solid #E2E6ED;
+		border-bottom: 1px solid #E2E8F0;
 		margin-bottom: 5px;
 	}
 	
@@ -1961,9 +1953,10 @@
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
-		padding: 8px 12px;
-		background-color: #F0F2F5;
-		border-bottom: 1px solid #E2E6ED;
+		padding: 0 12px;
+		height: 40px;
+		background-color: #F8FAFC;
+		border-bottom: 1px solid #E2E8F0;
 	}
 	
 	.right-header-title {
@@ -2027,7 +2020,7 @@
 		align-items: center;
 		padding: 12px 24px;
 		background-color: #FFFFFF;
-		border-bottom: 1px solid #E2E6ED;
+		border-bottom: 1px solid #E2E8F0;
 	}
 	
 	.header-left {
@@ -2141,7 +2134,7 @@
 		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #E2E6ED;
+		border: 1px solid #E2E8F0;
 	}
 	
 	.fullscreen-preview-full {
@@ -2153,7 +2146,7 @@
 		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #E2E6ED;
+		border: 1px solid #E2E8F0;
 	}
 	
 	/* 上/下一个导航按钮 */
@@ -2213,7 +2206,7 @@
 		background-color: #FFFFFF;
 		border-radius: 8px;
 		overflow: hidden;
-		border: 1px solid #E2E6ED;
+		border: 1px solid #E2E8F0;
 	}
 	
 	.fullscreen-list-inner {
@@ -2248,7 +2241,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #E2E6ED;
+		background-color: #E2E8F0;
 		border-radius: 4px;
 		overflow: hidden;
 	}
@@ -2303,7 +2296,7 @@
 		align-items: center;
 		padding: 12px 20px;
 		background-color: #FFFFFF;
-		border-top: 1px solid #E2E6ED;
+		border-top: 1px solid #E2E8F0;
 	}
 	
 	.toolbar-btn {
@@ -2407,7 +2400,7 @@
 		/* #ifndef WEB */
 		border-width: 1px;
 		border-style: solid;
-		border-color: #E2E6ED;
+		border-color: #E2E8F0;
 		/* #endif */
 	}
 	
