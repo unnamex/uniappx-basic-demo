@@ -2,8 +2,8 @@
 	<view class="resource-list">
 		<!-- 标题栏 -->
 		<view class="list-header">
-			<text class="header-title">{{ title }}</text>
-			<text v-if="resources.length > 0" class="header-count">({{ resources.length }})</text>
+			<text v-if="resources.length > 0" class="header-count">共{{ resources.length }}个文件</text>
+			<text v-else class="header-count">暂无资源</text>
 		</view>
 		
 		<!-- 空状态 -->
@@ -318,9 +318,9 @@
 	}
 	
 	.header-count {
-		font-size: 11px;
-		color: #6B7280;
-		margin-left: 4px;
+		font-size: 12px;
+		font-weight: bold;
+		color: #111827;
 	}
 	
 	/* 空状态 */

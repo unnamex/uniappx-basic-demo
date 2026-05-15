@@ -234,7 +234,6 @@
 			<!-- 头部工具栏 -->
 			<view class="fullscreen-header">
 				<view class="header-left">
-					<text class="fullscreen-title">{{ nodeResourcesTitle }}</text>
 					<text v-if="nodeResources.length > 0" class="resource-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
 				</view>
 				<view class="header-actions">
@@ -1354,7 +1353,7 @@
 		try {
 			// 更新标题
 			const typeLabel = getNodeTypeLabel(nodeType)
-			nodeResourcesTitle.value = `${typeLabel}资源 - ${nodeName}`
+			nodeResourcesTitle.value = `${typeLabel}资源`
 			
 			// 从数据库加载资源
 			const resources = await getResourcesByNodeId(nodeId)
@@ -1954,7 +1953,7 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 0 12px;
-		height: 40px;
+		height: 36px;
 		background-color: #F8FAFC;
 		border-bottom: 1px solid #E2E8F0;
 	}
@@ -2018,7 +2017,7 @@
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
-		padding: 12px 24px;
+		padding: 6px 16px;
 		background-color: #FFFFFF;
 		border-bottom: 1px solid #E2E8F0;
 	}
@@ -2036,9 +2035,10 @@
 	}
 	
 	.resource-counter {
-		font-size: 14px;
-		color: #6B7280;
-		margin-left: 12px;
+		font-size: 15px;
+		color: #111827;
+		font-weight: 600;
+		margin-left: 0;
 	}
 	
 	.header-actions {
@@ -2048,8 +2048,8 @@
 	}
 	
 	.header-btn {
-		width: 36px;
-		height: 36px;
+		width: 30px;
+		height: 30px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -2078,8 +2078,8 @@
 	}
 	
 	.fullscreen-close {
-		width: 36px;
-		height: 36px;
+		width: 30px;
+		height: 30px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -2103,7 +2103,7 @@
 	}
 	
 	.close-icon {
-		font-size: 18px;
+		font-size: 16px;
 		color: #333333;
 	}
 	
