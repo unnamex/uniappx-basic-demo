@@ -299,7 +299,7 @@ def create_v6_srd(output_path):
             "nodeId": "op_4",
             "type": "document",
             "name": "螺栓拧紧指导书",
-            "path": "assets/docs/bolt_guide.pdf",
+            "path": "assets/documents/bolt_guide.pdf",
             "description": "气缸盖螺栓紧固力矩标准"
         },
         {
@@ -597,8 +597,8 @@ def create_v6_srd(output_path):
         zf.writestr('assets/images/engine_exploded.png', dummy_png)
         zf.writestr('assets/images/block_clean.png', dummy_png)
 
-    print(f"✅ SRD V6 数据包已生成: {output_path}")
-    print(f"   - 工艺树节点: 1 process → 2 operations → 3 steps")
+    print(f"SRD V6 数据包已生成: {output_path}")
+    print(f"   - 工艺树节点: 1 process -> 2 operations -> 3 steps")
     print(f"   - 附件资源: {len(attachment_data)} 个")
     print(f"   - UI 分组: {len(tabs_data)} 个")
     print(f"   - Tab 页签: {len(tab_data)} 个")

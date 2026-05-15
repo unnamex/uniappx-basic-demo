@@ -195,7 +195,9 @@
 						<text class="btn-icon">{{ isResourceMaximized ? '⤡' : '⤢' }}</text>
 					</view>
 				</view>
-				<resource-preview :resource="previewResource" @error="onPreviewError" />
+				<view style="flex: 1; padding: 4px; display: flex; flex-direction: column;">
+					<resource-preview :resource="previewResource" @error="onPreviewError" />
+				</view>
 			</view>
 		</template>
 		
@@ -1953,7 +1955,7 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 0 12px;
-		height: 36px;
+		height: 40px;
 		background-color: #F8FAFC;
 		border-bottom: 1px solid #E2E8F0;
 	}

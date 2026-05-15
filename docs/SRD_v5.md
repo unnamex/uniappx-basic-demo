@@ -30,9 +30,8 @@ SRD (Structured Resource Data) 是 MPM 离线工艺预览系统使用的标准�
     ├── images/                    # 图片文件
     ├── videos/                    # 视频文件
     ├── audios/                    # 音频文件
-    ├── documents/                 # PDF 等文档
+    ├── documents/                 # PDF、DOCX 等所有文档
     ├── cad/                       # CAD 图纸（HTML 格式）
-    ├── docs/                      # 其他文档
     └── icons/                     # SVG 图标文件
 ```
 
@@ -847,8 +846,7 @@ Process（工艺）
 | `assets/images/` | 图片资源 | PNG, JPG, SVG |
 | `assets/videos/` | 视频资源 | MP4, MOV |
 | `assets/audios/` | 音频资源 | MP3, WAV |
-| `assets/documents/` | PDF 文档 | PDF |
-| `assets/docs/` | 其他文档 | PDF, DOCX |
+| `assets/documents/` | 所有文档资源 | PDF, DOCX, DOC, XLS 等 |
 | `assets/cad/` | CAD 图纸查看器 | HTML |
 | `assets/icons/` | 节点图标 | SVG |
 
