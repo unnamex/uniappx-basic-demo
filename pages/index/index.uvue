@@ -593,6 +593,8 @@
 				}
 			})
 		}
+		
+		window.addEventListener('keydown', handleFullscreenKeyDown)
 		// #endif
 		const nodeId = options['id'] as string | null
 		initData(nodeId)
@@ -602,6 +604,12 @@
 		// 每次页面显示时检查并刷新数据
 		// console.log('Page Show')
 		initData(null)
+	})
+	
+	onUnload(() => {
+		// #ifdef WEB
+		window.removeEventListener('keydown', handleFullscreenKeyDown)
+		// #endif
 	})
 	
 	const initData = async (targetNodeId: string | null = null) => {
@@ -1541,6 +1549,15 @@
 			if (ratio < 0.8) {
 				imageScale.value = 1.5
 			}
+		}
+	}
+	
+	/**
+	 * 全屏资源预览下的键盘事件处理
+	 */
+	const handleFullscreenKeyDown = (e : any) => {
+		if (isResourceMaximized.value && e.key == 'Escape') {
+			toggleResourceMaximize()
 		}
 	}
 	

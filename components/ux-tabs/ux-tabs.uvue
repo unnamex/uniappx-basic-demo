@@ -1,5 +1,8 @@
 <template>
-	<view :class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]" :style="isFullscreen ? { paddingTop: statusBarHeight + 'px' } : {}">
+	<view 
+		:class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]" 
+		:style="isFullscreen ? { paddingTop: statusBarHeight + 'px' } : {}"
+	>
 		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
 		<view class="ux-tabs__header-row">
 			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
@@ -74,6 +77,22 @@
 	const toggleFullscreen = () => {
 		isFullscreen.value = !isFullscreen.value
 	}
+	
+	const handleKeyDown = (e : any) => {
+		if (isFullscreen.value && e.key == 'Escape') {
+			toggleFullscreen()
+		}
+	}
+	
+	// #ifdef WEB
+	onMounted(() => {
+		window.addEventListener('keydown', handleKeyDown)
+	})
+	
+	onUnmounted(() => {
+		window.removeEventListener('keydown', handleKeyDown)
+	})
+	// #endif
 	
 	// Registry for child Panes
 	const registerPane = (pane: UTSJSONObject) => {
