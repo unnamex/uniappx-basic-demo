@@ -674,7 +674,7 @@
 	
 	.outsider-right-divider-horizontal {
 		display: flex;
-		height: 8px;
+		height: 6px;
 		background-color: transparent;
 		flex-direction: column;
 		align-items: center;

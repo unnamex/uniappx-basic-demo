@@ -595,7 +595,7 @@
 		border-width: 1px;
 		border-style: solid;
 		border-color: #E2E6ED;
-		padding: 2px;
+		/* padding: 2px; */
 	}
 	
 	/* 空状态 */
@@ -620,7 +620,7 @@
 	.preview-container {
 		flex: 1;
 			flex-direction: column;
-		padding: 4px;
+		/* padding: 4px; */
 	}
 	
 	/* 图片预览 */
