@@ -246,13 +246,13 @@
 	
 	<!-- 全屏资源预览覆盖层 -->
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
-		<view class="fullscreen-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 36) + 'px' }">
-			<!-- 头部工具栏 -->
-			<view class="fullscreen-header">
-				<view class="header-left">
+		<view class="fullscreen-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 0) + 'px' }">
+			<!-- 头部工具栏 (PC端预留右上角原生按钮空间) -->
+			<view class="fullscreen-header" :style="{ height: isPC ? '36px' : 'auto', paddingRight: isPC ? '140px' : '12px', '-webkit-app-region': isPC ? 'drag' : 'none' }">
+				<view class="header-left" style="-webkit-app-region: no-drag;">
 					<text v-if="nodeResources.length > 0" class="resource-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
 				</view>
-				<view class="header-actions">
+				<view class="header-actions" style="-webkit-app-region: no-drag;">
 					<!-- 列表显示/隐藏按钮 -->
 					<view class="header-btn" @click="toggleFullscreenList">
 						<text class="header-btn-icon">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
@@ -2058,7 +2058,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		background-color: rgba(245, 247, 250, 0.98);
+		background-color: #F8FAFC;
 		z-index: 9999;
 		display: flex;
 		flex-direction: column;
