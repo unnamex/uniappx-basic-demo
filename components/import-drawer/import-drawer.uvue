@@ -1,102 +1,104 @@
 <template>
-	<view class="mask-bg" @click.stop="">
-		<view class="modal-content" :class="getModalClass()">
-			<!-- 头部：标题与关闭按钮 -->
+	<view class="mask-bg" @click="handleClose">
+		<view class="modal-container" @click.stop="">
+			<!-- 头部：VS Code 风格标题栏 -->
 			<view class="modal-header">
-				<text class="modal-title">导入数据包</text>
+				<view class="header-left">
+					<text class="modal-icon">📦</text>
+					<text class="modal-title">导入工艺数据包</text>
+				</view>
 				<view class="close-btn" @click="handleClose" v-if="!isImporting">
 					<text class="close-icon">✕</text>
 				</view>
 			</view>
 
-			<!-- 状态一：选择文件及预览区 -->
+			<!-- 主体内容 -->
 			<view class="modal-body">
 				
-				<!-- 未选择文件 -->
-				<view 
-					class="file-picker" 
-					@click="handleSelectFile" 
-					hover-class="file-picker-hover" 
-					v-if="packageInfo.fileName == ''"
-					:class="{'file-picker-dragging': isDragOver, 'file-picker-error': dragErrorMessage != ''}"
-					@dragover.prevent="handleDragOver"
-					@dragleave="handleDragLeave"
-					@drop.prevent="handleDrop"
-				>
-					<view class="icon-circle" :style="{backgroundColor: dragErrorMessage != '' ? '#FEF2F2' : ''}">
-						<text class="file-picker-icon">{{ dragErrorMessage != '' ? '⚠️' : '📂' }}</text>
+				<!-- 未选择文件状态 -->
+				<view class="file-selection-area" v-if="packageInfo.fileName == ''">
+					<view 
+						class="drop-zone" 
+						@click="handleSelectFile"
+						:class="{'drop-zone-active': isDragOver}"
+						@dragover.prevent="handleDragOver"
+						@dragleave="handleDragLeave"
+						@drop.prevent="handleDrop"
+					>
+						<text class="drop-icon">📂</text>
+						<text class="drop-text">{{ isDragOver ? '松开以导入' : '点击或拖拽 .srd 文件到此处' }}</text>
+						<view class="browse-btn">
+							<text class="browse-btn-text">选择文件</text>
+						</view>
 					</view>
-					<text class="file-picker-title" :style="{color: dragErrorMessage != '' ? '#EF4444' : ''}">
-						{{ dragErrorMessage != '' ? dragErrorMessage : (isDragOver ? '松开以选择' : '选择数据包') }}
-					</text>
-					<text class="file-picker-hint">
-						{{ dragErrorMessage != '' ? '请选择正确的 .srd 压缩包' : (isDragOver ? '松开手指自动解析' : '点击或拖拽 .srd 文件至此') }}
-					</text>
+					<view class="tips-area" v-if="dragErrorMessage != ''">
+						<text class="error-tip">{{ dragErrorMessage }}</text>
+					</view>
 				</view>
 
-				<!-- 预览：Bento Box Grid -->
-				<scroll-view class="bento-scroll" :show-scrollbar="false" v-if="manifest != null">
-					<view class="bento-grid">
-						<!-- Bento Item 1: 核心信息 (可点击重新挑选) -->
-						<view class="bento-item bento-main" @click="handleSelectFile" hover-class="bento-hover">
-							<view class="bento-main-left">
-								<view class="file-icon-wrapper">
-									<text class="file-type-icon">SRD</text>
-								</view>
-								<view class="file-desc">
-									<text class="file-name">{{ manifest!.name }}</text>
-									<text class="file-size">{{ formatFileSize(packageInfo.fileSize) }}</text>
-								</view>
-							</view>
-							<text class="change-file-text">更换</text>
+				<!-- 已选择文件详情 -->
+				<view class="manifest-view" v-else-if="manifest != null">
+					<view class="manifest-card">
+						<view class="manifest-row main-row">
+							<text class="manifest-label">数据包名称</text>
+							<text class="manifest-value primary-value">{{ manifest!.name }}</text>
 						</view>
-						
-						<!-- Bento Row: 分列数据 -->
-						<view class="bento-row">
-							<view class="bento-item bento-half" style="margin-right: 8px;">
-								<text class="info-label">版本</text>
-								<text class="info-value">{{ manifest!.version }}</text>
+						<view class="manifest-divider"></view>
+						<view class="manifest-grid">
+							<view class="manifest-col">
+								<text class="manifest-label">版本号</text>
+								<text class="manifest-value">{{ manifest!.version }}</text>
 							</view>
-							<view class="bento-item bento-half" style="margin-left: 8px;">
-								<text class="info-label">日期</text>
-								<text class="info-value">{{ formatTimeShort(manifest!.exportTime) }}</text>
+							<view class="manifest-col">
+								<text class="manifest-label">导出日期</text>
+								<text class="manifest-value">{{ formatTimeShort(manifest!.exportTime) }}</text>
 							</view>
 						</view>
-
-						<!-- Bento Item 3: 说明信息 -->
-						<view class="bento-item bento-full">
-							<text class="info-label">说明详情</text>
-							<text class="info-desc">{{ manifest!.description != '' ? manifest!.description : '未提供描述信息' }}</text>
+						<view class="manifest-divider"></view>
+						<view class="manifest-row">
+							<text class="manifest-label">说明</text>
+							<text class="manifest-desc">{{ manifest!.description != '' ? manifest!.description : '无描述信息' }}</text>
+						</view>
+						<view class="manifest-divider"></view>
+						<view class="manifest-row footer-row">
+							<text class="manifest-label">文件大小</text>
+							<text class="manifest-value small">{{ formatFileSize(packageInfo.fileSize) }}</text>
+							<text class="change-link" @click="handleSelectFile" v-if="!isImporting">重新选择</text>
 						</view>
 					</view>
-				</scroll-view>
+				</view>
 
 				<!-- 导入进度 -->
-				<view class="progress-section" v-if="isImporting">
-					<view class="progress-header">
-						<text class="progress-title">处理中...</text>
-						<text class="progress-percent">{{ Math.floor((importProgress.current / importProgress.total) * 100) }}%</text>
+				<view class="progress-container" v-if="isImporting">
+					<view class="progress-info">
+						<text class="progress-status">{{ (importProgress.status != '' ? importProgress.status : '正在同步数据...') }}</text>
+						<text class="progress-value">{{ Math.floor((importProgress.current / importProgress.total) * 100) }}%</text>
 					</view>
-					<view class="progress-track">
-						<view class="progress-fill" :style="{ width: (importProgress.current / importProgress.total) * 100 + '%' }"></view>
+					<view class="progress-bar-bg">
+						<view class="progress-bar-fill" :style="{ width: (importProgress.current / importProgress.total) * 100 + '%' }"></view>
 					</view>
-					<text class="progress-status">{{ (importProgress.status != '' ? importProgress.status : '正在写入数据...') }}</text>
 				</view>
 
-				<!-- 报错信息提炼 -->
-				<view class="error-msg" v-if="importResult != null && importResult!.success == false">
-					<text class="error-text">{{ importResult!.message }}</text>
+				<!-- 错误提示 -->
+				<view class="error-banner" v-if="importResult != null && importResult!.success == false">
+					<text class="error-banner-icon">⚠️</text>
+					<text class="error-banner-text">{{ importResult!.message }}</text>
 				</view>
 			</view>
-			<!-- 底部操作区 -->
+
+			<!-- 底部按钮区 -->
 			<view class="modal-footer">
-				<view 
-					class="btn-primary" 
-					:hover-class="(packageInfo.fileName == '' || isImporting) ? '' : 'btn-hover'"
-					:class="{'btn-disabled': packageInfo.fileName == '' || isImporting}"
-					@click="(packageInfo.fileName == '' || isImporting) ? null : handleImport()"
-				>
-					<text class="btn-text" :class="{'text-disabled': packageInfo.fileName == '' || isImporting}">{{ isImporting ? '导入中' : '确认导入' }}</text>
+				<view class="footer-actions">
+					<view class="secondary-btn" @click="handleClose" v-if="!isImporting">
+						<text class="secondary-btn-text">取消</text>
+					</view>
+					<view 
+						class="primary-btn" 
+						:class="{'primary-btn-disabled': packageInfo.fileName == '' || isImporting}"
+						@click="(packageInfo.fileName == '' || isImporting) ? null : handleImport()"
+					>
+						<text class="primary-btn-text">{{ isImporting ? '导入中...' : '开始导入' }}</text>
+					</view>
 				</view>
 			</view>
 		</view>
@@ -160,31 +162,16 @@
 	onMounted(() => {
 		initDb()
 	})
-	
-	/**
-	 * 获取不同平台的容器样式
-	 */
-	const getModalClass = (): string => {
-		// #ifdef WEB
-		return 'side-drawer'
-		// #endif
-		
-		// #ifndef WEB
-		return 'bottom-sheet'
-		// #endif
-	}
 
 	/**
 	 * 处理文件解析的核心逻辑
 	 */
 	const processFile = (info: PackageInfo) => {
-		// 在这里先呼出 Loading，防止解析期间导致界面坍塌闪烁
 		uni.showLoading({ title: '正在提取与解析...', mask: true })
 		
 		validatePackage('')
 			.then((manifestRes: PackageManifest) => {
 				uni.hideLoading()
-				// 解析成功后，一并赋值，让视图瞬间由“选择文件”切换为“Bento 预览”
 				packageInfo.fileName = info.fileName
 				packageInfo.fileSize = info.fileSize
 				packageInfo.manifest = manifestRes
@@ -194,7 +181,6 @@
 			})
 			.catch((e: any | null) => {
 				uni.hideLoading()
-				// 解析失败时，恢复未选择状态并给出报错
 				packageInfo.fileName = ''
 				packageInfo.manifest = null
 				packageInfo.isValid = false
@@ -223,8 +209,6 @@
 	 */
 	const handleSelectFile = () => {
 		if (isImporting.value) return
-		
-		// 重置结果
 		importResult.value = null
 		
 		selectPackageFile()
@@ -269,13 +253,11 @@
 				const info = handleDroppedFileWeb(file)
 				processFile(info)
 			} else {
-				// 层级优化：除了 Toast，增加 UI 内部红色预警状态（双保险）
 				dragErrorMessage.value = '仅支持 .srd 格式数据包'
 				if (errorTimer != null) clearTimeout(errorTimer!)
 				errorTimer = setTimeout(() => {
 					dragErrorMessage.value = ''
 				}, 3000)
-				
 				uni.showToast({ title: '仅支持 .srd 格式数据包', icon: 'none' })
 			}
 		}
@@ -298,8 +280,6 @@
 		
 		isImporting.value = true
 		importResult.value = null
-		
-		// 呼出系统级 Loading 遮罩，防止卡顿期间无反馈
 		uni.showLoading({ title: '正在提取与导入...', mask: true })
 		
 		const onProgress: ImportProgressCallback = (progress: ImportProgress) => {
@@ -377,408 +357,327 @@
 </script>
 
 <style>
-	/* ====== 基础遮罩背景 ====== */
+	/* ====== VS Code 风格遮罩与容器 ====== */
 	.mask-bg {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-color: rgba(17, 24, 39, 0.4);
-		z-index: 900;
+		background-color: rgba(0, 0, 0, 0.4);
+		z-index: 1000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
 	}
 	
-	/* ====== 条件容器布局 ====== */
-	.modal-content {
+	.modal-container {
 		background-color: #FFFFFF;
+		width: 100%;
+		max-width: 500px;
+		border-radius: 8px;
 		display: flex;
 		flex-direction: column;
-	}
-	
-	.bottom-sheet {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		border-top-left-radius: 20px;
-		border-top-right-radius: 20px;
-		padding-bottom: 24px;
-	}
-	
-	.side-drawer {
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		right: 0;
-		width: 400px;
 		/* #ifdef WEB */
-		box-shadow: -10px 0 25px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 		/* #endif */
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E5E7EB;
+		overflow: hidden;
 	}
 	
-	/* ====== 内部通用布局 ====== */
+	/* ====== 标题栏 ====== */
 	.modal-header {
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
-		padding: 20px;
-		padding-bottom: 16px;
+		padding: 12px 16px;
+		background-color: #F3F4F6;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #F3F4F6;
+		border-bottom-color: #E5E7EB;
+	}
+	
+	.header-left {
+		flex-direction: row;
+		align-items: center;
+	}
+	
+	.modal-icon {
+		font-size: 16px;
+		margin-right: 8px;
 	}
 	
 	.modal-title {
-		font-size: 18px;
-		font-weight: 700;
-		color: #111827;
+		font-size: 13px;
+		font-weight: 600;
+		color: #374151;
 	}
 	
 	.close-btn {
-		width: 32px;
-		height: 32px;
-		background-color: #F3F4F6;
-		border-radius: 16px;
-		justify-content: center;
-		align-items: center;
+		padding: 4px;
+		border-radius: 4px;
+		transition-property: background-color;
+		transition-duration: 0.2s;
+	}
+	
+	.close-btn:hover {
+		background-color: #E5E7EB;
 	}
 	
 	.close-icon {
-		font-size: 14px;
+		font-size: 12px;
 		color: #6B7280;
 	}
 	
+	/* ====== 主体内容区 ====== */
 	.modal-body {
-		padding: 20px;
+		padding: 24px;
 		flex-direction: column;
-		flex: 1;
-		/* #ifdef WEB */
-		overflow-y: auto;
-		/* #endif */
 	}
 	
-	.file-picker {
-		background-color: #FFFFFF;
-		border-radius: 16px;
-		padding: 30px 20px;
-		border-width: 2px;
+	.file-selection-area {
+		flex-direction: column;
+	}
+	
+	.drop-zone {
+		border-width: 1px;
 		border-style: dashed;
 		border-color: #D1D5DB;
-		transition-property: background-color, border-color;
+		background-color: #F9FAFB;
+		border-radius: 6px;
+		padding: 32px 16px;
+		align-items: center;
+		justify-content: center;
+		transition-property: border-color, background-color;
 		transition-duration: 0.2s;
-		align-items: center;
-		flex: 1;
-		justify-content: center;
 	}
 	
-	.file-picker-hover {
-		background-color: #ECFEFF;
-		border-color: #0891B2;
-	}
-
-	.file-picker-dragging {
-		background-color: #ECFEFF;
-		border-color: #0891B2;
-		border-style: solid;
-		transform: scale(1.02);
-	}
-
-	.file-picker-error {
-		background-color: #FEF2F2 !important;
-		border-color: #EF4444 !important;
+	.drop-zone-active {
+		border-color: #3B82F6;
+		background-color: #EFF6FF;
 		border-style: solid;
 	}
 	
-	.icon-circle {
-		width: 56px;
-		height: 56px;
-		background-color: #F0F2F5;
-		border-radius: 28px;
-		align-items: center;
-		justify-content: center;
+	.drop-icon {
+		font-size: 32px;
 		margin-bottom: 12px;
 	}
 	
-	.file-picker-icon {
-		font-size: 28px;
+	.drop-text {
+		font-size: 14px;
+		color: #6B7280;
+		margin-bottom: 16px;
 	}
 	
-	.file-picker-title {
-		font-size: 16px;
-		font-weight: bold;
-		color: #111827;
-		margin-bottom: 6px;
+	.browse-btn {
+		background-color: #3B82F6;
+		padding: 6px 16px;
+		border-radius: 4px;
 	}
 	
-	.file-picker-hint {
+	.browse-btn-text {
+		color: #FFFFFF;
 		font-size: 13px;
-		color: #9CA3AF;
+		font-weight: 500;
 	}
 	
-	.bento-scroll {
-		/* #ifndef WEB */
-		max-height: 380px;
-		/* #endif */
+	.tips-area {
+		margin-top: 12px;
+	}
+	
+	.error-tip {
+		font-size: 12px;
+		color: #EF4444;
+	}
+	
+	/* ====== 详情查看区 ====== */
+	.manifest-view {
 		flex-direction: column;
 	}
 	
-	.bento-grid {
-		flex-direction: column;
-		width: 100%;
-	}
-	
-	.bento-item {
-		background-color: #F8FAFC;
-		border-radius: 12px;
-		padding: 14px;
-		margin-bottom: 12px;
-		flex-direction: column;
+	.manifest-card {
 		border-width: 1px;
 		border-style: solid;
-		border-color: #E2E8F0;
-	}
-	
-	.bento-hover {
-		opacity: 0.8;
-	}
-	
-	.bento-main {
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
-	}
-	
-	.bento-main-left {
-		flex-direction: row;
-		align-items: center;
-	}
-	
-	.file-icon-wrapper {
-		width: 44px;
-		height: 44px;
-		background-color: #ECFEFF;
-		border-radius: 10px;
-		align-items: center;
-		justify-content: center;
-		margin-right: 12px;
-	}
-	
-	.file-type-icon {
-		color: #0891B2;
-		font-size: 13px;
-		font-weight: 700;
-	}
-	
-	.file-desc {
+		border-color: #E5E7EB;
+		border-radius: 6px;
+		background-color: #FFFFFF;
 		flex-direction: column;
 	}
 	
-	.file-name {
-		font-size: 15px;
-		color: #0F172A;
-		font-weight: bold;
-		margin-bottom: 2px;
+	.manifest-row {
+		padding: 12px 16px;
+		flex-direction: column;
 	}
 	
-	.file-size {
-		font-size: 12px;
-		color: #64748B;
+	.main-row {
+		background-color: #F9FAFB;
 	}
 	
-	.change-file-text {
-		font-size: 12px;
-		color: #0891B2;
-		background-color: #CFFAFE;
-		padding: 4px 10px;
-		border-radius: 100px;
-		font-weight: 600;
+	.manifest-divider {
+		height: 1px;
+		background-color: #E5E7EB;
 	}
 	
-	.bento-row {
+	.manifest-grid {
 		flex-direction: row;
-		width: 100%;
-		justify-content: space-between;
+		padding: 12px 16px;
 	}
 	
-	.bento-half {
+	.manifest-col {
 		flex: 1;
+		flex-direction: column;
 	}
 	
-	.bento-full {
-		width: 100%;
-	}
-	
-	.info-label {
-		color: #64748B;
-		font-size: 12px;
+	.manifest-label {
+		font-size: 11px;
+		color: #9CA3AF;
+		text-transform: uppercase;
+		font-weight: 600;
 		margin-bottom: 4px;
 	}
 	
-	.info-value {
-		color: #0F172A;
+	.manifest-value {
+		font-size: 14px;
+		color: #111827;
+		font-weight: 500;
+	}
+	
+	.primary-value {
+		color: #2563EB;
 		font-size: 15px;
 		font-weight: 600;
 	}
 	
-	.info-desc {
-		color: #334155;
+	.manifest-desc {
 		font-size: 13px;
-		line-height: 1.4em;
+		color: #4B5563;
+		line-height: 1.5;
 	}
 	
-	.progress-section {
-		margin-top: 8px;
+	.footer-row {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+	}
+	
+	.small {
+		font-size: 12px;
+		color: #6B7280;
+	}
+	
+	.change-link {
+		font-size: 12px;
+		color: #3B82F6;
+		font-weight: 500;
+	}
+	
+	/* ====== 进度条 ====== */
+	.progress-container {
+		margin-top: 16px;
 		flex-direction: column;
 	}
 	
-	.progress-header {
+	.progress-info {
 		flex-direction: row;
 		justify-content: space-between;
-		margin-bottom: 8px;
-	}
-	
-	.progress-title {
-		font-size: 13px;
-		color: #0F172A;
-		font-weight: 600;
-	}
-	
-	.progress-percent {
-		font-size: 13px;
-		color: #0891B2;
-		font-weight: 700;
-	}
-	
-	.progress-track {
-		height: 8px;
-		background-color: #E2E8F0;
-		border-radius: 100px;
-		overflow: hidden;
-		margin-bottom: 8px;
-	}
-	
-	.progress-fill {
-		height: 100%;
-		background-color: #0891B2;
-		border-radius: 100px;
+		margin-bottom: 6px;
 	}
 	
 	.progress-status {
 		font-size: 12px;
-		color: #64748B;
-		/* #ifdef WEB */
-		text-align: center;
-		/* #endif */
+		color: #4B5563;
 	}
 	
-	.error-msg {
+	.progress-value {
+		font-size: 12px;
+		color: #3B82F6;
+		font-weight: 600;
+	}
+	
+	.progress-bar-bg {
+		height: 4px;
+		background-color: #E5E7EB;
+		border-radius: 2px;
+		overflow: hidden;
+	}
+	
+	.progress-bar-fill {
+		height: 100%;
+		background-color: #3B82F6;
+		border-radius: 2px;
+	}
+	
+	/* ====== 错误条 ====== */
+	.error-banner {
+		margin-top: 16px;
 		background-color: #FEF2F2;
-		padding: 12px;
-		border-radius: 8px;
-		margin-top: 12px;
-		border-left-width: 4px;
-		border-left-style: solid;
-		border-left-color: #EF4444;
-	}
-	
-	.error-text {
-		color: #B91C1C;
-		font-size: 13px;
-	}
-	
-	.success-body {
-		align-items: center;
-		padding-top: 30px;
-		padding-bottom: 30px;
-	}
-	
-	.success-icon-wrapper {
-		width: 72px;
-		height: 72px;
-		background-color: #D1FAE5;
-		border-radius: 36px;
-		align-items: center;
-		justify-content: center;
-		margin-bottom: 20px;
-	}
-	
-	.success-icon-symbol {
-		font-size: 36px;
-		color: #059669;
-		font-weight: bold;
-	}
-	
-	.success-title {
-		font-size: 20px;
-		font-weight: 700;
-		color: #0F172A;
-		margin-bottom: 12px;
-	}
-	
-	.success-stats-box {
-		background-color: #F8FAFC;
-		padding: 12px 20px;
-		border-radius: 12px;
-		align-items: center;
 		border-width: 1px;
 		border-style: solid;
-		border-color: #E2E8F0;
+		border-color: #FEE2E2;
+		border-radius: 6px;
+		padding: 10px 12px;
+		flex-direction: row;
+		align-items: center;
 	}
 	
-	.success-desc {
+	.error-banner-icon {
 		font-size: 14px;
-		color: #475569;
-		margin-bottom: 4px;
+		margin-right: 8px;
 	}
 	
+	.error-banner-text {
+		font-size: 12px;
+		color: #B91C1C;
+		flex: 1;
+	}
+	
+	/* ====== 底部按钮 ====== */
 	.modal-footer {
-		padding: 16px 20px;
-		background-color: #F8FAFC;
+		padding: 12px 16px;
+		background-color: #F9FAFB;
 		border-top-width: 1px;
 		border-top-style: solid;
-		border-top-color: #E2E8F0;
-		width: 100%;
-		border-radius: 0;
+		border-top-color: #E5E7EB;
 	}
 	
-	.btn-primary {
-		background-color: #0891B2;
-		border-radius: 12px;
-		height: 48px;
-		justify-content: center;
-		align-items: center;
-		border-width: 0;
+	.footer-actions {
 		flex-direction: row;
+		justify-content: flex-end;
 	}
 	
-	.btn-success {
-		background-color: #059669;
-		border-radius: 12px;
-		height: 48px;
-		justify-content: center;
-		align-items: center;
-		border-width: 0;
-		flex-direction: row;
+	.secondary-btn {
+		padding: 6px 16px;
+		margin-right: 8px;
+		border-radius: 4px;
+		background-color: #FFFFFF;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D1D5DB;
 	}
 	
-	.btn-disabled {
-		background-color: #E2E8F0;
+	.secondary-btn-text {
+		color: #374151;
+		font-size: 13px;
+		font-weight: 500;
 	}
 	
-	.btn-hover {
-		opacity: 0.9;
-		/* #ifdef WEB */
-		transform: scale(0.98);
-		/* #endif */
+	.primary-btn {
+		padding: 6px 20px;
+		background-color: #007ACC;
+		border-radius: 4px;
 	}
 	
-	.btn-text {
+	.primary-btn-disabled {
+		background-color: #94A3B8;
+		opacity: 0.6;
+	}
+	
+	.primary-btn-text {
 		color: #FFFFFF;
-		font-size: 16px;
-		font-weight: bold;
-	}
-	
-	.text-disabled {
-		color: #94A3B8;
+		font-size: 13px;
+		font-weight: 500;
 	}
 </style>

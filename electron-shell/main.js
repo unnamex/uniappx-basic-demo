@@ -199,6 +199,37 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+
+  createMenu()
+}
+
+function createMenu() {
+  const template = [
+    {
+      label: '文件',
+      submenu: [
+        {
+          label: '导入数据包',
+          accelerator: 'CmdOrCtrl+I',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('menu-action', 'import-data')
+          }
+        },
+        {
+          label: '重置数据',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            if (mainWindow) mainWindow.webContents.send('menu-action', 'reset-data')
+          }
+        },
+        { type: 'separator' },
+        { label: '退出', role: 'quit' }
+      ]
+    }
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
 }
 
 // ---- IPC 处理 ----

@@ -1,0 +1,214 @@
+<template>
+	<view class="welcome-root">
+		<!-- 中央主内容区 -->
+		<view class="welcome-center">
+			<!-- 客户端图标 -->
+			<image class="app-icon" src="/static/logo.png" mode="aspectFit"></image>
+
+			<!-- 客户端名称 -->
+			<text class="app-name">开 物</text>
+
+			<!-- Slogan -->
+			<text class="app-slogan">工艺 · 离线掌控</text>
+
+			<!-- 操作区域 -->
+			<view class="actions-card">
+				<!-- 开始分组 -->
+				<text class="group-title">开始</text>
+
+				<view class="action-row" @click="handleImport" hover-class="action-row-hover">
+					<text class="action-link">导入数据包</text>
+					<text class="action-hint">选择并解析 .srd 工艺数据包</text>
+					<!-- #ifdef WEB -->
+					<text class="action-kbd">Ctrl+I</text>
+					<!-- #endif -->
+				</view>
+
+				<view class="action-row" @click="handleReset" hover-class="action-row-hover">
+					<text class="action-link">重置数据</text>
+					<text class="action-hint">清空所有工艺数据并重新初始化</text>
+					<!-- #ifdef WEB -->
+					<text class="action-kbd">Ctrl+R</text>
+					<!-- #endif -->
+				</view>
+
+				<!-- 分割线 -->
+				<view class="group-divider"></view>
+
+				<!-- 帮助分组 -->
+				<text class="group-title">帮助</text>
+
+				<view class="action-row" @click="handleDoc" hover-class="action-row-hover">
+					<text class="action-link">查看使用文档</text>
+					<text class="action-hint">了解如何准备工艺数据包与操作指南</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 左下角公司品牌区 -->
+		<view class="brand-footer">
+			<image class="brand-logo" src="/static/icons/casc_logo.png" mode="aspectFit"></image>
+			<text class="brand-name">中国航天 · 神软</text>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	const emit = defineEmits(['import', 'reset'])
+
+	const handleImport = () => {
+		emit('import')
+	}
+
+	const handleReset = () => {
+		emit('reset')
+	}
+
+	const handleDoc = () => {
+		uni.showToast({
+			title: '文档功能开发中...',
+			icon: 'none'
+		})
+	}
+</script>
+
+<style>
+	/* ====== 根容器：铺满全屏 ====== */
+	.welcome-root {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: #F8F9FA;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+	}
+
+	/* ====== 中央主内容区 ====== */
+	.welcome-center {
+		align-items: center;
+		flex-direction: column;
+		max-width: 420px;
+		width: 100%;
+		padding: 0 24px;
+	}
+
+	/* 客户端图标 */
+	.app-icon {
+		width: 72px;
+		height: 72px;
+		border-radius: 16px;
+		margin-bottom: 20px;
+	}
+
+	/* 客户端名称 */
+	.app-name {
+		font-size: 28px;
+		font-weight: 300;
+		color: #1F2328;
+		margin-bottom: 6px;
+		letter-spacing: 4px;
+	}
+
+	/* Slogan */
+	.app-slogan {
+		font-size: 14px;
+		color: #656D76;
+		font-weight: 400;
+		margin-bottom: 40px;
+		letter-spacing: 2px;
+	}
+
+	/* ====== 操作区卡片 ====== */
+	.actions-card {
+		width: 100%;
+		flex-direction: column;
+	}
+
+	/* 分组标题 */
+	.group-title {
+		font-size: 11px;
+		font-weight: 600;
+		color: #656D76;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		margin-bottom: 8px;
+		padding-left: 12px;
+	}
+
+	/* 操作行 */
+	.action-row {
+		flex-direction: row;
+		align-items: center;
+		padding: 10px 12px;
+		border-radius: 6px;
+		margin-bottom: 2px;
+		transition-property: background-color;
+		transition-duration: 0.15s;
+	}
+
+	.action-row-hover {
+		background-color: #E8EAED;
+	}
+
+	/* 链接文字 */
+	.action-link {
+		font-size: 14px;
+		font-weight: 500;
+		color: #0969DA;
+		margin-right: 12px;
+	}
+
+	/* 描述文字 */
+	.action-hint {
+		font-size: 12px;
+		color: #8B949E;
+		flex: 1;
+	}
+
+	/* 快捷键标签 */
+	.action-kbd {
+		font-size: 11px;
+		color: #656D76;
+		padding: 2px 6px;
+		background-color: #F0F1F3;
+		border-radius: 4px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D0D7DE;
+	}
+
+	/* 分组间分割线 */
+	.group-divider {
+		height: 1px;
+		background-color: #D8DEE4;
+		margin-top: 12px;
+		margin-bottom: 16px;
+	}
+
+	/* ====== 左下角品牌区 ====== */
+	.brand-footer {
+		position: absolute;
+		bottom: 24px;
+		left: 28px;
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.brand-logo {
+		width: 28px;
+		height: 28px;
+		margin-right: 8px;
+		opacity: 0.6;
+	}
+
+	.brand-name {
+		font-size: 12px;
+		color: #8B949E;
+		font-weight: 400;
+	}
+</style>

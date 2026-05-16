@@ -1,5 +1,9 @@
 <template>
-	<outsider-layout 
+	<!-- 全屏欢迎页：无数据时铺满整个窗口 -->
+	<welcome-view v-if="!isDataLoaded" @import="handleImportData" @reset="handleResetData" />
+
+	<!-- 正常工作区布局：有数据时显示 -->
+	<outsider-layout v-if="isDataLoaded"
 		:initLeftWidth="adaptiveLeftWidth" 
 		:minLeftWidth="50" 
 		:maxLeftWidth="800"
@@ -31,7 +35,7 @@
 				</view>
 				<!-- 右侧操作区：设置按钮 + 企业Logo -->
 				<view class="header-actions">
-					<view class="settings-icon-btn" @click="toggleSettingsMenu">
+					<view v-if="!isPC" class="settings-icon-btn" @click="toggleSettingsMenu">
 						<image class="settings-icon-img" src="/static/icons/settings_icon.svg" mode="aspectFit"></image>
 					</view>
 					<image class="header-logo" src="/static/icons/casc_logo.png" mode="aspectFit"></image>
@@ -367,6 +371,7 @@
 	import ResourcePreview from '@/components/resource-preview/resource-preview.uvue'
 	import ResourceList from '@/components/resource-list/resource-list.uvue'
 	import UxBreadcrumb from '@/components/ux-breadcrumb/ux-breadcrumb.uvue'
+	import WelcomeView from '@/components/welcome-view/welcome-view.uvue'
 
 	// 获取状态栏高度（自定义导航栏模式下需要手动避让状态栏）
 	const statusBarHeight = ref(0)
@@ -450,6 +455,9 @@
 	
 	const activeTabs = reactive(new Map<string, string>())
 	const statusMessage = ref('Ready')
+	const isPC = ref(false)
+
+	const isDataLoaded = computed((): boolean => tableData.value.length > 0)
 	
 	// Left panel Tree Data (Ref to data in leftGroup for template compatibility)
 	const tableData = ref([] as UTSJSONObject[])
@@ -568,6 +576,19 @@
 
 	onLoad((options: OnLoadOptions) => {
 		// console.log('Page Load')
+		// #ifdef WEB
+		if ((window as any).electronAPI != null) {
+			isPC.value = true
+			const electronAPI = (window as any).electronAPI
+			electronAPI.onMenuAction((action: string) => {
+				if (action == 'import-data') {
+					handleImportData()
+				} else if (action == 'reset-data') {
+					handleResetData()
+				}
+			})
+		}
+		// #endif
 		const nodeId = options['id'] as string | null
 		initData(nodeId)
 	})
