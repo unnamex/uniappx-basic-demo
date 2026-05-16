@@ -155,6 +155,12 @@ function createWindow() {
     minHeight: 600,
     title: '开物',
     icon: path.join(__dirname, 'icons/icon.png'),
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#FFFFFF',
+      symbolColor: '#334155',
+      height: 36
+    },
     show: false, // 先隐藏，等加载完成后再显示（避免白屏闪烁）
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -209,32 +215,8 @@ function createWindow() {
 }
 
 function createMenu() {
-  const template = [
-    {
-      label: '文件',
-      submenu: [
-        {
-          label: '导入数据包',
-          accelerator: 'CmdOrCtrl+I',
-          click: () => {
-            if (mainWindow) mainWindow.webContents.send('menu-action', 'import-data')
-          }
-        },
-        {
-          label: '重置数据',
-          accelerator: 'CmdOrCtrl+R',
-          click: () => {
-            if (mainWindow) mainWindow.webContents.send('menu-action', 'reset-data')
-          }
-        },
-        { type: 'separator' },
-        { label: '退出', role: 'quit' }
-      ]
-    }
-  ]
-
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  // 不再使用原生菜单，改为使用自定义标题栏内的菜单
+  Menu.setApplicationMenu(null)
 }
 
 // ---- IPC 处理 ----

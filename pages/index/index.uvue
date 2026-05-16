@@ -15,7 +15,17 @@
 		:minMainWidthRatio="0.25"
 	>
 		<template #header>
-			<view class="header-container" :style="{ paddingTop: (statusBarHeight + 0) + 'px' }">
+			<view v-if="isPC" class="vscode-titlebar" style="-webkit-app-region: drag; display: flex; flex-direction: row; align-items: center; height: 36px; padding: 0 12px; background-color: #FFFFFF;">
+				<!-- APP图标 (使用客户端火箭图标) -->
+				<image src="/static/logo.png" style="width: 20px; height: 20px; margin-right: 12px;" mode="aspectFit"></image>
+				
+				<!-- 文件菜单按钮 -->
+				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center;" @click="toggleSettingsMenu">
+					<text style="font-size: 13px; color: #334155;">文件</text>
+				</view>
+			</view>
+
+			<view class="header-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 0) + 'px' }">
 				<!-- 左侧：当前工艺大图标 -->
 				<view v-if="headerIconPath != ''" class="header-icon-area">
 					<image class="header-process-icon-img"
@@ -221,8 +231,8 @@
 	<!-- 设置菜单遮罩层 -->
 	<view v-if="isSettingsMenuVisible" class="settings-overlay" @click="closeSettingsMenu"></view>
 	
-	<!-- 设置下拉菜单 (固定定位在右上角) -->
-	<view v-if="isSettingsMenuVisible" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px' }">
+	<!-- 设置下拉菜单 (根据平台调整位置) -->
+	<view v-if="isSettingsMenuVisible" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '36px' : 'auto', right: isPC ? 'auto' : '20px' }">
 		<view class="menu-item" @click="handleImportData">
 			<text class="menu-item-icon">📦</text>
 			<text class="menu-item-text">导入数据包</text>
@@ -236,7 +246,7 @@
 	
 	<!-- 全屏资源预览覆盖层 -->
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
-		<view class="fullscreen-container" :style="{ paddingTop: (isPC ? 0 : statusBarHeight) + 'px' }">
+		<view class="fullscreen-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 36) + 'px' }">
 			<!-- 头部工具栏 -->
 			<view class="fullscreen-header">
 				<view class="header-left">
@@ -379,9 +389,8 @@
 	statusBarHeight.value = windowInfo.statusBarHeight
 
 	const settingsMenuTop = computed((): number => {
-		// 基础偏移量（对应 Header 的高度）
-		const baseOffset = 50
-		return statusBarHeight.value + baseOffset
+		// PC端自定义标题栏高度为36px，其他端为基础偏移量加状态栏高度
+		return isPC.value ? 36 : (statusBarHeight.value + 50)
 	})
 
 	// ============ 自适应布局计算 (响应式) ============
@@ -2436,8 +2445,7 @@
 	
 	.settings-dropdown {
 		position: fixed;
-		/* top 由动态绑定计算，移除固定值以防冲突 */
-		right: 20px;
+		/* top, left, right 由动态绑定计算，移除固定值以防冲突 */
 		background-color: #FFFFFF;
 		border-radius: 10px;
 		padding: 6px 0;
