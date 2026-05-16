@@ -4,17 +4,17 @@
 		:style="isFullscreen ? { paddingTop: statusBarHeight + 'px' } : {}"
 	>
 		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
-		<view class="ux-tabs__header-row">
+		<view :class="['ux-tabs__header-row', { 'is-fullscreen-header': isFullscreen }]">
 			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
 				<view class="ux-tabs__nav-wrap">
 					<view class="ux-tabs__nav">
 						<view 
 							v-for="(pane, index) in panes" 
 							:key="index"
-							:class="['ux-tabs__item', { 'is-active': pane['name'] == currentName, 'is-disabled': pane['disabled'] == true }]"
+							:class="['ux-tabs__item', { 'is-active': pane['name'] == currentName, 'is-disabled': pane['disabled'] == true, 'is-fullscreen-item': isFullscreen }]"
 							@click="handleTabClick(pane)"
 						>
-							<text :class="['ux-tabs__item-text', { 'is-active-text': pane['name'] == currentName }]">{{ pane['label'] }}</text>
+							<text :class="['ux-tabs__item-text', { 'is-active-text': pane['name'] == currentName, 'is-fullscreen-text': isFullscreen }]">{{ pane['label'] }}</text>
 							<view v-if="pane['name'] == currentName" class="ux-tabs__active-bar"></view>
 						</view>
 					</view>
@@ -22,13 +22,13 @@
 			</scroll-view>
 			
 			<!-- Fullscreen Toggle Button -->
-			<view class="ux-tabs__fullscreen-btn" @click="toggleFullscreen">
+			<view :class="['ux-tabs__fullscreen-btn', { 'is-fullscreen-btn-active': isFullscreen }]" @click="toggleFullscreen">
 				<text class="ux-tabs__fullscreen-icon">{{ isFullscreen ? '✕' : '⛶' }}</text>
 			</view>
 		</view>
 		
 		<!-- Tab Content -->
-		<view class="ux-tabs__content">
+		<view :class="['ux-tabs__content', { 'is-fullscreen-content': isFullscreen }]">
 			<slot></slot>
 		</view>
 	</view>
@@ -145,6 +145,7 @@
 		z-index: 999;
 		height: 100%;
 		width: 100%;
+		background-color: #F8FAFC;
 	}
 	
 	/* ⭐ 浅蓝灰底色面板条 — 与表格一体化风格 */
@@ -156,8 +157,17 @@
 		background-color: #F8FAFC;
 		flex-shrink: 0;
 		align-items: center;
+		transition-property: padding, height, background-color;
+		transition-duration: 0.3s;
 	}
 	
+	/* 全屏头部样式强化 */
+	.is-fullscreen-header {
+		background-color: #FFFFFF;
+		padding: 4px 16px;
+		border-bottom-color: transparent;
+	}
+
 	.ux-tabs__header {
 		flex: 1;
 		flex-direction: row;
@@ -172,6 +182,22 @@
 		border-left-width: 1px;
 		border-left-style: solid;
 		border-left-color: #E2E8F0;
+		transition-property: background-color, border-radius, margin, width, height, border-left-width;
+		transition-duration: 0.2s;
+	}
+	
+	/* 全屏状态下退出按钮的样式 */
+	.is-fullscreen-btn-active {
+		border-left-width: 0;
+		width: 32px;
+		height: 32px;
+		border-radius: 16px;
+		background-color: #F1F5F9;
+		margin-left: 16px;
+	}
+	
+	.is-fullscreen-btn-active:active {
+		background-color: #E2E8F0;
 	}
 	
 	.ux-tabs__fullscreen-icon {
@@ -194,7 +220,13 @@
 		justify-content: center;
 		align-items: center;
 		position: relative;
+		transition-property: height;
+		transition-duration: 0.3s;
 		/* cursor: pointer; */
+	}
+	
+	.is-fullscreen-item {
+		height: 48px;
 	}
 	
 	/* 未选中文字 — 灰色 */
@@ -202,6 +234,13 @@
 		font-size: 14px;
 		color: #6B7280;
 		line-height: 40px;
+		transition-property: font-size, line-height;
+		transition-duration: 0.3s;
+	}
+	
+	.is-fullscreen-text {
+		font-size: 15px;
+		line-height: 48px;
 	}
 	
 	/* 选中态文字 — 青碧品牌色 */
@@ -232,5 +271,12 @@
 		flex: 1;
 		flex-direction: column;
 		background-color: #FFFFFF;
+		transition-property: padding, background-color;
+		transition-duration: 0.3s;
+	}
+	
+	.is-fullscreen-content {
+		padding: 16px;
+		background-color: #F8FAFC;
 	}
 </style>

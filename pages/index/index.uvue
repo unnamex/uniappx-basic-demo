@@ -248,11 +248,24 @@
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
 		<view class="fullscreen-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 0) + 'px' }">
 			<!-- 头部工具栏 (PC端预留右上角原生按钮空间) -->
-			<view class="fullscreen-header" :style="{ height: isPC ? '36px' : 'auto', paddingRight: isPC ? '140px' : '12px', '-webkit-app-region': isPC ? 'drag' : 'none' }">
+			<view class="fullscreen-header" :style="{ height: isPC ? '36px' : 'auto', paddingRight: '0', paddingLeft: '12px', '-webkit-app-region': isPC ? 'drag' : 'none' }">
+				<!-- 左侧留白，如果后续需要添加标题等 -->
 				<view class="header-left" style="-webkit-app-region: no-drag;">
-					<text v-if="nodeResources.length > 0" class="resource-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
 				</view>
-				<view class="header-actions" style="-webkit-app-region: no-drag;">
+				
+				<!-- 居中导航区域 (动态居中于左侧图片查看器区域) -->
+				<view class="header-center" :style="{ right: isFullscreenListVisible ? '160px' : '0', '-webkit-app-region': 'no-drag' }">
+					<view v-if="nodeResources.length > 1" class="header-nav-btn" @click="goPrevResource">
+						<text class="header-nav-icon">‹</text>
+					</view>
+					<text v-if="nodeResources.length > 0" class="resource-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
+					<view v-if="nodeResources.length > 1" class="header-nav-btn" @click="goNextResource">
+						<text class="header-nav-icon">›</text>
+					</view>
+				</view>
+
+				<!-- 右侧操作区 (动态居中于 160px 的折叠列表区域) -->
+				<view class="header-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', paddingRight: isFullscreenListVisible ? '0' : '16px', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
 					<!-- 列表显示/隐藏按钮 -->
 					<view class="header-btn" @click="toggleFullscreenList">
 						<text class="header-btn-icon">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
@@ -268,8 +281,8 @@
 			<view class="fullscreen-content">
 				<!-- 预览区（可占满或与列表共存） -->
 				<view :class="isFullscreenListVisible ? 'fullscreen-preview' : 'fullscreen-preview-full'">
-					<!-- 上一个/下一个导航按钮 -->
-					<view v-if="nodeResources.length > 1" class="nav-btn nav-prev" @click="goPrevResource">
+					<!-- 上一个/下一个导航按钮（仅图片显示） -->
+					<view v-if="nodeResources.length > 1 && previewResource != null && previewResource?.type == 'image'" class="nav-btn nav-prev" @click="goPrevResource">
 						<text class="nav-icon">‹</text>
 					</view>
 					
@@ -292,30 +305,25 @@
 						
 						<!-- 图片操作工具栏 -->
 						<view class="image-toolbar">
-							<view class="toolbar-btn" @click="imageZoomOut">
+							<view class="toolbar-btn" @click="imageZoomOut" title="缩小">
 								<text class="toolbar-icon">−</text>
-								<text class="toolbar-label">缩小</text>
 							</view>
 							<view class="toolbar-info">
 								<text class="zoom-percentage">{{ Math.round(imageScale * 100) }}%</text>
 							</view>
-							<view class="toolbar-btn" @click="imageZoomIn">
+							<view class="toolbar-btn" @click="imageZoomIn" title="放大">
 								<text class="toolbar-icon">+</text>
-								<text class="toolbar-label">放大</text>
 							</view>
 							<view class="toolbar-divider"></view>
-							<view class="toolbar-btn" @click="imageRotateLeft">
+							<view class="toolbar-btn" @click="imageRotateLeft" title="左旋">
 								<text class="toolbar-icon">↺</text>
-								<text class="toolbar-label">左旋</text>
 							</view>
-							<view class="toolbar-btn" @click="imageRotateRight">
+							<view class="toolbar-btn" @click="imageRotateRight" title="右旋">
 								<text class="toolbar-icon">↻</text>
-								<text class="toolbar-label">右旋</text>
 							</view>
 							<view class="toolbar-divider"></view>
-							<view class="toolbar-btn" @click="imageReset">
+							<view class="toolbar-btn" @click="imageReset" title="重置">
 								<text class="toolbar-icon">⟲</text>
-								<text class="toolbar-label">重置</text>
 							</view>
 						</view>
 					</view>
@@ -323,7 +331,7 @@
 					<!-- 非图片类型：使用原组件 -->
 					<resource-preview v-else :resource="previewResource" @error="onPreviewError" />
 					
-					<view v-if="nodeResources.length > 1" class="nav-btn nav-next" @click="goNextResource">
+					<view v-if="nodeResources.length > 1 && previewResource != null && previewResource?.type == 'image'" class="nav-btn nav-next" @click="goNextResource">
 						<text class="nav-icon">›</text>
 					</view>
 				</view>
@@ -480,7 +488,7 @@
 	const previewResource = ref(null as ResourceItem | null)
 	const previewResourceId = computed((): string => previewResource.value != null ? previewResource.value!.id : '')
 	const isResourceMaximized = ref(false)
-	const isFullscreenListVisible = ref(true)
+	const isFullscreenListVisible = ref(false)
 	
 	// 当前工艺图标（左侧大图标），由面包屑更新时赋值，空值则不显示
 	const headerIconPath = ref('')
@@ -1445,9 +1453,9 @@
 	 */
 	const toggleResourceMaximize = () => {
 		isResourceMaximized.value = !isResourceMaximized.value
-		// 重置列表为可见状态
+		// 默认收起列表
 		if (isResourceMaximized.value) {
-			isFullscreenListVisible.value = true
+			isFullscreenListVisible.value = false
 		}
 		// PC 客户端：进入/退出沉浸式全屏（隐藏标题栏和菜单栏）
 		// #ifdef WEB
@@ -2075,7 +2083,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		background-color: #F8FAFC;
+		background-color: #F0F2F5;
 		z-index: 9999;
 		display: flex;
 		flex-direction: column;
@@ -2089,19 +2097,37 @@
 	}
 	
 	.fullscreen-header {
+		position: relative;
 		display: flex;
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
-		padding: 4px 12px;
+		padding: 6px 16px;
 		background-color: #FFFFFF;
 		border-bottom: 1px solid #E2E8F0;
+		flex: none;
 	}
 	
 	.header-left {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
+		width: 140px; /* Balance with the right actions width if needed */
+	}
+	
+	.header-center {
+		position: absolute;
+		left: 0;
+		right: 0; /* will be overridden by inline style */
+		margin-left: auto;
+		margin-right: auto;
+		width: 160px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		transition-property: right;
+		transition-duration: 0.3s;
 	}
 	
 	.fullscreen-title {
@@ -2111,29 +2137,70 @@
 	}
 	
 	.resource-counter {
-		font-size: 15px;
-		color: #111827;
+		font-size: 14px;
+		color: #334155;
 		font-weight: 600;
-		margin-left: 0;
+		margin: 0 12px;
+	}
+	
+	/* 头部导航按钮 — 精致圆形，与浮动按钮风格统一 */
+	.header-nav-btn {
+		width: 28px;
+		height: 28px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: #F1F5F9;
+		border-radius: 14px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E8F0;
+		transition-property: background-color, transform, box-shadow;
+		transition-duration: 0.15s;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+	}
+	
+	/* #ifdef WEB */
+	.header-nav-btn:hover {
+		background-color: #E2E8F0;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+	}
+	/* #endif */
+	
+	.header-nav-btn:active {
+		background-color: #CBD5E1;
+		transform: scale(0.9);
+	}
+	
+	.header-nav-icon {
+		font-size: 16px;
+		color: #475569;
+		font-weight: bold;
 	}
 	
 	.header-actions {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
+		transition-property: width, padding-right;
+		transition-duration: 0.3s;
 	}
 	
 	.header-btn {
-		width: 30px;
-		height: 30px;
+		width: 32px;
+		height: 32px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #FFFFFF;
+		background-color: #F1F5F9;
 		border-radius: 10px;
 		border: 1px solid #E2E8F0;
 		margin-right: 12px;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+		/* #ifdef WEB */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		/* #endif */
 		transition-property: background-color, box-shadow, transform, border-color;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
@@ -2154,15 +2221,17 @@
 	}
 	
 	.fullscreen-close {
-		width: 30px;
-		height: 30px;
+		width: 32px;
+		height: 32px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		background-color: #FFFFFF;
-		border-radius: 18px;
+		border-radius: 16px;
 		border: 1px solid #E2E8F0;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+		/* #ifdef WEB */
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		/* #endif */
 		transition-property: background-color, box-shadow, transform, border-color;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
@@ -2180,14 +2249,14 @@
 	
 	.close-icon {
 		font-size: 16px;
-		color: #333333;
+		color: #64748B;
 	}
 	
 	.fullscreen-content {
 		flex: 1;
 		display: flex;
 		flex-direction: row;
-		padding: 8px;
+		padding: 0;
 	}
 
 	/* 面板容器基础样式由上方统一管理 */
@@ -2206,11 +2275,9 @@
 		display: flex;
 		flex-direction: row;
 		position: relative;
-		margin-right: 16px;
-		background-color: #FFFFFF;
-		border-radius: 8px;
+		margin-right: 0;
+		background-color: #F0F2F5;
 		overflow: hidden;
-		border: 1px solid #E2E8F0;
 	}
 	
 	.fullscreen-preview-full {
@@ -2219,70 +2286,76 @@
 		flex-direction: row;
 		position: relative;
 		margin-right: 0;
-		background-color: #FFFFFF;
-		border-radius: 8px;
+		background-color: #F0F2F5;
 		overflow: hidden;
-		border: 1px solid #E2E8F0;
 	}
 	
-	/* 上/下一个导航按钮 */
+	/* 上/下一个导航按钮 — 参考 macOS Preview / Google Photos 的精致设计 */
 	.nav-btn {
 		position: absolute;
 		top: 50%;
-		width: 48px;
-		height: 80px;
-		margin-top: -40px;
+		width: 36px;
+		height: 36px;
+		margin-top: -18px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(15, 23, 42, 0.4);
-		
+		background-color: rgba(255, 255, 255, 0.85);
+		border-radius: 18px;
+		/* #ifdef WEB */
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+		/* #endif */
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgba(0, 0, 0, 0.06);
 		z-index: 10;
 		/* #ifdef WEB */
 		cursor: pointer;
+		backdrop-filter: blur(12px);
+		opacity: 0.6;
 		/* #endif */
-		transition-property: background-color, transform, width;
+		transition-property: background-color, transform, box-shadow, opacity;
 		transition-duration: 0.2s;
 	}
 	
+	/* #ifdef WEB */
+	.nav-btn:hover {
+		opacity: 1;
+		background-color: rgba(255, 255, 255, 0.92);
+		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+	}
+	/* #endif */
+	
 	.nav-btn:active {
-		background-color: rgba(15, 23, 42, 0.6);
-		transform: scaleX(0.95);
+		background-color: rgba(241, 245, 249, 0.95);
+		transform: scale(0.9);
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+		/* #ifdef WEB */
+		opacity: 1;
+		/* #endif */
 	}
 	
 	.nav-prev {
-		left: 0;
-		border-top-right-radius: 16px;
-		border-bottom-right-radius: 16px;
-		border-top-left-radius: 0;
-		border-bottom-left-radius: 0;
-		transform-origin: left center;
+		left: 12px;
 	}
 	
 	.nav-next {
-		right: 0;
-		border-top-left-radius: 16px;
-		border-bottom-left-radius: 16px;
-		border-top-right-radius: 0;
-		border-bottom-right-radius: 0;
-		transform-origin: right center;
+		right: 12px;
 	}
 	
 	.nav-icon {
-		font-size: 32px;
-		color: #FFFFFF;
-		font-weight: 400;
+		font-size: 20px;
+		color: #475569;
+		font-weight: bold;
 	}
 	
 	/* 右侧紧凑缩略图列表 */
 	.fullscreen-list {
-		width: 140px;
+		width: 160px;
 		display: flex;
 		flex-direction: column;
 		background-color: #FFFFFF;
-		border-radius: 8px;
-		overflow: hidden;
-		border: 1px solid #E2E8F0;
+		border-left: 1px solid #E2E8F0;
 	}
 	
 	.fullscreen-list-inner {
@@ -2294,9 +2367,9 @@
 		flex-direction: column;
 		align-items: center;
 		padding: 8px;
-		margin-bottom: 8px;
-		background-color: #F3F4F6;
-		border-radius: 6px;
+		margin-bottom: 10px;
+		background-color: #F8FAFC;
+		border-radius: 8px;
 		border: 2px solid transparent;
 	}
 	
@@ -2305,20 +2378,20 @@
 		flex-direction: column;
 		align-items: center;
 		padding: 8px;
-		margin-bottom: 8px;
+		margin-bottom: 10px;
 		background-color: #ECFEFF;
-		border-radius: 6px;
+		border-radius: 8px;
 		border: 2px solid #0891B2;
 	}
 	
 	.thumb-wrapper {
-		width: 100px;
-		height: 70px;
+		width: 110px;
+		height: 75px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		background-color: #E2E8F0;
-		border-radius: 4px;
+		border-radius: 6px;
 		overflow: hidden;
 	}
 	
@@ -2344,6 +2417,8 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		position: relative;
+		padding-bottom: 80px;
 	}
 	
 	.image-scroll-view {
@@ -2364,28 +2439,38 @@
 		height: 100%;
 	}
 	
-	/* 图片操作工具栏 */
+	/* 图片操作工具栏 - 悬浮胶囊 */
 	.image-toolbar {
+		position: absolute;
+		bottom: 24px;
+		left: 50%;
+		transform: translateX(-50%);
 		display: flex;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		padding: 12px 20px;
-		background-color: #FFFFFF;
-		border-top: 1px solid #E2E8F0;
+		padding: 6px 12px;
+		background-color: rgba(255, 255, 255, 0.92);
+		border-radius: 28px;
+		border: 1px solid #E2E8F0;
+		/* #ifdef WEB */
+		backdrop-filter: blur(16px);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+		/* #endif */
+		z-index: 200;
 	}
 	
 	.toolbar-btn {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 8px 16px;
-		margin: 0 4px;
-		background-color: #FFFFFF;
-		border-radius: 8px;
-		border: 1px solid #E2E8F0;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-		transition-property: background-color, transform, box-shadow, border-color;
+		width: 40px;
+		height: 40px;
+		justify-content: center;
+		margin: 0 2px;
+		background-color: transparent;
+		border-radius: 20px;
+		transition-property: background-color, transform;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
 		cursor: pointer;
@@ -2393,16 +2478,14 @@
 	}
 	
 	.toolbar-btn:active {
-		background-color: #F8FAFC;
-		transform: scale(0.95);
-		box-shadow: 0 0px 1px rgba(0, 0, 0, 0.01);
-		border-color: #CBD5E1;
+		background-color: #E2E8F0;
+		transform: scale(0.9);
 	}
 	
 	.toolbar-icon {
 		font-size: 20px;
 		color: #334155;
-		font-weight: bold;
+		font-weight: normal;
 	}
 	
 	.toolbar-label {
@@ -2415,25 +2498,24 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		padding: 8px 16px;
-		margin: 0 8px;
+		padding: 4px 12px;
+		margin: 0 4px;
 		background-color: #F1F5F9;
-		border-radius: 8px;
-		border: 1px solid #E2E8F0;
-		min-width: 60px;
+		border-radius: 14px;
+		min-width: 50px;
 	}
 	
 	.zoom-percentage {
-		font-size: 14px;
+		font-size: 13px;
 		color: #0F172A;
 		font-weight: 600;
 	}
 	
 	.toolbar-divider {
 		width: 1px;
-		height: 32px;
+		height: 24px;
 		background-color: #E2E8F0;
-		margin: 0 12px;
+		margin: 0 4px;
 	}
 	/* ========== 设置下拉菜单样式 ========== */
 	

@@ -47,14 +47,59 @@
 
 		<!-- 左下角公司品牌区 -->
 		<view class="brand-footer">
-			<image class="brand-logo" src="/static/icons/casc_logo.png" mode="aspectFit"></image>
-			<text class="brand-name">中国航天 · 神软</text>
+			<image class="brand-logo" src="/static/icons/casc_full_name.png" mode="heightFix"></image>
+		</view>
+
+		<!-- 使用文档模态框 -->
+		<view v-if="showDocModal" class="doc-modal-overlay" :style="{ top: isPC ? '36px' : '0' }" @click="closeDoc">
+			<view class="doc-modal-content" @click.stop>
+				<view class="doc-modal-header">
+					<text class="doc-modal-title">开物 使用指南</text>
+					<view class="doc-modal-close" @click="closeDoc">
+						<text class="close-icon">✕</text>
+					</view>
+				</view>
+				<scroll-view class="doc-modal-body" scroll-y="true">
+					<view class="doc-section">
+						<text class="doc-h3">1. 什么是工艺数据包 (.srd)?</text>
+						<text class="doc-p">.srd (Structured Resource Data) 是本系统专用的离线工艺数据包格式，内部包含了结构化的工艺数据以及相关的资源文件（图片、PDF、图纸等）。</text>
+					</view>
+					
+					<view class="doc-section">
+						<text class="doc-h3">2. 如何导入数据?</text>
+						<text class="doc-p">点击主界面的“导入数据包”按钮（或使用快捷键 Ctrl+I），选择本地准备好的 .srd 文件。系统将自动解析数据包，并在左侧侧边栏生成工艺结构树。</text>
+					</view>
+
+					<view class="doc-section">
+						<text class="doc-h3">3. 资源查看与交互</text>
+						<text class="doc-p">在左侧目录树中点击工艺节点，即可在主工作区加载并预览关联的资源内容。</text>
+						<text class="doc-li">• 图片与文档：支持双击或点击右上角按钮进入全屏沉浸式预览。</text>
+						<text class="doc-li">• 全屏交互：在全屏模式下，您可以通过顶部导航栏或键盘方向键快速切换关联的图片资源。</text>
+						<text class="doc-li">• 快捷操作：全屏模式下支持按 Esc 键快速退出。</text>
+					</view>
+
+					<view class="doc-section">
+						<text class="doc-h3">4. 数据重置</text>
+						<text class="doc-p">如需切换到新的工程数据，或清空当前缓存的工艺状态，请点击“重置数据”（或使用快捷键 Ctrl+R）。这将把系统恢复至完全初始状态。</text>
+					</view>
+				</scroll-view>
+			</view>
 		</view>
 	</view>
 </template>
 
 <script setup lang="uts">
+	import { ref } from 'vue'
+	
 	const emit = defineEmits(['import', 'reset'])
+	const showDocModal = ref(false)
+
+	const isPC = ref(false)
+	// #ifdef WEB
+	if ((window as any).electronAPI != null) {
+		isPC.value = true
+	}
+	// #endif
 
 	const handleImport = () => {
 		emit('import')
@@ -65,10 +110,11 @@
 	}
 
 	const handleDoc = () => {
-		uni.showToast({
-			title: '文档功能开发中...',
-			icon: 'none'
-		})
+		showDocModal.value = true
+	}
+
+	const closeDoc = () => {
+		showDocModal.value = false
 	}
 </script>
 
@@ -200,15 +246,118 @@
 	}
 
 	.brand-logo {
-		width: 28px;
-		height: 28px;
-		margin-right: 8px;
-		opacity: 0.6;
+		height: 32px;
+		opacity: 1;
 	}
 
-	.brand-name {
-		font-size: 12px;
-		color: #8B949E;
-		font-weight: 400;
+	/* ====== 文档模态框 ====== */
+	.doc-modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.4);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+		/* #ifdef WEB */
+		backdrop-filter: blur(2px);
+		/* #endif */
+	}
+
+	.doc-modal-content {
+		width: 560px;
+		max-height: 80vh;
+		background-color: #FFFFFF;
+		border-radius: 8px;
+		display: flex;
+		flex-direction: column;
+		/* #ifdef WEB */
+		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+		/* #endif */
+		border: 1px solid #D0D7DE;
+		overflow: hidden;
+	}
+
+	.doc-modal-header {
+		padding: 16px 20px;
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		border-bottom: 1px solid #E8EAED;
+		background-color: #F8F9FA;
+	}
+
+	.doc-modal-title {
+		font-size: 16px;
+		font-weight: 600;
+		color: #1F2328;
+	}
+
+	.doc-modal-close {
+		width: 28px;
+		height: 28px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		border-radius: 4px;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+		transition-property: background-color;
+		transition-duration: 0.15s;
+	}
+
+	/* #ifdef WEB */
+	.doc-modal-close:hover {
+		background-color: rgba(208, 215, 222, 0.5);
+	}
+	/* #endif */
+
+	.doc-modal-close:active {
+		background-color: rgba(208, 215, 222, 0.8);
+	}
+
+	.close-icon {
+		font-size: 16px;
+		color: #656D76;
+	}
+
+	.doc-modal-body {
+		flex: 1;
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.doc-section {
+		margin-bottom: 24px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.doc-h3 {
+		font-size: 14px;
+		font-weight: 600;
+		color: #1F2328;
+		margin-bottom: 8px;
+	}
+
+	.doc-p {
+		font-size: 13px;
+		color: #424A53;
+		line-height: 1.6;
+		margin-bottom: 6px;
+	}
+
+	.doc-li {
+		font-size: 13px;
+		color: #424A53;
+		line-height: 1.6;
+		margin-left: 12px;
+		margin-bottom: 4px;
 	}
 </style>
