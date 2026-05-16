@@ -1,7 +1,7 @@
 {
-  "name": "avpbc-pop-desktop",
-  "version": "1.4.2",
-  "description": "开物桌面版",
+  "name": "kaiwu",
+  "version": "1.5.0",
+  "description": "开物",
   "author": "北京神舟航天软件技术股份有限公司",
   "main": "main.js",
   "scripts": {
