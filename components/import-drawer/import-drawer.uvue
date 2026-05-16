@@ -1,7 +1,7 @@
 <template>
-	<view class="mask-bg" @click="handleClose">
+	<view class="mask-bg" :style="{ top: isPC ? '36px' : '0' }" @click="handleClose">
 		<view class="modal-container" @click.stop="">
-			<!-- 头部：VS Code 风格标题栏 -->
+			<!-- 头部：普通对话框标题栏 -->
 			<view class="modal-header">
 				<view class="header-left">
 					<text class="modal-icon">📦</text>
@@ -139,6 +139,13 @@
 	const isDragOver = ref(false)
 	const dragErrorMessage = ref('')
 	let errorTimer: number | null = null
+	
+	const isPC = ref(false)
+	// #ifdef WEB
+	if ((window as any).electronAPI != null) {
+		isPC.value = true
+	}
+	// #endif
 	
 	/**
 	 * 初始化数据库
@@ -394,10 +401,10 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 12px 16px;
-		background-color: #F3F4F6;
+		background-color: #F8FAFC;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #E5E7EB;
+		border-bottom-color: #E2E8F0;
 	}
 	
 	.header-left {

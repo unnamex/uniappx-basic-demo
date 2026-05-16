@@ -229,7 +229,7 @@
 	</outsider-layout>
 	
 	<!-- 设置菜单遮罩层 -->
-	<view v-if="isSettingsMenuVisible" class="settings-overlay" @click="closeSettingsMenu"></view>
+	<view v-if="isSettingsMenuVisible" class="settings-overlay" :style="{ top: isPC ? '36px' : '0' }" @click="closeSettingsMenu"></view>
 	
 	<!-- 设置下拉菜单 (根据平台调整位置) -->
 	<view v-if="isSettingsMenuVisible" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '36px' : 'auto', right: isPC ? 'auto' : '20px' }">
@@ -603,7 +603,7 @@
 			})
 		}
 		
-		window.addEventListener('keydown', handleFullscreenKeyDown)
+		window.addEventListener('keydown', handleGlobalKeyDown)
 		// #endif
 		const nodeId = options['id'] as string | null
 		initData(nodeId)
@@ -617,7 +617,7 @@
 	
 	onUnload(() => {
 		// #ifdef WEB
-		window.removeEventListener('keydown', handleFullscreenKeyDown)
+		window.removeEventListener('keydown', handleGlobalKeyDown)
 		// #endif
 	})
 	
@@ -1562,9 +1562,26 @@
 	}
 	
 	/**
-	 * 全屏资源预览下的键盘事件处理
+	 * 全局键盘事件处理（快捷键等）
 	 */
-	const handleFullscreenKeyDown = (e : any) => {
+	const handleGlobalKeyDown = (e : any) => {
+		// 导入数据快捷键 Ctrl+I
+		if (e.ctrlKey == true && (e.key == 'i' || e.key == 'I' || e.key == 'l' || e.key == 'L')) {
+			if (typeof e.preventDefault == 'function') {
+				e.preventDefault()
+			}
+			handleImportData()
+			return
+		}
+		// 重置数据快捷键 Ctrl+R
+		if (e.ctrlKey == true && (e.key == 'r' || e.key == 'R')) {
+			if (typeof e.preventDefault == 'function') {
+				e.preventDefault()
+			}
+			handleResetData()
+			return
+		}
+		// 全屏资源预览退出快捷键 Esc
 		if (isResourceMaximized.value && e.key == 'Escape') {
 			toggleResourceMaximize()
 		}
@@ -2497,7 +2514,6 @@
 	
 	.settings-overlay {
 		position: fixed;
-		top: 0;
 		left: 0;
 		right: 0;
 		bottom: 0;
