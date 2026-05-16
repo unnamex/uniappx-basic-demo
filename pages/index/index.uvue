@@ -236,7 +236,7 @@
 	
 	<!-- 全屏资源预览覆盖层 -->
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
-		<view class="fullscreen-container" :style="{ paddingTop: statusBarHeight + 'px' }">
+		<view class="fullscreen-container" :style="{ paddingTop: (isPC ? 0 : statusBarHeight) + 'px' }">
 			<!-- 头部工具栏 -->
 			<view class="fullscreen-header">
 				<view class="header-left">
@@ -585,6 +585,11 @@
 					handleImportData()
 				} else if (action == 'reset-data') {
 					handleResetData()
+				}
+			})
+			electronAPI.onLeaveFullScreen(() => {
+				if (isResourceMaximized.value) {
+					isResourceMaximized.value = false
 				}
 			})
 		}
@@ -1427,6 +1432,19 @@
 		if (isResourceMaximized.value) {
 			isFullscreenListVisible.value = true
 		}
+		// PC 客户端：进入/退出沉浸式全屏（隐藏标题栏和菜单栏）
+		// #ifdef WEB
+		if (isPC.value) {
+			const electronAPI = (window as any).electronAPI
+			if (electronAPI != null) {
+				if (isResourceMaximized.value) {
+					electronAPI.enterImmersive()
+				} else {
+					electronAPI.exitImmersive()
+				}
+			}
+		}
+		// #endif
 	}
 	
 	/**
@@ -2032,7 +2050,7 @@
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
-		padding: 6px 16px;
+		padding: 4px 12px;
 		background-color: #FFFFFF;
 		border-bottom: 1px solid #E2E8F0;
 	}

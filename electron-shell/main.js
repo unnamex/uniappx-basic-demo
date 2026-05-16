@@ -200,6 +200,11 @@ function createWindow() {
     mainWindow = null
   })
 
+  // 监听退出全屏事件（例如用户按下 ESC 键）
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow.webContents.send('window-leave-full-screen')
+  })
+
   createMenu()
 }
 
@@ -300,6 +305,19 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
   if (mainWindow != null) mainWindow.close()
+})
+
+// 进入/退出沉浸式全屏（隐藏标题栏和菜单栏，最大化内容区域）
+ipcMain.on('enter-immersive', () => {
+  if (mainWindow != null) {
+    mainWindow.setFullScreen(true)
+  }
+})
+
+ipcMain.on('exit-immersive', () => {
+  if (mainWindow != null) {
+    mainWindow.setFullScreen(false)
+  }
 })
 
 // 应用就绪：先启动文档服务器，再创建窗口

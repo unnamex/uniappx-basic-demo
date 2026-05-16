@@ -24,5 +24,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveTempDoc: (base64, filename) => ipcRenderer.invoke('save-temp-doc', base64, filename),
 
   // 监听菜单操作
-  onMenuAction: (callback) => ipcRenderer.on('menu-action', (_event, action) => callback(action))
+  onMenuAction: (callback) => ipcRenderer.on('menu-action', (_event, action) => callback(action)),
+
+  // 沉浸式全屏控制（隐藏标题栏和菜单栏）
+  enterImmersive: () => ipcRenderer.send('enter-immersive'),
+  exitImmersive: () => ipcRenderer.send('exit-immersive'),
+  
+  // 监听退出全屏事件
+  onLeaveFullScreen: (callback) => ipcRenderer.on('window-leave-full-screen', () => callback())
 })
