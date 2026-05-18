@@ -1,0 +1,252 @@
+<template>
+	<view class="about-dialog-mask" :style="{ top: isPC ? '36px' : '0' }" @click="handleMaskClick">
+		<view class="about-dialog-content" @click.stop="">
+			<!-- Close button -->
+			<view class="close-btn" @click="close">
+				<text class="close-icon">✕</text>
+			</view>
+
+			<view class="about-body">
+				<view class="logo-area">
+					<image class="app-logo" src="/static/logo.png" mode="aspectFit" />
+				</view>
+				<view class="info-area">
+					<text class="app-name">开物</text>
+					
+					<view class="info-row">
+						<text class="info-label">版本:</text>
+						<text class="info-value">{{ appVersion }}</text>
+					</view>
+					<view class="info-row">
+						<text class="info-label">更新日期:</text>
+						<text class="info-value">{{ releaseDate }}</text>
+					</view>
+					<view class="info-row" v-if="electronVersion != ''">
+						<text class="info-label">Electron:</text>
+						<text class="info-value">{{ electronVersion }}</text>
+					</view>
+					<view class="info-row" v-if="chromeVersion != ''">
+						<text class="info-label">Chromium:</text>
+						<text class="info-value">{{ chromeVersion }}</text>
+					</view>
+					<view class="info-row" v-if="nodeVersion != ''">
+						<text class="info-label">Node.js:</text>
+						<text class="info-value">{{ nodeVersion }}</text>
+					</view>
+					
+					<view class="copyright">
+						<text class="copyright-text">Copyright © 2026 北京神舟航天软件技术股份有限公司.</text>
+						<text class="copyright-text">All rights reserved.</text>
+					</view>
+				</view>
+			</view>
+
+			<view class="about-footer">
+				<view class="copy-btn" @click="copyInfo">
+					<text class="copy-btn-text">复制</text>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	const emit = defineEmits(['close'])
+
+	const appVersion = ref('1.5.1')
+	const releaseDate = ref('2026-05-18')
+	const electronVersion = ref('')
+	const chromeVersion = ref('')
+	const nodeVersion = ref('')
+	const isPC = ref(false)
+
+	onMounted(async () => {
+		// #ifdef WEB
+		if ((window as any).electronAPI != null) {
+			isPC.value = true
+			const api = (window as any).electronAPI
+			try {
+				appVersion.value = await api.getVersion()
+			} catch (e) {}
+
+			try {
+				const versions = api.getVersions()
+				if (versions != null) {
+					electronVersion.value = versions.electron || ''
+					chromeVersion.value = versions.chrome || ''
+					nodeVersion.value = versions.node || ''
+				}
+			} catch(e) {}
+		}
+		// #endif
+	})
+
+	const handleMaskClick = () => {
+		close()
+	}
+
+	const close = () => {
+		emit('close')
+	}
+
+	const copyInfo = () => {
+		const text = `开物\n版本: ${appVersion.value}\n更新日期: ${releaseDate.value}\nElectron: ${electronVersion.value}\nChromium: ${chromeVersion.value}\nNode.js: ${nodeVersion.value}`
+		uni.setClipboardData({
+			data: text,
+			success: () => {
+				uni.showToast({
+					title: '已复制到剪贴板',
+					icon: 'none'
+				})
+			}
+		})
+	}
+</script>
+
+<style>
+	.about-dialog-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.4);
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		z-index: 998;
+	}
+
+	.about-dialog-content {
+		width: 500px;
+		background-color: #FFFFFF;
+		border-radius: 6px;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+		display: flex;
+		flex-direction: column;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.close-btn {
+		position: absolute;
+		top: 12px;
+		right: 12px;
+		width: 24px;
+		height: 24px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		cursor: pointer;
+		border-radius: 4px;
+		z-index: 2;
+	}
+
+	.close-btn:hover {
+		background-color: #f1f5f9;
+	}
+	
+	.close-icon {
+		color: #64748b;
+		font-size: 16px;
+	}
+	
+	.close-btn:hover .close-icon {
+		color: #334155;
+	}
+
+	.about-body {
+		display: flex;
+		flex-direction: row;
+		padding: 30px;
+	}
+
+	.logo-area {
+		width: 100px;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		padding-top: 10px;
+	}
+
+	.app-logo {
+		width: 80px;
+		height: 80px;
+	}
+
+	.info-area {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.app-name {
+		font-size: 24px;
+		font-weight: bold;
+		color: #1e293b;
+		margin-bottom: 20px;
+	}
+
+	.info-row {
+		display: flex;
+		flex-direction: row;
+		margin-bottom: 6px;
+	}
+
+	.info-label {
+		width: 80px;
+		font-size: 13px;
+		color: #64748b;
+		font-weight: bold;
+	}
+
+	.info-value {
+		flex: 1;
+		font-size: 13px;
+		color: #334155;
+	}
+
+	.copyright {
+		margin-top: 24px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.copyright-text {
+		font-size: 12px;
+		color: #94a3b8;
+		margin-bottom: 2px;
+	}
+
+	.about-footer {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+		padding: 12px 20px;
+		background-color: #f8fafc;
+		border-top: 1px solid #e2e8f0;
+	}
+
+	.copy-btn {
+		padding: 6px 16px;
+		background-color: #e2e8f0;
+		border-radius: 4px;
+		cursor: pointer;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.copy-btn:hover {
+		background-color: #cbd5e1;
+	}
+
+	.copy-btn-text {
+		font-size: 13px;
+		color: #334155;
+		font-weight: bold;
+	}
+</style>

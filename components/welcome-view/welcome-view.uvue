@@ -45,9 +45,10 @@
 			</view>
 		</view>
 
-		<!-- 左下角公司品牌区 -->
-		<view class="brand-footer">
+		<!-- 底部区域 (左侧Logo, 右侧版本) -->
+		<view class="bottom-footer">
 			<image class="brand-logo" src="/static/icons/casc_full_name.png" mode="heightFix"></image>
+			<text class="version-text">v{{ appVersion }}</text>
 		</view>
 
 		<!-- 使用文档模态框 -->
@@ -89,10 +90,13 @@
 </template>
 
 <script setup lang="uts">
-	import { ref } from 'vue'
+	import { ref, onMounted } from 'vue'
 	
 	const emit = defineEmits(['import', 'reset'])
 	const showDocModal = ref(false)
+
+	// 获取应用版本号
+	const appVersion = ref(uni.getAppBaseInfo().appVersion || '1.0.0')
 
 	const isPC = ref(false)
 	// #ifdef WEB
@@ -100,6 +104,17 @@
 		isPC.value = true
 	}
 	// #endif
+
+	onMounted(async () => {
+		// #ifdef WEB
+		if ((window as any).electronAPI != null) {
+			const api = (window as any).electronAPI
+			try {
+				appVersion.value = await api.getVersion()
+			} catch (e) {}
+		}
+		// #endif
+	})
 
 	const handleImport = () => {
 		emit('import')
@@ -236,18 +251,27 @@
 		margin-bottom: 16px;
 	}
 
-	/* ====== 左下角品牌区 ====== */
-	.brand-footer {
+	/* ====== 底部区域 ====== */
+	.bottom-footer {
 		position: absolute;
-		bottom: 24px;
-		left: 28px;
+		bottom: 32px;
+		left: 32px;
+		right: 32px;
+		display: flex;
 		flex-direction: row;
+		justify-content: space-between;
 		align-items: center;
 	}
 
 	.brand-logo {
-		height: 32px;
-		opacity: 1;
+		height: 24px;
+		opacity: 0.7;
+	}
+
+	.version-text {
+		font-size: 13px;
+		color: #8B949E;
+		font-family: monospace;
 	}
 
 	/* ====== 文档模态框 ====== */

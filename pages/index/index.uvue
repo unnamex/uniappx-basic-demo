@@ -23,6 +23,11 @@
 				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center;" @click="toggleSettingsMenu">
 					<text style="font-size: 13px; color: #334155;">文件</text>
 				</view>
+				
+				<!-- 关于菜单按钮 -->
+				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; margin-left: 4px;" @click="showAboutDialog = true">
+					<text style="font-size: 13px; color: #334155;">关于</text>
+				</view>
 			</view>
 
 			<view class="header-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 0) + 'px' }">
@@ -368,6 +373,9 @@
 	
 	<!-- 导入包抽屉组件 -->
 	<import-drawer v-if="showImportDrawer" @close="showImportDrawer = false" @success="handleImportSuccess" />
+	
+	<!-- 关于弹窗组件 -->
+	<about-dialog v-if="showAboutDialog" @close="showAboutDialog = false" />
 </template>
 
 <script setup lang="uts">
@@ -687,6 +695,7 @@
 	}
 	
 	const showImportDrawer = ref(false)
+	const showAboutDialog = ref(false)
 	
 	const handleImportSuccess = () => {
 		initData(null)

@@ -8,6 +8,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取平台信息
   getPlatform: () => process.platform,
 
+  // 获取更详细的操作系统信息
+  getOsInfo: () => {
+    try {
+      const os = require('os')
+      let type = os.type()
+      if (type === 'Windows_NT') type = 'Windows'
+      else if (type === 'Darwin') type = 'macOS'
+      else if (type === 'Linux') type = 'Linux'
+      return `${type} ${os.release()} (${os.arch()})`
+    } catch (e) {
+      return process.platform
+    }
+  },
+
+  // 获取系统/应用版本信息
+  getVersions: () => process.versions,
+
   // 最小化窗口
   minimize: () => ipcRenderer.send('window-minimize'),
 
