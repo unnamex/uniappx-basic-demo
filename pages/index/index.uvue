@@ -1172,24 +1172,23 @@
 		// === 尝试获取 Header 业务大图标 ===
 		const partBusinessIcon = (node['partClassId_business_icon'] as string | null) ?? ''
 		const processBusinessIcon = (node['classId_business_icon'] as string | null) ?? ''
-		const businessIconKey = partBusinessIcon != '' ? partBusinessIcon : processBusinessIcon
+		const businessIconKey = (partCode != '' && partBusinessIcon != '') ? partBusinessIcon : processBusinessIcon
 		headerIconPath.value = getIconPath(businessIconKey)
 
 		// === 上部分面包屑：部件编号/名称/版本 > 工艺编号/名称/版本 ===
 		const topItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
 		// 部件面包屑项
-		let partLabel = '未关联部件'
 		if (partCode != '') {
-			partLabel = partName != '' ? `${partCode}，${partName}` : partCode
+			const partLabel = partName != '' ? `${partCode}，${partName}` : partCode
+			topItems.push({ 
+				label: partLabel, 
+				value: 'part',
+				state: partStateName,
+				stateType: getStateTagType(partStateName),
+				version: partFullversionNo
+			} as BreadcrumbItem)
 		}
-		topItems.push({ 
-			label: partLabel, 
-			value: 'part',
-			state: partCode != '' ? partStateName : '',
-			stateType: getStateTagType(partStateName),
-			version: partCode != '' ? partFullversionNo : ''
-		} as BreadcrumbItem)
 
 		// 工艺面包屑项
 		let processLabel = processName
@@ -1210,21 +1209,23 @@
 		const bottomItems: BreadcrumbItem[] = [] as BreadcrumbItem[]
 
 		// 部件详情面包屑项（类型 | 修改人 | 修改时间 | 上下文名称 | 密级）
-		const partDetailParts: string[] = [] as string[]
-		if (partClassIdDisplay != '') partDetailParts.push(partClassIdDisplay)
-		if (partModifyByIdDisplay != '') partDetailParts.push(partModifyByIdDisplay)
-		if (partModifyTime != '') partDetailParts.push(partModifyTime)
-		if (partContextName != '') partDetailParts.push(partContextName)
-		if (partPhaseIdDisplay != '') partDetailParts.push(partPhaseIdDisplay)
-		if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
-		const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
-		bottomItems.push({ 
-			label: partDetailLabel, 
-			value: 'part-detail',
-			state: '',
-			stateType: 'default',
-			version: ''
-		} as BreadcrumbItem)
+		if (partCode != '') {
+			const partDetailParts: string[] = [] as string[]
+			if (partClassIdDisplay != '') partDetailParts.push(partClassIdDisplay)
+			if (partModifyByIdDisplay != '') partDetailParts.push(partModifyByIdDisplay)
+			if (partModifyTime != '') partDetailParts.push(partModifyTime)
+			if (partContextName != '') partDetailParts.push(partContextName)
+			if (partPhaseIdDisplay != '') partDetailParts.push(partPhaseIdDisplay)
+			if (partSecretIdDisplay != '') partDetailParts.push(partSecretIdDisplay)
+			const partDetailLabel = partDetailParts.length > 0 ? partDetailParts.join(' | ') : '无部件详情'
+			bottomItems.push({ 
+				label: partDetailLabel, 
+				value: 'part-detail',
+				state: '',
+				stateType: 'default',
+				version: ''
+			} as BreadcrumbItem)
+		}
 
 		// 工艺详情面包屑项（类型 | 修改人 | 修改时间 | 上下文名称 | 密级）
 		const processDetailParts: string[] = [] as string[]
