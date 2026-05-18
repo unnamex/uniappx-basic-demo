@@ -147,6 +147,9 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 100;
+		/* #ifdef WEB */
+		-webkit-app-region: drag;
+		/* #endif */
 	}
 
 	/* ====== 中央主内容区 ====== */
@@ -156,6 +159,9 @@
 		max-width: 420px;
 		width: 100%;
 		padding: 0 24px;
+		/* #ifdef WEB */
+		-webkit-app-region: no-drag;
+		/* #endif */
 	}
 
 	/* 客户端图标 */
@@ -261,6 +267,9 @@
 		flex-direction: row;
 		justify-content: space-between;
 		align-items: center;
+		/* #ifdef WEB */
+		-webkit-app-region: no-drag;
+		/* #endif */
 	}
 
 	.brand-logo {
@@ -288,6 +297,7 @@
 		z-index: 1000;
 		/* #ifdef WEB */
 		backdrop-filter: blur(2px);
+		-webkit-app-region: no-drag;
 		/* #endif */
 	}
 
