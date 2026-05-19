@@ -299,7 +299,8 @@ export class X2TConverter {
     await this.initialize();
 
     const fileName = file.name;
-    const fileExt = getExtensions(file?.type)[0] || fileName.split('.').pop() || '';
+    const extFromFileName = fileName.includes('.') ? fileName.split('.').pop() : null;
+    const fileExt = extFromFileName || getExtensions(file?.type)[0] || '';
     const documentType = this.getDocumentType(fileExt);
 
     try {

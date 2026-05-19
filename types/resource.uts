@@ -139,3 +139,35 @@ export function inferResourceType(filename: string): string {
 	
 	return 'unknown'
 }
+
+/**
+ * 资源类型归一化
+ * @param type 原始类型
+ * @param path 资源路径
+ * @returns 归一化后的标准类型
+ */
+export function normalizeResourceType(type: string, path: string): string {
+	const lowerType = type.toLowerCase()
+	if (lowerType == ResourceType_IMAGE || lowerType == ResourceType_VIDEO || lowerType == ResourceType_AUDIO || lowerType == ResourceType_DOCUMENT || lowerType == ResourceType_CAD) {
+		return lowerType
+	}
+	// 如果是常见文件后缀缩写，进行转换
+	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt'].indexOf(lowerType) >= 0) {
+		return ResourceType_DOCUMENT
+	}
+	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].indexOf(lowerType) >= 0) {
+		return ResourceType_IMAGE
+	}
+	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].indexOf(lowerType) >= 0) {
+		return ResourceType_VIDEO
+	}
+	if (['mp3', 'wav', 'aac', 'ogg', 'm4a', 'flac'].indexOf(lowerType) >= 0) {
+		return ResourceType_AUDIO
+	}
+	if (['html', 'htm'].indexOf(lowerType) >= 0) {
+		return ResourceType_CAD
+	}
+	// 否则，根据 path 的后缀进行推断
+	return inferResourceType(path)
+}
+

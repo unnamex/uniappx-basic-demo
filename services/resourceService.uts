@@ -3,7 +3,7 @@
  * @description 处理静态资源的存储、加载和管理
  */
 
-import { ResourceItem, inferResourceType } from '@/types/resource'
+import { ResourceItem, inferResourceType, normalizeResourceType } from '@/types/resource'
 import { executeSQL, querySQL } from '@/services/database'
 // #ifdef WEB
 import { webPutData, webGetByIndex, webGetAll, webClearStore } from '@/services/database'
@@ -419,6 +419,13 @@ function getMimeTypeForFile(fileName: string): string {
 	if (ext == 'mp3') return 'audio/mpeg'
 	if (ext == 'wav') return 'audio/wav'
 	if (ext == 'ogg') return 'audio/ogg'
+	if (ext == 'doc') return 'application/msword'
+	if (ext == 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+	if (ext == 'xls') return 'application/vnd.ms-excel'
+	if (ext == 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+	if (ext == 'ppt') return 'application/vnd.ms-powerpoint'
+	if (ext == 'pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+	if (ext == 'txt') return 'text/plain'
 	// CAD 图纸（卡伦特供应商 HTML 封装）
 	if (ext == 'html' || ext == 'htm') return 'text/html'
 	return ''
@@ -490,7 +497,7 @@ export function parseAttachmentFile(content: string): ResourceItem[] {
 			
 			const item: ResourceItem = {
 				id: res['id'] as string ?? `res_${nodeId}_${sortOrder}`,
-				type: res['type'] as string ?? inferResourceType(res['path'] as string ?? ''),
+				type: normalizeResourceType(res['type'] as string ?? '', res['path'] as string ?? ''),
 				name: res['name'] as string ?? '未命名资源',
 				path: '',  // 导入时更新为本地路径
 				originalPath: res['path'] as string ?? '',

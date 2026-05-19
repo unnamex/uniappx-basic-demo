@@ -48,7 +48,8 @@ export async function handleDocumentOperation(options: {
 }): Promise<void> {
   try {
     const { isNew, fileName, file } = options;
-    const fileType = getExtensions(file?.type || '')[0] || fileName.split('.').pop() || '';
+    const extFromFileName = fileName.includes('.') ? fileName.split('.').pop() : null;
+    const fileType = extFromFileName || getExtensions(file?.type || '')[0] || '';
     const _docType = getDocumentType(fileType);
 
     // Get document content
