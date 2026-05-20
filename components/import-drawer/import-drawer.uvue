@@ -541,7 +541,6 @@
 	.manifest-label {
 		font-size: 11px;
 		color: #9CA3AF;
-		text-transform: uppercase;
 		font-weight: 600;
 		margin-bottom: 4px;
 	}

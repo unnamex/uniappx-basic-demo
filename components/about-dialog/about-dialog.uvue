@@ -2,7 +2,7 @@
 	<view class="about-dialog-mask" :style="{ top: isPC ? '36px' : '0' }" @click="handleMaskClick">
 		<view class="about-dialog-content" @click.stop="">
 			<!-- Close button -->
-			<view class="close-btn" @click="close">
+			<view class="close-btn" @click="close" hover-class="close-btn-hover">
 				<text class="close-icon">✕</text>
 			</view>
 
@@ -42,7 +42,7 @@
 			</view>
 
 			<view class="about-footer">
-				<view class="copy-btn" @click="copyInfo">
+				<view class="copy-btn" @click="copyInfo" hover-class="copy-btn-hover">
 					<text class="copy-btn-text">复制</text>
 				</view>
 			</view>
@@ -139,22 +139,17 @@
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		cursor: pointer;
 		border-radius: 4px;
 		z-index: 2;
 	}
 
-	.close-btn:hover {
+	.close-btn-hover {
 		background-color: #f1f5f9;
 	}
 	
 	.close-icon {
 		color: #64748b;
 		font-size: 16px;
-	}
-	
-	.close-btn:hover .close-icon {
-		color: #334155;
 	}
 
 	.about-body {
@@ -233,14 +228,13 @@
 		padding: 6px 16px;
 		background-color: #e2e8f0;
 		border-radius: 4px;
-		cursor: pointer;
 		display: flex;
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
 	}
 
-	.copy-btn:hover {
+	.copy-btn-hover {
 		background-color: #cbd5e1;
 	}
 
@@ -249,4 +243,22 @@
 		color: #334155;
 		font-weight: bold;
 	}
+
+	/* #ifdef WEB */
+	.close-btn {
+		cursor: pointer;
+	}
+	.close-btn:hover {
+		background-color: #f1f5f9;
+	}
+	.close-btn:hover .close-icon {
+		color: #334155;
+	}
+	.copy-btn {
+		cursor: pointer;
+	}
+	.copy-btn:hover {
+		background-color: #cbd5e1;
+	}
+	/* #endif */
 </style>
