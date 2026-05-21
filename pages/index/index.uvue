@@ -50,6 +50,7 @@
 				</view>
 				<!-- 右侧操作区：设置按钮 + 企业Logo -->
 				<view class="header-actions">
+					<ai-siri-ball @click="showAiDrawer = true" />
 					<view v-if="!isPC" class="settings-icon-btn" @click="toggleSettingsMenu">
 						<image class="settings-icon-img" src="/static/icons/settings_icon.svg" mode="aspectFit"></image>
 					</view>
@@ -243,6 +244,11 @@
 			<text class="menu-item-text">导入数据包</text>
 		</view>
 		<view class="menu-divider"></view>
+		<view class="menu-item" @click="showAiDrawer = true; closeSettingsMenu()">
+			<text class="menu-item-icon">🤖</text>
+			<text class="menu-item-text">AI工艺助手</text>
+		</view>
+		<view class="menu-divider"></view>
 		<view class="menu-item menu-item-danger" @click="handleResetData">
 			<text class="menu-item-icon">🔄</text>
 			<text class="menu-item-text-danger">重置数据</text>
@@ -376,6 +382,11 @@
 	
 	<!-- 关于弹窗组件 -->
 	<about-dialog v-if="showAboutDialog" @close="showAboutDialog = false" />
+
+	<!-- 离线AI工艺助手抽屉 -->
+	<ai-drawer v-if="showAiDrawer" :processName="currentProcessName" @close="showAiDrawer = false" />
+
+
 </template>
 
 <script setup lang="uts">
@@ -505,6 +516,20 @@
 	// 下部分面包屑：部件类型|用户|时间|位置|密级 > 工艺类型|用户|时间|位置|密级
 	const bottomBreadcrumbItems = ref([] as BreadcrumbItem[])
 	
+	// 当前选中的节点名称 (优先使用左侧树选中项，其次使用面包屑最后项)
+	const currentProcessName = computed((): string => {
+		if (selectedRow.value != null) {
+			const name = selectedRow.value!['displayName'] as string | null
+			if (name != null && name != '') return name
+			const rawName = selectedRow.value!['name'] as string | null
+			if (rawName != null && rawName != '') return rawName
+		}
+		if (topBreadcrumbItems.value.length > 0) {
+			return topBreadcrumbItems.value[topBreadcrumbItems.value.length - 1].label
+		}
+		return ''
+	})
+	
 	// 当前资源索引
 	const currentResourceIndex = computed((): number => {
 		if (previewResource.value == null) return 0
@@ -625,6 +650,20 @@
 		initData(nodeId)
 	})
 	
+	// 自动静默重建 AI 索引
+	const autoRebuildAiIndex = () => {
+		uni.request({
+			url: 'http://localhost:3001/rebuild-index',
+			method: 'POST',
+			success: (res) => {
+				console.log('[AI Index] 自动重建完成:', res.data)
+			},
+			fail: (err) => {
+				console.log('[AI Index] 自动重建失败或AI服务未启动:', err)
+			}
+		})
+	}
+	
 	onPageShow(() => {
 		// 每次页面显示时检查并刷新数据
 		// console.log('Page Show')
@@ -696,9 +735,11 @@
 	
 	const showImportDrawer = ref(false)
 	const showAboutDialog = ref(false)
+	const showAiDrawer = ref(false)
 	
 	const handleImportSuccess = () => {
 		initData(null)
+		autoRebuildAiIndex()
 	}
 	
 	/**
@@ -2620,6 +2661,7 @@
 		margin-right: 8px;
 		border-radius: 6px;
 	}
+
 </style>
 
 

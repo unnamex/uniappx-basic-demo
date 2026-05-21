@@ -128,6 +128,7 @@
 <script setup lang="uts">
 	import KuxHarmonyPdf from '@/uni_modules/kux-harmony-pdf/components/kux-harmony-pdf/kux-harmony-pdf.uvue'
 	import { ResourceItem, formatDuration } from '@/types/resource'
+	import { getCachedDocUrl, setCachedDocUrl } from '@/utils/fileOpenCache'
 	
 	// Props
 	const props = defineProps<{
@@ -322,8 +323,36 @@
 			if (el != null) {
 				const encodedName = encodeURIComponent(props.resource?.name ?? 'document')
 				
-				// 针对 Web 端的 blob: 跨域问题，如果为 blob，我们将先拉取并在父窗口转 base64
+				// 确定 ranuts-document 的访问 URL 和 Electron 上下文
+				let targetUrl = './static/ranuts-document/index.html'
+				let electronPort = 0
+				const eApi = (window as any)['electronAPI']
+				
+				if (process.env.NODE_ENV === 'development') {
+					targetUrl = 'http://localhost:5163/index.html'
+				} else if (eApi != null) {
+					try {
+						const port = await (eApi['getRanutsDocPort'] as (() => Promise<number>))()
+						if (port > 0) {
+							electronPort = port
+							targetUrl = 'http://127.0.0.1:' + port + '/index.html'
+						}
+					} catch (e) {}
+				}
+
+				// 检查 URL 缓存
+				if (props.resource?.id) {
+					const cachedUrl = getCachedDocUrl(props.resource.id)
+					if (cachedUrl != null && electronPort > 0) {
+						console.log('[Doc] 命中内存缓存，直接复用 HTTP URL:', cachedUrl)
+						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(cachedUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+						return
+					}
+				}
+				
+				// 针对 Web 端的 blob: 跨域问题，提取数据
 				let base64Str = ''
+				let rawArrayBuffer: ArrayBuffer | null = null
 				console.log('[Parent] Preparing doc viewer for src:', src)
 				if (src.startsWith('blob:')) {
 					try {
@@ -333,17 +362,26 @@
 						}
 						const blob = await response.blob()
 						console.log('[Parent] Blob fetched, size:', blob.size)
-						base64Str = await new Promise<string>((resolve) => {
-							const reader = new FileReader()
-							reader.onloadend = () => {
-								const result = reader.result as string
-								resolve(result.substring(result.indexOf(',') + 1))
-							}
-							reader.readAsDataURL(blob)
-						})
-						console.log('[Parent] Base64 converted, length:', base64Str.length)
+						
+						const eApi = (window as any)['electronAPI']
+						if (eApi != null && eApi['saveTempDocBuffer']) {
+							// Electron 环境：直接提取底层 ArrayBuffer，免去 Base64 灾难级开销
+							rawArrayBuffer = await blob.arrayBuffer()
+							console.log('[Parent] ArrayBuffer extracted, length:', rawArrayBuffer!.byteLength)
+						} else {
+							// 纯 Web 环境：必须转 Base64 供 postMessage 通信
+							base64Str = await new Promise<string>((resolve) => {
+								const reader = new FileReader()
+								reader.onloadend = () => {
+									const result = reader.result as string
+									resolve(result.substring(result.indexOf(',') + 1))
+								}
+								reader.readAsDataURL(blob)
+							})
+							console.log('[Parent] Base64 converted, length:', base64Str.length)
+						}
 					} catch (e) {
-						console.error('[Parent] Failed to convert blob to base64', e)
+						console.error('[Parent] Failed to extract blob data', e)
 					}
 				}
 				
@@ -357,39 +395,38 @@
 				
 				const encodedSrc = encodeURIComponent(docUrl)
 				
-				// 确定 ranuts-document 的访问 URL 和 Electron 上下文
-				let targetUrl = './static/ranuts-document/index.html'
-				let electronPort = 0
-				const eApi = (window as any)['electronAPI']
-				
-				if (process.env.NODE_ENV === 'development') {
-					// 开发环境：使用独立静态服务器规避 Vite 崩溃问题
-					targetUrl = 'http://localhost:5163/index.html'
-				} else if (eApi != null) {
-					// 生产环境：检测 Electron，使用主进程内嵌的 HTTP 服务器
+				// (targetUrl 逻辑已提前)
+				if (rawArrayBuffer != null && eApi != null && electronPort > 0) {
+					// Electron 环境极速通道：发送 ArrayBuffer 直接落盘
 					try {
-						const port = await (eApi['getRanutsDocPort'] as (() => Promise<number>))()
-						if (port > 0) {
-							electronPort = port
-							targetUrl = 'http://127.0.0.1:' + port + '/index.html'
-							console.log('[Doc] 使用 Electron 内嵌 HTTP 服务:', targetUrl)
+						const saveBufferFn = eApi['saveTempDocBuffer'] as ((buffer: ArrayBuffer, name: string) => Promise<string>)
+						const docPath = await saveBufferFn(rawArrayBuffer, props.resource?.name ?? 'document')
+						const docHttpUrl = 'http://127.0.0.1:' + electronPort + docPath
+						console.log('[Doc] 文档(ArrayBuffer)已保存为临时文件，HTTP URL:', docHttpUrl)
+						
+						if (props.resource?.id) {
+							setCachedDocUrl(props.resource.id, docHttpUrl)
 						}
+						
+						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
 					} catch (e) {
-						console.warn('[Doc] 获取 ranuts-doc 端口失败，回退到相对路径', e)
+						console.error('[Doc] 保存临时文档(ArrayBuffer)失败:', e)
 					}
-				}
-				
-				if (base64Str !== '' && eApi != null && electronPort > 0) {
-					// Electron 环境：将文档保存为临时文件，通过 HTTP URL 加载
-					// 这样 OnlyOffice 使用短 HTTP URL 而非将 3.7MB data URI 嵌入 URL 参数
+				} else if (base64Str !== '' && eApi != null && electronPort > 0) {
+					// Electron 环境后备方案（旧版）：发送 Base64 落盘
 					try {
 						const saveFn = eApi['saveTempDoc'] as ((b64: string, name: string) => Promise<string>)
 						const docPath = await saveFn(base64Str, props.resource?.name ?? 'document')
 						const docHttpUrl = 'http://127.0.0.1:' + electronPort + docPath
-						console.log('[Doc] 文档已保存为临时文件，HTTP URL:', docHttpUrl)
+						console.log('[Doc] 文档(Base64)已保存为临时文件，HTTP URL:', docHttpUrl)
+						
+						if (props.resource?.id) {
+							setCachedDocUrl(props.resource.id, docHttpUrl)
+						}
+						
 						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
 					} catch (e) {
-						console.error('[Doc] 保存临时文档失败:', e)
+						console.error('[Doc] 保存临时文档(Base64)失败:', e)
 					}
 				} else if (base64Str !== '') {
 					// 非 Electron Web 环境：通过 postMessage 发送 base64

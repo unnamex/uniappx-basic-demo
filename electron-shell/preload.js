@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 保存临时文档到 HTTP 服务器目录（返回相对 URL 路径）
   saveTempDoc: (base64, filename) => ipcRenderer.invoke('save-temp-doc', base64, filename),
 
+  // 高效保存临时文档（使用 ArrayBuffer 绕过 Base64 转换以提升大文件加载速度）
+  saveTempDocBuffer: (buffer, filename) => ipcRenderer.invoke('save-temp-doc-buffer', buffer, filename),
+
   // 监听菜单操作
   onMenuAction: (callback) => ipcRenderer.on('menu-action', (_event, action) => callback(action)),
 

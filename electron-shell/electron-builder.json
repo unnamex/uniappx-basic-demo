@@ -9,7 +9,8 @@
     "dist/**/*",
     "main.js",
     "preload.js",
-    "icons/**/*"
+    "icons/**/*",
+    "ai-service/**/*"
   ],
   "asar": true,
   "win": {

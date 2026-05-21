@@ -1,0 +1,18 @@
+/**
+ * 附件预览 URL 内存缓存
+ * 用于避免在 Web/Electron 端重复从 IndexedDB 中提取大文件 Blob 并通过 IPC 发送写盘。
+ * 通过 resource.id 作为 Key，缓存主进程返回的最终 HTTP URL。
+ */
+const docUrlCache = new Map<string, string>()
+
+export function getCachedDocUrl(id: string): string | null {
+	return docUrlCache.get(id) || null
+}
+
+export function setCachedDocUrl(id: string, url: string): void {
+	docUrlCache.set(id, url)
+}
+
+export function clearDocUrlCache(): void {
+	docUrlCache.clear()
+}

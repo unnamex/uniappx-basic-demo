@@ -1,0 +1,1128 @@
+<template>
+	<view class="ai-drawer-mask" :style="{ top: isPC ? '36px' : '0px' }" @click="closeDrawer">
+		<view class="ai-drawer-container" @click.stop="">
+			<!-- 头部 -->
+			<view class="ai-header">
+				<view class="ai-title-row">
+					<view class="ai-icon-box">
+						<text class="ai-icon-text">AI</text>
+					</view>
+					<text class="ai-title-text">工艺知识助手</text>
+					<view class="ai-status-badge" :class="isOnline ? 'badge-online' : 'badge-offline'">
+						<view class="status-dot" :class="isOnline ? 'dot-online' : 'dot-offline'"></view>
+						<text class="ai-status-text">{{ isOnline ? '在线' : '离线' }}</text>
+					</view>
+				</view>
+				<view class="ai-header-actions">
+					<view class="ai-action-btn" @click="startNewChat" v-if="!showHistoryList">
+						<text class="ai-action-icon">➕</text>
+					</view>
+					<view class="ai-action-btn" @click="toggleHistory">
+						<text class="ai-action-icon">{{ showHistoryList ? '💬' : '🕒' }}</text>
+					</view>
+					<view class="ai-close-btn" @click="closeDrawer">
+						<text class="ai-close-icon">✕</text>
+					</view>
+				</view>
+			</view>
+
+			<view class="ai-content-wrapper" v-if="!showHistoryList">
+				<!-- 消息滚动区 -->
+				<scroll-view class="ai-msg-list" scroll-y="true" :scroll-top="scrollTop" :show-scrollbar="false">
+					<view class="ai-welcome-box" v-if="messages.length === 0">
+						<view class="welcome-icon-row">
+							<view class="welcome-icon-circle">
+								<text class="welcome-icon-emoji">🛠️</text>
+							</view>
+						</view>
+						<text class="welcome-title">您好！我是离线工艺助手</text>
+						<text class="welcome-desc">帮您解答材料加工、工艺规范、质量检测等问题。已在车间本地环境中安全部署。</text>
+						<text class="welcome-tip">快捷提问：</text>
+						<button class="welcome-suggest-btn" @click="sendSuggestion('介绍一下当前的工艺信息')">
+							<text class="suggest-btn-text">💬 介绍一下当前的工艺信息</text>
+						</button>
+						<button class="welcome-suggest-btn" @click="sendSuggestion('列出当前工艺包含的所有工序？')">
+							<text class="suggest-btn-text">💬 列出当前工艺包含的所有工序？</text>
+						</button>
+						<button class="welcome-suggest-btn" @click="sendSuggestion('加工过程中有哪些防错或高危风险点？')">
+							<text class="suggest-btn-text">💬 加工过程中有哪些防错或高危风险点？</text>
+						</button>
+					</view>
+
+					<template v-for="(msg, index) in messages" :key="index">
+						<view class="msg-item" :class="msg.role === 'user' ? 'msg-user' : 'msg-ai'" v-if="msg.content !== '' || (msg.docs != null && msg.docs!.length > 0)">
+							<!-- 气泡 -->
+							<view class="msg-bubble" :class="msg.role === 'user' ? 'bubble-user' : 'bubble-ai'">
+								<text class="msg-content" :class="msg.role === 'user' ? 'content-user' : 'content-ai'">{{ msg.content }}</text>
+								
+								<!-- 检索来源展示 -->
+								<view class="msg-sources" v-if="msg.docs != null && msg.docs!.length > 0">
+									<text class="source-header">📚 参考企业工艺库：</text>
+									<view v-for="(doc, dIdx) in msg.docs" :key="dIdx" class="source-item">
+										<text class="source-title">▶ [{{ doc.keyword }}] {{ doc.part }} (工序: {{ doc.procedure }})</text>
+										<text class="source-content">{{ doc.content }}</text>
+									</view>
+								</view>
+							</view>
+							<text class="msg-time" :class="msg.role === 'user' ? 'time-user' : 'time-ai'">{{ msg.time }}{{ msg.costTime != null ? ' · ' + msg.costTime : '' }}</text>
+						</view>
+					</template>
+
+					<!-- AI正在输入中的 loading 状态 -->
+					<view class="msg-item msg-ai" v-if="showThinking">
+						<view class="msg-bubble bubble-ai typing-bubble">
+							<view class="typing-indicator">
+								<view class="typing-dot dot-1" ref="dot1Ref"></view>
+								<view class="typing-dot dot-2" ref="dot2Ref"></view>
+								<view class="typing-dot dot-3" ref="dot3Ref"></view>
+							</view>
+							<text class="typing-text">{{ lastMsgStatusText }}</text>
+						</view>
+					</view>
+					
+					<!-- 垫高底部，防止被输入框遮挡 -->
+					<view class="msg-list-footer"></view>
+				</scroll-view>
+
+				<!-- 底部输入栏 -->
+				<view class="ai-input-area">
+					<input class="ai-input" 
+						v-model="inputValue" 
+						placeholder="输入您的工艺疑问..." 
+						placeholder-style="color: #94A3B8"
+						confirm-type="send" 
+						@input="handleInput"
+						@confirm="sendMessage" />
+					<button class="ai-send-btn" :class="{ 'send-btn-disabled': inputValue.trim() === '' || isTyping || isBuilding }" @click="sendMessage">
+						<text class="ai-send-text">发送</text>
+					</button>
+				</view>
+			</view>
+
+			<!-- 历史记录模式 -->
+			<scroll-view class="ai-history-list" scroll-y="true" v-else>
+				<view class="history-empty" v-if="historySessions.length === 0">
+					<text class="history-empty-text">暂无历史记录</text>
+				</view>
+				<view class="history-item" v-for="(item, index) in historySessions" :key="item.id" @click="restoreSession(item)">
+					<view class="history-info">
+						<text class="history-title">{{ item.title }}</text>
+						<text class="history-time">{{ item.timestamp }}</text>
+					</view>
+					<view class="history-delete" @click.stop="deleteHistory(item.id)">
+						<text class="history-delete-icon">🗑️</text>
+					</view>
+				</view>
+			</scroll-view>
+		</view>
+	</view>
+</template>
+
+<script setup>
+	import { ref, onMounted, watch, computed } from 'vue'
+
+	type DocItem = {
+		id: number
+		keyword: string
+		part: string
+		procedure: string
+		content: string
+	}
+
+	type MessageItem = {
+		role: string
+		content: string
+		time: string
+		docs: Array<DocItem> | null
+		statusText?: string
+		costTime?: string
+	}
+
+	type ChatSession = {
+		id: string
+		title: string
+		timestamp: string
+		messages: Array<MessageItem>
+	}
+
+	const props = defineProps({
+		processName: {
+			type: String,
+			default: ''
+		}
+	})
+
+	const emit = defineEmits(['close'])
+
+	const inputValue = ref('')
+	const messages = ref([] as Array<MessageItem>)
+	const isTyping = ref(false)
+	const isOnline = ref(false)
+	const isBuilding = ref(false) // 正在构建向量索引
+	const isPC = ref(false)
+	const scrollTop = ref(0)
+	
+	const showHistoryList = ref(false)
+	const historySessions = ref([] as Array<ChatSession>)
+	const currentSessionId = ref('')
+
+	// 计算属性：控制是否展示“正在思考中”气泡
+	// 只有在等待大模型响应（isTyping 为 true）并且最后一个消息包没有任何内容时（代表首字未到）才显示
+	const showThinking = computed((): boolean => {
+		if (!isTyping.value) return false
+		if (messages.value.length === 0) return false
+		const lastMsg = messages.value[messages.value.length - 1]
+		return lastMsg.role === 'assistant' && lastMsg.content === ''
+	})
+
+	// 获取最后一条消息的检索状态提示（含动态耗时）
+	const lastMsgStatusText = computed((): string => {
+		if (messages.value.length === 0) return ''
+		const lastMsg = messages.value[messages.value.length - 1]
+		const base = lastMsg.statusText || '思考中'
+		const elapsed = (typingElapsed.value / 1000).toFixed(1)
+		return `${base} ${elapsed}s`
+	})
+
+	// loading 动画引用
+	const dot1Ref = ref<UniElement | null>(null)
+	const dot2Ref = ref<UniElement | null>(null)
+	const dot3Ref = ref<UniElement | null>(null)
+
+	const timerInterval = ref<number>(-1)
+	const typingElapsed = ref<number>(0)
+
+	// 监听 isTyping 变化，启动/停止 loading 动画和计时
+	watch(isTyping, (newVal: boolean) => {
+		if (newVal) {
+			// 延迟一帧确保 DOM 已挂载
+			setTimeout(() => {
+				startDotAnimation()
+			}, 50)
+			
+			// 开始计时
+			typingElapsed.value = 0
+			if (timerInterval.value !== -1) {
+				clearInterval(timerInterval.value)
+			}
+			timerInterval.value = setInterval(() => {
+				typingElapsed.value += 100
+			}, 100)
+		} else {
+			// 停止计时
+			if (timerInterval.value !== -1) {
+				clearInterval(timerInterval.value)
+				timerInterval.value = -1
+			}
+		}
+	})
+
+	// 使用 UniElement.animate 实现三点波浪 loading 动画
+	const startDotAnimation = () => {
+		const dots = [dot1Ref.value, dot2Ref.value, dot3Ref.value]
+		const keyframes = [
+			{ opacity: 0.3, transform: 'translateY(0px)' },
+			{ opacity: 1.0, transform: 'translateY(-6px)' },
+			{ opacity: 0.3, transform: 'translateY(0px)' }
+		]
+		
+		dots.forEach((dot: UniElement | null, index: number) => {
+			if (dot != null) {
+				dot.animate(keyframes, {
+					duration: 800,
+					delay: index * 200, // 依次延迟，形成波浪效果
+					iterations: 100, // 循环足够多次
+					easing: 'ease-in-out'
+				})
+			}
+		})
+	}
+
+	onMounted(() => {
+		// 异步预热模型：打开抽屉时触发
+		uni.request({
+			url: 'http://localhost:3001/prewarm-models',
+			method: 'POST',
+			success: () => {
+				console.log('[AI Drawer] 已发送异步预热指令，大模型后台加载中...')
+			}
+		})
+
+		// 加载历史记录列表
+		loadHistoryList()
+
+		checkAiServiceStatus()
+		// #ifdef WEB
+		if ((window as any).electronAPI != null) {
+			isPC.value = true
+		}
+		// #endif
+	})
+
+	// 检查 AI 中转服务及 Ollama 状态
+	const checkAiServiceStatus = () => {
+		uni.request({
+			url: 'http://localhost:3001/status',
+			method: 'GET',
+			success: (res) => {
+				const data = res.data as UTSJSONObject | null
+				if (data != null) {
+					const ollama = data['ollama'] as string | null
+					isOnline.value = (ollama == 'connected')
+					
+					// 检查向量索引是否已构建
+					const indexReady = data['indexReady'] as boolean | null
+					if (isOnline.value && indexReady !== true) {
+						// 索引未构建，自动触发构建
+						buildVectorIndex()
+					}
+				} else {
+					isOnline.value = false
+				}
+			},
+			fail: () => {
+				isOnline.value = false
+			}
+		})
+	}
+
+	// 自动构建向量知识库索引
+	const buildVectorIndex = () => {
+		isBuilding.value = true
+		// 插入一条系统提示消息
+		messages.value.push({
+			role: 'assistant',
+			content: '🔄 正在构建工艺知识库索引，首次使用需要等待片刻...请稍候。',
+			time: getCurrentTime(),
+			docs: null
+		} as MessageItem)
+		scrollToBottom()
+
+		uni.request({
+			url: 'http://localhost:3001/rebuild-index',
+			method: 'POST',
+			timeout: 300000, // 5分钟超时，向量化可能较慢
+			success: (res) => {
+				isBuilding.value = false
+				const data = res.data as UTSJSONObject | null
+				if (data != null && data['success'] === true) {
+					const count = data['chunkCount'] as number | null
+					messages.value.push({
+						role: 'assistant',
+						content: `✅ 知识库索引构建完成！已索引 ${count ?? 0} 条工艺数据片段。现在可以开始提问了！`,
+						time: getCurrentTime(),
+						docs: null
+					} as MessageItem)
+				} else {
+					const err = data != null ? (data['error'] as string | null) : null
+					messages.value.push({
+						role: 'assistant',
+						content: `⚠️ 知识库索引构建失败：${err ?? '未知错误'}。请确认已导入 SRD 数据包。`,
+						time: getCurrentTime(),
+						docs: null
+					} as MessageItem)
+				}
+				scrollToBottom()
+			},
+			fail: () => {
+				isBuilding.value = false
+				messages.value.push({
+					role: 'assistant',
+					content: '⚠️ 知识库索引构建请求失败，请检查 AI 服务和 Ollama 是否正常运行。',
+					time: getCurrentTime(),
+					docs: null
+				} as MessageItem)
+				scrollToBottom()
+			}
+		})
+	}
+
+	// 触发发送快捷问题
+	const sendSuggestion = (text: string) => {
+		inputValue.value = text
+		sendMessage()
+	}
+
+	// ---------------- 历史记录管理 ----------------
+	const loadHistoryList = () => {
+		const stored = uni.getStorageSync('ai_chat_sessions') as string | null
+		if (stored != null && stored !== '') {
+			try {
+				historySessions.value = JSON.parse(stored) as Array<ChatSession>
+			} catch (e) {
+				historySessions.value = []
+			}
+		} else {
+			historySessions.value = []
+		}
+	}
+
+	const saveCurrentSession = () => {
+		// 如果当前没有任何实质性的用户发言，则不存
+		const hasUserMsg = messages.value.some(msg => msg.role === 'user')
+		if (!hasUserMsg) return
+
+		let sessionId = currentSessionId.value
+		if (sessionId === '') {
+			sessionId = Date.now().toString()
+		}
+
+		// 获取首个用户的发言作为 title
+		let title = '新对话'
+		const firstUserMsg = messages.value.find(msg => msg.role === 'user')
+		if (firstUserMsg != null) {
+			title = firstUserMsg.content.length > 15 ? firstUserMsg.content.substring(0, 15) + '...' : firstUserMsg.content
+		}
+
+		const stored = uni.getStorageSync('ai_chat_sessions') as string | null
+		let sessions = [] as Array<ChatSession>
+		if (stored != null && stored !== '') {
+			try {
+				sessions = JSON.parse(stored) as Array<ChatSession>
+			} catch(e) {}
+		}
+
+		const existingIdx = sessions.findIndex(s => s.id === sessionId)
+		const sessionData = {
+			id: sessionId,
+			title: title,
+			timestamp: getCurrentTime(),
+			messages: JSON.parse(JSON.stringify(messages.value)) as Array<MessageItem> // 深拷贝
+		} as ChatSession
+
+		if (existingIdx >= 0) {
+			sessions[existingIdx] = sessionData
+		} else {
+			sessions.unshift(sessionData) // 最新的放前面
+		}
+
+		uni.setStorageSync('ai_chat_sessions', JSON.stringify(sessions))
+		loadHistoryList()
+	}
+
+	const startNewChat = () => {
+		saveCurrentSession()
+		messages.value = []
+		currentSessionId.value = ''
+		showHistoryList.value = false
+	}
+
+	const toggleHistory = () => {
+		if (!showHistoryList.value) {
+			saveCurrentSession()
+			loadHistoryList()
+		}
+		showHistoryList.value = !showHistoryList.value
+	}
+
+	const deleteHistory = (id: string) => {
+		let sessions = historySessions.value.filter(s => s.id !== id)
+		uni.setStorageSync('ai_chat_sessions', JSON.stringify(sessions))
+		historySessions.value = sessions
+		if (currentSessionId.value === id) {
+			messages.value = []
+			currentSessionId.value = ''
+		}
+	}
+
+	const restoreSession = (session: ChatSession) => {
+		saveCurrentSession() // 把当前的先存起来
+		messages.value = JSON.parse(JSON.stringify(session.messages)) as Array<MessageItem>
+		currentSessionId.value = session.id
+		showHistoryList.value = false
+		setTimeout(() => {
+			scrollToBottom()
+		}, 100)
+	}
+
+	// 关闭抽屉
+	const closeDrawer = () => {
+		startNewChat() // 保证每次关闭后下次打开都是新对话
+		// 主动释放模型内存，防止挤占系统资源
+		uni.request({
+			url: 'http://localhost:3001/unload-models',
+			method: 'POST',
+			success: () => {
+				console.log('[AI Drawer] 已发送卸载模型指令，释放系统内存...')
+			}
+		})
+		emit('close')
+	}
+	
+	// 打字预查询 (降低TTFT)
+	let prefetchTimer: number = -1
+	const handleInput = () => {
+		if (prefetchTimer != -1) {
+			clearTimeout(prefetchTimer)
+		}
+		const text = inputValue.value.trim()
+		if (text.length > 1 && isOnline.value) {
+			prefetchTimer = setTimeout(() => {
+				uni.request({
+					url: 'http://localhost:3001/chat-prefetch',
+					method: 'POST',
+					data: { question: text },
+					success: () => {
+						console.log('[AI Drawer] 预查询完成:', text)
+					}
+				})
+			}, 500)
+		}
+	}
+
+	// 获取当前时间字符串
+	const getCurrentTime = (): string => {
+		const now = new Date()
+		const hour = now.getHours().toString().padStart(2, '0')
+		const min = now.getMinutes().toString().padStart(2, '0')
+		return `${hour}:${min}`
+	}
+
+	// 自动滚动到底部
+	const scrollToBottom = () => {
+		setTimeout(() => {
+			scrollTop.value = scrollTop.value + 1000
+		}, 100)
+	}
+
+	// 发送消息
+	const sendMessage = () => {
+		let text = inputValue.value.trim()
+		if (text === '' || isTyping.value || isBuilding.value) return
+
+		// 客户端一次只导入一条工艺，用户提及“工艺”就是指当前的
+		// 自动将模糊指代替换为具体工艺名称，提高检索和回答精度
+		if (props.processName !== '' && !text.includes(props.processName)) {
+			text = text.replace('当前的工艺信息', `【${props.processName}】的工艺信息`)
+				.replace('当前工艺', `【${props.processName}】`)
+				.replace('该工艺', `【${props.processName}】`)
+				.replace('这个工艺', `【${props.processName}】`)
+		}
+
+		// 添加用户消息
+		messages.value.push({
+			role: 'user',
+			content: text,
+			time: getCurrentTime(),
+			docs: null
+		} as MessageItem)
+
+		inputValue.value = ''
+		isTyping.value = true
+		scrollToBottom()
+
+		// 预先创建一个AI助手的占位消息
+		const aiMessage = {
+			role: 'assistant',
+			content: '',
+			time: getCurrentTime(),
+			docs: null,
+			statusText: '思考中'
+		} as MessageItem
+		messages.value.push(aiMessage)
+		// 获取最新插入的消息对象引用
+		const aiMsgRef = messages.value[messages.value.length - 1]
+
+		// 发起 HTTP 请求到本地 AI 服务 (中转层)
+		// 使用 uni.request 实现流式解析
+		let buffer = ''
+		const decoder = new TextDecoder('utf-8')
+		const startTimestamp = Date.now()
+
+		// 提取最近最多 3 轮历史对话（6条），不包含当前这条用户提问和错误提示
+		const historyList = [] as Array<UTSJSONObject>
+		const pastMessages = messages.value.slice(0, messages.value.length - 2) // 减去当前用户提问和刚放入的AI占位
+		for (let i = pastMessages.length - 1; i >= 0 && historyList.length < 6; i--) {
+			const msg = pastMessages[i]
+			// 过滤掉系统提示、错误等非正常回答
+			if (msg.content.includes('⚠️') || msg.content.includes('🔄') || msg.content.includes('✅ 知识库索引构建完成')) {
+				continue
+			}
+			if (msg.content.trim() === '') continue
+			historyList.unshift({
+				role: msg.role,
+				content: msg.content
+			})
+		}
+
+		const requestTask = uni.request({
+			url: 'http://localhost:3001/chat',
+			method: 'POST',
+			enableChunked: true, // 开启分块传输，处理流式响应
+			timeout: 600000, // 设置10分钟超时，防止本地大模型响应过慢被掐断
+			header: {
+				'Content-Type': 'application/json'
+			},
+			data: {
+				prompt: text,
+				model: 'qwen2.5:3b',
+				history: historyList
+			},
+			success: (res) => {
+				isTyping.value = false
+				isOnline.value = true
+			},
+			fail: (err) => {
+				isTyping.value = false
+				isOnline.value = false
+				aiMsgRef.content += '\n\n⚠️ 网络异常：未能成功连接到本地 AI 服务或模型推理超时中断。'
+				const costSeconds = ((Date.now() - startTimestamp) / 1000).toFixed(1)
+				aiMsgRef.costTime = `耗时 ${costSeconds}s`
+				scrollToBottom()
+			}
+		})
+
+		// 监听流式数据块
+		requestTask.onChunkReceived((res) => {
+			// 将 ArrayBuffer 转为字符串
+			const chunkStr = decoder.decode(new Uint8Array(res.data as ArrayBuffer))
+			buffer += chunkStr
+
+			// Ollama 返回的是 NDJSON (每行一个 JSON 对象)
+			const lines = buffer.split('\n')
+			// 最后一行可能是不完整的，保留在缓冲区
+			buffer = lines.pop() ?? ''
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i].trim()
+				if (line === '') continue
+
+				try {
+					const data = JSON.parse(line) as UTSJSONObject
+					
+					// 处理检索状态推送
+					if (data['type'] === 'status') {
+						if (data['stage'] === 'retrieving') {
+							aiMsgRef.statusText = '检索中'
+						} else if (data['stage'] === 'retrieved') {
+							aiMsgRef.statusText = '思考中'
+						}
+						continue
+					}
+
+					// 处理我们自定义的 docs (知识库) 数据包
+					if (data['type'] === 'docs') {
+						const rawDocs = data['docs'] as Array<any> | null
+						if (rawDocs != null && rawDocs.length > 0) {
+							const parsedDocs = [] as Array<DocItem>
+							for (let j = 0; j < rawDocs.length; j++) {
+								const d = rawDocs[j] as UTSJSONObject
+								parsedDocs.push({
+									id: d['id'] as number,
+									keyword: d['keyword'] as string,
+									part: d['part'] as string,
+									procedure: d['procedure'] as string,
+									content: d['content'] as string
+								} as DocItem)
+							}
+							aiMsgRef.docs = parsedDocs
+							scrollToBottom()
+						}
+						continue
+					}
+
+					// 处理 error 类型
+					if (data['type'] === 'error') {
+						aiMsgRef.content += '\n\n⚠️ ' + (data['error'] as string || '模型推理过程中出现异常')
+						isTyping.value = false
+						scrollToBottom()
+						continue
+					}
+
+					// 处理标准 Ollama 流式 token (兼容 /api/generate 和 /api/chat 格式)
+					let token = data['response'] as string | null
+					if (token == null && data['message'] != null) {
+						const msgObj = data['message'] as UTSJSONObject
+						token = msgObj['content'] as string | null
+					}
+					if (token != null && token !== '') {
+						aiMsgRef.content += token
+						scrollToBottom()
+					}
+
+					// 检查是否已完成
+					if (data['done'] === true) {
+						isTyping.value = false
+						const costSeconds = ((Date.now() - startTimestamp) / 1000).toFixed(1)
+						aiMsgRef.costTime = `耗时 ${costSeconds}s`
+					}
+				} catch (e) {
+					console.error("解析流式 JSON 失败:", line, e)
+				}
+			}
+		})
+	}
+</script>
+
+<style>
+	/* ============================================
+	 * AI 工艺助手 - 浅色主题（适配项目整体风格）
+	 * 色彩系统：
+	 *   主色：#0F172A（深蓝黑）
+	 *   强调：#0284C7（蓝色）
+	 *   背景：#FFFFFF / #F8FAFC / #F1F5F9
+	 *   文字：#0F172A / #334155 / #64748B / #94A3B8
+	 *   边框：#E2E8F0 / #CBD5E1
+	 * ============================================ */
+
+	.ai-drawer-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(15, 23, 42, 0.3);
+		z-index: 900;
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-end;
+	}
+
+	.ai-drawer-container {
+		width: 420px;
+		height: 100%;
+		background-color: #F8FAFC;
+		display: flex;
+		flex-direction: column;
+		border-left: 1px solid #E2E8F0;
+		box-shadow: -4px 0 20px rgba(15, 23, 42, 0.08);
+	}
+
+	/* ---- 头部 ---- */
+	.ai-header {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 16px;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E2E8F0;
+	}
+
+	.ai-title-row {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.ai-icon-box {
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		background-color: #0F172A;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		margin-right: 10px;
+	}
+
+	.ai-icon-text {
+		color: #FFFFFF;
+		font-size: 11px;
+		font-weight: bold;
+	}
+
+	.ai-title-text {
+		color: #0F172A;
+		font-size: 15px;
+		font-weight: bold;
+		margin-right: 10px;
+	}
+
+	.ai-status-badge {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		border-radius: 12px;
+		padding: 2px 8px 2px 6px;
+	}
+
+	.badge-online {
+		background-color: #ECFDF5;
+	}
+
+	.badge-offline {
+		background-color: #FEF2F2;
+	}
+
+	.status-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 3px;
+		margin-right: 4px;
+	}
+
+	.dot-online {
+		background-color: #10B981;
+	}
+
+	.dot-offline {
+		background-color: #EF4444;
+	}
+
+	.ai-status-text {
+		font-size: 10px;
+		color: #64748B;
+	}
+
+	.ai-close-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		background-color: #F1F5F9;
+		cursor: pointer;
+	}
+
+	.ai-header-actions {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.ai-action-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		background-color: #F1F5F9;
+		margin-right: 8px;
+		cursor: pointer;
+	}
+
+	.ai-action-icon {
+		font-size: 14px;
+		color: #64748B;
+	}
+
+	.ai-close-icon {
+		color: #64748B;
+		font-size: 14px;
+	}
+
+	/* ---- 消息列表 ---- */
+	.ai-msg-list {
+		flex: 1;
+		padding: 16px;
+		background-color: #F8FAFC;
+	}
+
+	/* ---- 欢迎引导框 ---- */
+	.ai-welcome-box {
+		background-color: #FFFFFF;
+		border-radius: 12px;
+		padding: 20px 16px;
+		margin-bottom: 20px;
+		border: 1px solid #E2E8F0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.welcome-icon-row {
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		margin-bottom: 12px;
+	}
+
+	.welcome-icon-circle {
+		width: 48px;
+		height: 48px;
+		border-radius: 24px;
+		background-color: #F1F5F9;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.welcome-icon-emoji {
+		font-size: 24px;
+	}
+
+	.welcome-title {
+		color: #0F172A;
+		font-size: 16px;
+		font-weight: bold;
+		margin-bottom: 8px;
+	}
+
+	.welcome-desc {
+		color: #64748B;
+		font-size: 13px;
+		line-height: 1.6em;
+		margin-bottom: 16px;
+	}
+
+	.welcome-tip {
+		color: #334155;
+		font-size: 12px;
+		font-weight: bold;
+		margin-bottom: 10px;
+	}
+
+	.welcome-suggest-btn {
+		background-color: #ECFEFF;
+		border: 1px solid #E2E8F0;
+		border-radius: 8px;
+		padding: 10px 14px;
+		margin-bottom: 8px;
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-start;
+	}
+
+	.suggest-btn-text {
+		color: #0891B2;
+		font-size: 13px;
+		text-align: left;
+	}
+
+	/* ---- 消息项 ---- */
+	.msg-item {
+		margin-bottom: 16px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.msg-user {
+		align-items: flex-end;
+	}
+
+	.msg-ai {
+		align-items: flex-start;
+	}
+
+	.msg-bubble {
+		max-width: 85%;
+		border-radius: 12px;
+		padding: 12px 14px;
+	}
+
+	.bubble-user {
+		background-color: #0F172A;
+		border-top-right-radius: 4px;
+	}
+
+	.bubble-ai {
+		background-color: #FFFFFF;
+		border-top-left-radius: 4px;
+		border: 1px solid #E2E8F0;
+	}
+
+	.msg-content {
+		font-size: 13px;
+		line-height: 1.6em;
+	}
+
+	.content-user {
+		color: #FFFFFF;
+	}
+
+	.content-ai {
+		color: #334155;
+	}
+
+	.msg-time {
+		font-size: 10px;
+		margin-top: 4px;
+	}
+
+	.time-user {
+		color: #94A3B8;
+	}
+
+	.time-ai {
+		color: #94A3B8;
+	}
+
+	/* ---- Loading 动画 ---- */
+	.typing-bubble {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		padding: 14px 16px;
+	}
+
+	.typing-indicator {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		margin-right: 10px;
+	}
+
+	.typing-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 4px;
+		background-color: #94A3B8;
+		margin-right: 4px;
+		opacity: 0.3;
+	}
+
+	.typing-text {
+		color: #94A3B8;
+		font-size: 13px;
+	}
+
+	/* ---- RAG 参考来源 ---- */
+	.msg-sources {
+		margin-top: 12px;
+		padding-top: 10px;
+		border-top: 1px solid #E2E8F0;
+	}
+
+	.source-header {
+		color: #0891B2;
+		font-size: 11px;
+		font-weight: bold;
+		margin-bottom: 6px;
+	}
+
+	.source-item {
+		margin-top: 6px;
+		background-color: #F8FAFC;
+		border-radius: 6px;
+		padding: 8px 10px;
+		border: 1px solid #E2E8F0;
+	}
+
+	.source-title {
+		color: #10B981;
+		font-size: 11px;
+		font-weight: bold;
+	}
+
+	.source-content {
+		color: #64748B;
+		font-size: 10px;
+		line-height: 1.5em;
+		margin-top: 2px;
+	}
+
+	.msg-list-footer {
+		height: 40px;
+	}
+
+	/* ---- 底部输入框区域 ---- */
+	.ai-input-area {
+		padding: 12px 16px;
+		background-color: #FFFFFF;
+		border-top: 1px solid #E2E8F0;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.ai-input {
+		flex: 1;
+		background-color: #F1F5F9;
+		border: 1px solid #E2E8F0;
+		border-radius: 8px;
+		padding: 0 12px;
+		color: #0F172A;
+		font-size: 13px;
+		height: 38px;
+	}
+
+	.ai-send-btn {
+		margin-left: 10px;
+		background-color: #0F172A;
+		border-radius: 8px;
+		padding: 0 18px;
+		height: 38px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		border: none;
+	}
+
+	.send-btn-disabled {
+		opacity: 0.5;
+	}
+
+	.ai-send-text {
+		color: #FFFFFF;
+		font-size: 13px;
+		font-weight: bold;
+	}
+
+	.ai-content-wrapper {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.ai-history-list {
+		flex: 1;
+		background-color: #F8FAFC;
+		padding: 16px;
+	}
+
+	.history-empty {
+		align-items: center;
+		justify-content: center;
+		padding-top: 40px;
+	}
+
+	.history-empty-text {
+		color: #94A3B8;
+		font-size: 14px;
+	}
+
+	.history-item {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		background-color: #FFFFFF;
+		padding: 16px;
+		margin-bottom: 12px;
+		border-radius: 8px;
+		border: 1px solid #E2E8F0;
+	}
+
+	.history-info {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		margin-right: 10px;
+	}
+
+	.history-title {
+		font-size: 15px;
+		color: #1E293B;
+		font-weight: bold;
+		margin-bottom: 6px;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.history-time {
+		font-size: 12px;
+		color: #64748B;
+	}
+
+	.history-delete {
+		width: 40px;
+		height: 40px;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.history-delete-icon {
+		font-size: 16px;
+	}
+</style>

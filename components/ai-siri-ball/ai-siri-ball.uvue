@@ -1,0 +1,117 @@
+<template>
+	<view class="siri-ball-container" @click="onClick">
+		<view class="siri-ball-bg" ref="siriBallBg"></view>
+		<view class="siri-ball" ref="siriBall"></view>
+		<view class="siri-ball-inner" ref="siriBallInner"></view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	const emit = defineEmits(['click'])
+	const siriBall = ref<UniElement | null>(null)
+	const siriBallBg = ref<UniElement | null>(null)
+	const siriBallInner = ref<UniElement | null>(null)
+
+	const onClick = () => {
+		emit('click')
+	}
+
+	onMounted(() => {
+		startBreathingAnimation()
+	})
+
+	const startBreathingAnimation = () => {
+		// 背景光晕效果
+		const bgKeyframes: Array<UTSJSONObject> = [
+			{ transform: 'scale(1)', opacity: 0.2 },
+			{ transform: 'scale(1.3)', opacity: 0.4 },
+			{ transform: 'scale(1)', opacity: 0.2 }
+		]
+		
+		const bgOptions = {
+			duration: 3000,
+			iterations: Infinity,
+			easing: 'ease-in-out'
+		}
+
+		if (siriBallBg.value != null) {
+			siriBallBg.value!.animate(bgKeyframes, bgOptions)
+		}
+
+		// 外层光晕呼吸效果
+		const outerKeyframes: Array<UTSJSONObject> = [
+			{ transform: 'scale(0.9)', opacity: 0.6 },
+			{ transform: 'scale(1.1)', opacity: 0.8 },
+			{ transform: 'scale(0.9)', opacity: 0.6 }
+		]
+		
+		const outerOptions = {
+			duration: 2000,
+			iterations: Infinity,
+			easing: 'ease-in-out'
+		}
+
+		if (siriBall.value != null) {
+			siriBall.value!.animate(outerKeyframes, outerOptions)
+		}
+
+		// 内层核心呼吸效果
+		const innerKeyframes: Array<UTSJSONObject> = [
+			{ transform: 'scale(0.8)', opacity: 0.8 },
+			{ transform: 'scale(1)', opacity: 1 },
+			{ transform: 'scale(0.8)', opacity: 0.8 }
+		]
+		
+		const innerOptions = {
+			duration: 1500,
+			iterations: Infinity,
+			easing: 'ease-in-out'
+		}
+		
+		if (siriBallInner.value != null) {
+			siriBallInner.value!.animate(innerKeyframes, innerOptions)
+		}
+	}
+</script>
+
+<style>
+	.siri-ball-container {
+		width: 32px;
+		height: 32px;
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-right: 12px;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+	}
+
+	.siri-ball-bg {
+		position: absolute;
+		width: 32px;
+		height: 32px;
+		border-radius: 16px;
+		background-color: #38bdf8;
+		opacity: 0.2;
+	}
+
+	.siri-ball {
+		position: absolute;
+		width: 24px;
+		height: 24px;
+		border-radius: 12px;
+		background-color: #0284c7;
+		opacity: 0.6;
+	}
+
+	.siri-ball-inner {
+		position: absolute;
+		width: 14px;
+		height: 14px;
+		border-radius: 7px;
+		background-color: #e0f2fe;
+		opacity: 0.9;
+	}
+</style>
