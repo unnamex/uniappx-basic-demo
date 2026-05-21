@@ -439,8 +439,14 @@
 
 	// 获取状态栏高度（自定义导航栏模式下需要手动避让状态栏）
 	const statusBarHeight = ref(0)
-	const windowInfo = uni.getWindowInfo()
-	statusBarHeight.value = windowInfo.statusBarHeight
+	const windowInfo = ref(uni.getWindowInfo())
+	statusBarHeight.value = windowInfo.value.statusBarHeight
+
+	// #ifdef WEB
+	const onResizeCallback = (_e: any) => {
+		windowInfo.value = uni.getWindowInfo()
+	}
+	// #endif
 
 	const settingsMenuTop = computed((): number => {
 		// PC端自定义标题栏高度为36px，其他端为基础偏移量加状态栏高度
@@ -450,7 +456,7 @@
 	// ============ 自适应布局计算 (响应式) ============
 	const adaptiveLeftWidth = computed((): number => {
 		// 左侧工艺树：占宽目标的 22%
-		const ideal = windowInfo.windowWidth * 0.22
+		const ideal = windowInfo.value.windowWidth * 0.22
 		if (ideal < 240) return 240   // 最小值防止字挤
 		if (ideal > 340) return 340   // 最大值防止太宽
 		return Math.floor(ideal)
@@ -459,14 +465,15 @@
 	const adaptiveRightWidth = computed((): number => {
 		// 右侧查看器：根据是否在 AI 模式下动态调整
 		if (isAiMode.value) {
-			const ideal = (windowInfo.windowWidth - aiPanelWidth.value) * 0.4
-			if (ideal < 300) return 300
-			if (ideal > 500) return 500
+			// AI模式下：减去AI面板的宽度后，取剩余宽度的 0.42，确保查看器比左侧工艺+中间详情的总和要小
+			const ideal = (windowInfo.value.windowWidth - aiPanelWidth.value) * 0.42
+			if (ideal < 400) return 400
+			if (ideal > 1200) return 1200
 			return Math.floor(ideal)
 		} else {
-			const ideal = windowInfo.windowWidth * 0.42
+			const ideal = windowInfo.value.windowWidth * 0.42
 			if (ideal < 360) return 360   // 最小值保证预览清晰
-			if (ideal > 800) return 800   // 最大值限制
+			if (ideal > 1200) return 1200   // 调大最大值限制
 			return Math.floor(ideal)
 		}
 	})
@@ -749,6 +756,7 @@
 		}
 		
 		window.addEventListener('keydown', handleGlobalKeyDown)
+		window.addEventListener('resize', onResizeCallback)
 		// #endif
 		const nodeId = options['id'] as string | null
 		initData(nodeId)
@@ -781,6 +789,7 @@
 	onUnload(() => {
 		// #ifdef WEB
 		window.removeEventListener('keydown', handleGlobalKeyDown)
+		window.removeEventListener('resize', onResizeCallback)
 		// #endif
 	})
 	

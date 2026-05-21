@@ -219,6 +219,15 @@
 	watch(() => props.showLeft, () => {
 		currentRightWidth.value = props.initRightWidth
 	})
+	
+	// 监听 initRightWidth 和 initLeftWidth 的变化，以便在窗口大小变化(如最大化)时，能够自适应调整宽度
+	watch(() => props.initRightWidth, (newVal) => {
+		currentRightWidth.value = newVal
+	})
+	
+	watch(() => props.initLeftWidth, (newVal) => {
+		currentLeftWidth.value = newVal
+	})
 	const isRightCollapsed = ref(false)
 	const isDraggingRight = ref(false)
 	const startXRight = ref(0)

@@ -170,10 +170,12 @@
 			<view class="aip-mode-toggle" :class="inputMode == 'ask' ? 'aip-mode-ask' : 'aip-mode-record'" @click="toggleInputMode">
 				<text class="aip-mode-toggle-text">{{ inputMode == 'ask' ? '💬' : '📝' }}</text>
 			</view>
-			<input class="aip-input"
+			<textarea class="aip-input"
 				v-model="inputValue"
 				:placeholder="inputMode == 'ask' ? '请输入问题...' : '输入记录内容...'"
 				placeholder-style="color: #94A3B8"
+				:auto-height="true"
+				:maxlength="-1"
 				confirm-type="send"
 				@confirm="handleSend" />
 			<button class="aip-send-btn"
@@ -1297,7 +1299,7 @@
 	/* ---- 底部输入区 ---- */
 	.aip-input-area {
 		flex-direction: row;
-		align-items: center;
+		align-items: flex-end;
 		padding: 10px 12px;
 		background-color: #FFFFFF;
 		border-top: 1px solid #E2E8F0;
@@ -1306,7 +1308,7 @@
 
 	/* 模式切换按钮 */
 	.aip-mode-toggle {
-		height: 32px;
+		height: 36px;
 		padding: 0 8px;
 		border-radius: 8px;
 		justify-content: center;
@@ -1329,13 +1331,19 @@
 
 	.aip-input {
 		flex: 1;
-		height: 36px;
+		min-height: 36px;
+		max-height: 150px;
 		background-color: #F1F5F9;
 		border-radius: 8px;
-		padding: 0 12px;
+		padding: 8px 12px;
 		font-size: 13px;
 		color: #334155;
 		margin-right: 8px;
+		/* #ifdef WEB */
+		overflow-y: auto;
+		box-sizing: border-box;
+		resize: none;
+		/* #endif */
 	}
 
 	.aip-send-btn {
