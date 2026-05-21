@@ -2,9 +2,16 @@
 	<view class="siri-ball-container" @click="onClick">
 		<!-- 激活状态外环（AI模式时显示蓝色光环） -->
 		<view v-if="isActive" class="siri-active-ring" ref="activeRingRef"></view>
-		<view class="siri-ball-bg" ref="siriBallBg"></view>
-		<view class="siri-ball" ref="siriBall"></view>
-		<view class="siri-ball-inner" ref="siriBallInner"></view>
+		
+		<!-- 激活时的动效球 (蓝色) -->
+		<view v-if="isActive" class="siri-ball-bg siri-bg-active" ref="siriBallBg"></view>
+		<view v-if="isActive" class="siri-ball siri-mid-active" ref="siriBall"></view>
+		<view v-if="isActive" class="siri-ball-inner siri-inner-active" ref="siriBallInner"></view>
+
+		<!-- 未激活时的静态球 (灰色) -->
+		<view v-if="!isActive" class="siri-ball-bg siri-bg-inactive"></view>
+		<view v-if="!isActive" class="siri-ball siri-mid-inactive"></view>
+		<view v-if="!isActive" class="siri-ball-inner siri-inner-inactive"></view>
 	</view>
 </template>
 
@@ -29,8 +36,8 @@
 	}
 
 	onMounted(() => {
-		startBreathingAnimation()
 		if (props.isActive) {
+			startBreathingAnimation()
 			startActiveRingAnimation()
 		}
 	})
@@ -39,6 +46,7 @@
 	watch(() => props.isActive, (newVal: boolean) => {
 		if (newVal) {
 			setTimeout(() => {
+				startBreathingAnimation()
 				startActiveRingAnimation()
 			}, 50)
 		}
@@ -135,8 +143,6 @@
 		width: 18px;
 		height: 18px;
 		border-radius: 9px;
-		background-color: #38bdf8;
-		opacity: 0.2;
 	}
 
 	.siri-ball {
@@ -144,8 +150,6 @@
 		width: 12px;
 		height: 12px;
 		border-radius: 6px;
-		background-color: #0284c7;
-		opacity: 0.6;
 	}
 
 	.siri-ball-inner {
@@ -153,7 +157,15 @@
 		width: 6px;
 		height: 6px;
 		border-radius: 3px;
-		background-color: #e0f2fe;
-		opacity: 0.9;
 	}
+
+	/* 颜色变体 */
+	.siri-bg-active { background-color: #38bdf8; opacity: 0.2; }
+	.siri-bg-inactive { background-color: #94A3B8; opacity: 0.15; }
+
+	.siri-mid-active { background-color: #0284c7; opacity: 0.6; }
+	.siri-mid-inactive { background-color: #CBD5E1; opacity: 0.5; }
+
+	.siri-inner-active { background-color: #e0f2fe; opacity: 0.9; }
+	.siri-inner-inactive { background-color: #F1F5F9; opacity: 0.8; }
 </style>
