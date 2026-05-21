@@ -3,17 +3,20 @@
 	<welcome-view v-if="!isDataLoaded" @import="handleImportData" @reset="handleResetData" />
 
 	<!-- 正常工作区布局：有数据时显示 -->
-	<outsider-layout v-if="isDataLoaded"
-		:initLeftWidth="adaptiveLeftWidth" 
-		:minLeftWidth="50" 
-		:maxLeftWidth="800"
-		:initMainTopRatio="0.52"
-		:initRightWidth="adaptiveRightWidth"
-		:maxRightWidth="1200"
-		:showMainBottom="true"
-		:showRightBottom="true"
-		:minMainWidthRatio="0.25"
-	>
+	<view v-if="isDataLoaded" class="work-area" style="flex: 1; display: flex; flex-direction: row; height: 100%; overflow: hidden;">
+		<outsider-layout
+			style="flex: 1; min-width: 0;"
+			:showLeft="!isAiMode"
+			:initLeftWidth="adaptiveLeftWidth" 
+			:minLeftWidth="50" 
+			:maxLeftWidth="800"
+			:initMainTopRatio="0.52"
+			:initRightWidth="adaptiveRightWidth"
+			:maxRightWidth="1200"
+			:showMainBottom="true"
+			:showRightBottom="true"
+			:minMainWidthRatio="0.25"
+		>
 		<template #header>
 			<view v-if="isPC" class="vscode-titlebar" style="-webkit-app-region: drag; display: flex; flex-direction: row; align-items: center; height: 36px; padding: 0 12px; background-color: #FFFFFF;">
 				<!-- APP图标 (使用客户端火箭图标) -->
@@ -50,7 +53,11 @@
 				</view>
 				<!-- 右侧操作区：设置按钮 + 企业Logo -->
 				<view class="header-actions">
-					<ai-siri-ball @click="showAiDrawer = true" />
+					<!-- 统一的 AI 模式切换开关 -->
+					<view :class="['header-ai-toggle', isAiMode ? 'ai-toggle-active' : '']" @click="toggleAiMode">
+						<ai-siri-ball :isActive="isAiMode" />
+						<text :class="['header-ai-toggle-text', isAiMode ? 'ai-toggle-text-active' : '']">{{ isAiMode ? 'AI 模式' : 'AI 助理' }}</text>
+					</view>
 					<view v-if="!isPC" class="settings-icon-btn" @click="toggleSettingsMenu">
 						<image class="settings-icon-img" src="/static/icons/settings_icon.svg" mode="aspectFit"></image>
 					</view>
@@ -212,7 +219,7 @@
 				<view class="right-header">
 					<text class="right-header-title">查看器</text>
 					<view class="right-header-btn" @click="toggleResourceMaximize">
-						<text class="btn-icon">{{ isResourceMaximized ? '⤡' : '⤢' }}</text>
+						<text class="btn-icon">{{ isResourceMaximized ? '✕' : '⛶' }}</text>
 					</view>
 				</view>
 				<view style="flex: 1; padding: 4px 4px 2px 4px; display: flex; flex-direction: column;">
@@ -234,6 +241,24 @@
 		</template>
 	</outsider-layout>
 	
+		<!-- AI 面板拖拽分隔线 -->
+		<view v-if="isAiMode" class="ai-panel-divider"
+			@touchstart="onAiDragStart"
+			@touchmove="onAiDragMove"
+			@touchend="onAiDragEnd"
+			@mousedown="onAiMouseDown">
+			<view class="ai-divider-line"></view>
+		</view>
+
+		<ai-panel v-if="isAiMode"
+			ref="aiPanelRef"
+			:processName="currentProcessName"
+			:isPC="isPC"
+			:style="{ width: aiPanelWidth + 'px' }"
+			style="flex: none;"
+		/>
+	</view>
+	
 	<!-- 设置菜单遮罩层 -->
 	<view v-if="isSettingsMenuVisible" class="settings-overlay" :style="{ top: isPC ? '36px' : '0' }" @click="closeSettingsMenu"></view>
 	
@@ -244,9 +269,9 @@
 			<text class="menu-item-text">导入数据包</text>
 		</view>
 		<view class="menu-divider"></view>
-		<view class="menu-item" @click="showAiDrawer = true; closeSettingsMenu()">
+		<view class="menu-item" @click="toggleAiMode(); closeSettingsMenu()">
 			<text class="menu-item-icon">🤖</text>
-			<text class="menu-item-text">AI工艺助手</text>
+			<text class="menu-item-text">{{ isAiMode ? '退出AI模式' : '进入AI模式' }}</text>
 		</view>
 		<view class="menu-divider"></view>
 		<view class="menu-item menu-item-danger" @click="handleResetData">
@@ -401,6 +426,7 @@
 	import { getIconPath } from '@/utils/iconRegistry.uts'
 
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
+	import AiPanel from '@/components/ai-panel/ai-panel.uvue'
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
 	import UxTabPane from '@/components/ux-tab-pane/ux-tab-pane.uvue'
 	import UxTable from '@/components/ux-table/ux-table.uvue'
@@ -409,6 +435,7 @@
 	import ResourceList from '@/components/resource-list/resource-list.uvue'
 	import UxBreadcrumb from '@/components/ux-breadcrumb/ux-breadcrumb.uvue'
 	import WelcomeView from '@/components/welcome-view/welcome-view.uvue'
+	import { toggleImmersiveFullscreen } from '@/utils/windowUtils.uts'
 
 	// 获取状态栏高度（自定义导航栏模式下需要手动避让状态栏）
 	const statusBarHeight = ref(0)
@@ -430,11 +457,18 @@
 	})
 
 	const adaptiveRightWidth = computed((): number => {
-		// 右侧查看器：建议占宽 42%
-		const ideal = windowInfo.windowWidth * 0.42
-		if (ideal < 360) return 360   // 最小值保证预览清晰
-		if (ideal > 800) return 800   // 最大值限制
-		return Math.floor(ideal)
+		// 右侧查看器：根据是否在 AI 模式下动态调整
+		if (isAiMode.value) {
+			const ideal = (windowInfo.windowWidth - aiPanelWidth.value) * 0.4
+			if (ideal < 300) return 300
+			if (ideal > 500) return 500
+			return Math.floor(ideal)
+		} else {
+			const ideal = windowInfo.windowWidth * 0.42
+			if (ideal < 360) return 360   // 最小值保证预览清晰
+			if (ideal > 800) return 800   // 最大值限制
+			return Math.floor(ideal)
+		}
 	})
 
 	// ===========================================
@@ -492,6 +526,76 @@
 	const activeTabs = reactive(new Map<string, string>())
 	const statusMessage = ref('Ready')
 	const isPC = ref(false)
+
+	// ============ AI 模式状态 ============
+	const isAiMode = ref(false)
+	const aiPanelRef = ref<ComponentPublicInstance | null>(null)
+	
+	const aiPanelWidth = ref(380)
+	const isAiDragging = ref(false)
+	const aiStartX = ref(0)
+	const aiStartWidth = ref(0)
+	
+	const toggleAiMode = () => {
+		isAiMode.value = !isAiMode.value
+		if (isAiMode.value) {
+			if (selectedRow.value != null) {
+				nextTick(() => {
+					if (aiPanelRef.value != null) {
+						(aiPanelRef.value as any).$callMethod('analyzeNode', selectedRow.value!)
+					}
+				})
+			}
+		}
+	}
+
+	const onAiDragStart = (e: TouchEvent) => {
+		isAiDragging.value = true
+		aiStartX.value = e.touches[0].clientX
+		aiStartWidth.value = aiPanelWidth.value
+	}
+
+	const onAiDragMove = (e: TouchEvent) => {
+		if (!isAiDragging.value) return
+		const deltaX = aiStartX.value - e.touches[0].clientX
+		let newWidth = aiStartWidth.value + deltaX
+		if (newWidth < 280) newWidth = 280
+		if (newWidth > 800) newWidth = 800
+		aiPanelWidth.value = newWidth
+	}
+
+	const onAiDragEnd = (e: TouchEvent) => {
+		isAiDragging.value = false
+	}
+	
+	const onAiMouseDown = (e: any) => {
+		// #ifdef WEB
+		const mouseEvent = e as MouseEvent
+		mouseEvent.preventDefault()
+		isAiDragging.value = true
+		aiStartX.value = mouseEvent.clientX
+		aiStartWidth.value = aiPanelWidth.value
+		
+		const moveHandler = (moveEvent: MouseEvent) => {
+			if (!isAiDragging.value) return
+			const deltaX = aiStartX.value - moveEvent.clientX
+			let newWidth = aiStartWidth.value + deltaX
+			if (newWidth < 280) newWidth = 280
+			if (newWidth > 800) newWidth = 800
+			aiPanelWidth.value = newWidth
+		}
+
+		const upHandler = (_: MouseEvent) => {
+			isAiDragging.value = false
+			window.removeEventListener('mousemove', moveHandler)
+			window.removeEventListener('mouseup', upHandler)
+		}
+
+		window.addEventListener('mousemove', moveHandler)
+		window.addEventListener('mouseup', upHandler)
+		// #endif
+	}
+	// ===================================
 
 	const isDataLoaded = computed((): boolean => tableData.value.length > 0)
 	
@@ -667,7 +771,11 @@
 	onPageShow(() => {
 		// 每次页面显示时检查并刷新数据
 		// console.log('Page Show')
-		initData(null)
+		// 修复：避免应用切入前台时触发无条件的刷新，导致选中状态丢失及AI重新生成
+		// 如果确需刷新，应在导入数据等明确操作后手动触发，或者在这里判断数据是否为空
+		if (tableData.value.length === 0) {
+			// initData(null) // onLoad 已经调用过，如果在某些异常情况下为空，可以解开注释重新加载
+		}
 	})
 	
 	onUnload(() => {
@@ -1354,6 +1462,15 @@
 		
 		// 加载节点关联的资源列表
 		await loadNodeResources(nodeId, nodeName, nodeType)
+		
+		// AI 模式联动：自动触发分析
+		if (isAiMode.value) {
+			nextTick(() => {
+				if (aiPanelRef.value != null) {
+					(aiPanelRef.value as any).$callMethod('analyzeNode', fullRow)
+				}
+			})
+		}
 	}
 	
 	// 将节点数据绑定到 Group 中的各个组件
@@ -1508,19 +1625,8 @@
 		if (isResourceMaximized.value) {
 			isFullscreenListVisible.value = false
 		}
-		// PC 客户端：进入/退出沉浸式全屏（隐藏标题栏和菜单栏）
-		// #ifdef WEB
-		if (isPC.value) {
-			const electronAPI = (window as any).electronAPI
-			if (electronAPI != null) {
-				if (isResourceMaximized.value) {
-					electronAPI.enterImmersive()
-				} else {
-					electronAPI.exitImmersive()
-				}
-			}
-		}
-		// #endif
+		// 调用统一的客户端沉浸式全屏逻辑
+		toggleImmersiveFullscreen(isResourceMaximized.value)
 	}
 	
 	/**
@@ -2660,6 +2766,66 @@
 		height: 32px;
 		margin-right: 8px;
 		border-radius: 6px;
+	}
+
+	/* ========== AI 模式相关样式 ========== */
+	.header-ai-toggle {
+		flex-direction: row;
+		align-items: center;
+		background-color: #F8FAFC;
+		height: 28px;
+		border-radius: 14px;
+		padding: 0 10px 0 0;
+		margin-right: 12px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E8F0;
+		transition-property: background-color, border-color;
+		transition-duration: 0.3s;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
+	}
+
+	.ai-toggle-active {
+		background-color: #EFF6FF;
+		border-color: #BFDBFE;
+	}
+
+	.header-ai-toggle-text {
+		font-size: 12px;
+		color: #64748B;
+		margin-left: 4px;
+		font-weight: 500;
+	}
+
+	.ai-toggle-text-active {
+		color: #0284C7;
+		font-weight: bold;
+	}
+
+	.ai-panel-divider {
+		width: 8px;
+		background-color: transparent;
+		justify-content: center;
+		align-items: center;
+		/* cursor: col-resize; */
+		position: relative;
+		z-index: 10;
+		flex: none;
+	}
+
+	.ai-divider-line {
+		width: 1px;
+		height: 100%;
+		background-color: #E2E6ED;
+		transition-property: background-color, width;
+		transition-duration: 0.2s;
+	}
+	
+	.ai-panel-divider:hover .ai-divider-line {
+		background-color: #007AFF;
+		width: 3px;
 	}
 
 </style>

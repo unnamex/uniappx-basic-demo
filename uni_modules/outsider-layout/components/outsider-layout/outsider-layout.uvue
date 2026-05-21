@@ -6,12 +6,12 @@
 		<view class="outsider-body-wrapper">
 			<view class="outsider-body-container">
 				<!-- Left Sidebar -->
-				<view class="outsider-left" :style="{ width: currentLeftWidth + 'px', display: isCollapsed ? 'none' : 'flex' }">
+				<view v-if="showLeft" class="outsider-left" :style="{ width: currentLeftWidth + 'px', display: isCollapsed ? 'none' : 'flex' }">
 					<slot name="left"></slot>
 				</view>
 
 				<!-- Divider (Left-Main) -->
-				<view :class="['outsider-divider', isDragging ? 'outsider-divider-drag' : '']" 
+				<view v-if="showLeft" :class="['outsider-divider', isDragging ? 'outsider-divider-drag' : '']" 
 					@touchstart="onTouchStart" 
 					@touchmove="onTouchMove" 
 					@touchend="onTouchEnd"
@@ -214,6 +214,11 @@
 	
 	// State - Right Sidebar
 	const currentRightWidth = ref(props.initRightWidth)
+	
+	// 监听 showLeft (即 AI 模式切换) 时，重新应用初始宽度
+	watch(() => props.showLeft, () => {
+		currentRightWidth.value = props.initRightWidth
+	})
 	const isRightCollapsed = ref(false)
 	const isDraggingRight = ref(false)
 	const startXRight = ref(0)

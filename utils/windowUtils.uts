@@ -1,0 +1,35 @@
+/**
+ * 窗口相关工具类
+ */
+
+/**
+ * 切换沉浸式全屏状态 (PC客户端专用)
+ * 封装了与 Electron 客户端的交互逻辑，方便多处复用
+ * @param isFullscreen 是否进入全屏
+ */
+export const toggleImmersiveFullscreen = (isFullscreen: boolean) => {
+	// #ifdef WEB
+	const electronAPI = (window as any).electronAPI
+	if (electronAPI != null) {
+		if (isFullscreen) {
+			electronAPI.enterImmersive()
+		} else {
+			electronAPI.exitImmersive()
+		}
+	}
+	// #endif
+}
+
+/**
+ * 检查是否为PC客户端环境
+ * @returns boolean
+ */
+export const checkIsPCEnvironment = (): boolean => {
+	// #ifdef WEB
+	return (window as any).electronAPI != null
+	// #endif
+	
+	// #ifndef WEB
+	return false
+	// #endif
+}

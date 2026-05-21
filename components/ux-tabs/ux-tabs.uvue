@@ -1,11 +1,12 @@
 <template>
 	<view 
 		:class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]" 
-		:style="isFullscreen ? { paddingTop: statusBarHeight + 'px' } : {}"
+		:style="isFullscreen ? { paddingTop: (!isPC ? statusBarHeight : 0) + 'px' } : {}"
 	>
 		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
-		<view :class="['ux-tabs__header-row', { 'is-fullscreen-header': isFullscreen }]">
-			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true">
+		<view :class="['ux-tabs__header-row', { 'is-fullscreen-header': isFullscreen }]"
+			  :style="isFullscreen && isPC ? { '-webkit-app-region': 'drag' } : {}">
+			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true" style="-webkit-app-region: no-drag;">
 				<view class="ux-tabs__nav-wrap">
 					<view class="ux-tabs__nav">
 						<view 
@@ -22,7 +23,7 @@
 			</scroll-view>
 			
 			<!-- Fullscreen Toggle Button -->
-			<view :class="['ux-tabs__fullscreen-btn', { 'is-fullscreen-btn-active': isFullscreen }]" @click="toggleFullscreen">
+			<view :class="['ux-tabs__fullscreen-btn', { 'is-fullscreen-btn-active': isFullscreen }]" @click="toggleFullscreen" style="-webkit-app-region: no-drag;">
 				<text class="ux-tabs__fullscreen-icon">{{ isFullscreen ? '✕' : '⛶' }}</text>
 			</view>
 		</view>
@@ -40,6 +41,7 @@
 	 * ux-tabs
 	 * Emulates Element UI Tabs with Fullscreen support
 	 */
+	import { toggleImmersiveFullscreen } from '@/utils/windowUtils.uts'
 
 	const props = defineProps({
 		modelValue: {
@@ -57,6 +59,7 @@
 	const currentName = ref(props.modelValue)
 	const panes = ref<UTSJSONObject[]>([])
 	const isFullscreen = ref(false)
+	const isPC = ref(false)
 	
 	// Watch modelValue to update internal state
 	watch((): any => { return props.modelValue }, (newVal: any): void => {
@@ -76,6 +79,8 @@
 	
 	const toggleFullscreen = () => {
 		isFullscreen.value = !isFullscreen.value
+		// 调用统一的客户端沉浸式全屏逻辑
+		toggleImmersiveFullscreen(isFullscreen.value)
 	}
 	
 	const handleKeyDown = (e : any) => {
@@ -86,6 +91,9 @@
 	
 	// #ifdef WEB
 	onMounted(() => {
+		if ((window as any).electronAPI != null) {
+			isPC.value = true
+		}
 		window.addEventListener('keydown', handleKeyDown)
 	})
 	

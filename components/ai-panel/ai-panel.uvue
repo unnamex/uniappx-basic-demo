@@ -1,0 +1,1364 @@
+<template>
+	<view class="ai-panel-root">
+		<!-- 针对 PC 端的标题栏占位，防止与窗口系统按钮重叠 -->
+		<view v-if="isPC" style="height: 36px; background-color: #FFFFFF; border-bottom: 1px solid #E2E8F0; -webkit-app-region: drag; flex: none;"></view>
+
+		<!-- 头部 -->
+		<view class="aip-header">
+			<view class="aip-header-left">
+				<view class="aip-mode-badge">
+					<text class="aip-mode-badge-text">AI</text>
+				</view>
+				<text class="aip-title">工艺助手</text>
+				<view class="aip-status-pill" :class="isOnline ? 'aip-pill-online' : 'aip-pill-offline'">
+					<view class="aip-status-dot" :class="isOnline ? 'aip-dot-online' : 'aip-dot-offline'"></view>
+					<text class="aip-status-text">{{ isOnline ? '在线' : '离线' }}</text>
+				</view>
+			</view>
+			<view class="aip-header-actions">
+				<!-- 重新分析按钮 -->
+				<view class="aip-action-btn" v-if="currentNodeName != '' && !isAnalyzing" @click="reAnalyze">
+					<text class="aip-action-icon">↺</text>
+				</view>
+			</view>
+		</view>
+
+		<!-- 当前节点标识卡 -->
+		<view class="aip-node-card" v-if="currentNodeName != ''">
+			<view class="aip-node-card-inner">
+				<view class="aip-node-type-badge" :class="nodeTypeBadgeClass">
+					<text class="aip-node-type-text">{{ currentNodeTypeLabel }}</text>
+				</view>
+				<text class="aip-node-name" :numberOfLines="2">{{ currentNodeName }}</text>
+			</view>
+			<!-- 分析进度行 -->
+			<view class="aip-analyzing-row" v-if="isAnalyzing">
+				<view class="aip-typing-indicator">
+					<view class="aip-typing-dot" ref="dot1Ref"></view>
+					<view class="aip-typing-dot" ref="dot2Ref"></view>
+					<view class="aip-typing-dot" ref="dot3Ref"></view>
+				</view>
+				<text class="aip-analyzing-text">{{ analyzingStatusText }}</text>
+			</view>
+		</view>
+
+		<!-- 分段控制器（对话 / 记录） -->
+		<view class="aip-seg-bar" v-if="currentNodeName != ''">
+			<view class="aip-seg-item" :class="activeTab == 'chat' ? 'aip-seg-active' : ''" @click="activeTab = 'chat'">
+				<text class="aip-seg-text" :class="activeTab == 'chat' ? 'aip-seg-text-active' : ''">💬 对话</text>
+			</view>
+			<view class="aip-seg-item" :class="activeTab == 'record' ? 'aip-seg-active' : ''" @click="switchToRecordTab">
+				<text class="aip-seg-text" :class="activeTab == 'record' ? 'aip-seg-text-active' : ''">📋 记录</text>
+			</view>
+		</view>
+
+		<!-- 无节点引导页 -->
+		<view class="aip-guide" v-if="currentNodeName == '' && !isAnalyzing">
+			<text class="aip-guide-emoji">🤖</text>
+			<text class="aip-guide-title">AI 节点解析模式</text>
+			<text class="aip-guide-desc">选中左侧节点，或使用底部「上一步 / 下一步」切换节点，AI 将自动解析该节点的工艺要点。</text>
+		</view>
+
+		<!-- ====== 对话 Tab 内容 ====== -->
+		<!-- #ifdef WEB -->
+		<view class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'chat'">
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		<scroll-view class="aip-content-scroll" scroll-y="true" :scroll-top="scrollTop" :show-scrollbar="false" v-if="activeTab == 'chat'">
+		<!-- #endif -->
+			<!-- AI 分析结果 -->
+			<view v-if="analysisContent != ''" class="aip-analysis-section">
+				<view class="aip-section-label-row">
+					<view class="aip-section-label-dot"></view>
+					<text class="aip-section-label">要点分析</text>
+				</view>
+				<text class="aip-analysis-text">{{ analysisContent }}</text>
+			</view>
+
+			<!-- 追问历史 -->
+			<view v-if="followUpMessages.length > 0" class="aip-followup-section">
+				<view class="aip-section-divider">
+					<view class="aip-divider-line"></view>
+					<text class="aip-divider-text">追问记录</text>
+					<view class="aip-divider-line"></view>
+				</view>
+				<view v-for="(msg, idx) in followUpMessages" :key="idx"
+					class="aip-msg-item" :class="msg.role == 'user' ? 'aip-msg-user' : 'aip-msg-ai'"
+					v-show="msg.content != ''">
+					<view class="aip-msg-bubble" :class="msg.role == 'user' ? 'aip-bubble-user' : 'aip-bubble-ai'">
+						<text class="aip-msg-text" :class="msg.role == 'user' ? 'aip-text-user' : 'aip-text-ai'">{{ msg.content }}</text>
+					</view>
+					<text class="aip-msg-time" :class="msg.role == 'user' ? 'aip-time-user' : 'aip-time-ai'">{{ msg.time }}</text>
+				</view>
+				<!-- 追问加载态 -->
+				<view class="aip-msg-item aip-msg-ai" v-if="isFollowUpTyping && (followUpMessages.length == 0 || followUpMessages[followUpMessages.length - 1].content == '')">
+					<view class="aip-msg-bubble aip-bubble-ai aip-typing-bubble">
+						<view class="aip-typing-indicator">
+							<view class="aip-typing-dot" ref="dot4Ref"></view>
+							<view class="aip-typing-dot" ref="dot5Ref"></view>
+							<view class="aip-typing-dot" ref="dot6Ref"></view>
+						</view>
+						<text class="aip-typing-label">{{ followUpStatusText }}</text>
+					</view>
+					<text v-if="followUpMessages.length > 0" class="aip-msg-time aip-time-ai">{{ followUpMessages[followUpMessages.length - 1].time }}</text>
+				</view>
+			</view>
+
+			<!-- 离线降级提示 -->
+			<view class="aip-offline-tip" v-if="currentNodeName != '' && !isOnline && analysisContent == '' && !isAnalyzing">
+				<text class="aip-offline-emoji">📡</text>
+				<text class="aip-offline-text">AI 服务未连接，请确认本地 Ollama 服务已启动。</text>
+			</view>
+
+			<view class="aip-content-footer"></view>
+		<!-- #ifdef WEB -->
+		</view>
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		</scroll-view>
+		<!-- #endif -->
+
+		<!-- ====== 记录 Tab 内容（工作区） ====== -->
+		<!-- #ifdef WEB -->
+		<view class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'record'">
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		<scroll-view class="aip-content-scroll" scroll-y="true" :show-scrollbar="false" v-if="activeTab == 'record'">
+		<!-- #endif -->
+			<!-- 记录工作区头部 -->
+			<view class="aip-rec-header">
+				<view class="aip-rec-header-left">
+					<text class="aip-rec-title">📋 记录工作区</text>
+					<text class="aip-rec-count">{{ nodeRecords.length }} 条记录</text>
+				</view>
+				<view class="aip-rec-export-btn" v-if="nodeRecords.length > 0" @click="exportRecords">
+					<text class="aip-rec-export-text">📤 导出</text>
+				</view>
+			</view>
+
+			<!-- 记录列表 -->
+			<view v-if="nodeRecords.length > 0" class="aip-rec-list">
+				<view v-for="(rec, rIdx) in nodeRecords" :key="rIdx" class="aip-rec-card">
+					<view class="aip-rec-card-header">
+						<text class="aip-rec-card-time">🕐 {{ rec.displayTime }}</text>
+						<view class="aip-rec-delete-btn" @click="deleteRecord(rIdx)">
+							<text class="aip-rec-delete-icon">🗑️</text>
+						</view>
+					</view>
+					<text class="aip-rec-card-content">{{ rec.content }}</text>
+				</view>
+			</view>
+
+			<!-- 记录空状态 -->
+			<view v-if="nodeRecords.length == 0" class="aip-rec-empty">
+				<text class="aip-rec-empty-emoji">📝</text>
+				<text class="aip-rec-empty-title">暂无记录</text>
+				<text class="aip-rec-empty-desc">切换到记录模式，输入内容即可自动关联当前节点并保存。</text>
+			</view>
+
+			<view class="aip-content-footer"></view>
+		<!-- #ifdef WEB -->
+		</view>
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		</scroll-view>
+		<!-- #endif -->
+
+		<!-- 底部输入区（含模式切换） -->
+		<view class="aip-input-area" v-if="currentNodeName != ''">
+			<!-- 模式切换按钮 -->
+			<view class="aip-mode-toggle" :class="inputMode == 'ask' ? 'aip-mode-ask' : 'aip-mode-record'" @click="toggleInputMode">
+				<text class="aip-mode-toggle-text">{{ inputMode == 'ask' ? '💬' : '📝' }}</text>
+			</view>
+			<input class="aip-input"
+				v-model="inputValue"
+				:placeholder="inputMode == 'ask' ? '请输入问题...' : '输入记录内容...'"
+				placeholder-style="color: #94A3B8"
+				confirm-type="send"
+				@confirm="handleSend" />
+			<button class="aip-send-btn"
+				:class="sendBtnClass"
+				@click="handleSend">
+				<text class="aip-send-text">{{ inputMode == 'ask' ? '发送' : '记录' }}</text>
+			</button>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	import { ref, computed, watch, onMounted, defineExpose } from 'vue'
+
+	// ====== 类型定义 ======
+	type MsgItem = {
+		role: string
+		content: string
+		time: string
+	}
+
+	// 节点记录类型
+	type NodeRecord = {
+		nodeId: string
+		nodeName: string
+		nodeType: string
+		content: string
+		timestamp: string
+		displayTime: string
+	}
+
+	// ====== Props ======
+	type Props = {
+		processName: string
+		isPC?: boolean
+	}
+	const props = withDefaults(defineProps<Props>(), {
+		processName: '',
+		isPC: false
+	})
+
+	// ====== 常量 ======
+	const DEBOUNCE_MS = 800
+	const AI_BASE_URL = 'http://localhost:3001'
+
+	// ====== 状态 ======
+	const currentNodeName = ref('')
+	const currentNodeTypeRaw = ref('')
+	const currentNodeId = ref('')
+	const isAnalyzing = ref(false)
+	const analysisContent = ref('')
+	const isOnline = ref(false)
+	const scrollTop = ref(0)
+	const inputValue = ref('')
+	const followUpMessages = ref([] as MsgItem[])
+	const isFollowUpTyping = ref(false)
+
+	// 双模式 + Tab 状态
+	const inputMode = ref('ask')
+	const activeTab = ref('chat')
+	const nodeRecords = ref([] as NodeRecord[])
+
+	// 动画引用
+	const dot1Ref = ref<UniElement | null>(null)
+	const dot2Ref = ref<UniElement | null>(null)
+	const dot3Ref = ref<UniElement | null>(null)
+	const dot4Ref = ref<UniElement | null>(null)
+	const dot5Ref = ref<UniElement | null>(null)
+	const dot6Ref = ref<UniElement | null>(null)
+
+	// 防抖计时器
+	let analyzeTimer: number = -1
+
+	// 分析耗时计时
+	const analyzingElapsed = ref(0)
+	let elapsedTimer: number = -1
+
+	// ====== 计算属性 ======
+	const analyzingStatusText = computed((): string => {
+		const s = (analyzingElapsed.value / 1000).toFixed(1)
+		return `AI 解析中 ${s}s`
+	})
+
+	// 追问耗时计时
+	const followUpElapsed = ref(0)
+	let followUpTimer: number = -1
+
+	const followUpStatusText = computed((): string => {
+		const s = (followUpElapsed.value / 1000).toFixed(1)
+		return `思考中 ${s}s`
+	})
+
+	const currentNodeTypeLabel = computed((): string => {
+		return getNodeTypeLabel(currentNodeTypeRaw.value)
+	})
+
+	const nodeTypeBadgeClass = computed((): string => {
+		const t = currentNodeTypeRaw.value
+		if (t == 'process') return 'aip-badge-process'
+		if (t == 'operation') return 'aip-badge-operation'
+		if (t == 'step') return 'aip-badge-step'
+		if (t == 'action' || t == 'action-unit') return 'aip-badge-action'
+		return 'aip-badge-default'
+	})
+
+	// ====== watch ======
+	watch(isAnalyzing, (newVal: boolean) => {
+		if (newVal) {
+			analyzingElapsed.value = 0
+			if (elapsedTimer != -1) clearInterval(elapsedTimer)
+			elapsedTimer = setInterval(() => {
+				analyzingElapsed.value += 100
+			}, 100)
+			setTimeout(() => {
+				startDotAnimation([dot1Ref.value, dot2Ref.value, dot3Ref.value])
+			}, 50)
+		} else {
+			if (elapsedTimer != -1) {
+				clearInterval(elapsedTimer)
+				elapsedTimer = -1
+			}
+		}
+	})
+
+	watch(isFollowUpTyping, (newVal: boolean) => {
+		if (newVal) {
+			followUpElapsed.value = 0
+			if (followUpTimer != -1) clearInterval(followUpTimer)
+			followUpTimer = setInterval(() => {
+				followUpElapsed.value += 100
+			}, 100)
+			setTimeout(() => {
+				startDotAnimation([dot4Ref.value, dot5Ref.value, dot6Ref.value])
+			}, 50)
+		} else {
+			if (followUpTimer != -1) {
+				clearInterval(followUpTimer)
+				followUpTimer = -1
+			}
+		}
+	})
+
+	// ====== 工具函数 ======
+	const getNodeTypeLabel = (type: string): string => {
+		if (type == 'process') return '工艺'
+		if (type == 'operation') return '工序'
+		if (type == 'step') return '工步'
+		if (type == 'action' || type == 'action-unit') return '动作'
+		return '节点'
+	}
+
+	const getCurrentTime = (): string => {
+		const now = new Date()
+		const h = now.getHours().toString().padStart(2, '0')
+		const m = now.getMinutes().toString().padStart(2, '0')
+		return `${h}:${m}`
+	}
+
+	const scrollToBottom = () => {
+		setTimeout(() => {
+			scrollTop.value = scrollTop.value + 9999
+		}, 80)
+	}
+
+	const startDotAnimation = (dots: (UniElement | null)[]) => {
+		const keyframes = [
+			{ opacity: 0.3, transform: 'translateY(0px)' },
+			{ opacity: 1.0, transform: 'translateY(-5px)' },
+			{ opacity: 0.3, transform: 'translateY(0px)' }
+		] as UTSJSONObject[]
+		dots.forEach((dot: UniElement | null, index: number) => {
+			if (dot != null) {
+				dot.animate(keyframes, {
+					duration: 800,
+					delay: index * 200,
+					iterations: 100,
+					easing: 'ease-in-out'
+				})
+			}
+		})
+	}
+
+	// ====== AI 服务检查 ======
+	const checkStatus = () => {
+		uni.request({
+			url: `${AI_BASE_URL}/status`,
+			method: 'GET',
+			success: (res) => {
+				const data = res.data as UTSJSONObject | null
+				if (data != null) {
+					const ollama = data['ollama'] as string | null
+					isOnline.value = (ollama == 'connected')
+				} else {
+					isOnline.value = false
+				}
+			},
+			fail: () => {
+				isOnline.value = false
+			}
+		})
+	}
+
+	onMounted(() => {
+		checkStatus()
+	})
+
+	// ====== Prompt 构建 ======
+	const buildPrompt = (node: UTSJSONObject): string => {
+		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名'
+		const typeLabel = getNodeTypeLabel((node['type'] as string | null) ?? '')
+		const procName = props.processName != '' ? props.processName : '当前工艺'
+		return `你是一位工艺知识专家，正在辅助操作员逐步讲解工艺流程。
+
+当前节点信息：
+- 节点名称：${name}
+- 节点类型：${typeLabel}
+- 所属工艺：${procName}
+
+请用简洁专业的语言分析该节点的以下要点（若某项无相关信息则省略该项）：
+1. 【核心目的】该节点的主要功能或目标
+2. 【关键操作】需要注意的关键操作要点或参数
+3. 【防错要点】该节点常见的错误或风险点
+4. 【质量检测】涉及的检测项或验收标准
+
+要求：每个要点独立成段，纯文本输出，控制在200字以内，简洁为主。`
+	}
+
+	// ====== 核心：执行 AI 分析 ======
+	const doAnalyze = (node: UTSJSONObject) => {
+		if (!isOnline.value) {
+			analysisContent.value = '⚠️ AI 服务未连接，请确认本地 Ollama 与中转服务已启动。'
+			return
+		}
+
+		const prompt = buildPrompt(node)
+		isAnalyzing.value = true
+		analysisContent.value = ''
+
+		let buffer = ''
+		const decoder = new TextDecoder('utf-8')
+
+		const reqTask = uni.request({
+			url: `${AI_BASE_URL}/chat`,
+			method: 'POST',
+			enableChunked: true,
+			timeout: 120000,
+			header: { 'Content-Type': 'application/json' },
+			data: {
+				prompt: prompt,
+				model: 'qwen2.5:3b',
+				history: []
+			},
+			success: (_res) => {
+				isAnalyzing.value = false
+				scrollToBottom()
+			},
+			fail: (_err) => {
+				isAnalyzing.value = false
+				if (analysisContent.value == '') {
+					analysisContent.value = '⚠️ 连接 AI 服务失败，请检查本地服务状态。'
+				}
+				scrollToBottom()
+			}
+		})
+
+		reqTask.onChunkReceived((res) => {
+			const chunkStr = decoder.decode(new Uint8Array(res.data as ArrayBuffer))
+			buffer += chunkStr
+			const lines = buffer.split('\n')
+			buffer = lines.pop() ?? ''
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i].trim()
+				if (line == '') continue
+				try {
+					const data = JSON.parse(line) as UTSJSONObject
+					// 跳过状态和 docs 包
+					if (data['type'] == 'status') continue
+					if (data['type'] == 'docs') continue
+					if (data['type'] == 'error') {
+						isAnalyzing.value = false
+						analysisContent.value += '\n⚠️ ' + ((data['error'] as string | null) ?? '解析异常')
+						continue
+					}
+					// 提取 token
+					let token = data['response'] as string | null
+					if (token == null && data['message'] != null) {
+						const msgObj = data['message'] as UTSJSONObject
+						token = msgObj['content'] as string | null
+					}
+					if (token != null && token != '') {
+						analysisContent.value += token
+						scrollToBottom()
+					}
+					if (data['done'] === true) {
+						isAnalyzing.value = false
+					}
+				} catch (_e) {}
+			}
+		})
+	}
+
+	// ====== 暴露给父组件的方法：分析节点（带防抖）======
+	const analyzeNode = (node: UTSJSONObject) => {
+		// 取消上一次的防抖定时器
+		if (analyzeTimer != -1) {
+			clearTimeout(analyzeTimer)
+			analyzeTimer = -1
+		}
+
+		// 立即更新节点标识卡（不等防抖）
+		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
+		const type = (node['type'] as string | null) ?? 'process'
+		const id = (node['innerId'] as string | null) ?? (node['id'] as string | null) ?? ''
+
+		currentNodeName.value = name
+		currentNodeTypeRaw.value = type
+		currentNodeId.value = id
+
+		// 清空上一次分析内容
+		analysisContent.value = ''
+		followUpMessages.value = []
+		isAnalyzing.value = false
+
+		// 切换节点时加载对应记录
+		loadNodeRecords()
+
+		// 防抖 800ms 后触发 AI 请求
+		analyzeTimer = setTimeout(() => {
+			analyzeTimer = -1
+			doAnalyze(node)
+		}, DEBOUNCE_MS)
+	}
+
+	// ====== 重新分析 ======
+	const reAnalyze = () => {
+		if (currentNodeId.value == '') return
+		analysisContent.value = ''
+		followUpMessages.value = []
+		// 构建临时节点对象重新分析
+		const tempNode = {
+			displayName: currentNodeName.value,
+			name: currentNodeName.value,
+			type: currentNodeTypeRaw.value,
+			innerId: currentNodeId.value,
+			id: currentNodeId.value
+		} as UTSJSONObject
+		doAnalyze(tempNode)
+	}
+
+	// ====== 追问 ======
+	const sendFollowUp = () => {
+		const text = inputValue.value.trim()
+		if (text == '' || isFollowUpTyping.value || isAnalyzing.value) return
+
+		// 加入用户消息
+		followUpMessages.value.push({
+			role: 'user',
+			content: text,
+			time: getCurrentTime()
+		} as MsgItem)
+		inputValue.value = ''
+		isFollowUpTyping.value = true
+		scrollToBottom()
+
+		// 构建 AI 占位消息
+		const aiMsg: MsgItem = {
+			role: 'assistant',
+			content: '',
+			time: getCurrentTime()
+		}
+		followUpMessages.value.push(aiMsg)
+		const aiMsgRef = followUpMessages.value[followUpMessages.value.length - 1]
+
+		// 构建追问 history：包含当前分析内容作为上下文
+		const historyList = [] as UTSJSONObject[]
+		if (analysisContent.value != '') {
+			historyList.push({
+				role: 'assistant',
+				content: analysisContent.value
+			})
+		}
+		// 追加之前的追问记录（最多6条，排除当前用户消息和AI占位）
+		const pastFollowUps = followUpMessages.value.slice(0, followUpMessages.value.length - 2)
+		for (let i = pastFollowUps.length - 1; i >= 0 && historyList.length < 8; i--) {
+			const m = pastFollowUps[i]
+			if (m.content.trim() != '') {
+				historyList.unshift({ role: m.role, content: m.content })
+			}
+		}
+
+		let buffer2 = ''
+		const decoder2 = new TextDecoder('utf-8')
+
+		const reqTask2 = uni.request({
+			url: `${AI_BASE_URL}/chat`,
+			method: 'POST',
+			enableChunked: true,
+			timeout: 120000,
+			header: { 'Content-Type': 'application/json' },
+			data: {
+				prompt: text,
+				model: 'qwen2.5:3b',
+				history: historyList
+			},
+			success: (_res) => {
+				isFollowUpTyping.value = false
+				// 移除空占位
+				if (aiMsgRef.content == '') {
+					followUpMessages.value.pop()
+				}
+				scrollToBottom()
+			},
+			fail: (_err) => {
+				isFollowUpTyping.value = false
+				aiMsgRef.content = '⚠️ 请求失败，请检查 AI 服务。'
+				scrollToBottom()
+			}
+		})
+
+		reqTask2.onChunkReceived((res) => {
+			const chunkStr2 = decoder2.decode(new Uint8Array(res.data as ArrayBuffer))
+			buffer2 += chunkStr2
+			const lines2 = buffer2.split('\n')
+			buffer2 = lines2.pop() ?? ''
+			for (let i = 0; i < lines2.length; i++) {
+				const line2 = lines2[i].trim()
+				if (line2 == '') continue
+				try {
+					const data2 = JSON.parse(line2) as UTSJSONObject
+					if (data2['type'] == 'status' || data2['type'] == 'docs') continue
+					if (data2['type'] == 'error') {
+						isFollowUpTyping.value = false
+						aiMsgRef.content += '\n⚠️ ' + ((data2['error'] as string | null) ?? '异常')
+						continue
+					}
+					let token2 = data2['response'] as string | null
+					if (token2 == null && data2['message'] != null) {
+						const msgObj2 = data2['message'] as UTSJSONObject
+						token2 = msgObj2['content'] as string | null
+					}
+					if (token2 != null && token2 != '') {
+						aiMsgRef.content += token2
+						scrollToBottom()
+					}
+					if (data2['done'] === true) {
+						isFollowUpTyping.value = false
+					}
+				} catch (_e2) {}
+			}
+		})
+	}
+
+	// ====== 模式切换 ======
+	const toggleInputMode = () => {
+		if (inputMode.value == 'ask') {
+			inputMode.value = 'record'
+		} else {
+			inputMode.value = 'ask'
+		}
+	}
+
+	// 发送按钮样式计算
+	const sendBtnClass = computed((): string => {
+		if (inputMode.value == 'record') {
+			if (inputValue.value.trim() == '') return 'aip-send-btn-disabled'
+			return 'aip-send-btn-record'
+		}
+		if (inputValue.value.trim() == '' || isFollowUpTyping.value || isAnalyzing.value) return 'aip-send-btn-disabled'
+		return ''
+	})
+
+	// 统一发送入口：根据模式分发
+	const handleSend = () => {
+		if (inputMode.value == 'ask') {
+			sendFollowUp()
+		} else {
+			saveRecord()
+		}
+	}
+
+	// 切换到记录 Tab
+	const switchToRecordTab = () => {
+		activeTab.value = 'record'
+		loadNodeRecords()
+	}
+
+	// ====== 记录功能 ======
+	const STORAGE_KEY = 'ai_node_records'
+
+	// 保存记录
+	const saveRecord = () => {
+		const text = inputValue.value.trim()
+		if (text == '' || currentNodeId.value == '') return
+
+		const now = new Date()
+		const record: NodeRecord = {
+			nodeId: currentNodeId.value,
+			nodeName: currentNodeName.value,
+			nodeType: currentNodeTypeRaw.value,
+			content: text,
+			timestamp: now.toISOString(),
+			displayTime: getCurrentTime()
+		}
+
+		// 从存储中读取全部记录
+		let allRecords = loadAllRecords()
+		allRecords.push(record)
+		uni.setStorageSync(STORAGE_KEY, JSON.stringify(allRecords))
+
+		// 刷新当前节点记录
+		inputValue.value = ''
+		loadNodeRecords()
+
+		// 提示保存成功
+		uni.showToast({
+			title: '记录已保存',
+			icon: 'success'
+		})
+	}
+
+	// 加载所有记录
+	const loadAllRecords = (): NodeRecord[] => {
+		const stored = uni.getStorageSync(STORAGE_KEY) as string | null
+		if (stored != null && stored != '') {
+			try {
+				return JSON.parse(stored) as NodeRecord[]
+			} catch (_e) {
+				return [] as NodeRecord[]
+			}
+		}
+		return [] as NodeRecord[]
+	}
+
+	// 加载当前节点的记录
+	const loadNodeRecords = () => {
+		if (currentNodeId.value == '') {
+			nodeRecords.value = []
+			return
+		}
+		const allRecords = loadAllRecords()
+		const nodeId = currentNodeId.value
+		nodeRecords.value = allRecords.filter((r: NodeRecord): boolean => r.nodeId == nodeId)
+	}
+
+	// 删除记录
+	const deleteRecord = (index: number) => {
+		if (index < 0 || index >= nodeRecords.value.length) return
+		const target = nodeRecords.value[index]
+
+		// 从全局存储中移除
+		let allRecords = loadAllRecords()
+		// 找到匹配项并移除（通过 timestamp 唯一标识）
+		allRecords = allRecords.filter((r: NodeRecord): boolean => r.timestamp != target.timestamp)
+		uni.setStorageSync(STORAGE_KEY, JSON.stringify(allRecords))
+
+		// 刷新显示
+		loadNodeRecords()
+	}
+
+	// 导出记录为 Markdown
+	const exportRecords = () => {
+		if (nodeRecords.value.length == 0) return
+
+		const typeLabel = getNodeTypeLabel(currentNodeTypeRaw.value)
+		const now = new Date()
+		const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+
+		let md = `# ${typeLabel}记录 - ${currentNodeName.value}\n\n`
+		md += `> 节点类型：${typeLabel}  \n`
+		md += `> 导出时间：${dateStr}\n\n`
+		md += `---\n\n`
+
+		for (let i = 0; i < nodeRecords.value.length; i++) {
+			const rec = nodeRecords.value[i]
+			md += `## ${rec.displayTime}\n\n`
+			md += `${rec.content}\n\n`
+			if (i < nodeRecords.value.length - 1) {
+				md += `---\n\n`
+			}
+		}
+
+		// 通过 Electron API 保存文件
+		// #ifdef WEB
+		const electronAPI = (window as any).electronAPI
+		if (electronAPI != null && typeof electronAPI.saveFile == 'function') {
+			electronAPI.saveFile({
+				content: md,
+				defaultName: `${currentNodeName.value}_记录.md`,
+				filters: [{ name: 'Markdown', extensions: ['md'] }]
+			})
+		} else {
+			// 回退：复制到剪贴板
+			uni.setClipboardData({
+				data: md,
+				success: () => {
+					uni.showToast({ title: '已复制到剪贴板', icon: 'success' })
+				}
+			})
+		}
+		// #endif
+		// #ifndef WEB
+		uni.setClipboardData({
+			data: md,
+			success: () => {
+				uni.showToast({ title: '已复制到剪贴板', icon: 'success' })
+			}
+		})
+		// #endif
+	}
+
+	// ====== 暴露方法供父组件 $callMethod 调用 ======
+	defineExpose({
+		analyzeNode
+	})
+</script>
+
+<style>
+	/* ============================================
+	 * AI 节点解析面板 - 浅色主题
+	 * 色彩系统（与项目保持一致）：
+	 *   主色：#0284C7（蓝）  强调：#0F172A
+	 *   背景：#F8FAFC / #FFFFFF
+	 *   边框：#E2E8F0
+	 * ============================================ */
+
+	.ai-panel-root {
+		flex: 1;
+		flex-direction: column;
+		background-color: #F8FAFC;
+		border-left: 1px solid #E2E8F0;
+		height: 100%;
+	}
+
+	/* ---- 头部 ---- */
+	.aip-header {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E2E8F0;
+		flex: none;
+	}
+
+	.aip-header-left {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.aip-mode-badge {
+		width: 26px;
+		height: 26px;
+		border-radius: 6px;
+		background-color: #0F172A;
+		justify-content: center;
+		align-items: center;
+		margin-right: 8px;
+	}
+
+	.aip-mode-badge-text {
+		color: #FFFFFF;
+		font-size: 10px;
+		font-weight: bold;
+	}
+
+	.aip-title {
+		color: #0F172A;
+		font-size: 14px;
+		font-weight: bold;
+		margin-right: 8px;
+	}
+
+	.aip-status-pill {
+		flex-direction: row;
+		align-items: center;
+		border-radius: 10px;
+		padding: 2px 7px 2px 5px;
+	}
+
+	.aip-pill-online {
+		background-color: #ECFDF5;
+	}
+
+	.aip-pill-offline {
+		background-color: #FEF2F2;
+	}
+
+	.aip-status-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 3px;
+		margin-right: 3px;
+	}
+
+	.aip-dot-online {
+		background-color: #10B981;
+	}
+
+	.aip-dot-offline {
+		background-color: #EF4444;
+	}
+
+	.aip-status-text {
+		font-size: 10px;
+		color: #64748B;
+	}
+
+	.aip-header-actions {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.aip-action-btn {
+		width: 30px;
+		height: 30px;
+		border-radius: 6px;
+		background-color: #F1F5F9;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.aip-action-icon {
+		font-size: 16px;
+		color: #334155;
+	}
+
+	/* ---- 节点标识卡 ---- */
+	.aip-node-card {
+		background-color: #EFF6FF;
+		border-bottom: 1px solid #BFDBFE;
+		padding: 10px 14px 8px 14px;
+		flex: none;
+	}
+
+	.aip-node-card-inner {
+		flex-direction: row;
+		align-items: center;
+		flex-wrap: nowrap;
+	}
+
+	.aip-node-type-badge {
+		border-radius: 4px;
+		padding: 2px 7px;
+		margin-right: 8px;
+		flex: none;
+	}
+
+	.aip-badge-process {
+		background-color: #0284C7;
+	}
+
+	.aip-badge-operation {
+		background-color: #7C3AED;
+	}
+
+	.aip-badge-step {
+		background-color: #D97706;
+	}
+
+	.aip-badge-action {
+		background-color: #059669;
+	}
+
+	.aip-badge-default {
+		background-color: #64748B;
+	}
+
+	.aip-node-type-text {
+		color: #FFFFFF;
+		font-size: 11px;
+		font-weight: bold;
+	}
+
+	.aip-node-name {
+		color: #1E3A5F;
+		font-size: 14px;
+		font-weight: bold;
+		flex: 1;
+	}
+
+	.aip-analyzing-row {
+		flex-direction: row;
+		align-items: center;
+		margin-top: 8px;
+	}
+
+	.aip-typing-indicator {
+		flex-direction: row;
+		align-items: center;
+		margin-right: 8px;
+	}
+
+	.aip-typing-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 3px;
+		background-color: #0284C7;
+		margin-right: 3px;
+		opacity: 0.4;
+	}
+
+	.aip-analyzing-text {
+		color: #64748B;
+		font-size: 12px;
+	}
+
+	/* ---- 引导页 ---- */
+	.aip-guide {
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 40px 24px;
+	}
+
+	.aip-guide-emoji {
+		font-size: 40px;
+		margin-bottom: 16px;
+		text-align: center;
+	}
+
+	.aip-guide-title {
+		color: #1E3A5F;
+		font-size: 16px;
+		font-weight: bold;
+		margin-bottom: 10px;
+		text-align: center;
+	}
+
+	.aip-guide-desc {
+		color: #64748B;
+		font-size: 13px;
+		text-align: center;
+		line-height: 1.6em;
+	}
+
+	/* ---- 内容滚动区 ---- */
+	.aip-content-scroll {
+		flex: 1;
+	}
+
+	.aip-analysis-section {
+		padding: 14px 14px 0 14px;
+	}
+
+	.aip-section-label-row {
+		flex-direction: row;
+		align-items: center;
+		margin-bottom: 10px;
+	}
+
+	.aip-section-label-dot {
+		width: 3px;
+		height: 14px;
+		border-radius: 2px;
+		background-color: #0284C7;
+		margin-right: 6px;
+	}
+
+	.aip-section-label {
+		color: #0284C7;
+		font-size: 12px;
+		font-weight: bold;
+	}
+
+	.aip-analysis-text {
+		color: #1E3A5F;
+		font-size: 13px;
+		line-height: 1.8em;
+	}
+
+	/* ---- 追问区 ---- */
+	.aip-followup-section {
+		padding: 10px 14px 0 14px;
+	}
+
+	.aip-section-divider {
+		flex-direction: row;
+		align-items: center;
+		margin: 12px 0 10px 0;
+	}
+
+	.aip-divider-line {
+		flex: 1;
+		height: 1px;
+		background-color: #E2E8F0;
+	}
+
+	.aip-divider-text {
+		color: #94A3B8;
+		font-size: 11px;
+		margin: 0 8px;
+	}
+
+	.aip-msg-item {
+		margin-bottom: 8px;
+	}
+
+	.aip-msg-user {
+		align-items: flex-end;
+	}
+
+	.aip-msg-ai {
+		align-items: flex-start;
+	}
+
+	.aip-msg-bubble {
+		border-radius: 10px;
+		padding: 8px 12px;
+		max-width: 85%;
+	}
+
+	.aip-bubble-user {
+		background-color: #0284C7;
+		border-bottom-right-radius: 3px;
+	}
+
+	.aip-bubble-ai {
+		background-color: #FFFFFF;
+		border: 1px solid #E2E8F0;
+		border-bottom-left-radius: 3px;
+	}
+
+	.aip-typing-bubble {
+		flex-direction: row;
+		align-items: center;
+		padding: 10px 14px;
+	}
+
+	.aip-msg-text {
+		font-size: 13px;
+		line-height: 1.6em;
+	}
+
+	.aip-text-user {
+		color: #FFFFFF;
+	}
+
+	.aip-text-ai {
+		color: #334155;
+	}
+
+	.aip-msg-time {
+		font-size: 10px;
+		color: #94A3B8;
+		margin-top: 3px;
+	}
+
+	.aip-time-user {
+		text-align: right;
+	}
+
+	.aip-time-ai {
+		text-align: left;
+	}
+
+	.aip-typing-label {
+		color: #64748B;
+		font-size: 12px;
+		margin-left: 6px;
+	}
+
+	/* ---- 离线提示 ---- */
+	.aip-offline-tip {
+		flex-direction: column;
+		align-items: center;
+		padding: 32px 20px;
+	}
+
+	.aip-offline-emoji {
+		font-size: 32px;
+		margin-bottom: 12px;
+		text-align: center;
+	}
+
+	.aip-offline-text {
+		color: #94A3B8;
+		font-size: 12px;
+		text-align: center;
+	}
+
+	.aip-content-footer {
+		height: 20px;
+	}
+
+	/* ---- 分段控制器 ---- */
+	.aip-seg-bar {
+		flex-direction: row;
+		background-color: #F1F5F9;
+		border-radius: 8px;
+		margin: 8px 14px;
+		padding: 3px;
+		flex: none;
+	}
+
+	.aip-seg-item {
+		flex: 1;
+		padding: 6px 0;
+		border-radius: 6px;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.aip-seg-active {
+		background-color: #FFFFFF;
+	}
+
+	.aip-seg-text {
+		font-size: 12px;
+		color: #64748B;
+		font-weight: bold;
+	}
+
+	.aip-seg-text-active {
+		color: #0284C7;
+	}
+
+	/* ---- 记录工作区 ---- */
+	.aip-rec-header {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 14px 8px 14px;
+	}
+
+	.aip-rec-header-left {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.aip-rec-title {
+		color: #0F172A;
+		font-size: 13px;
+		font-weight: bold;
+	}
+
+	.aip-rec-count {
+		color: #94A3B8;
+		font-size: 11px;
+		margin-left: 8px;
+	}
+
+	.aip-rec-export-btn {
+		padding: 4px 10px;
+		border-radius: 6px;
+		background-color: #EFF6FF;
+	}
+
+	.aip-rec-export-text {
+		color: #0284C7;
+		font-size: 11px;
+		font-weight: bold;
+	}
+
+	.aip-rec-list {
+		padding: 0 14px;
+	}
+
+	.aip-rec-card {
+		background-color: #FFFFFF;
+		border-radius: 8px;
+		padding: 10px 12px;
+		margin-bottom: 8px;
+		border: 1px solid #E2E8F0;
+	}
+
+	.aip-rec-card-header {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 6px;
+	}
+
+	.aip-rec-card-time {
+		color: #94A3B8;
+		font-size: 11px;
+	}
+
+	.aip-rec-delete-btn {
+		padding: 2px 6px;
+		border-radius: 4px;
+	}
+
+	.aip-rec-delete-icon {
+		font-size: 12px;
+	}
+
+	.aip-rec-card-content {
+		color: #334155;
+		font-size: 13px;
+		line-height: 1.6em;
+	}
+
+	.aip-rec-empty {
+		padding: 40px 24px;
+		align-items: center;
+	}
+
+	.aip-rec-empty-emoji {
+		font-size: 36px;
+		margin-bottom: 12px;
+		text-align: center;
+	}
+
+	.aip-rec-empty-title {
+		color: #1E3A5F;
+		font-size: 15px;
+		font-weight: bold;
+		margin-bottom: 8px;
+		text-align: center;
+	}
+
+	.aip-rec-empty-desc {
+		color: #94A3B8;
+		font-size: 12px;
+		text-align: center;
+		line-height: 1.6em;
+	}
+
+	/* ---- 底部输入区 ---- */
+	.aip-input-area {
+		flex-direction: row;
+		align-items: center;
+		padding: 10px 12px;
+		background-color: #FFFFFF;
+		border-top: 1px solid #E2E8F0;
+		flex: none;
+	}
+
+	/* 模式切换按钮 */
+	.aip-mode-toggle {
+		height: 32px;
+		padding: 0 8px;
+		border-radius: 8px;
+		justify-content: center;
+		align-items: center;
+		margin-right: 8px;
+		flex: none;
+	}
+
+	.aip-mode-ask {
+		background-color: #EFF6FF;
+	}
+
+	.aip-mode-record {
+		background-color: #FEF3C7;
+	}
+
+	.aip-mode-toggle-text {
+		font-size: 14px;
+	}
+
+	.aip-input {
+		flex: 1;
+		height: 36px;
+		background-color: #F1F5F9;
+		border-radius: 8px;
+		padding: 0 12px;
+		font-size: 13px;
+		color: #334155;
+		margin-right: 8px;
+	}
+
+	.aip-send-btn {
+		height: 36px;
+		padding: 0 16px;
+		background-color: #0284C7;
+		border-radius: 8px;
+		justify-content: center;
+		align-items: center;
+		border-width: 0;
+	}
+
+	.aip-send-btn-disabled {
+		background-color: #CBD5E1;
+	}
+
+	.aip-send-btn-record {
+		background-color: #D97706;
+	}
+
+	.aip-send-text {
+		color: #FFFFFF;
+		font-size: 13px;
+		font-weight: bold;
+	}
+</style>
