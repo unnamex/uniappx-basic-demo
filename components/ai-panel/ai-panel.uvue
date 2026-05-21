@@ -1,11 +1,11 @@
 <template>
 	<view class="ai-panel-root">
-		<!-- 针对 PC 端的标题栏占位，防止与窗口系统按钮重叠 -->
-		<view v-if="isPC" style="height: 36px; background-color: #FFFFFF; border-bottom: 1px solid #E2E8F0; -webkit-app-region: drag; flex: none;"></view>
+		<!-- 针对 PC 端的标题栏占位，防止与窗口系统按钮重叠（仅非全屏时显示） -->
+		<view v-if="isPC && !isFullscreen" style="height: 36px; background-color: #FFFFFF; border-bottom: 1px solid #E2E8F0; -webkit-app-region: drag; flex: none;"></view>
 
-		<!-- 头部 -->
-		<view class="aip-header">
-			<view class="aip-header-left">
+		<!-- 头部（全屏时兼作系统的标题栏拖拽区） -->
+		<view class="aip-header" :style="{ '-webkit-app-region': (isPC && isFullscreen) ? 'drag' : 'none', paddingRight: '14px' }">
+			<view class="aip-header-left" style="-webkit-app-region: no-drag;">
 				<view class="aip-mode-badge">
 					<text class="aip-mode-badge-text">AI</text>
 				</view>
@@ -15,15 +15,16 @@
 					<text class="aip-status-text">{{ isOnline ? '在线' : '离线' }}</text>
 				</view>
 			</view>
-			<view class="aip-header-actions">
-				<!-- 重新分析按钮 -->
+			<view class="aip-header-actions" style="-webkit-app-region: no-drag;">
 				<view class="aip-action-btn" v-if="currentNodeName != '' && !isAnalyzing" @click="reAnalyze">
 					<text class="aip-action-icon">↺</text>
+				</view>
+				<view class="aip-action-btn" @click="$emit('toggle-fullscreen')">
+					<text class="aip-action-icon" style="font-size: 14px;">{{ isFullscreen ? '✕' : '⛶' }}</text>
 				</view>
 			</view>
 		</view>
 
-		<!-- 当前节点标识卡 -->
 		<view class="aip-node-card" v-if="currentNodeName != ''">
 			<view class="aip-node-card-inner">
 				<view class="aip-node-type-badge" :class="nodeTypeBadgeClass">
@@ -31,7 +32,6 @@
 				</view>
 				<text class="aip-node-name" :numberOfLines="2">{{ currentNodeName }}</text>
 			</view>
-			<!-- 分析进度行 -->
 			<view class="aip-analyzing-row" v-if="isAnalyzing">
 				<view class="aip-typing-indicator">
 					<view class="aip-typing-dot" ref="dot1Ref"></view>
@@ -42,40 +42,146 @@
 			</view>
 		</view>
 
-		<!-- 分段控制器（对话 / 记录） -->
 		<view class="aip-seg-bar" v-if="currentNodeName != ''">
 			<view class="aip-seg-item" :class="activeTab == 'chat' ? 'aip-seg-active' : ''" @click="activeTab = 'chat'">
-				<text class="aip-seg-text" :class="activeTab == 'chat' ? 'aip-seg-text-active' : ''">💬 对话</text>
+				<image src="/static/icons/industrial/analysis.svg" class="aip-ind-icon" :style="{ opacity: activeTab == 'chat' ? 1 : 0.6 }" mode="aspectFit" />
+				<text class="aip-seg-text" :class="activeTab == 'chat' ? 'aip-seg-text-active' : ''">智能分析</text>
+			</view>
+			<view class="aip-seg-item" :class="activeTab == 'quality' ? 'aip-seg-active' : ''" @click="activeTab = 'quality'">
+				<image src="/static/icons/industrial/quality.svg" class="aip-ind-icon" :style="{ opacity: activeTab == 'quality' ? 1 : 0.6 }" mode="aspectFit" />
+				<text class="aip-seg-text" :class="activeTab == 'quality' ? 'aip-seg-text-active' : ''">质检</text>
 			</view>
 			<view class="aip-seg-item" :class="activeTab == 'record' ? 'aip-seg-active' : ''" @click="switchToRecordTab">
-				<text class="aip-seg-text" :class="activeTab == 'record' ? 'aip-seg-text-active' : ''">📋 记录</text>
+				<image src="/static/icons/industrial/record.svg" class="aip-ind-icon" :style="{ opacity: activeTab == 'record' ? 1 : 0.6 }" mode="aspectFit" />
+				<text class="aip-seg-text" :class="activeTab == 'record' ? 'aip-seg-text-active' : ''">记录</text>
 			</view>
 		</view>
 
-		<!-- 无节点引导页 -->
 		<view class="aip-guide" v-if="currentNodeName == '' && !isAnalyzing">
-			<text class="aip-guide-emoji">🤖</text>
-			<text class="aip-guide-title">AI 节点解析模式</text>
-			<text class="aip-guide-desc">选中左侧节点，或使用底部「上一步 / 下一步」切换节点，AI 将自动解析该节点的工艺要点。</text>
+			<image src="/static/icons/industrial/auto-parse.svg" class="aip-guide-icon" mode="aspectFit" />
+			<text class="aip-guide-title">自动解析模式</text>
+			<text class="aip-guide-desc">选中左侧节点，系统将自动解析该节点的工艺要点。</text>
 		</view>
 
-		<!-- ====== 对话 Tab 内容 ====== -->
+		<!-- ====== 智能分析 Tab 内容 ====== -->
 		<!-- #ifdef WEB -->
 		<view class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'chat'">
 		<!-- #endif -->
 		<!-- #ifndef WEB -->
 		<scroll-view class="aip-content-scroll" scroll-y="true" :scroll-top="scrollTop" :show-scrollbar="false" v-if="activeTab == 'chat'">
 		<!-- #endif -->
-			<!-- AI 分析结果 -->
-			<view v-if="analysisContent != ''" class="aip-analysis-section">
-				<view class="aip-section-label-row">
-					<view class="aip-section-label-dot"></view>
-					<text class="aip-section-label">要点分析</text>
-				</view>
-				<text class="aip-analysis-text">{{ analysisContent }}</text>
+			<view class="aip-content-inner">
+			<view v-if="isAnalyzing && analysisData == null && analysisRawText == ''" class="aip-skeleton-card">
+				<view class="aip-skeleton-line"></view>
+				<view class="aip-skeleton-line"></view>
+				<view class="aip-skeleton-line-short"></view>
 			</view>
 
-			<!-- 追问历史 -->
+			<template v-if="analysisData != null">
+				<view class="aip-card" v-if="analysisData!.summary != ''">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-blue"></view>
+					<image src="/static/icons/industrial/summary.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">分析总结</text>
+				  </view>
+				  <text class="aip-card-text">{{ analysisData!.summary }}</text>
+				</view>
+
+				<view class="aip-card" v-if="analysisData!.keyPoints.length > 0">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-purple"></view>
+					<image src="/static/icons/industrial/keypoints.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">操作要点</text>
+				  </view>
+				  <view v-for="(kp, idx) in analysisData!.keyPoints" :key="idx" class="aip-diag-list-item">
+					<text class="aip-diag-bullet">●</text>
+					<text class="aip-diag-item-text">{{ kp }}</text>
+				  </view>
+				</view>
+
+				<view class="aip-card" v-if="analysisData!.risks.length > 0">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-red"></view>
+					<image src="/static/icons/industrial/risks.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">风险预警</text>
+				  </view>
+				  <view v-for="(risk, idx) in analysisData!.risks" :key="idx" class="aip-risk-item">
+					<view class="aip-risk-badge" :class="risk.level == 'high' ? 'aip-risk-high' : risk.level == 'medium' ? 'aip-risk-medium' : 'aip-risk-low'">
+						<text :class="risk.level == 'high' ? 'aip-risk-high-text' : risk.level == 'medium' ? 'aip-risk-medium-text' : 'aip-risk-low-text'">
+							{{ risk.level == 'high' ? '高风险' : risk.level == 'medium' ? '中风险' : '低风险' }}
+						</text>
+					</view>
+					<text class="aip-risk-desc">{{ risk.desc }}</text>
+				  </view>
+				</view>
+
+				<view class="aip-card" v-if="analysisData!.params.length > 0">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-cyan"></view>
+					<image src="/static/icons/industrial/params.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">工艺参数</text>
+				  </view>
+				  <view class="aip-param-header">
+					<text class="aip-param-cell aip-param-label">参数名</text>
+					<text class="aip-param-cell aip-param-label">推荐值</text>
+					<text class="aip-param-cell aip-param-label">允许范围</text>
+				  </view>
+				  <view v-for="(p, idx) in analysisData!.params" :key="idx" class="aip-param-row">
+					<text class="aip-param-cell aip-param-name">{{ p.name }}</text>
+					<text class="aip-param-cell aip-param-value">{{ p.recommend }}</text>
+					<text class="aip-param-cell aip-param-range">{{ p.range }}</text>
+				  </view>
+				</view>
+
+				<view class="aip-card" v-if="analysisData!.checklist.length > 0">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-green"></view>
+					<image src="/static/icons/industrial/checklist.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">检查清单</text>
+				  </view>
+				  <view v-for="(item, idx) in analysisData!.checklist" :key="idx" class="aip-check-item" @click="toggleChecklist(idx)">
+					<text class="aip-check-icon" :class="checklistStates.length > idx && checklistStates[idx] ? 'aip-check-done' : ''">
+						{{ (checklistStates.length > idx && checklistStates[idx]) ? '☑' : '☐' }}
+					</text>
+					<text class="aip-check-text" :class="checklistStates.length > idx && checklistStates[idx] ? 'aip-check-done' : ''">{{ item }}</text>
+				  </view>
+				</view>
+
+				<view class="aip-card" v-if="analysisData!.faq.length > 0">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-amber"></view>
+					<image src="/static/icons/industrial/faq.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">常见问题</text>
+				  </view>
+				  <view v-for="(f, idx) in analysisData!.faq" :key="idx" class="aip-faq-item">
+					<view class="aip-faq-q" @click="toggleFaq(idx)">
+						<text class="aip-faq-q-text">Q: {{ f.q }}</text>
+						<text class="aip-faq-arrow">{{ expandedFaqIndex == idx ? '▼' : '▶' }}</text>
+					</view>
+					<view class="aip-faq-a" v-if="expandedFaqIndex == idx">
+						<text class="aip-faq-a-text">A: {{ f.a }}</text>
+					</view>
+				  </view>
+				</view>
+
+				<view class="aip-card" v-if="analysisData!.suggestions.length > 0">
+				  <view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-blue"></view>
+					<image src="/static/icons/industrial/suggestions.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-card-title">快捷追问</text>
+				  </view>
+				  <view class="aip-chip-row">
+					<view v-for="(sug, idx) in analysisData!.suggestions" :key="idx" class="aip-chip" @click="sendSuggestion(sug)">
+						<text class="aip-chip-text">{{ sug }}</text>
+					</view>
+				  </view>
+				</view>
+			</template>
+
+			<view class="aip-card" v-if="analysisRawText != '' && analysisData == null">
+				<text class="aip-card-text">{{ analysisRawText }}</text>
+			</view>
+
 			<view v-if="followUpMessages.length > 0" class="aip-followup-section">
 				<view class="aip-section-divider">
 					<view class="aip-divider-line"></view>
@@ -104,13 +210,13 @@
 				</view>
 			</view>
 
-			<!-- 离线降级提示 -->
-			<view class="aip-offline-tip" v-if="currentNodeName != '' && !isOnline && analysisContent == '' && !isAnalyzing">
-				<text class="aip-offline-emoji">📡</text>
-				<text class="aip-offline-text">AI 服务未连接，请确认本地 Ollama 服务已启动。</text>
+			<view class="aip-offline-tip" v-if="currentNodeName != '' && !isOnline && analysisData == null && analysisRawText == '' && !isAnalyzing">
+				<image src="/static/icons/industrial/offline.svg" class="aip-offline-icon" mode="aspectFit" />
+				<text class="aip-offline-text">服务未连接，请确认本地服务已启动。</text>
 			</view>
 
 			<view class="aip-content-footer"></view>
+			</view>
 		<!-- #ifdef WEB -->
 		</view>
 		<!-- #endif -->
@@ -118,45 +224,211 @@
 		</scroll-view>
 		<!-- #endif -->
 
-		<!-- ====== 记录 Tab 内容（工作区） ====== -->
+		<!-- ====== 质检 Tab 内容 ====== -->
+		<!-- #ifdef WEB -->
+		<view class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'quality'">
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		<scroll-view class="aip-content-scroll" scroll-y="true" :show-scrollbar="false" v-if="activeTab == 'quality'">
+		<!-- #endif -->
+			<view class="aip-content-inner">
+			<view class="aip-quality-section">
+				<view class="aip-quick-diag-row">
+					<view class="aip-quick-diag-btn" @click="sendQualityQuery('表面粗糙度不达标')">
+						<text class="aip-quick-diag-text">表面粗糙度不达标</text>
+					</view>
+					<view class="aip-quick-diag-btn" @click="sendQualityQuery('尺寸超差')">
+						<text class="aip-quick-diag-text">尺寸超差</text>
+					</view>
+					<view class="aip-quick-diag-btn" @click="sendQualityQuery('刀具异常磨损')">
+						<text class="aip-quick-diag-text">刀具异常磨损</text>
+					</view>
+				</view>
+				
+				<view class="aip-quality-input-area">
+					<input class="aip-quality-input" v-model="qualitySymptom" placeholder="描述遇到的缺陷或问题..." @confirm="doQualityCheck(qualitySymptom)" />
+					<view class="aip-quality-btn" @click="doQualityCheck(qualitySymptom)">
+						<text class="aip-quality-btn-text">诊断</text>
+					</view>
+				</view>
+
+				<view v-if="isQualityChecking" class="aip-skeleton-card">
+					<view class="aip-skeleton-line"></view>
+					<view class="aip-skeleton-line-short"></view>
+				</view>
+
+				<view class="aip-diag-result-card" v-if="qualityResult != null && !isQualityChecking">
+					<text class="aip-diag-title">🩺 诊断结论</text>
+					<text class="aip-diag-text">{{ qualityResult!.diagnosis }}</text>
+
+					<text class="aip-diag-title" style="margin-top: 12px;">🔍 可能原因</text>
+					<view v-for="(item, idx) in qualityResult!.possibleCauses" :key="idx" class="aip-diag-list-item">
+						<text class="aip-diag-bullet">●</text>
+						<text class="aip-diag-item-text">{{ item }}</text>
+					</view>
+
+					<text class="aip-diag-title" style="margin-top: 12px;">🛠️ 解决方案</text>
+					<view v-for="(item, idx) in qualityResult!.solutions" :key="idx" class="aip-diag-list-item">
+						<text class="aip-diag-bullet">●</text>
+						<text class="aip-diag-item-text">{{ item }}</text>
+					</view>
+
+					<text class="aip-diag-title" style="margin-top: 12px;">🛡️ 预防措施</text>
+					<view v-for="(item, idx) in qualityResult!.preventionTips" :key="idx" class="aip-diag-list-item">
+						<text class="aip-diag-bullet">●</text>
+						<text class="aip-diag-item-text">{{ item }}</text>
+					</view>
+				</view>
+			</view>
+			<view class="aip-content-footer"></view>
+			</view>
+		<!-- #ifdef WEB -->
+		</view>
+		<!-- #endif -->
+		<!-- #ifndef WEB -->
+		</scroll-view>
+		<!-- #endif -->
+
+		<!-- ====== 记录 Tab 内容 ====== -->
 		<!-- #ifdef WEB -->
 		<view class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'record'">
 		<!-- #endif -->
 		<!-- #ifndef WEB -->
 		<scroll-view class="aip-content-scroll" scroll-y="true" :show-scrollbar="false" v-if="activeTab == 'record'">
 		<!-- #endif -->
+			<view class="aip-content-inner">
+			<!-- 统计概览卡片 -->
+			<view class="aip-stat-card" v-if="nodeRecords.length > 0">
+				<view class="aip-stat-header">
+					<image src="/static/icons/industrial/overview.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-stat-title">问题概览</text>
+				</view>
+				<view class="aip-stat-row">
+					<view class="aip-stat-item">
+						<text class="aip-stat-num aip-stat-open">{{ openCount }}</text>
+						<text class="aip-stat-label">待处理</text>
+					</view>
+					<view class="aip-stat-divider"></view>
+					<view class="aip-stat-item">
+						<text class="aip-stat-num aip-stat-resolved">{{ resolvedCount }}</text>
+						<text class="aip-stat-label">已解决</text>
+					</view>
+					<view class="aip-stat-divider"></view>
+					<view class="aip-stat-item">
+						<text class="aip-stat-num aip-stat-total">{{ nodeRecords.length }}</text>
+						<text class="aip-stat-label">总计</text>
+					</view>
+				</view>
+				<view class="aip-stat-severity-row">
+					<view class="aip-stat-sev-item">
+						<view class="aip-sev-dot" style="background-color: #EF4444;"></view>
+						<text class="aip-sev-critical-text">严重 {{ criticalCount }}</text>
+					</view>
+					<view class="aip-stat-sev-item">
+						<view class="aip-sev-dot" style="background-color: #F59E0B;"></view>
+						<text class="aip-sev-major-text">一般 {{ majorCount }}</text>
+					</view>
+					<view class="aip-stat-sev-item">
+						<view class="aip-sev-dot" style="background-color: #10B981;"></view>
+						<text class="aip-sev-minor-text">轻微 {{ minorCount }}</text>
+					</view>
+				</view>
+			</view>
+
 			<!-- 记录工作区头部 -->
 			<view class="aip-rec-header">
 				<view class="aip-rec-header-left">
-					<text class="aip-rec-title">📋 记录工作区</text>
-					<text class="aip-rec-count">{{ nodeRecords.length }} 条记录</text>
+					<image src="/static/icons/industrial/workspace.svg" class="aip-card-icon" mode="aspectFit" />
+					<text class="aip-rec-title">记录工作区</text>
+					<text class="aip-rec-count">{{ filteredRecords.length }} 条记录</text>
 				</view>
 				<view class="aip-rec-export-btn" v-if="nodeRecords.length > 0" @click="exportRecords">
-					<text class="aip-rec-export-text">📤 导出</text>
+					<image src="/static/icons/industrial/export.svg" class="aip-export-icon" mode="aspectFit" />
+				</view>
+			</view>
+
+			<!-- 筛选栏 -->
+			<view class="aip-filter-section" v-if="nodeRecords.length > 0">
+				<view class="aip-filter-row">
+					<view class="aip-filter-chip" :class="recordFilter == 'all' ? 'aip-filter-active' : ''" @click="recordFilter = 'all'">
+						<text class="aip-filter-chip-text" :class="recordFilter == 'all' ? 'aip-filter-text-active' : ''">全部</text>
+					</view>
+					<view class="aip-filter-chip" :class="recordFilter == 'open' ? 'aip-filter-active' : ''" @click="recordFilter = 'open'">
+						<text class="aip-filter-chip-text" :class="recordFilter == 'open' ? 'aip-filter-text-active' : ''">待处理</text>
+					</view>
+					<view class="aip-filter-chip" :class="recordFilter == 'resolved' ? 'aip-filter-active' : ''" @click="recordFilter = 'resolved'">
+						<text class="aip-filter-chip-text" :class="recordFilter == 'resolved' ? 'aip-filter-text-active' : ''">已解决</text>
+					</view>
+				</view>
+				<view class="aip-filter-row" style="margin-top: 4px;">
+					<view class="aip-filter-chip" :class="categoryFilter == 'all' ? 'aip-filter-active' : ''" @click="categoryFilter = 'all'">
+						<text class="aip-filter-chip-text" :class="categoryFilter == 'all' ? 'aip-filter-text-active' : ''">全部分类</text>
+					</view>
+					<view class="aip-filter-chip" :class="categoryFilter == 'quality' ? 'aip-filter-active' : ''" @click="categoryFilter = 'quality'">
+						<text class="aip-filter-chip-text" :class="categoryFilter == 'quality' ? 'aip-filter-text-active' : ''">质量</text>
+					</view>
+					<view class="aip-filter-chip" :class="categoryFilter == 'equipment' ? 'aip-filter-active' : ''" @click="categoryFilter = 'equipment'">
+						<text class="aip-filter-chip-text" :class="categoryFilter == 'equipment' ? 'aip-filter-text-active' : ''">设备</text>
+					</view>
+					<view class="aip-filter-chip" :class="categoryFilter == 'process' ? 'aip-filter-active' : ''" @click="categoryFilter = 'process'">
+						<text class="aip-filter-chip-text" :class="categoryFilter == 'process' ? 'aip-filter-text-active' : ''">工艺</text>
+					</view>
+					<view class="aip-filter-chip" :class="categoryFilter == 'safety' ? 'aip-filter-active' : ''" @click="categoryFilter = 'safety'">
+						<text class="aip-filter-chip-text" :class="categoryFilter == 'safety' ? 'aip-filter-text-active' : ''">安全</text>
+					</view>
 				</view>
 			</view>
 
 			<!-- 记录列表 -->
-			<view v-if="nodeRecords.length > 0" class="aip-rec-list">
-				<view v-for="(rec, rIdx) in nodeRecords" :key="rIdx" class="aip-rec-card">
-					<view class="aip-rec-card-header">
-						<text class="aip-rec-card-time">🕐 {{ rec.displayTime }}</text>
-						<view class="aip-rec-delete-btn" @click="deleteRecord(rIdx)">
-							<text class="aip-rec-delete-icon">🗑️</text>
+			<view v-if="filteredRecords.length > 0" class="aip-rec-list">
+				<view v-for="(rec, rIdx) in filteredRecords" :key="rIdx" class="aip-rec-card-v2">
+					<view class="aip-rec-color-bar" :class="rec.severity == 'critical' ? 'aip-color-critical' : rec.severity == 'major' ? 'aip-color-major' : 'aip-color-minor'"></view>
+					<view class="aip-rec-card-body">
+						<view class="aip-rec-card-top">
+							<view class="aip-rec-badges">
+								<view class="aip-rec-cat-badge" :class="'aip-cat-' + rec.category">
+									<image :src="'/static/icons/industrial/cat-' + rec.category + '.svg'" class="aip-ind-icon" mode="aspectFit" />
+									<text class="aip-rec-cat-text">{{ getCategoryLabel(rec.category) }}</text>
+								</view>
+								<view class="aip-rec-sev-badge" :class="'aip-sev-' + rec.severity">
+									<text class="aip-rec-sev-text">{{ getSeverityLabel(rec.severity) }}</text>
+								</view>
+							</view>
+						</view>
+						<view class="aip-rec-node-row" v-if="rec.nodeName != ''">
+							<image src="/static/icons/industrial/pin.svg" class="aip-ind-icon" mode="aspectFit" />
+							<text class="aip-rec-node-text">[{{ getNodeTypeLabel(rec.nodeType) }}] {{ rec.nodeName }}</text>
+						</view>
+						<text class="aip-rec-card-content-v2">{{ rec.content }}</text>
+						<view class="aip-rec-card-bottom">
+							<view style="flex-direction: row; align-items: center;">
+								<image src="/static/icons/industrial/time.svg" class="aip-ind-icon" mode="aspectFit" />
+								<text class="aip-rec-card-time-v2">{{ rec.displayTime }}</text>
+							</view>
+							<view class="aip-rec-actions">
+								<view class="aip-rec-status-btn" :class="rec.status == 'resolved' ? 'aip-status-resolved' : 'aip-status-open'" @click="toggleRecordStatus(rIdx)">
+									<view v-if="rec.status == 'resolved'" class="aip-sev-dot" style="background-color: #10B981; margin-right: 4px;"></view>
+									<image v-else src="/static/icons/industrial/pending.svg" class="aip-ind-icon" mode="aspectFit" />
+									<text class="aip-rec-status-text" :class="rec.status == 'resolved' ? 'aip-status-resolved-text' : 'aip-status-open-text'">{{ rec.status == 'resolved' ? '已解决' : '待处理' }}</text>
+								</view>
+								<view class="aip-rec-del-btn" @click="deleteFilteredRecord(rIdx)">
+									<image src="/static/icons/industrial/delete.svg" class="aip-ind-icon" mode="aspectFit" />
+								</view>
+							</view>
 						</view>
 					</view>
-					<text class="aip-rec-card-content">{{ rec.content }}</text>
 				</view>
 			</view>
 
 			<!-- 记录空状态 -->
-			<view v-if="nodeRecords.length == 0" class="aip-rec-empty">
-				<text class="aip-rec-empty-emoji">📝</text>
-				<text class="aip-rec-empty-title">暂无记录</text>
-				<text class="aip-rec-empty-desc">切换到记录模式，输入内容即可自动关联当前节点并保存。</text>
+			<view v-if="filteredRecords.length == 0" class="aip-rec-empty">
+				<image src="/static/icons/industrial/record.svg" class="aip-offline-icon" mode="aspectFit" />
+				<text class="aip-rec-empty-title">{{ nodeRecords.length == 0 ? '暂无记录' : '无匹配记录' }}</text>
+				<text class="aip-rec-empty-desc">{{ nodeRecords.length == 0 ? '切换到记录模式，选择分类后输入内容即可记录。' : '调整筛选条件查看其他记录。' }}</text>
 			</view>
 
 			<view class="aip-content-footer"></view>
+			</view>
 		<!-- #ifdef WEB -->
 		</view>
 		<!-- #endif -->
@@ -164,25 +436,69 @@
 		</scroll-view>
 		<!-- #endif -->
 
-		<!-- 底部输入区（含模式切换） -->
-		<view class="aip-input-area" v-if="currentNodeName != ''">
-			<!-- 模式切换按钮 -->
-			<view class="aip-mode-toggle" :class="inputMode == 'ask' ? 'aip-mode-ask' : 'aip-mode-record'" @click="toggleInputMode">
-				<text class="aip-mode-toggle-text">{{ inputMode == 'ask' ? '💬' : '📝' }}</text>
+
+		<!-- 底部输入区（仅在聊天或记录页） -->
+		<view class="aip-input-area" v-if="currentNodeName != '' && activeTab != 'quality'">
+			<!-- 记录模式：分类和等级选择 -->
+			<view class="aip-record-selectors" v-if="inputMode == 'record'">
+				<view class="aip-record-tags-wrapper">
+					<view class="aip-cat-select-row">
+						<view class="aip-cat-btn" :class="selectedCategory == 'quality' ? 'aip-cat-btn-active aip-cat-quality' : ''" @click="selectCategory('quality')">
+							<text class="aip-cat-btn-text">质量</text>
+						</view>
+						<view class="aip-cat-btn" :class="selectedCategory == 'equipment' ? 'aip-cat-btn-active aip-cat-equipment' : ''" @click="selectCategory('equipment')">
+							<text class="aip-cat-btn-text">设备</text>
+						</view>
+						<view class="aip-cat-btn" :class="selectedCategory == 'process' ? 'aip-cat-btn-active aip-cat-process' : ''" @click="selectCategory('process')">
+							<text class="aip-cat-btn-text">工艺</text>
+						</view>
+						<view class="aip-cat-btn" :class="selectedCategory == 'safety' ? 'aip-cat-btn-active aip-cat-safety' : ''" @click="selectCategory('safety')">
+							<text class="aip-cat-btn-text">安全</text>
+						</view>
+						<view class="aip-cat-btn" :class="selectedCategory == 'material' ? 'aip-cat-btn-active aip-cat-material' : ''" @click="selectCategory('material')">
+							<text class="aip-cat-btn-text">物料</text>
+						</view>
+					</view>
+					<view class="aip-sev-select-row">
+					<view class="aip-sev-btn" :class="selectedSeverity == 'critical' ? 'aip-sev-btn-critical' : ''" @click="selectSeverity('critical')">
+						<view class="aip-sev-dot" style="background-color: #EF4444;"></view>
+						<text class="aip-sev-btn-text" :class="selectedSeverity == 'critical' ? 'aip-sev-btn-text-active' : ''">严重</text>
+					</view>
+					<view class="aip-sev-btn" :class="selectedSeverity == 'major' ? 'aip-sev-btn-major' : ''" @click="selectSeverity('major')">
+						<view class="aip-sev-dot" style="background-color: #F59E0B;"></view>
+						<text class="aip-sev-btn-text" :class="selectedSeverity == 'major' ? 'aip-sev-btn-text-active' : ''">一般</text>
+					</view>
+					<view class="aip-sev-btn" :class="selectedSeverity == 'minor' ? 'aip-sev-btn-minor' : ''" @click="selectSeverity('minor')">
+						<view class="aip-sev-dot" style="background-color: #10B981;"></view>
+						<text class="aip-sev-btn-text" :class="selectedSeverity == 'minor' ? 'aip-sev-btn-text-active' : ''">轻微</text>
+					</view>
+				</view>
+				</view>
 			</view>
-			<textarea class="aip-input"
-				v-model="inputValue"
-				:placeholder="inputMode == 'ask' ? '请输入问题...' : '输入记录内容...'"
-				placeholder-style="color: #94A3B8"
-				:auto-height="true"
-				:maxlength="-1"
-				confirm-type="send"
-				@confirm="handleSend" />
-			<button class="aip-send-btn"
-				:class="sendBtnClass"
-				@click="handleSend">
-				<text class="aip-send-text">{{ inputMode == 'ask' ? '发送' : '记录' }}</text>
-			</button>
+			<view class="aip-input-wrapper">
+				<textarea class="aip-input"
+					v-model="inputValue"
+					:placeholder="inputMode == 'ask' ? '请输入问题...' : '输入记录内容...'"
+					placeholder-style="color: #94A3B8"
+					:auto-height="true"
+					:maxlength="-1"
+					confirm-type="send"
+					@confirm="handleSend" />
+				<view class="aip-input-footer">
+					<view class="aip-mode-toggle" :class="inputMode == 'ask' ? 'aip-mode-ask' : 'aip-mode-record'" @click="toggleInputMode">
+						<image v-if="inputMode == 'ask'" src="/static/icons/industrial/mode-ask.svg" class="aip-mode-icon" mode="aspectFit" />
+						<image v-if="inputMode == 'record'" src="/static/icons/industrial/mode-record.svg" class="aip-mode-icon" mode="aspectFit" />
+					</view>
+					<view class="aip-action-btns">
+						<view class="aip-stop-btn" v-if="isFollowUpTyping" @click="stopChatGeneration">
+							<view class="aip-stop-square"></view>
+						</view>
+						<view class="aip-send-btn-circle" v-else :class="sendBtnClass" @click="handleSend">
+							<image src="/static/icons/industrial/send.svg" class="aip-send-arrow-svg" mode="aspectFit" />
+						</view>
+					</view>
+				</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -190,14 +506,12 @@
 <script setup lang="uts">
 	import { ref, computed, watch, onMounted, defineExpose } from 'vue'
 
-	// ====== 类型定义 ======
 	type MsgItem = {
 		role: string
 		content: string
 		time: string
 	}
 
-	// 节点记录类型
 	type NodeRecord = {
 		nodeId: string
 		nodeName: string
@@ -205,40 +519,98 @@
 		content: string
 		timestamp: string
 		displayTime: string
+		category: string
+		severity: string
+		status: string
 	}
 
-	// ====== Props ======
+	type RiskItem = {
+		level: string
+		desc: string
+	}
+
+	type ParamItem = {
+		name: string
+		recommend: string
+		range: string
+	}
+
+	type FAQItem = {
+		q: string
+		a: string
+	}
+
+	type AnalysisData = {
+		summary: string
+		keyPoints: string[]
+		risks: RiskItem[]
+		params: ParamItem[]
+		checklist: string[]
+		faq: FAQItem[]
+		suggestions: string[]
+	}
+
+	type QualityDiagnosis = {
+		diagnosis: string
+		possibleCauses: string[]
+		solutions: string[]
+		preventionTips: string[]
+	}
+
 	type Props = {
 		processName: string
 		isPC?: boolean
+		isFullscreen?: boolean
 	}
 	const props = withDefaults(defineProps<Props>(), {
 		processName: '',
-		isPC: false
+		isPC: false,
+		isFullscreen: false
 	})
+	const emit = defineEmits(['toggle-fullscreen'])
 
-	// ====== 常量 ======
-	const DEBOUNCE_MS = 800
 	const AI_BASE_URL = 'http://localhost:3001'
 
-	// ====== 状态 ======
 	const currentNodeName = ref('')
 	const currentNodeTypeRaw = ref('')
 	const currentNodeId = ref('')
 	const isAnalyzing = ref(false)
-	const analysisContent = ref('')
+	
+	const analysisData = ref<AnalysisData | null>(null)
+	const analysisRawText = ref('')
+	const checklistStates = ref<boolean[]>([])
+	const expandedFaqIndex = ref(-1)
+	const prefetchCache = ref(new Map<string, AnalysisData>())
+
+	const qualitySymptom = ref('')
+	const qualityResult = ref<QualityDiagnosis | null>(null)
+	const isQualityChecking = ref(false)
+	const isFollowUpTyping = ref(false)
+	const currentChatReqTask = ref<RequestTask | null>(null)
+
+	const stopChatGeneration = () => {
+		if (currentChatReqTask.value != null) {
+			currentChatReqTask.value!.abort()
+			currentChatReqTask.value = null
+		}
+		isFollowUpTyping.value = false
+	}
+	
 	const isOnline = ref(false)
 	const scrollTop = ref(0)
 	const inputValue = ref('')
 	const followUpMessages = ref([] as MsgItem[])
-	const isFollowUpTyping = ref(false)
 
-	// 双模式 + Tab 状态
 	const inputMode = ref('ask')
 	const activeTab = ref('chat')
 	const nodeRecords = ref([] as NodeRecord[])
 
-	// 动画引用
+	// 记录模块状态
+	const selectedCategory = ref('')
+	const selectedSeverity = ref('minor')
+	const recordFilter = ref('all')
+	const categoryFilter = ref('all')
+
 	const dot1Ref = ref<UniElement | null>(null)
 	const dot2Ref = ref<UniElement | null>(null)
 	const dot3Ref = ref<UniElement | null>(null)
@@ -246,20 +618,16 @@
 	const dot5Ref = ref<UniElement | null>(null)
 	const dot6Ref = ref<UniElement | null>(null)
 
-	// 防抖计时器
 	let analyzeTimer: number = -1
 
-	// 分析耗时计时
 	const analyzingElapsed = ref(0)
 	let elapsedTimer: number = -1
 
-	// ====== 计算属性 ======
 	const analyzingStatusText = computed((): string => {
 		const s = (analyzingElapsed.value / 1000).toFixed(1)
 		return `AI 解析中 ${s}s`
 	})
 
-	// 追问耗时计时
 	const followUpElapsed = ref(0)
 	let followUpTimer: number = -1
 
@@ -281,7 +649,64 @@
 		return 'aip-badge-default'
 	})
 
-	// ====== watch ======
+	const sendBtnClass = computed((): string => {
+		if (inputValue.value.trim() == '') return 'aip-btn-disabled'
+		return inputMode.value == 'ask' ? 'aip-btn-ask' : 'aip-btn-record'
+	})
+
+	// ====== 记录模块 computed ======
+	const filteredRecords = computed((): NodeRecord[] => {
+		let list = nodeRecords.value
+		if (recordFilter.value == 'open') {
+			list = list.filter((r: NodeRecord): boolean => r.status == 'open')
+		} else if (recordFilter.value == 'resolved') {
+			list = list.filter((r: NodeRecord): boolean => r.status == 'resolved')
+		}
+		if (categoryFilter.value != 'all') {
+			const cf = categoryFilter.value
+			list = list.filter((r: NodeRecord): boolean => r.category == cf)
+		}
+		return list
+	})
+
+	const openCount = computed((): number => {
+		return nodeRecords.value.filter((r: NodeRecord): boolean => r.status == 'open').length
+	})
+	const resolvedCount = computed((): number => {
+		return nodeRecords.value.filter((r: NodeRecord): boolean => r.status == 'resolved').length
+	})
+	const criticalCount = computed((): number => {
+		return nodeRecords.value.filter((r: NodeRecord): boolean => r.severity == 'critical').length
+	})
+	const majorCount = computed((): number => {
+		return nodeRecords.value.filter((r: NodeRecord): boolean => r.severity == 'major').length
+	})
+	const minorCount = computed((): number => {
+		return nodeRecords.value.filter((r: NodeRecord): boolean => r.severity == 'minor').length
+	})
+
+	const getCategoryLabel = (cat: string): string => {
+		if (cat == 'quality') return '质量问题'
+		if (cat == 'equipment') return '设备异常'
+		if (cat == 'process') return '工艺偏差'
+		if (cat == 'safety') return '安全隐患'
+		if (cat == 'material') return '物料问题'
+		return '其他'
+	}
+	const getCategoryIcon = (cat: string): string => {
+		if (cat == 'quality') return '🔴'
+		if (cat == 'equipment') return '⚙️'
+		if (cat == 'process') return '📋'
+		if (cat == 'safety') return '🛡️'
+		if (cat == 'material') return '📦'
+		return '💡'
+	}
+	const getSeverityLabel = (sev: string): string => {
+		if (sev == 'critical') return '严重'
+		if (sev == 'major') return '一般'
+		return '轻微'
+	}
+
 	watch(isAnalyzing, (newVal: boolean) => {
 		if (newVal) {
 			analyzingElapsed.value = 0
@@ -318,7 +743,6 @@
 		}
 	})
 
-	// ====== 工具函数 ======
 	const getNodeTypeLabel = (type: string): string => {
 		if (type == 'process') return '工艺'
 		if (type == 'operation') return '工序'
@@ -358,7 +782,6 @@
 		})
 	}
 
-	// ====== AI 服务检查 ======
 	const checkStatus = () => {
 		uni.request({
 			url: `${AI_BASE_URL}/status`,
@@ -380,39 +803,233 @@
 
 	onMounted(() => {
 		checkStatus()
+		loadRecords()
 	})
 
-	// ====== Prompt 构建 ======
-	const buildPrompt = (node: UTSJSONObject): string => {
-		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名'
-		const typeLabel = getNodeTypeLabel((node['type'] as string | null) ?? '')
-		const procName = props.processName != '' ? props.processName : '当前工艺'
-		return `你是一位工艺知识专家，正在辅助操作员逐步讲解工艺流程。
-
-当前节点信息：
-- 节点名称：${name}
-- 节点类型：${typeLabel}
-- 所属工艺：${procName}
-
-请用简洁专业的语言分析该节点的以下要点（若某项无相关信息则省略该项）：
-1. 【核心目的】该节点的主要功能或目标
-2. 【关键操作】需要注意的关键操作要点或参数
-3. 【防错要点】该节点常见的错误或风险点
-4. 【质量检测】涉及的检测项或验收标准
-
-要求：每个要点独立成段，纯文本输出，控制在200字以内，简洁为主。`
+	// ====== UI 交互 ======
+	const toggleChecklist = (index: number) => {
+		if (checklistStates.value.length > index) {
+			checklistStates.value[index] = !checklistStates.value[index]
+			saveChecklistState()
+		}
 	}
 
-	// ====== 核心：执行 AI 分析 ======
+	const toggleFaq = (index: number) => {
+		if (expandedFaqIndex.value == index) {
+			expandedFaqIndex.value = -1
+		} else {
+			expandedFaqIndex.value = index
+		}
+	}
+
+	const sendSuggestion = (text: string) => {
+		inputValue.value = text
+		inputMode.value = 'ask'
+		handleSend()
+	}
+
+	const sendQualityQuery = (text: string) => {
+		qualitySymptom.value = text
+		doQualityCheck(text)
+	}
+
+	const saveChecklistState = () => {
+		if (currentNodeId.value == '') return
+		const key = `ai_checklist_${currentNodeId.value}`
+		uni.setStorageSync(key, JSON.stringify(checklistStates.value))
+	}
+
+	const loadChecklistState = () => {
+		if (currentNodeId.value == '') return
+		const key = `ai_checklist_${currentNodeId.value}`
+		const saved = uni.getStorageSync(key) as string | null
+		if (saved != null && saved != '') {
+			try {
+				const arr = JSON.parse(saved) as boolean[]
+				checklistStates.value = arr
+			} catch (e) {}
+		}
+	}
+
+	// ====== AI ======
+	const doQualityCheck = (symptom: string) => {
+		if (symptom.trim() == '') return
+
+		isQualityChecking.value = true
+		qualityResult.value = null
+
+		uni.request({
+			url: `${AI_BASE_URL}/check-quality`,
+			method: 'POST',
+			timeout: 60000,
+			header: { 'Content-Type': 'application/json' },
+			data: {
+				symptom: symptom,
+				nodeName: currentNodeName.value,
+				nodeType: currentNodeTypeRaw.value,
+				model: 'qwen2.5:3b'
+			},
+			success: (res) => {
+				isQualityChecking.value = false
+				const data = res.data as UTSJSONObject | null
+				if (data != null && data['success'] === true) {
+					if (data['data'] != null) {
+						qualityResult.value = JSON.parse(JSON.stringify(data['data'])) as QualityDiagnosis
+					}
+				}
+			},
+			fail: () => {
+				isQualityChecking.value = false
+			}
+		})
+	}
+
 	const doAnalyze = (node: UTSJSONObject) => {
-		if (!isOnline.value) {
-			analysisContent.value = '⚠️ AI 服务未连接，请确认本地 Ollama 与中转服务已启动。'
+		isAnalyzing.value = true
+		analysisData.value = null
+		analysisRawText.value = ''
+		checklistStates.value = []
+
+		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
+		const type = (node['type'] as string | null) ?? 'process'
+
+		uni.request({
+			url: `${AI_BASE_URL}/analyze-node`,
+			method: 'POST',
+			timeout: 60000,
+			header: { 'Content-Type': 'application/json' },
+			data: {
+				nodeName: name,
+				nodeType: type,
+				processName: props.processName,
+				model: 'qwen2.5:3b'
+			},
+			success: (res) => {
+				isAnalyzing.value = false
+				const data = res.data as UTSJSONObject | null
+				if (data != null && data['success'] === true) {
+					if (data['data'] != null) {
+						analysisData.value = JSON.parse(JSON.stringify(data['data'])) as AnalysisData
+						const len = analysisData.value!.checklist.length
+						const arr = [] as boolean[]
+						for(let i=0; i<len; i++) {
+							arr.push(false)
+						}
+						checklistStates.value = arr
+						loadChecklistState()
+					} else if (data['rawText'] != null) {
+						analysisRawText.value = data['rawText'] as string
+					}
+				} else {
+					analysisRawText.value = '⚠️ AI 分析失败'
+				}
+			},
+			fail: () => {
+				isAnalyzing.value = false
+				analysisRawText.value = '⚠️ 连接 AI 服务失败，请检查本地服务状态。'
+			}
+		})
+	}
+
+	const prefetchNextNode = (node: UTSJSONObject) => {
+		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
+		const type = (node['type'] as string | null) ?? 'process'
+
+		uni.request({
+			url: `${AI_BASE_URL}/prefetch-next`,
+			method: 'POST',
+			data: {
+				nodeName: name,
+				nodeType: type,
+				processName: props.processName,
+				model: 'qwen2.5:3b'
+			}
+		})
+	}
+
+	const analyzeNode = (node: UTSJSONObject) => {
+		if (analyzeTimer != -1) {
+			clearTimeout(analyzeTimer)
+			analyzeTimer = -1
+		}
+
+		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
+		const type = (node['type'] as string | null) ?? 'process'
+		const id = (node['innerId'] as string | null) ?? (node['id'] as string | null) ?? ''
+
+		currentNodeName.value = name
+		currentNodeTypeRaw.value = type
+		currentNodeId.value = id
+
+		analysisData.value = null
+		analysisRawText.value = ''
+		followUpMessages.value = []
+		expandedFaqIndex.value = -1
+		
+		const cacheKey = `${type}:${name}`
+		if (prefetchCache.value.has(cacheKey)) {
+			analysisData.value = prefetchCache.value.get(cacheKey) as AnalysisData | null
+			if (analysisData.value != null && analysisData.value!.checklist != null) {
+				const len = analysisData.value!.checklist.length
+				const arr = [] as boolean[]
+				for(let i=0; i<len; i++) {
+					arr.push(false)
+				}
+				checklistStates.value = arr
+				loadChecklistState()
+			}
 			return
 		}
 
-		const prompt = buildPrompt(node)
-		isAnalyzing.value = true
-		analysisContent.value = ''
+		analyzeTimer = setTimeout(() => {
+			doAnalyze(node)
+			analyzeTimer = -1
+		}, 300)
+	}
+
+	const reAnalyze = () => {
+		if (currentNodeName.value == '') return
+		const node = {
+			name: currentNodeName.value,
+			type: currentNodeTypeRaw.value,
+			innerId: currentNodeId.value
+		} as UTSJSONObject
+		analyzeNode(node)
+	}
+
+	// 追问功能
+	const handleSend = () => {
+		const text = inputValue.value.trim()
+		if (text == '') return
+
+		if (inputMode.value == 'record') {
+			saveRecord(text)
+			inputValue.value = ''
+			if (activeTab.value != 'record') {
+				activeTab.value = 'record'
+			}
+			return
+		}
+
+		inputValue.value = ''
+		followUpMessages.value.push({ role: 'user', content: text, time: getCurrentTime() } as MsgItem)
+		isFollowUpTyping.value = true
+		followUpMessages.value.push({ role: 'ai', content: '', time: getCurrentTime() } as MsgItem)
+		scrollToBottom()
+
+		const history = [] as UTSJSONObject[]
+		for (let i = 0; i < followUpMessages.value.length - 1; i++) {
+			history.push({
+				role: followUpMessages.value[i].role == 'user' ? 'user' : 'assistant',
+				content: followUpMessages.value[i].content
+			} as UTSJSONObject)
+		}
+
+		let promptContext = `我们在讨论工艺节点[${currentNodeName.value}]。\n`
+		if (analysisRawText.value != '') {
+			promptContext += `分析内容：${analysisRawText.value.substring(0, Math.min(analysisRawText.value.length, 500))}...\n`
+		}
+		promptContext += `问题：${text}`
 
 		let buffer = ''
 		const decoder = new TextDecoder('utf-8')
@@ -424,22 +1041,24 @@
 			timeout: 120000,
 			header: { 'Content-Type': 'application/json' },
 			data: {
-				prompt: prompt,
+				prompt: promptContext,
 				model: 'qwen2.5:3b',
-				history: []
+				history: history
 			},
 			success: (_res) => {
-				isAnalyzing.value = false
+				isFollowUpTyping.value = false
 				scrollToBottom()
 			},
 			fail: (_err) => {
-				isAnalyzing.value = false
-				if (analysisContent.value == '') {
-					analysisContent.value = '⚠️ 连接 AI 服务失败，请检查本地服务状态。'
+				isFollowUpTyping.value = false
+				const lastMsg = followUpMessages.value[followUpMessages.value.length - 1]
+				if (lastMsg.content == '') {
+					lastMsg.content = '⏹️ 生成已中止'
 				}
 				scrollToBottom()
 			}
 		})
+		currentChatReqTask.value = reqTask as RequestTask
 
 		reqTask.onChunkReceived((res) => {
 			const chunkStr = decoder.decode(new Uint8Array(res.data as ArrayBuffer))
@@ -452,344 +1071,167 @@
 				if (line == '') continue
 				try {
 					const data = JSON.parse(line) as UTSJSONObject
-					// 跳过状态和 docs 包
-					if (data['type'] == 'status') continue
-					if (data['type'] == 'docs') continue
+					if (data['type'] == 'status' || data['type'] == 'docs') continue
 					if (data['type'] == 'error') {
-						isAnalyzing.value = false
-						analysisContent.value += '\n⚠️ ' + ((data['error'] as string | null) ?? '解析异常')
+						isFollowUpTyping.value = false
+						const errText = (data['error'] as string | null) ?? '错误'
+						followUpMessages.value[followUpMessages.value.length - 1].content += '\n⚠️ ' + errText
 						continue
 					}
-					// 提取 token
 					let token = data['response'] as string | null
 					if (token == null && data['message'] != null) {
 						const msgObj = data['message'] as UTSJSONObject
 						token = msgObj['content'] as string | null
 					}
 					if (token != null && token != '') {
-						analysisContent.value += token
+						followUpMessages.value[followUpMessages.value.length - 1].content += token
 						scrollToBottom()
 					}
 					if (data['done'] === true) {
-						isAnalyzing.value = false
+						isFollowUpTyping.value = false
 					}
 				} catch (_e) {}
 			}
 		})
 	}
 
-	// ====== 暴露给父组件的方法：分析节点（带防抖）======
-	const analyzeNode = (node: UTSJSONObject) => {
-		// 取消上一次的防抖定时器
-		if (analyzeTimer != -1) {
-			clearTimeout(analyzeTimer)
-			analyzeTimer = -1
-		}
-
-		// 立即更新节点标识卡（不等防抖）
-		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
-		const type = (node['type'] as string | null) ?? 'process'
-		const id = (node['innerId'] as string | null) ?? (node['id'] as string | null) ?? ''
-
-		currentNodeName.value = name
-		currentNodeTypeRaw.value = type
-		currentNodeId.value = id
-
-		// 清空上一次分析内容
-		analysisContent.value = ''
-		followUpMessages.value = []
-		isAnalyzing.value = false
-
-		// 切换节点时加载对应记录
-		loadNodeRecords()
-
-		// 防抖 800ms 后触发 AI 请求
-		analyzeTimer = setTimeout(() => {
-			analyzeTimer = -1
-			doAnalyze(node)
-		}, DEBOUNCE_MS)
-	}
-
-	// ====== 重新分析 ======
-	const reAnalyze = () => {
-		if (currentNodeId.value == '') return
-		analysisContent.value = ''
-		followUpMessages.value = []
-		// 构建临时节点对象重新分析
-		const tempNode = {
-			displayName: currentNodeName.value,
-			name: currentNodeName.value,
-			type: currentNodeTypeRaw.value,
-			innerId: currentNodeId.value,
-			id: currentNodeId.value
-		} as UTSJSONObject
-		doAnalyze(tempNode)
-	}
-
-	// ====== 追问 ======
-	const sendFollowUp = () => {
-		const text = inputValue.value.trim()
-		if (text == '' || isFollowUpTyping.value || isAnalyzing.value) return
-
-		// 加入用户消息
-		followUpMessages.value.push({
-			role: 'user',
-			content: text,
-			time: getCurrentTime()
-		} as MsgItem)
-		inputValue.value = ''
-		isFollowUpTyping.value = true
-		scrollToBottom()
-
-		// 构建 AI 占位消息
-		const aiMsg: MsgItem = {
-			role: 'assistant',
-			content: '',
-			time: getCurrentTime()
-		}
-		followUpMessages.value.push(aiMsg)
-		const aiMsgRef = followUpMessages.value[followUpMessages.value.length - 1]
-
-		// 构建追问 history：包含当前分析内容作为上下文
-		const historyList = [] as UTSJSONObject[]
-		if (analysisContent.value != '') {
-			historyList.push({
-				role: 'assistant',
-				content: analysisContent.value
-			})
-		}
-		// 追加之前的追问记录（最多6条，排除当前用户消息和AI占位）
-		const pastFollowUps = followUpMessages.value.slice(0, followUpMessages.value.length - 2)
-		for (let i = pastFollowUps.length - 1; i >= 0 && historyList.length < 8; i--) {
-			const m = pastFollowUps[i]
-			if (m.content.trim() != '') {
-				historyList.unshift({ role: m.role, content: m.content })
-			}
-		}
-
-		let buffer2 = ''
-		const decoder2 = new TextDecoder('utf-8')
-
-		const reqTask2 = uni.request({
-			url: `${AI_BASE_URL}/chat`,
-			method: 'POST',
-			enableChunked: true,
-			timeout: 120000,
-			header: { 'Content-Type': 'application/json' },
-			data: {
-				prompt: text,
-				model: 'qwen2.5:3b',
-				history: historyList
-			},
-			success: (_res) => {
-				isFollowUpTyping.value = false
-				// 移除空占位
-				if (aiMsgRef.content == '') {
-					followUpMessages.value.pop()
-				}
-				scrollToBottom()
-			},
-			fail: (_err) => {
-				isFollowUpTyping.value = false
-				aiMsgRef.content = '⚠️ 请求失败，请检查 AI 服务。'
-				scrollToBottom()
-			}
-		})
-
-		reqTask2.onChunkReceived((res) => {
-			const chunkStr2 = decoder2.decode(new Uint8Array(res.data as ArrayBuffer))
-			buffer2 += chunkStr2
-			const lines2 = buffer2.split('\n')
-			buffer2 = lines2.pop() ?? ''
-			for (let i = 0; i < lines2.length; i++) {
-				const line2 = lines2[i].trim()
-				if (line2 == '') continue
-				try {
-					const data2 = JSON.parse(line2) as UTSJSONObject
-					if (data2['type'] == 'status' || data2['type'] == 'docs') continue
-					if (data2['type'] == 'error') {
-						isFollowUpTyping.value = false
-						aiMsgRef.content += '\n⚠️ ' + ((data2['error'] as string | null) ?? '异常')
-						continue
-					}
-					let token2 = data2['response'] as string | null
-					if (token2 == null && data2['message'] != null) {
-						const msgObj2 = data2['message'] as UTSJSONObject
-						token2 = msgObj2['content'] as string | null
-					}
-					if (token2 != null && token2 != '') {
-						aiMsgRef.content += token2
-						scrollToBottom()
-					}
-					if (data2['done'] === true) {
-						isFollowUpTyping.value = false
-					}
-				} catch (_e2) {}
-			}
-		})
-	}
-
-	// ====== 模式切换 ======
 	const toggleInputMode = () => {
-		if (inputMode.value == 'ask') {
-			inputMode.value = 'record'
-		} else {
-			inputMode.value = 'ask'
-		}
+		inputMode.value = inputMode.value == 'ask' ? 'record' : 'ask'
 	}
-
-	// 发送按钮样式计算
-	const sendBtnClass = computed((): string => {
-		if (inputMode.value == 'record') {
-			if (inputValue.value.trim() == '') return 'aip-send-btn-disabled'
-			return 'aip-send-btn-record'
-		}
-		if (inputValue.value.trim() == '' || isFollowUpTyping.value || isAnalyzing.value) return 'aip-send-btn-disabled'
-		return ''
-	})
-
-	// 统一发送入口：根据模式分发
-	const handleSend = () => {
-		if (inputMode.value == 'ask') {
-			sendFollowUp()
-		} else {
-			saveRecord()
-		}
-	}
-
-	// 切换到记录 Tab
 	const switchToRecordTab = () => {
 		activeTab.value = 'record'
-		loadNodeRecords()
 	}
 
-	// ====== 记录功能 ======
-	const STORAGE_KEY = 'ai_node_records'
-
-	// 保存记录
-	const saveRecord = () => {
-		const text = inputValue.value.trim()
-		if (text == '' || currentNodeId.value == '') return
-
-		const now = new Date()
-		const record: NodeRecord = {
+	const STORAGE_KEY = 'avpbc_ai_node_records'
+	const loadRecords = () => {
+		const str = uni.getStorageSync(STORAGE_KEY) as string | null
+		if (str != null && str != '') {
+			try {
+				const arr = JSON.parse(str) as NodeRecord[]
+				// 兼容旧格式记录：补全缺失的字段
+				for (let i = 0; i < arr.length; i++) {
+					if (arr[i].category == null || arr[i].category == '') {
+						arr[i].category = 'other'
+					}
+					if (arr[i].severity == null || arr[i].severity == '') {
+						arr[i].severity = 'minor'
+					}
+					if (arr[i].status == null || arr[i].status == '') {
+						arr[i].status = 'open'
+					}
+				}
+				nodeRecords.value = arr
+			} catch (e) {}
+		}
+	}
+	const saveRecord = (text: string) => {
+		const cat = selectedCategory.value != '' ? selectedCategory.value : 'other'
+		const sev = selectedSeverity.value
+		const rec = {
 			nodeId: currentNodeId.value,
 			nodeName: currentNodeName.value,
 			nodeType: currentNodeTypeRaw.value,
 			content: text,
-			timestamp: now.toISOString(),
-			displayTime: getCurrentTime()
-		}
-
-		// 从存储中读取全部记录
-		let allRecords = loadAllRecords()
-		allRecords.push(record)
-		uni.setStorageSync(STORAGE_KEY, JSON.stringify(allRecords))
-
-		// 刷新当前节点记录
-		inputValue.value = ''
-		loadNodeRecords()
-
-		// 提示保存成功
-		uni.showToast({
-			title: '记录已保存',
-			icon: 'success'
-		})
+			timestamp: new Date().toISOString(),
+			displayTime: getCurrentTime(),
+			category: cat,
+			severity: sev,
+			status: 'open'
+		} as NodeRecord
+		nodeRecords.value.unshift(rec)
+		uni.setStorageSync(STORAGE_KEY, JSON.stringify(nodeRecords.value))
+		// 重置选择状态
+		selectedCategory.value = ''
+		selectedSeverity.value = 'minor'
 	}
 
-	// 加载所有记录
-	const loadAllRecords = (): NodeRecord[] => {
-		const stored = uni.getStorageSync(STORAGE_KEY) as string | null
-		if (stored != null && stored != '') {
-			try {
-				return JSON.parse(stored) as NodeRecord[]
-			} catch (_e) {
-				return [] as NodeRecord[]
-			}
-		}
-		return [] as NodeRecord[]
+	const deleteRecord = (index: number) => {
+		nodeRecords.value.splice(index, 1)
+		uni.setStorageSync(STORAGE_KEY, JSON.stringify(nodeRecords.value))
 	}
 
-	// 加载当前节点的记录
-	const loadNodeRecords = () => {
-		if (currentNodeId.value == '') {
-			nodeRecords.value = []
+	const deleteFilteredRecord = (filteredIdx: number) => {
+		const targetRec = filteredRecords.value[filteredIdx]
+		const origIdx = nodeRecords.value.indexOf(targetRec)
+		if (origIdx >= 0) {
+			nodeRecords.value.splice(origIdx, 1)
+			uni.setStorageSync(STORAGE_KEY, JSON.stringify(nodeRecords.value))
+		}
+	}
+
+	const toggleRecordStatus = (filteredIdx: number) => {
+		const targetRec = filteredRecords.value[filteredIdx]
+		const origIdx = nodeRecords.value.indexOf(targetRec)
+		if (origIdx >= 0) {
+			const current = nodeRecords.value[origIdx].status
+			nodeRecords.value[origIdx].status = current == 'open' ? 'resolved' : 'open'
+			uni.setStorageSync(STORAGE_KEY, JSON.stringify(nodeRecords.value))
+		}
+	}
+
+	const selectCategory = (cat: string) => {
+		selectedCategory.value = selectedCategory.value == cat ? '' : cat
+	}
+
+	const selectSeverity = (sev: string) => {
+		selectedSeverity.value = sev
+	}
+
+	const exportRecords = () => {
+		if (nodeRecords.value.length == 0) {
+			uni.showToast({ title: '暂无记录可导出', icon: 'none' })
 			return
 		}
-		const allRecords = loadAllRecords()
-		const nodeId = currentNodeId.value
-		nodeRecords.value = allRecords.filter((r: NodeRecord): boolean => r.nodeId == nodeId)
-	}
+		// 添加 BOM 头确保 Excel 正确识别中文
+		const BOM = '\uFEFF'
+		let content = BOM + '时间,节点类型,节点名称,问题分类,严重等级,状态,描述\n'
+		nodeRecords.value.forEach((rec: NodeRecord) => {
+			const catLabel = getCategoryLabel(rec.category)
+			const sevLabel = getSeverityLabel(rec.severity)
+			const statusLabel = rec.status == 'open' ? '待处理' : '已解决'
+			// CSV 中内容需要用双引号包裹并转义内部双引号
+			const escapedContent = '"' + rec.content.replace(/"/g, '""') + '"'
+			content += `${rec.displayTime},${getNodeTypeLabel(rec.nodeType)},${rec.nodeName},${catLabel},${sevLabel},${statusLabel},${escapedContent}\n`
+		})
 
-	// 删除记录
-	const deleteRecord = (index: number) => {
-		if (index < 0 || index >= nodeRecords.value.length) return
-		const target = nodeRecords.value[index]
-
-		// 从全局存储中移除
-		let allRecords = loadAllRecords()
-		// 找到匹配项并移除（通过 timestamp 唯一标识）
-		allRecords = allRecords.filter((r: NodeRecord): boolean => r.timestamp != target.timestamp)
-		uni.setStorageSync(STORAGE_KEY, JSON.stringify(allRecords))
-
-		// 刷新显示
-		loadNodeRecords()
-	}
-
-	// 导出记录为 Markdown
-	const exportRecords = () => {
-		if (nodeRecords.value.length == 0) return
-
-		const typeLabel = getNodeTypeLabel(currentNodeTypeRaw.value)
-		const now = new Date()
-		const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-
-		let md = `# ${typeLabel}记录 - ${currentNodeName.value}\n\n`
-		md += `> 节点类型：${typeLabel}  \n`
-		md += `> 导出时间：${dateStr}\n\n`
-		md += `---\n\n`
-
-		for (let i = 0; i < nodeRecords.value.length; i++) {
-			const rec = nodeRecords.value[i]
-			md += `## ${rec.displayTime}\n\n`
-			md += `${rec.content}\n\n`
-			if (i < nodeRecords.value.length - 1) {
-				md += `---\n\n`
-			}
-		}
-
-		// 通过 Electron API 保存文件
 		// #ifdef WEB
-		const electronAPI = (window as any).electronAPI
-		if (electronAPI != null && typeof electronAPI.saveFile == 'function') {
-			electronAPI.saveFile({
-				content: md,
-				defaultName: `${currentNodeName.value}_记录.md`,
-				filters: [{ name: 'Markdown', extensions: ['md'] }]
-			})
-		} else {
-			// 回退：复制到剪贴板
-			uni.setClipboardData({
-				data: md,
-				success: () => {
-					uni.showToast({ title: '已复制到剪贴板', icon: 'success' })
-				}
-			})
-		}
+		// Web/Electron 环境：通过 Blob 创建下载链接
+		const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+		const url = URL.createObjectURL(blob)
+		const a = document.createElement('a')
+		a.href = url
+		a.download = 'ai_records_export.csv'
+		document.body.appendChild(a)
+		a.click()
+		document.body.removeChild(a)
+		URL.revokeObjectURL(url)
+		uni.showToast({ title: `已导出 ${nodeRecords.value.length} 条记录`, icon: 'success' })
 		// #endif
+
 		// #ifndef WEB
-		uni.setClipboardData({
-			data: md,
+		const fsAPI = uni.getFileSystemManager()
+		const filePath = `${uni.env.USER_DATA_PATH}/ai_records_export.csv`
+		fsAPI.writeFile({
+			filePath: filePath,
+			data: content,
+			encoding: 'utf-8',
 			success: () => {
-				uni.showToast({ title: '已复制到剪贴板', icon: 'success' })
+				uni.showModal({
+					title: '导出成功',
+					content: `已导出 ${nodeRecords.value.length} 条记录（CSV 格式）:\n${filePath}`,
+					showCancel: false
+				})
+			},
+			fail: () => {
+				uni.showToast({ title: '导出失败', icon: 'none' })
 			}
 		})
 		// #endif
 	}
 
-	// ====== 暴露方法供父组件 $callMethod 调用 ======
 	defineExpose({
-		analyzeNode
+		analyzeNode,
+		prefetchNextNode
 	})
 </script>
 
@@ -1018,6 +1460,13 @@
 		flex: 1;
 	}
 
+	.aip-content-inner {
+		flex-direction: column;
+		width: 100%;
+		max-width: 800px;
+		margin: 0 auto;
+	}
+
 	.aip-analysis-section {
 		padding: 14px 14px 0 14px;
 	}
@@ -1220,9 +1669,17 @@
 	}
 
 	.aip-rec-export-btn {
-		padding: 4px 10px;
+		width: 28px;
+		height: 28px;
 		border-radius: 6px;
 		background-color: #EFF6FF;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.aip-export-icon {
+		width: 14px;
+		height: 14px;
 	}
 
 	.aip-rec-export-text {
@@ -1298,22 +1755,53 @@
 
 	/* ---- 底部输入区 ---- */
 	.aip-input-area {
-		flex-direction: row;
-		align-items: flex-end;
+		flex-direction: column;
+		align-items: center;
 		padding: 10px 12px;
 		background-color: #FFFFFF;
 		border-top: 1px solid #E2E8F0;
 		flex: none;
 	}
 
+	/* 输入包裹区 */
+	.aip-input-wrapper {
+		flex-direction: column;
+		background-color: #F1F5F9;
+		border-radius: 16px;
+		padding: 10px 12px;
+		width: 100%;
+		max-width: 800px;
+	}
+
+	.aip-input {
+		flex: 1;
+		min-height: 40px;
+		max-height: 150px;
+		background-color: transparent;
+		padding: 0;
+		font-size: 14px;
+		color: #334155;
+		/* #ifdef WEB */
+		overflow-y: auto;
+		box-sizing: border-box;
+		resize: none;
+		/* #endif */
+	}
+
+	.aip-input-footer {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: flex-end;
+		margin-top: 6px;
+	}
+
 	/* 模式切换按钮 */
 	.aip-mode-toggle {
+		width: 36px;
 		height: 36px;
-		padding: 0 8px;
-		border-radius: 8px;
+		border-radius: 10px;
 		justify-content: center;
 		align-items: center;
-		margin-right: 8px;
 		flex: none;
 	}
 
@@ -1326,31 +1814,20 @@
 	}
 
 	.aip-mode-toggle-text {
-		font-size: 14px;
+		font-size: 16px;
 	}
 
-	.aip-input {
-		flex: 1;
-		min-height: 36px;
-		max-height: 150px;
-		background-color: #F1F5F9;
-		border-radius: 8px;
-		padding: 8px 12px;
-		font-size: 13px;
-		color: #334155;
-		margin-right: 8px;
-		/* #ifdef WEB */
-		overflow-y: auto;
-		box-sizing: border-box;
-		resize: none;
-		/* #endif */
+	.aip-action-btns {
+		flex-direction: row;
+		justify-content: flex-end;
+		align-items: flex-end;
 	}
 
-	.aip-send-btn {
+	.aip-send-btn-circle {
+		width: 36px;
 		height: 36px;
-		padding: 0 16px;
+		border-radius: 18px;
 		background-color: #0284C7;
-		border-radius: 8px;
 		justify-content: center;
 		align-items: center;
 		border-width: 0;
@@ -1364,9 +1841,204 @@
 		background-color: #D97706;
 	}
 
-	.aip-send-text {
-		color: #FFFFFF;
-		font-size: 13px;
-		font-weight: bold;
+	.aip-send-arrow-svg {
+		width: 16px;
+		height: 16px;
 	}
+
+	.aip-stop-btn {
+		width: 36px;
+		height: 36px;
+		border-radius: 18px;
+		background-color: #F8FAFC;
+		border: 1px solid #E2E8F0;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.aip-sev-btn {
+		flex: 1;
+		height: 32px;
+		background-color: #F8FAFC;
+		border: 1px solid #E2E8F0;
+		border-radius: 6px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		cursor: pointer;
+		transition-property: background-color, border-color;
+		transition-duration: 0.2s;
+	}
+
+	.aip-sev-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 4px;
+		margin-right: 6px;
+	}
+
+	.aip-stop-square {
+		width: 14px;
+		height: 14px;
+		background-color: #EF4444;
+		border-radius: 2px;
+	}
+
+.aip-card { background-color: #FFFFFF; border-radius: 10px; padding: 12px 14px; margin: 6px 14px 6px 14px; border: 1px solid #E2E8F0; }
+.aip-card-header { flex-direction: row; align-items: center; margin-bottom: 10px; }
+.aip-card-bar { width: 3px; height: 16px; border-radius: 2px; margin-right: 8px; }
+.aip-bar-blue { background-color: #0284C7; }
+.aip-bar-red { background-color: #EF4444; }
+.aip-bar-amber { background-color: #D97706; }
+.aip-bar-green { background-color: #059669; }
+.aip-bar-purple { background-color: #7C3AED; }
+.aip-bar-cyan { background-color: #0891B2; }
+.aip-card-title { color: #0F172A; font-size: 13px; font-weight: bold; }
+.aip-card-text { color: #334155; font-size: 13px; line-height: 1.7em; }
+.aip-risk-item { flex-direction: row; align-items: center; margin-bottom: 6px; }
+.aip-risk-badge { padding: 1px 8px; border-radius: 4px; margin-right: 8px; }
+.aip-risk-high { background-color: #FEE2E2; }
+.aip-risk-medium { background-color: #FEF3C7; }
+.aip-risk-low { background-color: #ECFDF5; }
+.aip-risk-high-text { color: #DC2626; font-size: 11px; font-weight: bold; }
+.aip-risk-medium-text { color: #D97706; font-size: 11px; font-weight: bold; }
+.aip-risk-low-text { color: #059669; font-size: 11px; font-weight: bold; }
+.aip-risk-desc { color: #334155; font-size: 12px; flex: 1; }
+.aip-param-row { flex-direction: row; padding: 6px 0; border-bottom: 1px solid #F1F5F9; }
+.aip-param-header { flex-direction: row; padding: 6px 0; border-bottom: 1px solid #E2E8F0; }
+.aip-param-cell { flex: 1; }
+.aip-param-name { color: #334155; font-size: 12px; }
+.aip-param-value { color: #0284C7; font-size: 12px; font-weight: bold; }
+.aip-param-range { color: #64748B; font-size: 11px; }
+.aip-param-label { color: #64748B; font-size: 11px; font-weight: bold; }
+.aip-check-item { flex-direction: row; align-items: center; padding: 8px 0; border-bottom: 1px solid #F8FAFC; }
+.aip-check-icon { font-size: 16px; margin-right: 8px; }
+.aip-check-text { color: #334155; font-size: 12px; flex: 1; }
+.aip-check-done { color: #94A3B8; }
+.aip-faq-item { padding: 8px 0; border-bottom: 1px solid #F1F5F9; }
+.aip-faq-q { flex-direction: row; align-items: center; }
+.aip-faq-q-text { color: #0284C7; font-size: 12px; font-weight: bold; flex: 1; }
+.aip-faq-arrow { color: #94A3B8; font-size: 12px; }
+.aip-faq-a { padding: 6px 0 0 0; }
+.aip-faq-a-text { color: #64748B; font-size: 12px; line-height: 1.6em; }
+.aip-chip-row { flex-direction: row; flex-wrap: wrap; }
+.aip-chip { background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 16px; padding: 5px 12px; margin-right: 6px; margin-bottom: 6px; }
+.aip-chip-text { color: #0284C7; font-size: 11px; }
+.aip-skeleton-card { background-color: #FFFFFF; border-radius: 10px; padding: 14px; margin: 6px 14px; border: 1px solid #E2E8F0; }
+.aip-skeleton-line { height: 12px; border-radius: 6px; background-color: #E2E8F0; margin-bottom: 8px; }
+.aip-skeleton-line-short { height: 12px; width: 60%; border-radius: 6px; background-color: #E2E8F0; margin-bottom: 8px; }
+.aip-quality-section { padding: 14px; }
+.aip-quality-input-area { flex-direction: row; align-items: center; margin-top: 10px; }
+.aip-quality-input { flex: 1; height: 36px; background-color: #F1F5F9; border-radius: 8px; padding: 0 12px; font-size: 13px; color: #334155; margin-right: 8px; }
+.aip-quality-btn { height: 36px; padding: 0 16px; background-color: #059669; border-radius: 8px; justify-content: center; align-items: center; border-width: 0; }
+.aip-quality-btn-text { color: #FFFFFF; font-size: 13px; font-weight: bold; }
+.aip-quick-diag-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 10px; }
+.aip-quick-diag-btn { background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 10px; margin-right: 6px; margin-bottom: 6px; }
+.aip-quick-diag-text { color: #92400E; font-size: 11px; }
+.aip-diag-result-card { background-color: #FFFFFF; border-radius: 10px; padding: 14px; margin-top: 10px; border: 1px solid #E2E8F0; }
+.aip-diag-title { color: #0F172A; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+.aip-diag-text { color: #334155; font-size: 12px; line-height: 1.6em; }
+.aip-diag-list-item { flex-direction: row; align-items: flex-start; margin-bottom: 4px; }
+.aip-diag-bullet { color: #059669; font-size: 12px; margin-right: 6px; margin-top: 1px; }
+.aip-diag-item-text { color: #334155; font-size: 12px; flex: 1; line-height: 1.5em; }
+
+/* SVG 图标样式 */
+.aip-ind-icon { width: 14px; height: 14px; margin-right: 4px; }
+.aip-guide-icon { width: 32px; height: 32px; margin-bottom: 8px; }
+.aip-card-icon { width: 16px; height: 16px; margin-right: 6px; margin-left: 2px; }
+.aip-mode-icon { width: 18px; height: 18px; }
+
+/* ====== 记录模块 v2 样式 ====== */
+
+/* 统计概览 */
+.aip-stat-card { background-color: #FFFFFF; border-radius: 10px; padding: 12px 14px; margin: 6px 14px; border: 1px solid #E2E8F0; }
+.aip-stat-header { margin-bottom: 10px; }
+.aip-stat-title { color: #0F172A; font-size: 13px; font-weight: bold; }
+.aip-stat-row { flex-direction: row; align-items: center; justify-content: center; margin-bottom: 8px; }
+.aip-stat-item { flex: 1; align-items: center; }
+.aip-stat-num { font-size: 22px; font-weight: bold; }
+.aip-stat-open { color: #D97706; }
+.aip-stat-resolved { color: #059669; }
+.aip-stat-total { color: #0284C7; }
+.aip-stat-label { color: #64748B; font-size: 11px; margin-top: 2px; }
+.aip-stat-divider { width: 1px; height: 30px; background-color: #E2E8F0; }
+	.aip-stat-severity-row { flex-direction: row; justify-content: center; }
+	.aip-stat-sev-item { flex: 1; flex-direction: row; justify-content: center; align-items: center; }
+	.aip-sev-critical-text { font-size: 13px; font-weight: bold; color: #DC2626; }
+	.aip-sev-major-text { font-size: 13px; font-weight: bold; color: #D97706; }
+	.aip-sev-minor-text { font-size: 13px; font-weight: bold; color: #059669; }
+
+/* 筛选栏 */
+.aip-filter-section { padding: 4px 14px 4px 14px; }
+.aip-filter-row { flex-direction: row; flex-wrap: wrap; }
+.aip-filter-chip { padding: 3px 10px; border-radius: 12px; margin-right: 6px; margin-bottom: 4px; background-color: #F1F5F9; border: 1px solid #E2E8F0; }
+.aip-filter-active { background-color: #0284C7; border: 1px solid #0284C7; }
+.aip-filter-chip-text { color: #64748B; font-size: 11px; }
+.aip-filter-text-active { color: #FFFFFF; }
+
+/* 分类选择按钮 */
+.aip-record-selectors { flex-direction: column; align-items: center; padding: 6px 0 8px 0; width: 100%; max-width: 800px; }
+.aip-record-tags-wrapper { flex-direction: column; align-items: center; }
+.aip-cat-select-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 4px; justify-content: center; }
+.aip-cat-btn { padding: 4px 10px; border-radius: 6px; margin-right: 6px; margin-bottom: 4px; background-color: #F8FAFC; border: 1px solid #E2E8F0; }
+.aip-cat-btn-active { border: 1px solid transparent; }
+.aip-cat-btn-text { font-size: 11px; color: #475569; }
+.aip-cat-quality { background-color: #FEE2E2; border-color: #FECACA; }
+.aip-cat-equipment { background-color: #E0E7FF; border-color: #C7D2FE; }
+.aip-cat-process { background-color: #DBEAFE; border-color: #BFDBFE; }
+.aip-cat-safety { background-color: #FEF3C7; border-color: #FDE68A; }
+.aip-cat-material { background-color: #ECFDF5; border-color: #A7F3D0; }
+
+/* 严重等级选择 */
+.aip-sev-select-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 4px; justify-content: center; }
+.aip-sev-btn { padding: 4px 10px; border-radius: 6px; margin-right: 6px; margin-bottom: 4px; background-color: #F8FAFC; border: 1px solid #E2E8F0; }
+.aip-sev-btn-critical { background-color: #FEE2E2; border: 1px solid #FCA5A5; }
+.aip-sev-btn-major { background-color: #FEF3C7; border: 1px solid #FCD34D; }
+.aip-sev-btn-minor { background-color: #ECFDF5; border: 1px solid #6EE7B7; }
+.aip-sev-btn-text { font-size: 11px; color: #475569; }
+.aip-sev-btn-text-active { font-weight: bold; }
+
+/* 输入行包裹 */
+.aip-input-row { flex-direction: row; align-items: flex-end; width: 100%; max-width: 800px; }
+
+/* 记录卡片 v2 */
+.aip-rec-card-v2 { flex-direction: row; background-color: #FFFFFF; border-radius: 10px; margin: 4px 14px; border: 1px solid #E2E8F0; overflow: hidden; }
+.aip-rec-color-bar { width: 4px; }
+.aip-color-critical { background-color: #EF4444; }
+.aip-color-major { background-color: #F59E0B; }
+.aip-color-minor { background-color: #10B981; }
+.aip-rec-card-body { flex: 1; padding: 8px 10px; }
+.aip-rec-card-top { flex-direction: row; align-items: center; margin-bottom: 4px; }
+.aip-rec-badges { flex-direction: row; flex-wrap: wrap; }
+.aip-rec-cat-badge { flex-direction: row; align-items: center; padding: 1px 6px; border-radius: 4px; margin-right: 4px; background-color: #F1F5F9; }
+.aip-rec-cat-text { font-size: 10px; color: #475569; }
+.aip-rec-sev-badge { padding: 1px 6px; border-radius: 4px; }
+.aip-rec-sev-text { font-size: 10px; font-weight: bold; }
+.aip-sev-critical { background-color: #FEE2E2; }
+.aip-sev-major { background-color: #FEF3C7; }
+.aip-sev-minor { background-color: #ECFDF5; }
+.aip-rec-node-row { flex-direction: row; align-items: center; margin-bottom: 3px; }
+.aip-rec-node-text { color: #64748B; font-size: 10px; }
+.aip-rec-card-content-v2 { color: #1E293B; font-size: 12px; line-height: 1.5em; margin-bottom: 6px; }
+.aip-rec-card-bottom { flex-direction: row; align-items: center; justify-content: space-between; }
+.aip-rec-card-time-v2 { color: #94A3B8; font-size: 10px; }
+.aip-rec-actions { flex-direction: row; align-items: center; }
+.aip-rec-status-btn { flex-direction: row; align-items: center; padding: 2px 8px; border-radius: 4px; margin-right: 6px; }
+.aip-status-open { background-color: #FEF3C7; }
+.aip-status-resolved { background-color: #ECFDF5; }
+.aip-rec-status-text { font-size: 10px; }
+.aip-status-open-text { color: #92400E; }
+.aip-status-resolved-text { color: #065F46; }
+.aip-rec-del-btn { flex-direction: row; align-items: center; justify-content: center; padding: 2px 4px; }
+
+/* 分类 Badge 颜色 */
+.aip-cat-quality { background-color: #FEE2E2; }
+.aip-cat-equipment { background-color: #E0E7FF; }
+.aip-cat-process { background-color: #DBEAFE; }
+.aip-cat-safety { background-color: #FEF3C7; }
+.aip-cat-material { background-color: #ECFDF5; }
+.aip-cat-other { background-color: #F1F5F9; }
+
 </style>
+

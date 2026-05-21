@@ -2,7 +2,7 @@ const express = require('express')
 const axios = require('axios')
 const cors = require('cors')
 const { searchKnowledge } = require('./rag/search')
-const { SYSTEM_PROMPT, buildUserPrompt } = require('./rag/prompt')
+const { SYSTEM_PROMPT, buildUserPrompt, buildNodeAnalysisPrompt, buildQualityCheckPrompt } = require('./rag/prompt')
 
 const app = express()
 
@@ -97,6 +97,188 @@ app.post('/chat', async (req, res) => {
                 details: error.message
             })
         }
+    }
+})
+
+// 节点分析缓存
+const analysisCache = new Map()
+
+app.post('/analyze-node', async (req, res) => {
+    try {
+        const { nodeName, nodeType, processName, model } = req.body
+        const clientModel = model || DEFAULT_MODEL
+        const cacheKey = `${nodeType}:${nodeName}`
+
+        if (analysisCache.has(cacheKey)) {
+            return res.json({ success: true, data: analysisCache.get(cacheKey) })
+        }
+
+        const prompt = buildNodeAnalysisPrompt(nodeName, nodeType, processName)
+
+        const response = await axios.post(
+            'http://localhost:11434/api/generate',
+            {
+                model: clientModel,
+                prompt: prompt,
+                stream: false
+            },
+            { timeout: 60000 }
+        )
+
+        const aiResponse = response.data.response
+        let parsedJSON = null
+        try {
+            let jsonStr = aiResponse
+            const match = aiResponse.match(/```json\s*([\s\S]*?)\s*```/)
+            if (match) {
+                jsonStr = match[1]
+            } else {
+                const match2 = aiResponse.match(/```\s*([\s\S]*?)\s*```/)
+                if (match2) {
+                    jsonStr = match2[1]
+                }
+            }
+            parsedJSON = JSON.parse(jsonStr)
+        } catch (e) {
+            return res.json({ success: true, rawText: aiResponse, data: null })
+        }
+
+        if (analysisCache.size >= 50) {
+            const firstKey = analysisCache.keys().next().value
+            analysisCache.delete(firstKey)
+        }
+        analysisCache.set(cacheKey, parsedJSON)
+
+        res.json({ success: true, data: parsedJSON })
+    } catch (error) {
+        console.error('[AI Service] /analyze-node 错误:', error.message)
+        res.status(500).json({ success: false, error: error.message })
+    }
+})
+
+app.post('/prefetch-next', async (req, res) => {
+    try {
+        const { nodeName, nodeType, processName, model } = req.body
+        const clientModel = model || DEFAULT_MODEL
+        const cacheKey = `${nodeType}:${nodeName}`
+
+        if (analysisCache.has(cacheKey)) {
+            return res.json({ success: true, cached: true })
+        }
+
+        // Return response immediately, process asynchronously
+        res.json({ success: true, cached: true })
+
+        const prompt = buildNodeAnalysisPrompt(nodeName, nodeType, processName)
+
+        axios.post(
+            'http://localhost:11434/api/generate',
+            {
+                model: clientModel,
+                prompt: prompt,
+                stream: false
+            },
+            { timeout: 60000 }
+        ).then(response => {
+            const aiResponse = response.data.response
+            let parsedJSON = null
+            try {
+                let jsonStr = aiResponse
+                const match = aiResponse.match(/```json\s*([\s\S]*?)\s*```/)
+                if (match) {
+                    jsonStr = match[1]
+                } else {
+                    const match2 = aiResponse.match(/```\s*([\s\S]*?)\s*```/)
+                    if (match2) {
+                        jsonStr = match2[1]
+                    }
+                }
+                parsedJSON = JSON.parse(jsonStr)
+                if (analysisCache.size >= 50) {
+                    const firstKey = analysisCache.keys().next().value
+                    analysisCache.delete(firstKey)
+                }
+                analysisCache.set(cacheKey, parsedJSON)
+            } catch (e) {
+                // Ignore parse error in prefetch
+            }
+        }).catch(err => {
+            console.error('[AI Service] /prefetch-next 异步错误:', err.message)
+        })
+
+    } catch (error) {
+        console.error('[AI Service] /prefetch-next 错误:', error.message)
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, error: error.message })
+        }
+    }
+})
+
+app.post('/prewarm-models', async (req, res) => {
+    try {
+        const clientModel = req.body.model || DEFAULT_MODEL
+        await axios.post('http://localhost:11434/api/generate', {
+            model: clientModel,
+            prompt: '',
+            keep_alive: '5m'
+        })
+        res.json({ success: true })
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message })
+    }
+})
+
+app.post('/unload-models', async (req, res) => {
+    try {
+        const clientModel = req.body.model || DEFAULT_MODEL
+        await axios.post('http://localhost:11434/api/generate', {
+            model: clientModel,
+            prompt: '',
+            keep_alive: '0'
+        })
+        res.json({ success: true })
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message })
+    }
+})
+
+app.post('/check-quality', async (req, res) => {
+    try {
+        const { symptom, nodeName, nodeType, model } = req.body
+        const clientModel = model || DEFAULT_MODEL
+        const prompt = buildQualityCheckPrompt(symptom, nodeName, nodeType)
+
+        const response = await axios.post(
+            'http://localhost:11434/api/generate',
+            {
+                model: clientModel,
+                prompt: prompt,
+                stream: false
+            },
+            { timeout: 60000 }
+        )
+
+        const aiResponse = response.data.response
+        let parsedJSON = null
+        try {
+            let jsonStr = aiResponse
+            const match = aiResponse.match(/```json\s*([\s\S]*?)\s*```/)
+            if (match) {
+                jsonStr = match[1]
+            } else {
+                const match2 = aiResponse.match(/```\s*([\s\S]*?)\s*```/)
+                if (match2) {
+                    jsonStr = match2[1]
+                }
+            }
+            parsedJSON = JSON.parse(jsonStr)
+            res.json({ success: true, data: parsedJSON })
+        } catch (e) {
+            res.json({ success: true, rawText: aiResponse, data: null })
+        }
+    } catch (error) {
+        console.error('[AI Service] /check-quality 错误:', error.message)
+        res.status(500).json({ success: false, error: error.message })
     }
 })
 

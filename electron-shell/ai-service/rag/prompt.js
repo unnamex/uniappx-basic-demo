@@ -71,7 +71,70 @@ function buildUserPrompt(question, docs, retrievedChunks, processSummary = null)
     return `${context}\n<question>${question}</question>`
 }
 
+const NODE_ANALYSIS_PROMPT = `你是一位专门指导车间生产的AI工艺知识专家。
+你的任务是对当前工艺节点进行结构化分析，并且**只输出纯 JSON 格式**，不要包含任何 Markdown 标记（如 \`\`\`json 等）或其他多余的文本说明。
+
+请根据以下提供的节点信息，分析并输出对应 JSON。如果某项没有相关信息，请输出空数组 []。
+
+要求的 JSON 格式如下：
+{
+  "summary": "一句话总结该节点核心目标",
+  "keyPoints": ["操作要点1", "操作要点2"],
+  "risks": [
+    { "level": "high", "desc": "高风险描述" },
+    { "level": "medium", "desc": "中风险描述" },
+    { "level": "low", "desc": "低风险描述" }
+  ],
+  "params": [
+    { "name": "参数名", "recommend": "推荐值", "range": "范围" }
+  ],
+  "checklist": ["检查项1", "检查项2"],
+  "faq": [
+    { "q": "常见问题1", "a": "答案1" }
+  ],
+  "suggestions": ["追问建议1", "追问建议2"]
+}`;
+
+function buildNodeAnalysisPrompt(nodeName, nodeType, processName) {
+    return `${NODE_ANALYSIS_PROMPT}
+
+当前节点信息：
+- 所属工艺：${processName || '未知'}
+- 节点类型：${nodeType || '节点'}
+- 节点名称：${nodeName || '未命名'}
+
+请输出 JSON：`;
+}
+
+const QUALITY_CHECK_PROMPT = `你是一位专门指导车间生产的AI质量诊断专家。
+你的任务是根据用户提供的质量缺陷或现象进行诊断，并且**只输出纯 JSON 格式**，不要包含任何 Markdown 标记（如 \`\`\`json 等）或其他多余的文本说明。
+
+要求的 JSON 格式如下：
+{
+  "diagnosis": "一句话的诊断结论",
+  "possibleCauses": ["可能的原因1", "可能的原因2"],
+  "solutions": ["解决方案1", "解决方案2"],
+  "preventionTips": ["预防措施1", "预防措施2"]
+}`;
+
+function buildQualityCheckPrompt(symptom, nodeName, nodeType) {
+    return `${QUALITY_CHECK_PROMPT}
+
+当前节点信息：
+- 节点类型：${nodeType || '节点'}
+- 节点名称：${nodeName || '未命名'}
+
+用户描述的现象：
+${symptom}
+
+请输出 JSON：`;
+}
+
 module.exports = {
     SYSTEM_PROMPT,
-    buildUserPrompt
+    buildUserPrompt,
+    NODE_ANALYSIS_PROMPT,
+    QUALITY_CHECK_PROMPT,
+    buildNodeAnalysisPrompt,
+    buildQualityCheckPrompt
 }

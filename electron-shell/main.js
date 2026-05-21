@@ -381,7 +381,7 @@ function startAiService() {
     const { classifyIntent } = require('./ai-service/rag/intent')
     const { buildBM25Index } = require('./ai-service/rag/bm25')
     const { searchKnowledge } = require('./ai-service/rag/search')
-    const { SYSTEM_PROMPT, buildUserPrompt } = require('./ai-service/rag/prompt')
+    const { SYSTEM_PROMPT, buildUserPrompt, buildNodeAnalysisPrompt, buildQualityCheckPrompt } = require('./ai-service/rag/prompt')
     const { buildChunks, buildIndex, loadIndex, indexExists, getEmbedding } = require('./ai-service/rag/vectorizer')
     const { buildGraphIndex, loadGraphIndex, buildProcessSummary } = require('./ai-service/rag/graph-builder')
     const { searchSimilar, clearCache } = require('./ai-service/rag/vector-search')
@@ -534,6 +534,150 @@ function startAiService() {
           res.end();
         }
     }
+    })
+
+    // 节点分析缓存
+    const analysisCache = new Map()
+
+    aiApp.post('/analyze-node', async (req, res) => {
+      try {
+        const { nodeName, nodeType, processName, model } = req.body
+        const clientModel = model || DEFAULT_MODEL
+        const cacheKey = `${nodeType}:${nodeName}`
+
+        if (analysisCache.has(cacheKey)) {
+          return res.json({ success: true, data: analysisCache.get(cacheKey) })
+        }
+
+        const prompt = buildNodeAnalysisPrompt(nodeName, nodeType, processName)
+
+        const response = await axios.post(
+          'http://localhost:11434/api/generate',
+          {
+            model: clientModel,
+            prompt: prompt,
+            stream: false,
+            format: 'json',
+            options: { num_predict: 1024, temperature: 0.7 }
+          },
+          { timeout: 60000 }
+        )
+
+        const aiResponse = response.data.response
+        let parsedJSON = null
+        try {
+          let jsonStr = aiResponse
+          const match = aiResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+          if (match) {
+            jsonStr = match[1]
+          }
+          parsedJSON = JSON.parse(jsonStr)
+        } catch (e) {
+          return res.json({ success: true, rawText: aiResponse, data: null })
+        }
+
+        if (analysisCache.size >= 50) {
+          const firstKey = analysisCache.keys().next().value
+          analysisCache.delete(firstKey)
+        }
+        analysisCache.set(cacheKey, parsedJSON)
+
+        res.json({ success: true, data: parsedJSON })
+      } catch (error) {
+        console.error('[AI Service] /analyze-node 错误:', error.message)
+        res.status(500).json({ success: false, error: error.message })
+      }
+    })
+
+    aiApp.post('/prefetch-next', async (req, res) => {
+      try {
+        const { nodeName, nodeType, processName, model } = req.body
+        const clientModel = model || DEFAULT_MODEL
+        const cacheKey = `${nodeType}:${nodeName}`
+
+        if (analysisCache.has(cacheKey)) {
+          return res.json({ success: true, cached: true })
+        }
+
+        res.json({ success: true, cached: true })
+
+        const prompt = buildNodeAnalysisPrompt(nodeName, nodeType, processName)
+
+        axios.post(
+          'http://localhost:11434/api/generate',
+          {
+            model: clientModel,
+            prompt: prompt,
+            stream: false,
+            format: 'json',
+            options: { num_predict: 1024, temperature: 0.7 }
+          },
+          { timeout: 60000 }
+        ).then(response => {
+          const aiResponse = response.data.response
+          let parsedJSON = null
+          try {
+            let jsonStr = aiResponse
+            const match = aiResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+            if (match) {
+              jsonStr = match[1]
+            }
+            parsedJSON = JSON.parse(jsonStr)
+            if (analysisCache.size >= 50) {
+              const firstKey = analysisCache.keys().next().value
+              analysisCache.delete(firstKey)
+            }
+            analysisCache.set(cacheKey, parsedJSON)
+          } catch (e) {
+            // Ignore parse error in prefetch
+          }
+        }).catch(err => {
+          console.error('[AI Service] /prefetch-next 异步错误:', err.message)
+        })
+
+      } catch (error) {
+        console.error('[AI Service] /prefetch-next 错误:', error.message)
+        if (!res.headersSent) {
+          res.status(500).json({ success: false, error: error.message })
+        }
+      }
+    })
+
+    aiApp.post('/check-quality', async (req, res) => {
+      try {
+        const { symptom, nodeName, nodeType, model } = req.body
+        const clientModel = model || DEFAULT_MODEL
+        const prompt = buildQualityCheckPrompt(symptom, nodeName, nodeType)
+
+        const response = await axios.post(
+          'http://localhost:11434/api/generate',
+          {
+            model: clientModel,
+            prompt: prompt,
+            stream: false,
+            format: 'json',
+            options: { num_predict: 1024, temperature: 0.7 }
+          },
+          { timeout: 60000 }
+        )
+
+        const aiResponse = response.data.response
+        let parsedJSON = null
+        try {
+          let jsonStr = aiResponse
+          const match = aiResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+          if (match) {
+            jsonStr = match[1]
+          }
+          parsedJSON = JSON.parse(jsonStr)
+          res.json({ success: true, data: parsedJSON })
+        } catch (e) {
+          res.json({ success: true, rawText: aiResponse, data: null })
+        }
+      } catch (error) {
+        console.error('[AI Service] /check-quality 错误:', error.message)
+        res.status(500).json({ success: false, error: error.message })
+      }
     })
 
     // 预查询接口 (防抖触发，提前计算 Embedding 并加载上下文)

@@ -290,7 +290,7 @@
 			const el = pdfFrame.value as any
 			if (el != null) {
 				const encodedSrc = encodeURIComponent(src)
-				el.innerHTML = '<iframe src="./static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+				el.innerHTML = '<iframe src="./static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 			}
 		})
 	}
@@ -308,7 +308,7 @@
 				if (el != null) {
 					const encodedSrc = encodeURIComponent(src)
 					// 恢复使用 cad-launcher.html 中间层，利用其内部的 baseUrl 注入来修复 blob 异常
-					el.innerHTML = '<iframe src="./static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;min-height:500px;border:none;display:block;" frameborder="0" allowfullscreen></iframe>'
+					el.innerHTML = '<iframe src="./static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;min-height:500px;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0" allowfullscreen></iframe>'
 					console.log('successfully injected iframe via cad-launcher.html')
 				}
 			} catch (e) {
@@ -345,7 +345,7 @@
 					const cachedUrl = getCachedDocUrl(props.resource.id)
 					if (cachedUrl != null && electronPort > 0) {
 						console.log('[Doc] 命中内存缓存，直接复用 HTTP URL:', cachedUrl)
-						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(cachedUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(cachedUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 						return
 					}
 				}
@@ -408,7 +408,7 @@
 							setCachedDocUrl(props.resource.id, docHttpUrl)
 						}
 						
-						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 					} catch (e) {
 						console.error('[Doc] 保存临时文档(ArrayBuffer)失败:', e)
 					}
@@ -424,14 +424,14 @@
 							setCachedDocUrl(props.resource.id, docHttpUrl)
 						}
 						
-						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 					} catch (e) {
 						console.error('[Doc] 保存临时文档(Base64)失败:', e)
 					}
 				} else if (base64Str !== '') {
 					// 非 Electron Web 环境：通过 postMessage 发送 base64
 					const cacheBusterUrl = targetUrl + '?t=' + Date.now()
-					el.innerHTML = '<iframe id="ranuts-iframe" src="' + cacheBusterUrl + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+					el.innerHTML = '<iframe id="ranuts-iframe" src="' + cacheBusterUrl + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 					
 					let attempts = 0
 					const intervalId = setInterval(() => {
@@ -459,7 +459,7 @@
 					}
 					window.addEventListener('message', ackListener)
 				} else {
-					el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodedSrc + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;" frameborder="0"></iframe>'
+					el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodedSrc + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 				}
 			}
 		})

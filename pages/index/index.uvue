@@ -254,10 +254,18 @@
 			ref="aiPanelRef"
 			:processName="currentProcessName"
 			:isPC="isPC"
-			:style="{ width: aiPanelWidth + 'px' }"
+			:isFullscreen="isAiMaximized"
+			@toggle-fullscreen="toggleAiMaximize"
+			:style="{ width: isAiMaximized ? '100%' : (aiPanelWidth + 'px') }"
 			style="flex: none;"
+			:class="isAiMaximized ? 'ai-panel-maximized' : ''"
 		/>
 	</view>
+	
+	<!-- 拖拽全局遮罩：防止鼠标滑入 iframe/原生组件导致拖拽粘连丢失事件 -->
+	<!-- #ifdef WEB -->
+	<view v-if="isAiDragging" class="ai-drag-overlay"></view>
+	<!-- #endif -->
 	
 	<!-- 设置菜单遮罩层 -->
 	<view v-if="isSettingsMenuVisible" class="settings-overlay" :style="{ top: isPC ? '36px' : '0' }" @click="closeSettingsMenu"></view>
@@ -538,7 +546,8 @@
 	const isAiMode = ref(false)
 	const aiPanelRef = ref<ComponentPublicInstance | null>(null)
 	
-	const aiPanelWidth = ref(380)
+	const aiPanelWidth = ref(420)
+	const isAiMaximized = ref(false)
 	const isAiDragging = ref(false)
 	const aiStartX = ref(0)
 	const aiStartWidth = ref(0)
@@ -554,6 +563,11 @@
 				})
 			}
 		}
+	}
+
+	const toggleAiMaximize = () => {
+		isAiMaximized.value = !isAiMaximized.value
+		toggleImmersiveFullscreen(isAiMaximized.value)
 	}
 
 	const onAiDragStart = (e: TouchEvent) => {
@@ -1477,6 +1491,15 @@
 			nextTick(() => {
 				if (aiPanelRef.value != null) {
 					(aiPanelRef.value as any).$callMethod('analyzeNode', fullRow)
+					
+					// 自动预取下一个节点
+					const list = flatNodes.value
+					const targetId = getNodeId(fullRow)
+					const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
+					if (index >= 0 && index < list.length - 1) {
+						const nextNode = list[index + 1]
+						;(aiPanelRef.value as any).$callMethod('prefetchNextNode', nextNode)
+					}
 				}
 			})
 		}
@@ -2835,6 +2858,27 @@
 	.ai-panel-divider:hover .ai-divider-line {
 		background-color: #007AFF;
 		width: 3px;
+	}
+	
+	.ai-drag-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 99999;
+		background-color: transparent;
+	}
+
+	.ai-panel-maximized {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		width: 100% !important;
+		height: 100% !important;
+		z-index: 10000;
 	}
 
 </style>
