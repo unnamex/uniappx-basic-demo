@@ -11,7 +11,7 @@
 					<image class="app-logo" src="/static/logo.png" mode="aspectFit" />
 				</view>
 				<view class="info-area">
-					<text class="app-name">开物</text>
+					<text class="app-name">CraftX</text>
 					
 					<view class="info-row">
 						<text class="info-label">版本:</text>
@@ -32,6 +32,10 @@
 					<view class="info-row" v-if="nodeVersion != ''">
 						<text class="info-label">Node.js:</text>
 						<text class="info-value">{{ nodeVersion }}</text>
+					</view>
+					<view class="info-row" v-if="currentAiModel != ''">
+						<text class="info-label">AI 模型:</text>
+						<text class="info-value">{{ currentAiModel }}</text>
 					</view>
 					
 					<view class="copyright">
@@ -58,9 +62,29 @@
 	const electronVersion = ref('')
 	const chromeVersion = ref('')
 	const nodeVersion = ref('')
+	const currentAiModel = ref('')
 	const isPC = ref(false)
 
 	onMounted(async () => {
+		// 获取模型信息
+		const savedModel = uni.getStorageSync('aiModel') as string | null
+		if (savedModel != null && savedModel != '') {
+			currentAiModel.value = savedModel
+		}
+		
+		uni.request({
+			url: 'http://localhost:3001/status',
+			method: 'GET',
+			success: (res) => {
+				const data = res.data as UTSJSONObject | null;
+				if (data != null && data['currentModel'] != null) {
+					const cm = data['currentModel'] as string
+					currentAiModel.value = cm.replace('qwen2.5:', 'Qwen 2.5 ').toUpperCase()
+					uni.setStorageSync('aiModel', cm)
+				}
+			}
+		})
+
 		// #ifdef WEB
 		if ((window as any).electronAPI != null) {
 			isPC.value = true
@@ -90,7 +114,10 @@
 	}
 
 	const copyInfo = () => {
-		const text = `开物\n版本: ${appVersion.value}\n更新日期: ${releaseDate.value}\nElectron: ${electronVersion.value}\nChromium: ${chromeVersion.value}\nNode.js: ${nodeVersion.value}`
+		let text = `CraftX\n版本: ${appVersion.value}\n更新日期: ${releaseDate.value}\nElectron: ${electronVersion.value}\nChromium: ${chromeVersion.value}\nNode.js: ${nodeVersion.value}`
+		if (currentAiModel.value != '') {
+			text += `\nAI 模型: ${currentAiModel.value}`
+		}
 		uni.setClipboardData({
 			data: text,
 			success: () => {

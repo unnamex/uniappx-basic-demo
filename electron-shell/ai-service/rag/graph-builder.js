@@ -38,6 +38,14 @@ function buildGraphIndex(processContext) {
     })
   }
 
+  const actionMap = {} // stepId -> [actions]
+  if (processContext.actions) {
+    processContext.actions.forEach(a => {
+      if (!actionMap[a.step_id]) actionMap[a.step_id] = []
+      actionMap[a.step_id].push(a)
+    })
+  }
+
   const operations = processContext.operations || []
   const graphEntities = []
 
@@ -62,7 +70,15 @@ function buildGraphIndex(processContext) {
       childSteps.forEach((s, idx) => {
         contextStr += `\n  ${idx + 1}. ${s.name}: ${cleanHtml(s.content || '')}`
         if (s.note) contextStr += ` (备注: ${cleanHtml(s.note)})`
-        
+        // 挂载下属动作
+        const childActions = actionMap[s.inner_id]
+        if (childActions && childActions.length > 0) {
+          childActions.forEach((a, aIdx) => {
+             contextStr += `\n     └─ 动作${aIdx + 1}: ${a.name} ${cleanHtml(a.content || '')}`
+             if (a.note) contextStr += ` (备注: ${cleanHtml(a.note)})`
+          })
+        }
+
         // 挂载工步级资源
         if (s.inner_id) {
           const stepRes = resourceMap[s.inner_id]
@@ -92,6 +108,26 @@ function buildGraphIndex(processContext) {
     if (s.content) contextStr += `\n操作说明: ${cleanHtml(s.content)}`
     if (s.note) contextStr += `\n备注: ${cleanHtml(s.note)}`
 
+    // 挂载下属动作
+    const childActions = actionMap[s.inner_id]
+    if (childActions && childActions.length > 0) {
+      contextStr += `\n此工步包含以下具体操作动作:`
+      childActions.forEach((a, aIdx) => {
+         contextStr += `\n  ${aIdx + 1}. ${a.name}: ${cleanHtml(a.content || '')}`
+         if (a.note) contextStr += ` (备注: ${cleanHtml(a.note)})`
+         
+         // 动作级也可以挂载资源
+         if (a.inner_id) {
+           const actionRes = resourceMap[a.inner_id]
+           if (actionRes && actionRes.length > 0) {
+             actionRes.forEach(r => {
+               contextStr += `\n     └─ 附件资源: [${r.type}] ${r.name}`
+             })
+           }
+         }
+      })
+    }
+
     if (s.inner_id) {
       const stepRes = resourceMap[s.inner_id]
       if (stepRes && stepRes.length > 0) {
@@ -106,6 +142,33 @@ function buildGraphIndex(processContext) {
       graphEntities.push({
         keyword: s.name,
         type: 'step_tree',
+        context: contextStr
+      })
+    }
+  })
+
+  // 最细粒度：动作也作为图谱节点
+  const actions = processContext.actions || []
+  actions.forEach(a => {
+    let contextStr = `操作动作: ${a.name}`
+    if (a.code) contextStr += ` (编号: ${a.code})`
+    if (a.content) contextStr += `\n具体要求: ${cleanHtml(a.content)}`
+    if (a.note) contextStr += `\n备注: ${cleanHtml(a.note)}`
+
+    if (a.inner_id) {
+      const actionRes = resourceMap[a.inner_id]
+      if (actionRes && actionRes.length > 0) {
+        contextStr += `\n此动作使用资源附件:`
+        actionRes.forEach(r => {
+          contextStr += `\n  - [${r.type}] ${r.name} ${r.description ? '(' + r.description + ')' : ''}`
+        })
+      }
+    }
+
+    if (a.name) {
+      graphEntities.push({
+        keyword: a.name,
+        type: 'action_tree',
         context: contextStr
       })
     }

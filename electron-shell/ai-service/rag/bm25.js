@@ -92,7 +92,6 @@ function searchBM25(question, topK = 5) {
 
     const scores = index.documents.map((doc, idx) => {
         let score = 0;
-        const dl = index.documents[idx].tf; // 文档的词频映射预先算好的长度等信息，这里用前面预存的
         const docLen = Object.values(doc.tf).reduce((sum, count) => sum + count, 0);
 
         queryTokens.forEach(token => {

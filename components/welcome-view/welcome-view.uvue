@@ -6,7 +6,7 @@
 			<image class="app-icon" src="/static/logo.png" mode="aspectFit"></image>
 
 			<!-- 欢迎标题 -->
-			<text class="app-name">欢迎使用开物</text>
+			<text class="app-name">欢迎使用 CraftX</text>
 
 			<!-- Slogan -->
 			<text class="app-slogan">工艺 · 离线掌控</text>
@@ -55,7 +55,7 @@
 		<view v-if="showDocModal" class="doc-modal-overlay" :style="{ top: isPC ? '36px' : '0' }" @click="closeDoc">
 			<view class="doc-modal-content" @click.stop>
 				<view class="doc-modal-header">
-					<text class="doc-modal-title">开物 使用指南</text>
+					<text class="doc-modal-title">CraftX 使用指南</text>
 					<view class="doc-modal-close" @click="closeDoc">
 						<text class="close-icon">✕</text>
 					</view>

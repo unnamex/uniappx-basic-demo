@@ -350,12 +350,14 @@
 					}
 				}
 				
-				// 针对 Web 端的 blob: 跨域问题，提取数据
+				// 针对 Web 端的跨域/沙盒问题，提取数据（适用于 blob 或是本地相对路径 /static/... 等，因为 iframe 是 http 环境，无法直接跨域访问父级的 file:// 或本地相对路径）
 				let base64Str = ''
 				let rawArrayBuffer: ArrayBuffer | null = null
 				console.log('[Parent] Preparing doc viewer for src:', src)
-				if (src.startsWith('blob:')) {
+				
+				if (!src.startsWith('http://') && !src.startsWith('https://')) {
 					try {
+						// 父级 window 环境下去请求实际的文件流
 						const response = await fetch(src)
 						if (response == null) {
 							throw new Error('fetch returned null response')
@@ -680,7 +682,7 @@
 	
 	.preview-video {
 		width: 100%;
-		height: 200px;
+		flex: 1;
 		border-radius: 4px;
 		background-color: #111827;
 	}

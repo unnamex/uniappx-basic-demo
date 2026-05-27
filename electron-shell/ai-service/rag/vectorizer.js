@@ -7,14 +7,34 @@
  * - 每条工步记录 = 1个 chunk（附带所属工艺/工序信息）
  */
 
-const axios = require('axios')
+const { pipeline, env } = require('@xenova/transformers')
+const { app } = require('electron')
 const fs = require('fs')
 const path = require('path')
 
-// Embedding 模型名称
-const EMBED_MODEL = 'nomic-embed-text'
+// Embedding 模型配置
+// 指向内嵌的本地模型，禁止联网下载
+const modelDir = app && app.isPackaged
+  ? path.join(process.resourcesPath, 'embed-models')
+  : path.join(__dirname, '..', '..', 'vendor', 'embed-models')
+
+env.allowRemoteModels = false   // 禁止联网，强制使用本地
+env.localModelPath = modelDir   // 指向内嵌模型目录
+env.cacheDir = modelDir
+
 // 向量索引文件路径
 const INDEX_FILE = path.join(__dirname, '..', 'vector-index.json')
+
+let extractor = null
+
+// 懒加载嵌入模型
+async function getExtractor() {
+  if (extractor != null) return extractor
+  console.log('[LocalEmbed] 正在初始化本地 bge-small-zh 模型...')
+  extractor = await pipeline('feature-extraction', 'Xenova/bge-small-zh-v1.5', { quantized: true })
+  console.log('[LocalEmbed] 嵌入模型初始化完成 ✓')
+  return extractor
+}
 
 /**
  * 将工艺数据对象转为文本 chunk 列表
@@ -36,6 +56,10 @@ function buildChunks(processContext) {
       if (p.partName) text += `, 关联零件: ${p.partName}`
       if (p.partCode) text += ` (${p.partCode})`
       if (p.departmentName) text += `, 所属部门: ${p.departmentName}`
+      if (p.creator) text += `, 创建人: ${p.creator}`
+      if (p.createTime) text += `, 创建时间: ${p.createTime}`
+      if (p.modifier) text += `, 修改人: ${p.modifier}`
+      if (p.modifyTime) text += `, 修改时间: ${p.modifyTime}`
       if (p.note) text += `, 备注: ${p.note}`
       if (p.routeContent) text += `, 工艺路线: ${p.routeContent}`
 
@@ -64,6 +88,10 @@ function buildChunks(processContext) {
       if (op.code) text += ` (编号: ${op.code})`
       if (op.isKey === 'true' || op.isKey === true) text += ' [关键工序]'
       if (op.content) text += ` | 加工内容: ${op.content}`
+      if (op.creator) text += ` | 创建人: ${op.creator}`
+      if (op.createTime) text += ` | 创建时间: ${op.createTime}`
+      if (op.modifier) text += ` | 修改人: ${op.modifier}`
+      if (op.modifyTime) text += ` | 修改时间: ${op.modifyTime}`
 
       chunks.push({
         id: `operation-${idx}`,
@@ -90,6 +118,10 @@ function buildChunks(processContext) {
       if (processName) text = `[${processName}] ` + text
       if (step.code) text += ` (编号: ${step.code})`
       if (step.content) text += ` | 内容: ${step.content}`
+      if (step.creator) text += ` | 创建人: ${step.creator}`
+      if (step.createTime) text += ` | 创建时间: ${step.createTime}`
+      if (step.modifier) text += ` | 修改人: ${step.modifier}`
+      if (step.modifyTime) text += ` | 修改时间: ${step.modifyTime}`
       if (step.note) text += ` | 备注: ${step.note}`
 
       chunks.push({
@@ -105,21 +137,55 @@ function buildChunks(processContext) {
     })
   }
 
+  // 动作级别 chunk
+  if (processContext.actions && processContext.actions.length > 0) {
+    const processName = (processContext.processes && processContext.processes.length > 0)
+      ? processContext.processes[0].name || ''
+      : ''
+
+    processContext.actions.forEach((act, idx) => {
+      let text = `动作${act.serialNumber || idx + 1}: ${act.name || '未知'}`
+      if (processName) text = `[${processName}] ` + text
+      if (act.code) text += ` (编号: ${act.code})`
+      if (act.content) text += ` | 内容: ${act.content}`
+      if (act.creator) text += ` | 创建人: ${act.creator}`
+      if (act.createTime) text += ` | 创建时间: ${act.createTime}`
+      if (act.modifier) text += ` | 修改人: ${act.modifier}`
+      if (act.modifyTime) text += ` | 修改时间: ${act.modifyTime}`
+      if (act.note) text += ` | 备注: ${act.note}`
+
+      chunks.push({
+        id: `action-${idx}`,
+        type: 'action',
+        text: text,
+        metadata: {
+          processName: processName,
+          actionName: act.name || '',
+          serialNumber: String(act.serialNumber || idx + 1)
+        }
+      })
+    })
+  }
+
   return chunks
 }
 
 /**
- * 调用 Ollama Embedding API 获取文本向量
+ * 本地获取文本向量 (替代原先依赖 Ollama 的 API 调用)
  * @param {string} text - 输入文本
  * @returns {Promise<Array<number>>} 向量数组
  */
 async function getEmbedding(text) {
-  const response = await axios.post('http://localhost:11434/api/embeddings', {
-    model: EMBED_MODEL,
-    prompt: text,
-    keep_alive: '30m' // 让 Embedding 模型在内存中保持30分钟，避免反复加载
-  }, { timeout: 30000 })
-  return response.data.embedding
+  try {
+    const ext = await getExtractor()
+    // bge-small-zh 对 query 格式要求加前缀，对 passage 要求加前缀。为了方便检索时兼容，做以下处理
+    // 由于既用于建库，又用于检索，我们统一使用 query 前缀可以得到最好的匹配结果。
+    const output = await ext(`query: ${text}`, { pooling: 'mean', normalize: true })
+    return Array.from(output.data)
+  } catch (err) {
+    console.error('[Vectorizer] 向量化计算异常:', err)
+    throw err
+  }
 }
 
 /**
@@ -131,7 +197,7 @@ async function getEmbedding(text) {
 async function buildIndex(chunks, onProgress) {
   const indexData = {
     version: 1,
-    model: EMBED_MODEL,
+    model: 'Xenova/bge-small-zh-v1.5',
     createdAt: new Date().toISOString(),
     chunkCount: chunks.length,
     chunks: []
@@ -160,8 +226,8 @@ async function buildIndex(chunks, onProgress) {
 
   // 如果没有任何 chunk 成功向量化，不保存空索引
   if (indexData.chunks.length === 0) {
-    console.error(`[Vectorizer] 所有 ${chunks.length} 个 chunk 向量化均失败！请检查 Embedding 模型 (${EMBED_MODEL}) 是否已安装。`)
-    throw new Error(`向量化全部失败，请先执行 "ollama pull ${EMBED_MODEL}" 安装 Embedding 模型。`)
+    console.error(`[Vectorizer] 所有 ${chunks.length} 个 chunk 向量化均失败！请检查本地 bge-small-zh 模型是否完整。`)
+    throw new Error(`向量化全部失败，无法加载本地嵌入模型，请检查环境。`)
   }
 
   // 保存到文件
@@ -205,6 +271,5 @@ module.exports = {
   getEmbedding,
   buildIndex,
   loadIndex,
-  indexExists,
-  INDEX_FILE
+  indexExists
 }

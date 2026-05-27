@@ -9,10 +9,13 @@
 				<view class="aip-mode-badge">
 					<text class="aip-mode-badge-text">AI</text>
 				</view>
-				<text class="aip-title">工艺助手</text>
-				<view class="aip-status-pill" :class="isOnline ? 'aip-pill-online' : 'aip-pill-offline'">
-					<view class="aip-status-dot" :class="isOnline ? 'aip-dot-online' : 'aip-dot-offline'"></view>
-					<text class="aip-status-text">{{ isOnline ? '在线' : '离线' }}</text>
+				<text class="aip-title">烛微</text>
+				<view class="aip-status-pill" :class="isOnline == 'online' ? 'aip-pill-online' : (isOnline == 'offline' ? 'aip-pill-offline' : 'aip-pill-connecting')">
+					<view class="aip-status-dot" :class="isOnline == 'online' ? 'aip-dot-online' : (isOnline == 'offline' ? 'aip-dot-offline' : 'aip-dot-connecting')"></view>
+					<text class="aip-status-text">{{ isOnline == 'online' ? '在线' : (isOnline == 'offline' ? '离线' : '连接中') }}</text>
+				</view>
+				<view class="aip-status-pill" style="margin-left: 6px; background-color: #E0F2FE; border-color: #BAE6FD;">
+					<text class="aip-status-text" style="color: #0284C7; font-weight: bold;">{{ currentModelDisplay }}</text>
 				</view>
 			</view>
 			<view class="aip-header-actions" style="-webkit-app-region: no-drag;">
@@ -65,16 +68,25 @@
 
 		<!-- ====== 智能分析 Tab 内容 ====== -->
 		<!-- #ifdef WEB -->
-		<view class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'chat'">
+		<view id="aip-web-scroll" class="aip-content-scroll" style="flex: 1; overflow-y: auto; overflow-x: hidden;" v-if="activeTab == 'chat'">
 		<!-- #endif -->
 		<!-- #ifndef WEB -->
-		<scroll-view class="aip-content-scroll" scroll-y="true" :scroll-top="scrollTop" :show-scrollbar="false" v-if="activeTab == 'chat'">
+		<scroll-view class="aip-content-scroll" scroll-y="true" ref="scrollViewRef" :show-scrollbar="false" v-if="activeTab == 'chat'">
 		<!-- #endif -->
 			<view class="aip-content-inner">
-			<view v-if="isAnalyzing && analysisData == null && analysisRawText == ''" class="aip-skeleton-card">
+			<view v-if="isAnalyzing && analysisData == null" class="aip-skeleton-card">
 				<view class="aip-skeleton-line"></view>
 				<view class="aip-skeleton-line"></view>
 				<view class="aip-skeleton-line-short"></view>
+			</view>
+
+			<!-- 兜底显示：当无法解析为结构化卡片时，展示原始文本 -->
+			<view class="aip-card" v-if="analysisData == null && analysisRawText != '' && !isAnalyzing">
+				<view class="aip-card-header">
+					<view class="aip-card-bar aip-bar-blue"></view>
+					<text class="aip-card-title">分析结果 (文本模式)</text>
+				</view>
+				<text class="aip-card-text" style="white-space: pre-wrap;">{{ analysisRawText }}</text>
 			</view>
 
 			<template v-if="analysisData != null">
@@ -87,11 +99,14 @@
 				  <text class="aip-card-text">{{ analysisData!.summary }}</text>
 				</view>
 
-				<view class="aip-card" v-if="analysisData!.keyPoints.length > 0">
+				<view class="aip-card" v-if="analysisData != null">
 				  <view class="aip-card-header">
 					<view class="aip-card-bar aip-bar-purple"></view>
 					<image src="/static/icons/industrial/keypoints.svg" class="aip-card-icon" mode="aspectFit" />
 					<text class="aip-card-title">操作要点</text>
+				  </view>
+				  <view v-if="analysisData!.keyPoints.length == 0" class="aip-empty-hint">
+					<text class="aip-empty-hint-text">暂无操作要点信息</text>
 				  </view>
 				  <view v-for="(kp, idx) in analysisData!.keyPoints" :key="idx" class="aip-diag-list-item">
 					<text class="aip-diag-bullet">●</text>
@@ -99,11 +114,14 @@
 				  </view>
 				</view>
 
-				<view class="aip-card" v-if="analysisData!.risks.length > 0">
+				<view class="aip-card" v-if="analysisData != null">
 				  <view class="aip-card-header">
 					<view class="aip-card-bar aip-bar-red"></view>
 					<image src="/static/icons/industrial/risks.svg" class="aip-card-icon" mode="aspectFit" />
 					<text class="aip-card-title">风险预警</text>
+				  </view>
+				  <view v-if="analysisData!.risks.length == 0" class="aip-empty-hint">
+					<text class="aip-empty-hint-text">暂无风险预警信息</text>
 				  </view>
 				  <view v-for="(risk, idx) in analysisData!.risks" :key="idx" class="aip-risk-item">
 					<view class="aip-risk-badge" :class="risk.level == 'high' ? 'aip-risk-high' : risk.level == 'medium' ? 'aip-risk-medium' : 'aip-risk-low'">
@@ -115,13 +133,16 @@
 				  </view>
 				</view>
 
-				<view class="aip-card" v-if="analysisData!.params.length > 0">
+				<view class="aip-card" v-if="analysisData != null">
 				  <view class="aip-card-header">
 					<view class="aip-card-bar aip-bar-cyan"></view>
 					<image src="/static/icons/industrial/params.svg" class="aip-card-icon" mode="aspectFit" />
 					<text class="aip-card-title">工艺参数</text>
 				  </view>
-				  <view class="aip-param-header">
+				  <view v-if="analysisData!.params.length == 0" class="aip-empty-hint">
+					<text class="aip-empty-hint-text">暂无工艺参数信息</text>
+				  </view>
+				  <view class="aip-param-header" v-if="analysisData!.params.length > 0">
 					<text class="aip-param-cell aip-param-label">参数名</text>
 					<text class="aip-param-cell aip-param-label">推荐值</text>
 					<text class="aip-param-cell aip-param-label">允许范围</text>
@@ -133,11 +154,14 @@
 				  </view>
 				</view>
 
-				<view class="aip-card" v-if="analysisData!.checklist.length > 0">
+				<view class="aip-card" v-if="analysisData != null">
 				  <view class="aip-card-header">
 					<view class="aip-card-bar aip-bar-green"></view>
 					<image src="/static/icons/industrial/checklist.svg" class="aip-card-icon" mode="aspectFit" />
 					<text class="aip-card-title">检查清单</text>
+				  </view>
+				  <view v-if="analysisData!.checklist.length == 0" class="aip-empty-hint">
+					<text class="aip-empty-hint-text">暂无检查清单信息</text>
 				  </view>
 				  <view v-for="(item, idx) in analysisData!.checklist" :key="idx" class="aip-check-item" @click="toggleChecklist(idx)">
 					<text class="aip-check-icon" :class="checklistStates.length > idx && checklistStates[idx] ? 'aip-check-done' : ''">
@@ -147,11 +171,14 @@
 				  </view>
 				</view>
 
-				<view class="aip-card" v-if="analysisData!.faq.length > 0">
+				<view class="aip-card" v-if="analysisData != null">
 				  <view class="aip-card-header">
 					<view class="aip-card-bar aip-bar-amber"></view>
 					<image src="/static/icons/industrial/faq.svg" class="aip-card-icon" mode="aspectFit" />
 					<text class="aip-card-title">常见问题</text>
+				  </view>
+				  <view v-if="analysisData!.faq.length == 0" class="aip-empty-hint">
+					<text class="aip-empty-hint-text">暂无常见问题</text>
 				  </view>
 				  <view v-for="(f, idx) in analysisData!.faq" :key="idx" class="aip-faq-item">
 					<view class="aip-faq-q" @click="toggleFaq(idx)">
@@ -164,23 +191,24 @@
 				  </view>
 				</view>
 
-				<view class="aip-card" v-if="analysisData!.suggestions.length > 0">
+				<view class="aip-card" v-if="analysisData != null">
 				  <view class="aip-card-header">
 					<view class="aip-card-bar aip-bar-blue"></view>
 					<image src="/static/icons/industrial/suggestions.svg" class="aip-card-icon" mode="aspectFit" />
-					<text class="aip-card-title">快捷追问</text>
+					<text class="aip-card-title">温馨提示</text>
 				  </view>
-				  <view class="aip-chip-row">
-					<view v-for="(sug, idx) in analysisData!.suggestions" :key="idx" class="aip-chip" @click="sendSuggestion(sug)">
-						<text class="aip-chip-text">{{ sug }}</text>
+				  <view v-if="analysisData!.suggestions.length == 0" class="aip-empty-hint">
+					<text class="aip-empty-hint-text">暂无温馨提示</text>
+				  </view>
+				  <view class="aip-chip-row" v-if="analysisData!.suggestions.length > 0">
+					<view v-for="(sug, idx) in analysisData!.suggestions" :key="idx" class="aip-chip">
+						<text class="aip-chip-text">💡 {{ sug }}</text>
 					</view>
 				  </view>
 				</view>
 			</template>
 
-			<view class="aip-card" v-if="analysisRawText != '' && analysisData == null">
-				<text class="aip-card-text">{{ analysisRawText }}</text>
-			</view>
+
 
 			<view v-if="followUpMessages.length > 0" class="aip-followup-section">
 				<view class="aip-section-divider">
@@ -192,7 +220,10 @@
 					class="aip-msg-item" :class="msg.role == 'user' ? 'aip-msg-user' : 'aip-msg-ai'"
 					v-show="msg.content != ''">
 					<view class="aip-msg-bubble" :class="msg.role == 'user' ? 'aip-bubble-user' : 'aip-bubble-ai'">
-						<text class="aip-msg-text" :class="msg.role == 'user' ? 'aip-text-user' : 'aip-text-ai'">{{ msg.content }}</text>
+						<text v-if="msg.role == 'user'" class="aip-msg-text aip-text-user">{{ msg.content }}</text>
+						<view v-else class="aip-msg-text aip-text-ai">
+							<rich-text :nodes="formatMarkdown(msg.content)"></rich-text>
+						</view>
 					</view>
 					<text class="aip-msg-time" :class="msg.role == 'user' ? 'aip-time-user' : 'aip-time-ai'">{{ msg.time }}</text>
 				</view>
@@ -210,7 +241,7 @@
 				</view>
 			</view>
 
-			<view class="aip-offline-tip" v-if="currentNodeName != '' && !isOnline && analysisData == null && analysisRawText == '' && !isAnalyzing">
+			<view class="aip-offline-tip" v-if="currentNodeName != '' && isOnline == 'offline' && analysisData == null && analysisRawText == '' && !isAnalyzing">
 				<image src="/static/icons/industrial/offline.svg" class="aip-offline-icon" mode="aspectFit" />
 				<text class="aip-offline-text">服务未连接，请确认本地服务已启动。</text>
 			</view>
@@ -234,15 +265,44 @@
 			<view class="aip-content-inner">
 			<view class="aip-quality-section">
 				<view class="aip-quick-diag-row">
-					<view class="aip-quick-diag-btn" @click="sendQualityQuery('表面粗糙度不达标')">
-						<text class="aip-quick-diag-text">表面粗糙度不达标</text>
-					</view>
-					<view class="aip-quick-diag-btn" @click="sendQualityQuery('尺寸超差')">
-						<text class="aip-quick-diag-text">尺寸超差</text>
-					</view>
-					<view class="aip-quick-diag-btn" @click="sendQualityQuery('刀具异常磨损')">
-						<text class="aip-quick-diag-text">刀具异常磨损</text>
-					</view>
+					<!-- 针对顶层工艺（Process）的快捷诊断 -->
+					<template v-if="currentNodeTypeRaw == 'process'">
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('整体合格率偏低')">
+							<text class="aip-quick-diag-text">整体合格率偏低</text>
+						</view>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('生产节拍异常')">
+							<text class="aip-quick-diag-text">生产节拍异常</text>
+						</view>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('物料流转受阻')">
+							<text class="aip-quick-diag-text">物料流转受阻</text>
+						</view>
+					</template>
+
+					<!-- 针对工序（Operation）的快捷诊断 -->
+					<template v-else-if="currentNodeTypeRaw == 'operation'">
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('定位基准偏差')">
+							<text class="aip-quick-diag-text">定位基准偏差</text>
+						</view>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('夹具装夹干涉')">
+							<text class="aip-quick-diag-text">夹具装夹干涉</text>
+						</view>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('工序间防错失效')">
+							<text class="aip-quick-diag-text">工序间防错失效</text>
+						</view>
+					</template>
+
+					<!-- 针对基层工步/动作（Step/Action）的快捷诊断（原默认选项） -->
+					<template v-else>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('表面粗糙度不达标')">
+							<text class="aip-quick-diag-text">表面粗糙度不达标</text>
+						</view>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('尺寸超差')">
+							<text class="aip-quick-diag-text">尺寸超差</text>
+						</view>
+						<view class="aip-quick-diag-btn" @click="sendQualityQuery('刀具异常磨损')">
+							<text class="aip-quick-diag-text">刀具异常磨损</text>
+						</view>
+					</template>
 				</view>
 				
 				<view class="aip-quality-input-area">
@@ -504,7 +564,7 @@
 </template>
 
 <script setup lang="uts">
-	import { ref, computed, watch, onMounted, defineExpose } from 'vue'
+	import { ref, computed, watch, onMounted, onUnmounted, defineExpose } from 'vue'
 
 	type MsgItem = {
 		role: string
@@ -582,9 +642,35 @@
 	const expandedFaqIndex = ref(-1)
 	const prefetchCache = ref(new Map<string, AnalysisData>())
 
+	const currentModelDisplay = ref('1.5B')
+	const refreshModelDisplay = () => {
+		const saved = uni.getStorageSync('aiModel') as string | null
+		const m = (saved != null && saved != '') ? saved : 'qwen2.5:7b'
+		currentModelDisplay.value = m.replace('qwen2.5:', '').toUpperCase()
+	}
+
 	const qualitySymptom = ref('')
 	const qualityResult = ref<QualityDiagnosis | null>(null)
 	const isQualityChecking = ref(false)
+	// ====== Markdown 极简渲染 ======
+	const formatMarkdown = (text: string): string => {
+		if (text == null || text == '') return '';
+		let html = text.replace(new RegExp('<', 'g'), '&lt;').replace(new RegExp('>', 'g'), '&gt;');
+		// 行内代码
+		html = html.replace(new RegExp('`([^`]+)`', 'g'), '<span style="background-color: #F1F5F9; color: #0F172A; padding: 2px 4px; border-radius: 4px; font-family: monospace;">$1</span>');
+		// 加粗
+		html = html.replace(new RegExp('\\*\\*(.*?)\\*\\*', 'g'), '<strong style="color: #0284C7; font-weight: bold; background-color: #E0F2FE; padding: 0 4px; border-radius: 4px; margin: 0 2px;">$1</strong>');
+		// 列表项目 (简单的匹配 "- " 或 "* ")
+		html = html.replace(new RegExp('^[-*]\\s+(.*)$', 'gm'), '<div style="margin-left: 12px; margin-top: 4px;">• $1</div>');
+		// 数字列表项 (简单的匹配 "1. ")
+		html = html.replace(new RegExp('^(\\d+)\\.\\s+(.*)$', 'gm'), '<div style="margin-left: 12px; margin-top: 4px;">$1. $2</div>');
+		// 换行
+		html = html.replace(new RegExp('\\n', 'g'), '<br/>');
+		// 匹配 AI 的内部标记如 ✅ 
+		return html;
+	}
+
+
 	const isFollowUpTyping = ref(false)
 	const currentChatReqTask = ref<RequestTask | null>(null)
 
@@ -596,8 +682,8 @@
 		isFollowUpTyping.value = false
 	}
 	
-	const isOnline = ref(false)
-	const scrollTop = ref(0)
+	const isOnline = ref('connecting')
+	const scrollViewRef = ref<UniElement | null>(null)
 	const inputValue = ref('')
 	const followUpMessages = ref([] as MsgItem[])
 
@@ -693,14 +779,7 @@
 		if (cat == 'material') return '物料问题'
 		return '其他'
 	}
-	const getCategoryIcon = (cat: string): string => {
-		if (cat == 'quality') return '🔴'
-		if (cat == 'equipment') return '⚙️'
-		if (cat == 'process') return '📋'
-		if (cat == 'safety') return '🛡️'
-		if (cat == 'material') return '📦'
-		return '💡'
-	}
+
 	const getSeverityLabel = (sev: string): string => {
 		if (sev == 'critical') return '严重'
 		if (sev == 'major') return '一般'
@@ -758,10 +837,29 @@
 		return `${h}:${m}`
 	}
 
+	let isScrolling = false
 	const scrollToBottom = () => {
+		if (isScrolling) return
+		isScrolling = true
 		setTimeout(() => {
-			scrollTop.value = scrollTop.value + 9999
-		}, 80)
+			// #ifdef WEB
+			const dom = document.getElementById('aip-web-scroll')
+			if (dom != null) {
+				dom.scrollTop = dom.scrollHeight + 100
+			}
+			// #endif
+
+			// #ifndef WEB
+			if (scrollViewRef.value != null) {
+				const el = scrollViewRef.value!
+				// uvue 终极大招：脱离 Vue 响应式数据绑定，直接操作底层的原生 DOM 节点属性
+				// 赋值真实内容高度，这会瞬间触发底层原生视图引擎滚动，百分百有效！
+				el.scrollTop = el.scrollHeight + 100
+			}
+			// #endif
+			
+			isScrolling = false
+		}, 50)
 	}
 
 	const startDotAnimation = (dots: (UniElement | null)[]) => {
@@ -790,20 +888,33 @@
 				const data = res.data as UTSJSONObject | null
 				if (data != null) {
 					const ollama = data['ollama'] as string | null
-					isOnline.value = (ollama == 'connected')
+					isOnline.value = (ollama == 'connected') ? 'online' : 'offline'
+					
+					const currentModel = data['currentModel'] as string | null
+					if (currentModel != null && currentModel.length > 0) {
+						const savedModel = uni.getStorageSync('aiModel') as string | null
+						if (savedModel != currentModel) {
+							uni.setStorageSync('aiModel', currentModel)
+							refreshModelDisplay()
+						}
+					}
 				} else {
-					isOnline.value = false
+					isOnline.value = 'offline'
 				}
 			},
 			fail: () => {
-				isOnline.value = false
+				isOnline.value = 'offline'
 			}
 		})
 	}
 
 	onMounted(() => {
+		refreshModelDisplay()
 		checkStatus()
 		loadRecords()
+	})
+
+	onUnmounted(() => {
 	})
 
 	// ====== UI 交互 ======
@@ -821,6 +932,8 @@
 			expandedFaqIndex.value = index
 		}
 	}
+
+
 
 	const sendSuggestion = (text: string) => {
 		inputValue.value = text
@@ -852,6 +965,63 @@
 	}
 
 	// ====== AI ======
+	const getAiModel = (): string => {
+		const saved = uni.getStorageSync('aiModel') as string | null
+		return (saved != null && saved != '') ? saved : 'qwen2.5:7b'
+	}
+
+	/**
+	 * 安全解析 AnalysisData
+	 */
+	const parseAnalysisData = (pd: UTSJSONObject): AnalysisData => {
+		const risks = [] as RiskItem[]
+		if (pd['risks'] != null) {
+			const arr = pd['risks'] as any[]
+			for (let i = 0; i < arr.length; i++) {
+				const item = arr[i] as UTSJSONObject
+				risks.push({
+					level: (item['level'] as string | null) ?? 'low',
+					desc: (item['desc'] as string | null) ?? ''
+				} as RiskItem)
+			}
+		}
+		
+		const params = [] as ParamItem[]
+		if (pd['params'] != null) {
+			const arr = pd['params'] as any[]
+			for (let i = 0; i < arr.length; i++) {
+				const item = arr[i] as UTSJSONObject
+				params.push({
+					name: (item['name'] as string | null) ?? '',
+					recommend: (item['recommend'] as string | null) ?? '',
+					range: (item['range'] as string | null) ?? ''
+				} as ParamItem)
+			}
+		}
+		
+		const faq = [] as FAQItem[]
+		if (pd['faq'] != null) {
+			const arr = pd['faq'] as any[]
+			for (let i = 0; i < arr.length; i++) {
+				const item = arr[i] as UTSJSONObject
+				faq.push({
+					q: (item['q'] as string | null) ?? '',
+					a: (item['a'] as string | null) ?? ''
+				} as FAQItem)
+			}
+		}
+		
+		return {
+			summary: (pd['summary'] as string | null) ?? '',
+			keyPoints: (pd['keyPoints'] != null) ? (pd['keyPoints'] as any[]).map((x: any): string => x as string) : [],
+			risks: risks,
+			params: params,
+			checklist: (pd['checklist'] != null) ? (pd['checklist'] as any[]).map((x: any): string => x as string) : [],
+			faq: faq,
+			suggestions: (pd['suggestions'] != null) ? (pd['suggestions'] as any[]).map((x: any): string => x as string) : []
+		} as AnalysisData
+	}
+
 	const doQualityCheck = (symptom: string) => {
 		if (symptom.trim() == '') return
 
@@ -867,13 +1037,13 @@
 				symptom: symptom,
 				nodeName: currentNodeName.value,
 				nodeType: currentNodeTypeRaw.value,
-				model: 'qwen2.5:3b'
+				model: getAiModel()
 			},
 			success: (res) => {
 				isQualityChecking.value = false
 				const data = res.data as UTSJSONObject | null
-				if (data != null && data['success'] === true) {
-					if (data['data'] != null) {
+				if (data != null) {
+					if (data['success'] === true && data['data'] != null) {
 						qualityResult.value = JSON.parse(JSON.stringify(data['data'])) as QualityDiagnosis
 					}
 				}
@@ -884,7 +1054,7 @@
 		})
 	}
 
-	const doAnalyze = (node: UTSJSONObject) => {
+	const doAnalyze = (node: UTSJSONObject, force: boolean = false) => {
 		isAnalyzing.value = true
 		analysisData.value = null
 		analysisRawText.value = ''
@@ -893,61 +1063,205 @@
 		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
 		const type = (node['type'] as string | null) ?? 'process'
 
-		uni.request({
+		let buffer = ''
+		const decoder = new TextDecoder('utf-8')
+
+		const reqTask = uni.request({
 			url: `${AI_BASE_URL}/analyze-node`,
 			method: 'POST',
+			enableChunked: true,
 			timeout: 60000,
 			header: { 'Content-Type': 'application/json' },
 			data: {
 				nodeName: name,
 				nodeType: type,
 				processName: props.processName,
-				model: 'qwen2.5:3b'
+				model: getAiModel(),
+				force: force
 			},
 			success: (res) => {
+				if (buffer.trim() != '') {
+					try {
+						const data = JSON.parse(buffer) as UTSJSONObject
+						if (data['success'] === true && data['data'] != null) {
+							let cachedDataObj: UTSJSONObject | null = null
+							const cachedData = data['data']
+							if (typeof cachedData == 'string') {
+								cachedDataObj = JSON.parse(cachedData) as UTSJSONObject
+							} else {
+								cachedDataObj = cachedData as UTSJSONObject
+							}
+							if (cachedDataObj != null) {
+								analysisData.value = parseAnalysisData(cachedDataObj)
+								const len = analysisData.value!.checklist.length
+								const arr = [] as boolean[]
+								for(let k=0; k<len; k++) { arr.push(false) }
+								checklistStates.value = arr
+								loadChecklistState()
+							}
+						}
+					} catch(e) {}
+				}
+
 				isAnalyzing.value = false
-				const data = res.data as UTSJSONObject | null
-				if (data != null && data['success'] === true) {
-					if (data['data'] != null) {
-						analysisData.value = JSON.parse(JSON.stringify(data['data'])) as AnalysisData
+				isOnline.value = 'online'
+				if (res.statusCode !== 200) {
+					let data = res.data as UTSJSONObject | null
+					if (data == null && buffer.trim() != '') {
+						try { data = JSON.parse(buffer) as UTSJSONObject } catch(e) {}
+					}
+					if (data != null && data['error'] != null) {
+						analysisRawText.value = '⚠️ ' + (data['error'] as string)
+					} else {
+						analysisRawText.value = '⚠️ 请求失败，状态码: ' + res.statusCode
+					}
+				}
+				// 流式结束兜底：若 partial_data 事件未能成功解析（analysisData 仍为 null），
+				// 则将积累的原始 AI 文本当作完整 JSON 解析，显示结构化卡片
+				if (analysisData.value == null && analysisRawText.value != '') {
+					try {
+						let rawJson = analysisRawText.value
+						// 去除可能存在的 markdown 代码块标记
+						const jsonStart = rawJson.indexOf('{')
+						const jsonEnd = rawJson.lastIndexOf('}')
+						if (jsonStart >= 0 && jsonEnd > jsonStart) {
+							rawJson = rawJson.substring(jsonStart, jsonEnd + 1)
+						}
+						const parsed = JSON.parse(rawJson) as UTSJSONObject
+						analysisData.value = parseAnalysisData(parsed)
+						analysisRawText.value = ''
 						const len = analysisData.value!.checklist.length
 						const arr = [] as boolean[]
-						for(let i=0; i<len; i++) {
-							arr.push(false)
-						}
+						for (let k = 0; k < len; k++) { arr.push(false) }
 						checklistStates.value = arr
 						loadChecklistState()
-					} else if (data['rawText'] != null) {
-						analysisRawText.value = data['rawText'] as string
+					} catch (e) {
+						// 解析失败则保持 rawText 兜底显示（文本模式）
 					}
-				} else {
-					analysisRawText.value = '⚠️ AI 分析失败'
 				}
 			},
 			fail: () => {
 				isAnalyzing.value = false
-				analysisRawText.value = '⚠️ 连接 AI 服务失败，请检查本地服务状态。'
+				if (analysisRawText.value == '') {
+					analysisRawText.value = '⚠️ 连接 AI 服务失败或请求超时。'
+				}
+			}
+		})
+
+		reqTask.onChunkReceived((res) => {
+			const chunkStr = decoder.decode(new Uint8Array(res.data as ArrayBuffer))
+			buffer += chunkStr
+			const lines = buffer.split('\n')
+			buffer = lines.pop() ?? ''
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i].trim()
+				if (line == '') continue
+				try {
+					const data = JSON.parse(line) as UTSJSONObject
+					// 兼容返回完整缓存数据的格式
+					if (data['success'] === true && data['data'] != null) {
+						let cachedDataObj: UTSJSONObject | null = null
+						const cachedData = data['data']
+						if (typeof cachedData == 'string') {
+							const str = cachedData as string
+							try {
+								cachedDataObj = JSON.parse(str) as UTSJSONObject
+							} catch(e) {
+								analysisRawText.value = str
+							}
+						} else {
+							cachedDataObj = cachedData as UTSJSONObject
+						}
+						
+						if (cachedDataObj != null) {
+							analysisData.value = parseAnalysisData(cachedDataObj)
+							const len = analysisData.value!.checklist.length
+							const arr = [] as boolean[]
+							for(let k=0; k<len; k++) { arr.push(false) }
+							checklistStates.value = arr
+							loadChecklistState()
+						}
+						
+						isAnalyzing.value = false
+						return
+					}
+
+					if (data['success'] === false) {
+						const errText = (data['error'] as string | null) ?? '请求失败'
+						analysisRawText.value += '\n⚠️ ' + errText
+						isAnalyzing.value = false
+						return
+					}
+
+					if (data['type'] == 'error') {
+						const errText = (data['error'] as string | null) ?? '错误'
+						analysisRawText.value += '\n⚠️ ' + errText
+						isAnalyzing.value = false
+						continue
+					}
+					
+					if (data['type'] == 'partial_data') {
+						const pd = data['data'] as UTSJSONObject
+						analysisData.value = parseAnalysisData(pd)
+						
+						// 动态维护 checklist 的选中状态数组，以免越界
+						const len = analysisData.value!.checklist.length
+						if (checklistStates.value.length < len) {
+							const arr = checklistStates.value
+							for(let k = arr.length; k < len; k++) { arr.push(false) }
+							checklistStates.value = arr
+						}
+					}
+					
+					let token = data['response'] as string | null
+					if (token == null && data['message'] != null) {
+						const msgObj = data['message'] as UTSJSONObject
+						token = msgObj['content'] as string | null
+					}
+					
+					if (token != null) {
+						analysisRawText.value += token
+						scrollToBottom()
+					}
+				} catch (e) {
+				}
 			}
 		})
 	}
 
-	const prefetchNextNode = (node: UTSJSONObject) => {
-		const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
-		const type = (node['type'] as string | null) ?? 'process'
+	let prefetchTimer: number = -1
 
-		uni.request({
-			url: `${AI_BASE_URL}/prefetch-next`,
-			method: 'POST',
-			data: {
-				nodeName: name,
-				nodeType: type,
-				processName: props.processName,
-				model: 'qwen2.5:3b'
+	const prefetchPipeline = (nodes: UTSJSONObject[]) => {
+		if (prefetchTimer != -1) {
+			clearTimeout(prefetchTimer)
+			prefetchTimer = -1
+		}
+		
+		prefetchTimer = setTimeout(() => {
+			const formattedNodes = [] as UTSJSONObject[];
+			for (let i = 0; i < nodes.length; i++) {
+				const node = nodes[i];
+				const name = (node['displayName'] as string | null) ?? (node['name'] as string | null) ?? '未命名节点'
+				const type = (node['type'] as string | null) ?? 'process'
+				formattedNodes.push({ name: name, type: type } as UTSJSONObject);
 			}
-		})
+
+			uni.request({
+				url: `${AI_BASE_URL}/prefetch-pipeline`,
+				method: 'POST',
+				data: {
+					nodes: formattedNodes,
+					processName: props.processName,
+					model: getAiModel()
+				}
+			})
+			prefetchTimer = -1
+		}, 500)
 	}
 
-	const analyzeNode = (node: UTSJSONObject) => {
+	const analyzeNode = (node: UTSJSONObject, force: boolean = false) => {
+		refreshModelDisplay()
 		if (analyzeTimer != -1) {
 			clearTimeout(analyzeTimer)
 			analyzeTimer = -1
@@ -966,8 +1280,8 @@
 		followUpMessages.value = []
 		expandedFaqIndex.value = -1
 		
-		const cacheKey = `${type}:${name}`
-		if (prefetchCache.value.has(cacheKey)) {
+		const cacheKey = `${getAiModel()}:${type}:${name}`
+		if (!force && prefetchCache.value.has(cacheKey)) {
 			analysisData.value = prefetchCache.value.get(cacheKey) as AnalysisData | null
 			if (analysisData.value != null && analysisData.value!.checklist != null) {
 				const len = analysisData.value!.checklist.length
@@ -982,7 +1296,7 @@
 		}
 
 		analyzeTimer = setTimeout(() => {
-			doAnalyze(node)
+			doAnalyze(node, force)
 			analyzeTimer = -1
 		}, 300)
 	}
@@ -994,7 +1308,7 @@
 			type: currentNodeTypeRaw.value,
 			innerId: currentNodeId.value
 		} as UTSJSONObject
-		analyzeNode(node)
+		analyzeNode(node, true)
 	}
 
 	// 追问功能
@@ -1015,7 +1329,11 @@
 		followUpMessages.value.push({ role: 'user', content: text, time: getCurrentTime() } as MsgItem)
 		isFollowUpTyping.value = true
 		followUpMessages.value.push({ role: 'ai', content: '', time: getCurrentTime() } as MsgItem)
-		scrollToBottom()
+		
+		// 延迟等待 DOM 更新完成后再触发滚动
+		setTimeout(() => {
+			scrollToBottom()
+		}, 150)
 
 		const history = [] as UTSJSONObject[]
 		for (let i = 0; i < followUpMessages.value.length - 1; i++) {
@@ -1041,8 +1359,9 @@
 			timeout: 120000,
 			header: { 'Content-Type': 'application/json' },
 			data: {
-				prompt: promptContext,
-				model: 'qwen2.5:3b',
+				prompt: text,
+				context: promptContext,
+				model: getAiModel(),
 				history: history
 			},
 			success: (_res) => {
@@ -1145,10 +1464,7 @@
 		selectedSeverity.value = 'minor'
 	}
 
-	const deleteRecord = (index: number) => {
-		nodeRecords.value.splice(index, 1)
-		uni.setStorageSync(STORAGE_KEY, JSON.stringify(nodeRecords.value))
-	}
+
 
 	const deleteFilteredRecord = (filteredIdx: number) => {
 		const targetRec = filteredRecords.value[filteredIdx]
@@ -1231,7 +1547,7 @@
 
 	defineExpose({
 		analyzeNode,
-		prefetchNextNode
+		prefetchPipeline
 	})
 </script>
 
@@ -1305,6 +1621,10 @@
 	.aip-pill-offline {
 		background-color: #FEF2F2;
 	}
+	
+	.aip-pill-connecting {
+		background-color: #FFFBEB;
+	}
 
 	.aip-status-dot {
 		width: 6px;
@@ -1319,6 +1639,10 @@
 
 	.aip-dot-offline {
 		background-color: #EF4444;
+	}
+	
+	.aip-dot-connecting {
+		background-color: #F59E0B;
 	}
 
 	.aip-status-text {
@@ -1467,29 +1791,7 @@
 		margin: 0 auto;
 	}
 
-	.aip-analysis-section {
-		padding: 14px 14px 0 14px;
-	}
 
-	.aip-section-label-row {
-		flex-direction: row;
-		align-items: center;
-		margin-bottom: 10px;
-	}
-
-	.aip-section-label-dot {
-		width: 3px;
-		height: 14px;
-		border-radius: 2px;
-		background-color: #0284C7;
-		margin-right: 6px;
-	}
-
-	.aip-section-label {
-		color: #0284C7;
-		font-size: 12px;
-		font-weight: bold;
-	}
 
 	.aip-analysis-text {
 		color: #1E3A5F;
@@ -1595,11 +1897,7 @@
 		padding: 32px 20px;
 	}
 
-	.aip-offline-emoji {
-		font-size: 32px;
-		margin-bottom: 12px;
-		text-align: center;
-	}
+
 
 	.aip-offline-text {
 		color: #94A3B8;
@@ -1682,61 +1980,20 @@
 		height: 14px;
 	}
 
-	.aip-rec-export-text {
-		color: #0284C7;
-		font-size: 11px;
-		font-weight: bold;
-	}
+
 
 	.aip-rec-list {
 		padding: 0 14px;
 	}
 
-	.aip-rec-card {
-		background-color: #FFFFFF;
-		border-radius: 8px;
-		padding: 10px 12px;
-		margin-bottom: 8px;
-		border: 1px solid #E2E8F0;
-	}
 
-	.aip-rec-card-header {
-		flex-direction: row;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 6px;
-	}
-
-	.aip-rec-card-time {
-		color: #94A3B8;
-		font-size: 11px;
-	}
-
-	.aip-rec-delete-btn {
-		padding: 2px 6px;
-		border-radius: 4px;
-	}
-
-	.aip-rec-delete-icon {
-		font-size: 12px;
-	}
-
-	.aip-rec-card-content {
-		color: #334155;
-		font-size: 13px;
-		line-height: 1.6em;
-	}
 
 	.aip-rec-empty {
 		padding: 40px 24px;
 		align-items: center;
 	}
 
-	.aip-rec-empty-emoji {
-		font-size: 36px;
-		margin-bottom: 12px;
-		text-align: center;
-	}
+
 
 	.aip-rec-empty-title {
 		color: #1E3A5F;
@@ -1813,9 +2070,7 @@
 		background-color: #FEF3C7;
 	}
 
-	.aip-mode-toggle-text {
-		font-size: 16px;
-	}
+
 
 	.aip-action-btns {
 		flex-direction: row;
@@ -1833,13 +2088,7 @@
 		border-width: 0;
 	}
 
-	.aip-send-btn-disabled {
-		background-color: #CBD5E1;
-	}
 
-	.aip-send-btn-record {
-		background-color: #D97706;
-	}
 
 	.aip-send-arrow-svg {
 		width: 16px;
@@ -1871,6 +2120,24 @@
 		transition-duration: 0.2s;
 	}
 
+	.aip-offline-icon {
+		width: 48px;
+		height: 48px;
+		margin-bottom: 12px;
+		opacity: 0.5;
+	}
+
+	.aip-empty-hint {
+		padding: 12px;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.aip-empty-hint-text {
+		font-size: 13px;
+		color: #94A3B8;
+	}
+
 	.aip-sev-dot {
 		width: 8px;
 		height: 8px;
@@ -1884,6 +2151,18 @@
 		background-color: #EF4444;
 		border-radius: 2px;
 	}
+
+	.aip-quality-section { padding: 14px; }
+	.aip-quality-input-area { flex-direction: row; align-items: center; margin-top: 10px; }
+	.aip-quality-input { flex: 1; height: 36px; background-color: #F1F5F9; border-radius: 8px; padding: 0 12px; font-size: 13px; color: #334155; margin-right: 8px; }
+	.aip-quality-btn { height: 36px; padding: 0 16px; background-color: #059669; border-radius: 8px; justify-content: center; align-items: center; border-width: 0; }
+	.aip-quality-btn-text { color: #FFFFFF; font-size: 13px; font-weight: bold; }
+	.aip-quick-diag-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 10px; }
+	.aip-quick-diag-btn { background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 10px; margin-right: 6px; margin-bottom: 6px; }
+	.aip-quick-diag-text { color: #92400E; font-size: 11px; }
+
+	.aip-chip { background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+	.aip-chip-text { color: #0284C7; font-size: 13px; line-height: 1.4; white-space: normal; }
 
 .aip-card { background-color: #FFFFFF; border-radius: 10px; padding: 12px 14px; margin: 6px 14px 6px 14px; border: 1px solid #E2E8F0; }
 .aip-card-header { flex-direction: row; align-items: center; margin-bottom: 10px; }
@@ -1922,20 +2201,10 @@
 .aip-faq-arrow { color: #94A3B8; font-size: 12px; }
 .aip-faq-a { padding: 6px 0 0 0; }
 .aip-faq-a-text { color: #64748B; font-size: 12px; line-height: 1.6em; }
-.aip-chip-row { flex-direction: row; flex-wrap: wrap; }
-.aip-chip { background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 16px; padding: 5px 12px; margin-right: 6px; margin-bottom: 6px; }
-.aip-chip-text { color: #0284C7; font-size: 11px; }
+.aip-chip-row { flex-direction: column; }
 .aip-skeleton-card { background-color: #FFFFFF; border-radius: 10px; padding: 14px; margin: 6px 14px; border: 1px solid #E2E8F0; }
 .aip-skeleton-line { height: 12px; border-radius: 6px; background-color: #E2E8F0; margin-bottom: 8px; }
 .aip-skeleton-line-short { height: 12px; width: 60%; border-radius: 6px; background-color: #E2E8F0; margin-bottom: 8px; }
-.aip-quality-section { padding: 14px; }
-.aip-quality-input-area { flex-direction: row; align-items: center; margin-top: 10px; }
-.aip-quality-input { flex: 1; height: 36px; background-color: #F1F5F9; border-radius: 8px; padding: 0 12px; font-size: 13px; color: #334155; margin-right: 8px; }
-.aip-quality-btn { height: 36px; padding: 0 16px; background-color: #059669; border-radius: 8px; justify-content: center; align-items: center; border-width: 0; }
-.aip-quality-btn-text { color: #FFFFFF; font-size: 13px; font-weight: bold; }
-.aip-quick-diag-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 10px; }
-.aip-quick-diag-btn { background-color: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; padding: 6px 10px; margin-right: 6px; margin-bottom: 6px; }
-.aip-quick-diag-text { color: #92400E; font-size: 11px; }
 .aip-diag-result-card { background-color: #FFFFFF; border-radius: 10px; padding: 14px; margin-top: 10px; border: 1px solid #E2E8F0; }
 .aip-diag-title { color: #0F172A; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
 .aip-diag-text { color: #334155; font-size: 12px; line-height: 1.6em; }
@@ -1999,8 +2268,7 @@
 .aip-sev-btn-text { font-size: 11px; color: #475569; }
 .aip-sev-btn-text-active { font-weight: bold; }
 
-/* 输入行包裹 */
-.aip-input-row { flex-direction: row; align-items: flex-end; width: 100%; max-width: 800px; }
+
 
 /* 记录卡片 v2 */
 .aip-rec-card-v2 { flex-direction: row; background-color: #FFFFFF; border-radius: 10px; margin: 4px 14px; border: 1px solid #E2E8F0; overflow: hidden; }

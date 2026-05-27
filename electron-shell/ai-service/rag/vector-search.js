@@ -122,10 +122,12 @@ function reciprocalRankFusion(resultsLists, k = 60) {
 /**
  * 混合检索：根据用户问题提取 Graph 实体系与 Vector 相似块
  * @param {string} question - 用户问题
- * @param {number} topK - 返回的最大向量结果数，默认 3
+ * @param {number} topK - 返回的最大向量结果数，默认 2 (压缩上下文提速)
+ * @param {number} maxContextLength - 返回结果的最大合并字符长度限制，默认 1500
+ * @param {Object} profile - 模型配置
  * @returns {Promise<Array>} 融合后的 Context Chunk 列表
  */
-async function searchSimilar(question, topK = 3) {
+async function searchSimilar(question, topK = 2, maxContextLength = 1500, profile = null) {
   if (!question || question.trim() === '') return []
 
   // 如果缓存在 1 分钟内已经被预加载过该问题的结果，直接返回！偷走几百毫秒
@@ -162,7 +164,7 @@ async function searchSimilar(question, topK = 3) {
   }
 
   // 2. BM25 检索 (同步)
-  const bm25Results = searchBM25(question, topK * 2);
+  const bm25Results = searchBM25(question, 1);
 
   // 3. 向量检索 (异步)
   let vectorResults = []
@@ -178,7 +180,7 @@ async function searchSimilar(question, topK = 3) {
       }))
       
       scored.sort((a, b) => b.score - a.score)
-      const MIN_SIMILARITY_THRESHOLD = 0.55
+      const MIN_SIMILARITY_THRESHOLD = profile?.rag?.minSimilarity ?? 0.55
       const validResults = scored.filter(item => item.score >= MIN_SIMILARITY_THRESHOLD)
       vectorResults = validResults.slice(0, topK * 2)
       
@@ -192,17 +194,24 @@ async function searchSimilar(question, topK = 3) {
 
   // 4. 三路 RRF 融合 (Graph, BM25, Vector)
   let combined = [];
-  if (graphResults.length > 0 || bm25Results.length > 0 || vectorResults.length > 0) {
+  
+  // 核心硬拦截优化：如果图谱和深度语义向量（>0.55阈值）都没有找到任何一条相关记录，
+  // 那么单靠 BM25 匹配出的（往往是“是”、“的”等停用词导致的低分假阳性）是纯纯的噪音。
+  // 在这种情况下，我们直接判定为“零召回”，返回空数组，以便上层网关触发硬拦截，避免大模型幻觉！
+  if (graphResults.length === 0 && vectorResults.length === 0) {
+      console.log(`[Hybrid Search] 图谱与向量均未命中，判定为域外闲聊/常识问题，丢弃 BM25 噪音并返回零召回。`);
+      // 不进行融合，直接保持 combined = []
+  } else if (graphResults.length > 0 || bm25Results.length > 0 || vectorResults.length > 0) {
     // 为保证图谱的绝对优先级，我们让图谱列表在前，使得它在融合时 rank 高
     combined = reciprocalRankFusion([graphResults, bm25Results, vectorResults]);
     console.log(`[Hybrid Search] RRF 融合完成，共获取 ${combined.length} 条去重记录`);
   }
   
-  // 返回融合后的上下文片段，并根据总 Token 长度（近似控制在 1000 字符内）进行截断
+  // 返回融合后的上下文片段，并根据总 Token 长度（近似控制在 maxContextLength 字符内）进行截断
   const finalResults = [];
   let totalLength = 0;
   for (const item of combined) {
-    if (totalLength + item.text.length > 1500 && finalResults.length > 0) {
+    if (totalLength + item.text.length > maxContextLength && finalResults.length > 0) {
        break; // 超过字符长度限制
     }
     finalResults.push(item);
@@ -229,6 +238,5 @@ function clearCache() {
 
 module.exports = {
   searchSimilar,
-  clearCache,
-  cosineSimilarity
+  clearCache
 }

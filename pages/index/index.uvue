@@ -23,10 +23,15 @@
 				<image src="/static/logo.png" style="width: 20px; height: 20px; margin-right: 12px;" mode="aspectFit"></image>
 				
 				<!-- 文件菜单按钮 -->
-				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center;" @click="toggleSettingsMenu">
+				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center;" @click="toggleMenu('file')">
 					<text style="font-size: 13px; color: #334155;">文件</text>
 				</view>
 				
+				<!-- 设置菜单按钮 -->
+				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; margin-left: 4px;" @click="toggleMenu('settings')">
+					<text style="font-size: 13px; color: #334155;">设置</text>
+				</view>
+
 				<!-- 关于菜单按钮 -->
 				<view class="vscode-menu-btn" style="-webkit-app-region: no-drag; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; margin-left: 4px;" @click="showAboutDialog = true">
 					<text style="font-size: 13px; color: #334155;">关于</text>
@@ -268,23 +273,26 @@
 	<!-- #endif -->
 	
 	<!-- 设置菜单遮罩层 -->
-	<view v-if="isSettingsMenuVisible" class="settings-overlay" :style="{ top: isPC ? '36px' : '0' }" @click="closeSettingsMenu"></view>
+	<view v-if="activeMenu != ''" class="settings-overlay" @click.stop="closeSettingsMenu" @mousedown.stop="closeSettingsMenu"></view>
 	
-	<!-- 设置下拉菜单 (根据平台调整位置) -->
-	<view v-if="isSettingsMenuVisible" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '36px' : 'auto', right: isPC ? 'auto' : '20px' }">
+	<!-- 文件下拉菜单 (根据平台调整位置) -->
+	<view v-if="activeMenu == 'file'" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '36px' : 'auto', right: isPC ? 'auto' : '20px' }">
 		<view class="menu-item" @click="handleImportData">
-			<text class="menu-item-icon">📦</text>
-			<text class="menu-item-text">导入数据包</text>
+			<text class="menu-item-text" style="flex: 1;">导入数据包</text>
+			<text class="menu-item-shortcut">Ctrl+I</text>
 		</view>
 		<view class="menu-divider"></view>
 		<view class="menu-item" @click="toggleAiMode(); closeSettingsMenu()">
-			<text class="menu-item-icon">🤖</text>
-			<text class="menu-item-text">{{ isAiMode ? '退出AI模式' : '进入AI模式' }}</text>
+			<text class="menu-item-text" style="flex: 1;">{{ isAiMode ? '退出AI模式' : '进入AI模式' }}</text>
+			<text class="menu-item-shortcut">Ctrl+M</text>
 		</view>
-		<view class="menu-divider"></view>
+	</view>
+
+	<!-- 设置下拉菜单 (根据平台调整位置) -->
+	<view v-if="activeMenu == 'settings'" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '80px' : 'auto', right: isPC ? 'auto' : '20px' }">
 		<view class="menu-item menu-item-danger" @click="handleResetData">
-			<text class="menu-item-icon">🔄</text>
-			<text class="menu-item-text-danger">重置数据</text>
+			<text class="menu-item-text-danger" style="flex: 1;">重置数据</text>
+			<text class="menu-item-shortcut">Ctrl+R</text>
 		</view>
 	</view>
 	
@@ -416,8 +424,6 @@
 	<!-- 关于弹窗组件 -->
 	<about-dialog v-if="showAboutDialog" @close="showAboutDialog = false" />
 
-	<!-- 离线AI工艺助手抽屉 -->
-	<ai-drawer v-if="showAiDrawer" :processName="currentProcessName" @close="showAiDrawer = false" />
 
 
 </template>
@@ -559,6 +565,15 @@
 				nextTick(() => {
 					if (aiPanelRef.value != null) {
 						(aiPanelRef.value as any).$callMethod('analyzeNode', selectedRow.value!)
+						
+						// 自动预取剩余的工艺链路节点
+						const list = flatNodes.value
+						const targetId = getNodeId(selectedRow.value!)
+						const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
+						if (index >= 0 && index < list.length - 1) {
+							const nextNodes = list.slice(index + 1)
+							;(aiPanelRef.value as any).$callMethod('prefetchPipeline', nextNodes)
+						}
 					}
 				})
 			}
@@ -848,30 +863,35 @@
 	}
 	
 	// 设置菜单显示状态
-	const isSettingsMenuVisible = ref(false)
+	const activeMenu = ref('')
 	
 	/**
 	 * 切换设置菜单显示状态
 	 */
-	const toggleSettingsMenu = () => {
-		isSettingsMenuVisible.value = !isSettingsMenuVisible.value
+	const toggleMenu = (menu: string) => {
+		if (activeMenu.value == menu) {
+			activeMenu.value = ''
+		} else {
+			activeMenu.value = menu
+		}
 	}
 	
 	/**
-	 * 关闭设置菜单
+	 * 关闭设置菜单 (兼容旧调用)
 	 */
 	const closeSettingsMenu = () => {
-		isSettingsMenuVisible.value = false
+		activeMenu.value = ''
 	}
 	
 	const showImportDrawer = ref(false)
 	const showAboutDialog = ref(false)
-	const showAiDrawer = ref(false)
+
 	
 	const handleImportSuccess = () => {
 		initData(null)
 		autoRebuildAiIndex()
 	}
+	
 	
 	/**
 	 * 处理导入数据包 - 显示导入抽屉组件
@@ -1492,13 +1512,13 @@
 				if (aiPanelRef.value != null) {
 					(aiPanelRef.value as any).$callMethod('analyzeNode', fullRow)
 					
-					// 自动预取下一个节点
+					// 自动预取剩余的工艺链路节点
 					const list = flatNodes.value
 					const targetId = getNodeId(fullRow)
 					const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
 					if (index >= 0 && index < list.length - 1) {
-						const nextNode = list[index + 1]
-						;(aiPanelRef.value as any).$callMethod('prefetchNextNode', nextNode)
+						const nextNodes = list.slice(index + 1)
+						;(aiPanelRef.value as any).$callMethod('prefetchPipeline', nextNodes)
 					}
 				}
 			})
@@ -1762,6 +1782,7 @@
 	 * 全局键盘事件处理（快捷键等）
 	 */
 	const handleGlobalKeyDown = (e : any) => {
+
 		// 导入数据快捷键 Ctrl+I
 		if (e.ctrlKey == true && (e.key == 'i' || e.key == 'I' || e.key == 'l' || e.key == 'L')) {
 			if (typeof e.preventDefault == 'function') {
@@ -2783,13 +2804,25 @@
 		margin: 4px 12px;
 	}
 	
+	.menu-item-shortcut {
+		font-size: 12px;
+		color: #9CA3AF;
+		margin-left: 20px;
+	}
+	
 	.settings-overlay {
 		position: fixed;
+		top: 0;
 		left: 0;
 		right: 0;
 		bottom: 0;
+		width: 100%;
+		height: 100%;
 		background-color: transparent;
 		z-index: 1999;
+		/* #ifdef WEB */
+		-webkit-app-region: no-drag;
+		/* #endif */
 	}
 
 	/* ========== 头部图标样式 ========== */

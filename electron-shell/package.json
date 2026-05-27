@@ -1,7 +1,7 @@
 {
   "name": "kaiwu",
-  "version": "1.7.0-AIBeta-40",
-  "description": "开物",
+  "version": "1.7.0-AIBeta-42",
+  "description": "CraftX",
   "author": "北京神舟航天软件技术股份有限公司",
   "main": "main.js",
   "scripts": {
@@ -9,10 +9,16 @@
     "build:web": "echo '请在 HBuilderX 中编译 H5 产物'",
     "copy:dist": "node scripts/copy-dist.js",
     "clean": "node scripts/clean.js",
-    "pack:win": "npm run clean && electron-builder --win --x64",
-    "pack:linux-x64": "electron-builder --linux --x64",
-    "pack:linux-arm64": "electron-builder --linux --arm64",
-    "pack:all": "electron-builder --win --linux"
+    "prepare:lite": "node scripts/prepare-model.js lite",
+    "prepare:standard": "node scripts/prepare-model.js standard",
+    "prepare:pro": "node scripts/prepare-model.js pro",
+    "pack:win": "node scripts/build-gpu.js all",
+    "pack:win:cpu": "node scripts/build-gpu.js cpu",
+    "pack:win:nvidia": "node scripts/build-gpu.js nvidia",
+    "pack:win:amd": "node scripts/build-gpu.js amd",
+    "pack:linux-x64": "npm run prepare:pro && electron-builder --linux --x64 --config electron-builder.js",
+    "pack:linux-arm64": "npm run prepare:pro && electron-builder --linux --arm64 --config electron-builder.js",
+    "pack:all": "npm run prepare:pro && electron-builder --win --linux --config electron-builder.js"
   },
   "devDependencies": {
     "electron": "^42.0.0",
@@ -20,9 +26,10 @@
     "javascript-obfuscator": "^5.4.2"
   },
   "dependencies": {
-    "electron-updater": "^6.8.3",
-    "express": "^4.19.2",
+    "@xenova/transformers": "^2.17.2",
     "axios": "^1.7.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "electron-updater": "^6.8.3",
+    "express": "^4.19.2"
   }
 }
