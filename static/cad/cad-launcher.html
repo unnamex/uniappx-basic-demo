@@ -21,14 +21,20 @@
       justify-content: center;
       align-items: center;
       height: 100%;
+      width: 100%;
       font-family: system-ui, -apple-system, sans-serif;
       color: #6b7280;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 9999;
+      background-color: #f3f4f6;
     }
   </style>
 </head>
 
 <body>
-  <div class="loading">加载 CAD 图纸中，请稍候...</div>
+  <div class="loading">加载中，请稍候...</div>
   <script>
     /**
      * 沙盒兼容脚本：注入到 CAD HTML 的 <head> 中，在引擎代码执行前优先运行。
@@ -90,23 +96,7 @@
         '  }\n' +
         '\n' +
         '  // 4. /pdm/ 无效 API 拦截\n' +
-        '  var origOpen = window.XMLHttpRequest.prototype.open;\n' +
-        '  window.XMLHttpRequest.prototype.open = function(method, url) {\n' +
-        '    if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n' +
-        '      url = "http://127.0.0.1:1/offline_block";\n' +
-        '    }\n' +
-        '    return origOpen.apply(this, arguments);\n' +
-        '  };\n' +
-        '  var origFetch = window.fetch;\n' +
-        '  if (origFetch) {\n' +
-        '    window.fetch = function() {\n' +
-        '      var url = arguments[0];\n' +
-        '      if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n' +
-        '        return Promise.reject(new TypeError("Failed to fetch"));\n' +
-        '      }\n' +
-        '      return origFetch.apply(this, arguments);\n' +
-        '    };\n' +
-        '  }\n' +
+        '  var origOpen = window.XMLHttpRequest.prototype.open;\n  window.XMLHttpRequest.prototype.open = function(method, url) {\n    if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n      url = "http://127.0.0.1:1/offline_block";\n    } else if (typeof url === "string" && url.indexOf("/fonts/") !== -1 && (url.indexOf(".ttf") !== -1 || url.indexOf(".woff") !== -1)) {\n      var parts = url.split("/");\n      arguments[1] = "../ranuts-document/fonts/" + parts[parts.length-1];\n    }\n    return origOpen.apply(this, arguments);\n  };\n  var origFetch = window.fetch;\n  if (origFetch) {\n    window.fetch = function() {\n      var url = arguments[0];\n      if (typeof url === "string" && url.indexOf("/pdm/") !== -1) {\n        return Promise.reject(new TypeError("Failed to fetch"));\n      } else if (typeof url === "string" && url.indexOf("/fonts/") !== -1 && (url.indexOf(".ttf") !== -1 || url.indexOf(".woff") !== -1)) {\n        var parts = url.split("/");\n        arguments[0] = "../ranuts-document/fonts/" + parts[parts.length-1];\n      }\n      return origFetch.apply(this, arguments);\n    };\n  }\n' +
         '})();\n' +
         '</' + 'script>';
     }
@@ -116,18 +106,10 @@
       var shimScript = buildSandboxShimScript();
 
       // 计算 baseUrl
-      var baseUrl = window.location.origin;
-      if (!baseUrl || baseUrl === 'null' || baseUrl === 'file://') {
-        baseUrl = 'http://127.0.0.1:1/';
-      } else {
-        baseUrl += '/';
-      }
-      var headInsert = '<base href="' + baseUrl + '" />\n' + shimScript;
+      var headInsert = '<style>html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }</style>\n' + shimScript;
 
       // 注入到 <head> 最前面，确保沙盒脚本先于引擎代码执行
-      if (htmlContent.indexOf('<base href="/"') !== -1) {
-        htmlContent = htmlContent.replace(/<base href="\/".*?>/, headInsert);
-      } else if (htmlContent.indexOf('<head>') !== -1) {
+      if (htmlContent.indexOf('<head>') !== -1) {
         htmlContent = htmlContent.replace('<head>', '<head>\n  ' + headInsert);
       } else {
         htmlContent = headInsert + '\n' + htmlContent;
@@ -137,21 +119,38 @@
       htmlContent = htmlContent.replace(/\blocalStorage\b/g, 'window._mockStorage');
       htmlContent = htmlContent.replace(/\bsessionStorage\b/g, 'window._mockStorage');
 
-      // 使用 Blob + iframe 渲染
-      var blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      var blobUrl = URL.createObjectURL(blob);
+      // 为了避免 Blob 环境下的沙盒安全限制（如 WebWorker / IndexedDB 跨域拦截），
+      // 使用 document.write 将内容直接写入同源 iframe。
+      var existingIframe = document.querySelector('iframe');
+      if (existingIframe) {
+        document.body.removeChild(existingIframe);
+      }
 
       var iframe = document.createElement('iframe');
       iframe.style.cssText = 'width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;';
-      iframe.src = blobUrl;
-
-      iframe.onload = function () {
-        var loading = document.querySelector('.loading');
-        if (loading) loading.style.display = 'none';
-        URL.revokeObjectURL(blobUrl);
-      };
-
       document.body.appendChild(iframe);
+
+      var doc = iframe.contentWindow.document;
+      doc.open();
+      
+      doc.write(htmlContent);
+      doc.close();
+
+      var loading = document.querySelector('.loading');
+      if (loading) {
+        var checkReady = setInterval(function() {
+          if (doc.querySelector('canvas')) {
+            clearInterval(checkReady);
+            loading.style.display = 'none';
+          }
+        }, 100);
+
+        // 最长等待 15 秒后强制隐藏 loading
+        setTimeout(function() {
+          clearInterval(checkReady);
+          loading.style.display = 'none';
+        }, 15000);
+      }
     }
 
     // ========== 方式一：通过 URL 参数 fetch 加载（WEB 端使用） ==========
@@ -185,8 +184,8 @@
 
         renderCadHtml(htmlContent);
       } catch (err) {
-        console.error('CAD 文件加载失败:', err);
-        document.body.innerHTML = '<div class="loading" style="color:#ef4444">CAD 文件加载失败: ' + err.message + '</div>';
+        console.error('图纸加载失败:', err);
+        document.body.innerHTML = '<div class="loading" style="color:#ef4444">图纸加载失败: ' + err.message + '</div>';
       }
     })();
 
@@ -206,8 +205,8 @@
         var htmlContent = new TextDecoder('utf-8').decode(bytes);
         renderCadHtml(htmlContent);
       } catch (err) {
-        console.error('CAD Base64 解码失败:', err);
-        document.body.innerHTML = '<div class="loading" style="color:#ef4444">CAD 加载失败: ' + err.message + '</div>';
+        console.error('Base64 解码失败:', err);
+        document.body.innerHTML = '<div class="loading" style="color:#ef4444">图纸加载失败: ' + err.message + '</div>';
       }
     };
   </script>

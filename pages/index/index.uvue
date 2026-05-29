@@ -299,28 +299,39 @@
 	<!-- 全屏资源预览覆盖层 -->
 	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
 		<view class="fullscreen-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 0) + 'px' }">
-			<!-- 头部工具栏 (PC端预留右上角原生按钮空间) -->
-			<view class="fullscreen-header" :style="{ height: isPC ? '36px' : 'auto', paddingRight: '0', paddingLeft: '12px', '-webkit-app-region': isPC ? 'drag' : 'none' }">
-				<!-- 左侧留白，如果后续需要添加标题等 -->
-				<view class="header-left" style="-webkit-app-region: no-drag;">
+			<!-- 头部工具栏 -->
+			<view class="fullscreen-header" :style="{ height: isPC ? '40px' : 'auto', '-webkit-app-region': isPC ? 'drag' : 'none' }">
+				<!-- 左侧留白，保证中间区域居中 -->
+				<view class="header-left-spacer" style="-webkit-app-region: no-drag;">
 				</view>
 				
-				<!-- 居中导航区域 (动态居中于左侧图片查看器区域) -->
+				<!-- 居中导航区域：胶囊切换器 + 文件名 -->
 				<view class="header-center" :style="{ right: isFullscreenListVisible ? '160px' : '0', '-webkit-app-region': 'no-drag' }">
-					<view v-if="nodeResources.length > 1" class="header-nav-btn" @click="goPrevResource">
-						<text class="header-nav-icon">‹</text>
+					<!-- 文件切换胶囊 -->
+					<view v-if="nodeResources.length > 1" class="nav-capsule">
+						<view class="capsule-btn" @click="goPrevResource">
+							<text class="capsule-arrow">‹</text>
+						</view>
+						<text class="capsule-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
+						<view class="capsule-btn" @click="goNextResource">
+							<text class="capsule-arrow">›</text>
+						</view>
 					</view>
-					<text v-if="nodeResources.length > 0" class="resource-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
-					<view v-if="nodeResources.length > 1" class="header-nav-btn" @click="goNextResource">
-						<text class="header-nav-icon">›</text>
+					<!-- 仅1个资源时显示简洁计数 -->
+					<view v-else-if="nodeResources.length == 1" class="nav-capsule-solo">
+						<text class="capsule-counter">1 / 1</text>
 					</view>
+					<!-- 分隔点 -->
+					<text v-if="previewResource != null" class="header-dot-separator">·</text>
+					<!-- 文件名 -->
+					<text v-if="previewResource != null" class="fullscreen-resource-name">{{ previewResourceNameDisplay }}</text>
 				</view>
 
-				<!-- 右侧操作区 (动态居中于 160px 的折叠列表区域) -->
-				<view class="header-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', paddingRight: isFullscreenListVisible ? '0' : '16px', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
+				<!-- 右侧操作区 -->
+				<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
 					<!-- 列表显示/隐藏按钮 -->
-					<view class="header-btn" @click="toggleFullscreenList">
-						<text class="header-btn-icon">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
+					<view class="header-action-btn" @click="toggleFullscreenList">
+						<text class="header-action-icon">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
 					</view>
 					<!-- 关闭按钮 -->
 					<view class="fullscreen-close" @click="toggleResourceMaximize">
@@ -644,7 +655,15 @@
 	// 资源预览相关状态
 	const nodeResources = ref([] as ResourceItem[])
 	const nodeResourcesTitle = ref('资源列表')
-	const previewResource = ref(null as ResourceItem | null)
+		const previewResource = ref(null as ResourceItem | null)
+	const previewResourceNameDisplay = computed((): string => {
+		const name = previewResource.value?.name ?? ''
+		const lastDotIndex = name.lastIndexOf('.')
+		if (lastDotIndex > 0) {
+			return name.substring(0, lastDotIndex)
+		}
+		return name
+	})
 	const previewResourceId = computed((): string => previewResource.value != null ? previewResource.value!.id : '')
 	const isResourceMaximized = ref(false)
 	const isFullscreenListVisible = ref(false)
@@ -2318,11 +2337,9 @@
 		flex: none;
 	}
 	
-	.header-left {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		width: 140px; /* Balance with the right actions width if needed */
+
+	.header-left-spacer {
+		width: 140px; /* Balance with the right actions width */
 	}
 	
 	.header-center {
@@ -2331,7 +2348,7 @@
 		right: 0; /* will be overridden by inline style */
 		margin-left: auto;
 		margin-right: auto;
-		width: 160px;
+		width: auto;
 		display: flex;
 		flex-direction: row;
 		justify-content: center;
@@ -2346,26 +2363,38 @@
 		font-weight: 600;
 	}
 	
-	.resource-counter {
-		font-size: 14px;
-		color: #334155;
-		font-weight: 600;
-		margin: 0 12px;
+	/* 导航胶囊外壳 */
+	.nav-capsule {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		background-color: #F1F5F9;
+		border-radius: 16px;
+		height: 32px;
+		padding: 0 4px;
+		border: 1px solid #E2E8F0;
 	}
 	
-	/* 头部导航按钮 — 精致圆形，与浮动按钮风格统一 */
-	.header-nav-btn {
-		width: 28px;
-		height: 28px;
+	.nav-capsule-solo {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		background-color: #F8FAFC;
+		border-radius: 16px;
+		height: 32px;
+		padding: 0 16px;
+		border: 1px solid #E2E8F0;
+	}
+
+	/* 胶囊内的按钮 */
+	.capsule-btn {
+		width: 26px;
+		height: 26px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #F1F5F9;
-		border-radius: 14px;
-		border-width: 1px;
-		border-style: solid;
-		border-color: #E2E8F0;
-		transition-property: background-color, transform, box-shadow;
+		border-radius: 13px;
+		transition-property: background-color, transform;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
 		cursor: pointer;
@@ -2373,43 +2402,73 @@
 	}
 	
 	/* #ifdef WEB */
-	.header-nav-btn:hover {
+	.capsule-btn:hover {
 		background-color: #E2E8F0;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 	}
 	/* #endif */
 	
-	.header-nav-btn:active {
+	.capsule-btn:active {
 		background-color: #CBD5E1;
 		transform: scale(0.9);
 	}
 	
-	.header-nav-icon {
-		font-size: 16px;
+	.capsule-arrow {
+		font-size: 18px;
 		color: #475569;
 		font-weight: bold;
+		line-height: 1;
+		margin-top: -2px; /* 微调箭头居中 */
 	}
 	
-	.header-actions {
+	.capsule-counter {
+		font-size: 13px;
+		color: #334155;
+		font-weight: 600;
+		margin: 0 12px;
+		min-width: 36px;
+		text-align: center;
+	}
+	
+	/* 分隔点 */
+	.header-dot-separator {
+		font-size: 16px;
+		color: #94A3B8;
+		font-weight: bold;
+		margin: 0 12px;
+	}
+
+	.fullscreen-resource-name {
+		font-size: 15px;
+		color: #1E293B;
+		font-weight: 500;
+		/* #ifndef APP */
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 300px;
+		/* #endif */
+	}
+
+	.header-right-actions {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		transition-property: width, padding-right;
+		transition-property: width;
 		transition-duration: 0.3s;
 	}
 	
-	.header-btn {
+	.header-action-btn {
 		width: 32px;
 		height: 32px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #F1F5F9;
+		background-color: #FFFFFF;
 		border-radius: 10px;
 		border: 1px solid #E2E8F0;
 		margin-right: 12px;
 		/* #ifdef WEB */
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 		/* #endif */
 		transition-property: background-color, box-shadow, transform, border-color;
 		transition-duration: 0.15s;
@@ -2418,16 +2477,16 @@
 		/* #endif */
 	}
 	
-	.header-btn:active {
+	.header-action-btn:active {
 		background-color: #F8FAFC;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+		box-shadow: none;
 		transform: scale(0.95);
 		border-color: #CBD5E1;
 	}
 	
-	.header-btn-icon {
-		font-size: 18px;
-		color: #334155;
+	.header-action-icon {
+		font-size: 16px;
+		color: #475569;
 	}
 	
 	.fullscreen-close {
@@ -2436,7 +2495,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: #FFFFFF;
+		background-color: #F1F5F9;
 		border-radius: 16px;
 		border: 1px solid #E2E8F0;
 		/* #ifdef WEB */
@@ -2915,5 +2974,8 @@
 	}
 
 </style>
+
+
+
 
 

@@ -54,29 +54,25 @@
 							</view>
 						</view>
 						
-						<!-- 音频类型显示音符图标 -->
-						<view v-else-if="item.type == 'audio'" class="thumb-placeholder audio-placeholder">
-							<text class="placeholder-icon">🎵</text>
-							<view class="audio-waves">
-								<view class="wave-line"></view>
-								<view class="wave-line"></view>
-								<view class="wave-line"></view>
-							</view>
-						</view>
-						
-						<!-- 文档类型显示文档图标 -->
-						<view v-else-if="item.type == 'document'" class="thumb-placeholder doc-placeholder">
-							<text class="placeholder-icon">📄</text>
-						</view>
-						
-						<!-- 未知类型 -->
+						<!-- 统一纸张图标：音频/文档/未知 全部使用一致的纸张+折角+底色带框架 -->
 						<view v-else class="thumb-placeholder">
-							<text class="placeholder-icon">📎</text>
-						</view>
-						
-						<!-- 类型标签 -->
-						<view class="type-badge" :class="'badge-' + item.type">
-							<text class="badge-text">{{ getTypeLabel(item.type) }}</text>
+							<view class="doc-icon-wrapper">
+								<!-- 纸张主体 -->
+								<view class="doc-paper">
+									<!-- 折角装饰 -->
+									<view class="doc-fold" :class="'doc-fold-' + getDocCategory(item.type)"></view>
+									<!-- 内容区域：横线模拟文档内容 -->
+									<view class="doc-content-lines">
+										<view class="doc-line doc-line-long" :class="'doc-line-color-' + getDocCategory(item.type)"></view>
+										<view class="doc-line doc-line-medium" :class="'doc-line-color-' + getDocCategory(item.type)"></view>
+										<view class="doc-line doc-line-short" :class="'doc-line-color-' + getDocCategory(item.type)"></view>
+									</view>
+								</view>
+								<!-- 底部品牌色带 + 字母 -->
+								<view class="doc-brand-bar" :class="'doc-bar-' + getDocCategory(item.type)">
+									<text class="doc-brand-letter">{{ getDocLetter(item.type) }}</text>
+								</view>
+							</view>
 						</view>
 					</view>
 					
@@ -106,7 +102,7 @@
 </template>
 
 <script setup lang="uts">
-	import { ResourceItem, getResourceTypeLabel, formatDuration } from '@/types/resource'
+	import { ResourceItem, formatDuration } from '@/types/resource'
 	
 	// Props
 	const props = defineProps<{
@@ -141,10 +137,31 @@
 		const offset = scrollProgress.value * maxOffset
 		return `translateX(${offset}px)`
 	})
-	
+
 	// === 工具方法 ===
-	const getTypeLabel = (type: string): string => {
-		return getResourceTypeLabel(type)
+	const getDocCategory = (type: string): string => {
+		if (['doc', 'docx', 'wps', 'wpt'].includes(type)) return 'word'
+		if (['xls', 'xlsx', 'et', 'ett'].includes(type)) return 'excel'
+		if (['ppt', 'pptx', 'dps', 'dpt'].includes(type)) return 'ppt'
+		if (type == 'pdf') return 'pdf'
+		if (type == 'clw') return 'clw'
+		if (type == 'dwg') return 'dwg'
+		if (type == 'audio') return 'audio'
+		if (type == 'txt') return 'txt'
+		return 'file'
+	}
+
+	const getDocLetter = (type: string): string => {
+		const cat = getDocCategory(type)
+		if (cat == 'word') return 'W'
+		if (cat == 'excel') return 'X'
+		if (cat == 'ppt') return 'P'
+		if (cat == 'pdf') return 'PDF'
+		if (cat == 'clw') return 'CLW'
+		if (cat == 'dwg') return 'DWG'
+		if (cat == 'audio') return '♪'
+		if (cat == 'txt') return 'TXT'
+		return 'FILE'
 	}
 	
 	const formatName = (name: string): string => {
@@ -405,13 +422,103 @@
 		background-color: #E2E6ED;
 	}
 	
-	.audio-placeholder {
-		background-color: #ECFDF5;
+	/* === 统一纸张文件图标系统 === */
+	.doc-icon-wrapper {
+		width: 42px;
+		height: 48px;
+		flex-direction: column;
+		align-items: center;
 	}
 	
-	.doc-placeholder {
-		background-color: #FFFBEB;
+	/* 纸张主体 */
+	.doc-paper {
+		width: 36px;
+		height: 34px;
+		background-color: #FFFFFF;
+		border-radius: 3px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D1D5DB;
+		position: relative;
+		overflow: hidden;
+		flex-direction: column;
 	}
+	
+	/* 右上角折角 */
+	.doc-fold {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 8px;
+		height: 8px;
+		border-bottom-left-radius: 2px;
+	}
+	.doc-fold-word { background-color: #93C5FD; }
+	.doc-fold-excel { background-color: #86EFAC; }
+	.doc-fold-ppt { background-color: #FDBA74; }
+	.doc-fold-pdf { background-color: #FCA5A5; }
+	.doc-fold-clw { background-color: #D1D5DB; }
+	.doc-fold-dwg { background-color: #FCD34D; }
+	.doc-fold-audio { background-color: #6EE7B7; }
+	.doc-fold-txt { background-color: #CBD5E1; }
+	.doc-fold-file { background-color: #D1D5DB; }
+	
+	/* 内容横线区域 */
+	.doc-content-lines {
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 5px;
+		padding-right: 10px;
+		padding-top: 10px;
+	}
+	
+	.doc-line {
+		height: 2px;
+		border-radius: 1px;
+		margin-bottom: 3px;
+	}
+	.doc-line-long { width: 22px; }
+	.doc-line-medium { width: 18px; }
+	.doc-line-short { width: 14px; }
+	
+	/* 横线颜色 - 各类型 */
+	.doc-line-color-word { background-color: #BFDBFE; }
+	.doc-line-color-excel { background-color: #BBF7D0; }
+	.doc-line-color-ppt { background-color: #FED7AA; }
+	.doc-line-color-pdf { background-color: #FECACA; }
+	.doc-line-color-clw { background-color: #E5E7EB; }
+	.doc-line-color-dwg { background-color: #FDE68A; }
+	.doc-line-color-audio { background-color: #A7F3D0; }
+	.doc-line-color-txt { background-color: #E2E8F0; }
+	.doc-line-color-file { background-color: #E5E7EB; }
+	
+	/* 底部品牌色带 */
+	.doc-brand-bar {
+		width: 42px;
+		height: 14px;
+		border-radius: 2px;
+		margin-top: 1px;
+		justify-content: center;
+		align-items: center;
+	}
+	
+	.doc-brand-letter {
+		font-size: 9px;
+		font-weight: bold;
+		color: #FFFFFF;
+	}
+	
+	/* 各类型底部色带颜色 */
+	.doc-bar-word { background-color: #2563EB; }
+	.doc-bar-excel { background-color: #16A34A; }
+	.doc-bar-ppt { background-color: #D24726; }
+	.doc-bar-pdf { background-color: #B91C1C; }
+	.doc-bar-clw { background-color: #4B5563; }
+	.doc-bar-dwg { background-color: #D97706; }
+	.doc-bar-audio { background-color: #059669; }
+	.doc-bar-txt { background-color: #64748B; }
+	.doc-bar-file { background-color: #6B7280; }
 	
 	.placeholder-icon {
 		font-size: 28px;
@@ -424,7 +531,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-			justify-content: center;
+		justify-content: center;
 		align-items: center;
 		background-color: rgba(17, 24, 39, 0.3);
 	}
@@ -432,51 +539,6 @@
 	.play-icon {
 		font-size: 24px;
 		color: #FFFFFF;
-	}
-	
-	/* 音频波形 */
-	.audio-waves {
-			flex-direction: row;
-		margin-top: 8px;
-	}
-	
-	.wave-line {
-		width: 3px;
-		height: 12px;
-		background-color: #0891B2;
-		margin: 0 2px;
-		border-radius: 2px;
-	}
-	
-	/* 类型标签 */
-	.type-badge {
-		position: absolute;
-		bottom: 4px;
-		right: 4px;
-		padding: 2px 6px;
-		border-radius: 4px;
-		background-color: rgba(17, 24, 39, 0.7);
-	}
-	
-	.badge-text {
-		font-size: 10px;
-		color: #FFFFFF;
-	}
-	
-	.badge-image {
-		background-color: rgba(8, 145, 178, 0.8);
-	}
-	
-	.badge-video {
-		background-color: rgba(220, 38, 38, 0.8);
-	}
-	
-	.badge-audio {
-		background-color: rgba(5, 150, 105, 0.8);
-	}
-	
-	.badge-document {
-		background-color: rgba(217, 119, 6, 0.8);
 	}
 	
 	/* 信息区域 */

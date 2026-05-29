@@ -36,3 +36,10 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# AI Search Indexes
+electron-shell/ai-service/*.json
+
+# Temp test files
+patch_doc_write.js
+process-dwg-viewer.html

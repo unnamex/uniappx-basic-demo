@@ -14,10 +14,7 @@
 				mode="aspectFit"
 				@error="onImageError"
 			/>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-				<text v-if="resDescription != ''" class="resource-desc">{{ resDescription }}</text>
-			</view>
+			<text v-if="resDescription != ''" class="resource-desc">{{ resDescription }}</text>
 		</view>
 		
 		<!-- 视频预览 -->
@@ -33,10 +30,7 @@
 				@timeupdate="onTimeUpdate"
 				@ended="onEnded"
 			/>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-				<text v-if="resDuration > 0" class="resource-duration">时长: {{ formatTime(resDuration) }}</text>
-			</view>
+			
 		</view>
 		
 		<!-- 音频预览 -->
@@ -58,18 +52,14 @@
 					<text class="time-text">{{ formatTime(currentTime) }} / {{ formatTime(resDuration) }}</text>
 				</view>
 			</view>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-			</view>
+			
 		</view>
 		
 		<!-- PDF预览 -->
-		<view v-else-if="resType == 'document' && isPdf()" class="preview-container pdf-preview">
+		<view v-else-if="resType == 'pdf'" class="preview-container pdf-preview">
 			<!-- #ifdef WEB -->
 			<view ref="pdfFrame" class="pdf-frame-container"></view>
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-			</view>
+			
 			<!-- #endif -->
 			<!-- #ifdef APP -->
 			<!-- #ifdef APP-HARMONY -->
@@ -78,30 +68,24 @@
 			<!-- #ifndef APP-HARMONY -->
 			<web-view :id="webviewId" class="pdf-webview" :src="pdfWebViewSrc" @load="onPdfWebViewLoad"></web-view>
 			<!-- #endif -->
-			<view class="resource-info">
-				<text class="resource-name">{{ resName }}</text>
-			</view>
+			
 			<!-- #endif -->
 		</view>
 		
 		<!-- CAD 图纸预览 -->
-		<view v-else-if="resType == 'cad'" class="cad-preview-container">
+		<view v-else-if="isCadType(resType)" class="cad-preview-container">
 			<!-- #ifdef WEB -->
 			<view ref="cadFrame" class="cad-frame-container"></view>
-			<view class="cad-info">
-				<text class="cad-info-name">{{ resName }}</text>
-			</view>
+			
 			<!-- #endif -->
 			<!-- #ifdef APP -->
 			<web-view :id="cadWebviewId" class="cad-webview" :src="cadWebViewSrc" @load="onCadWebViewLoad"></web-view>
-			<view class="cad-info">
-				<text class="cad-info-name">{{ resName }}</text>
-			</view>
+			
 			<!-- #endif -->
 		</view>
 		
 		<!-- 其他文档预览 -->
-		<view v-else-if="resType == 'document'" class="preview-container pdf-preview">
+		<view v-else-if="isOfficeDoc(resType)" class="preview-container pdf-preview">
 			<!-- #ifdef WEB -->
 			<view class="pdf-frame-container" ref="docFrame"></view>
 			<!-- #endif -->
@@ -120,7 +104,7 @@
 		<view v-else class="preview-container unknown-preview">
 			<text class="unknown-icon">❓</text>
 			<text class="unknown-text">不支持预览此类型文件</text>
-			<text class="resource-name">{{ resName }}</text>
+			
 		</view>
 	</view>
 </template>
@@ -269,12 +253,13 @@
 		return (currentTime.value / res.duration) * 100
 	})
 	
-	function isPdf(): boolean {
-		const res = props.resource
-		if (res == null) return false
-		const parts = res.name.toLowerCase().split('.')
-		if (parts.length < 2) return false
-		return parts[parts.length - 1] == 'pdf'
+	const isOfficeDoc = (type: string): boolean => {
+		const docTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt']
+		return docTypes.includes(type)
+	}
+	
+	const isCadType = (type: string): boolean => {
+		return ['clw', 'dwg'].includes(type)
 	}
 	
 	// #ifdef WEB
@@ -469,13 +454,13 @@
 	
 	// 监听资源变化，渲染PDF
 	watch(() => props.resource, (newVal : ResourceItem | null) => {
-		if (newVal != null && isPdf()) {
+		if (newVal != null && newVal.type == 'pdf') {
 			renderPdfIframe(newVal.path)
 		}
-		if (newVal != null && newVal.type == 'cad') {
+		if (newVal != null && isCadType(newVal.type)) {
 			renderCadIframe(newVal.path)
 		}
-		if (newVal != null && newVal.type == 'document') {
+		if (newVal != null && isOfficeDoc(newVal.type)) {
 			renderDocIframe(newVal.path)
 		}
 	}, { immediate: true })
@@ -908,3 +893,4 @@
 		font-weight: normal;
 	}
 </style>
+

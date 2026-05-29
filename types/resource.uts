@@ -10,7 +10,8 @@ export const ResourceType_IMAGE = 'image'
 export const ResourceType_VIDEO = 'video'
 export const ResourceType_AUDIO = 'audio'
 export const ResourceType_DOCUMENT = 'document'
-export const ResourceType_CAD = 'cad'
+export const ResourceType_CLW = 'clw'
+export const ResourceType_DWG = 'dwg'
 
 /**
  * 资源项类型
@@ -59,7 +60,8 @@ export function getResourceTypeIcon(type: string): string {
 	if (type == ResourceType_VIDEO) return '🎬'
 	if (type == ResourceType_AUDIO) return '🔊'
 	if (type == ResourceType_DOCUMENT) return '📄'
-	if (type == ResourceType_CAD) return '📐'
+	if (type == ResourceType_CLW) return 'CLW'
+	if (type == ResourceType_DWG) return 'DWG'
 	return '📎'
 }
 
@@ -72,8 +74,12 @@ export function getResourceTypeLabel(type: string): string {
 	if (type == ResourceType_IMAGE) return '图片'
 	if (type == ResourceType_VIDEO) return '视频'
 	if (type == ResourceType_AUDIO) return '音频'
-	if (type == ResourceType_DOCUMENT) return '文档'
-	if (type == ResourceType_CAD) return 'CAD图纸'
+	if (type == ResourceType_CLW) return 'CLW'
+	if (type == ResourceType_DWG) return 'DWG'
+	
+	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt'].indexOf(type) >= 0) {
+		return type.toUpperCase()
+	}
 	return '附件'
 }
 
@@ -129,12 +135,12 @@ export function inferResourceType(filename: string): string {
 	
 	// 文档格式
 	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt'].indexOf(ext) >= 0) {
-		return ResourceType_DOCUMENT
+		return ext
 	}
 	
 	// CAD 图纸格式（卡伦特供应商的 HTML 封装 CAD）
 	if (['html', 'htm'].indexOf(ext) >= 0) {
-		return ResourceType_CAD
+		return ResourceType_CLW
 	}
 	
 	return 'unknown'
@@ -148,12 +154,12 @@ export function inferResourceType(filename: string): string {
  */
 export function normalizeResourceType(type: string, path: string): string {
 	const lowerType = type.toLowerCase()
-	if (lowerType == ResourceType_IMAGE || lowerType == ResourceType_VIDEO || lowerType == ResourceType_AUDIO || lowerType == ResourceType_DOCUMENT || lowerType == ResourceType_CAD) {
+	if (lowerType == ResourceType_IMAGE || lowerType == ResourceType_VIDEO || lowerType == ResourceType_AUDIO || lowerType == ResourceType_CLW || lowerType == ResourceType_DWG) {
 		return lowerType
 	}
 	// 如果是常见文件后缀缩写，进行转换
 	if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt'].indexOf(lowerType) >= 0) {
-		return ResourceType_DOCUMENT
+		return lowerType
 	}
 	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].indexOf(lowerType) >= 0) {
 		return ResourceType_IMAGE
@@ -165,7 +171,7 @@ export function normalizeResourceType(type: string, path: string): string {
 		return ResourceType_AUDIO
 	}
 	if (['html', 'htm'].indexOf(lowerType) >= 0) {
-		return ResourceType_CAD
+		return ResourceType_CLW
 	}
 	// 否则，根据 path 的后缀进行推断
 	return inferResourceType(path)
