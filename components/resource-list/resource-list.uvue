@@ -17,6 +17,7 @@
 			class="scroll-container"
 			direction="horizontal"
 			scroll-x="true"
+			:scroll-left="currentScrollLeft"
 			:show-scrollbar="false"
 			style="height: 100%;"
 			@scroll="onScroll"
@@ -88,14 +89,16 @@
 		<!-- 可拖拽滚动指示器 -->
 		<view v-if="resources.length > 3" class="scroll-indicator">
 			<view 
-				class="indicator-track"
+				class="indicator-touch-area"
 				ref="trackRef"
 				@touchstart="onTrackTouchStart" 
 				@touchmove="onTrackTouchMove" 
 				@touchend="onTrackTouchEnd"
 				@mousedown="onTrackMouseDown"
 			>
-				<view class="indicator-thumb" :style="{ transform: thumbTransform }"></view>
+				<view class="indicator-track">
+					<view class="indicator-thumb" :style="{ transform: thumbTransform }"></view>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -121,6 +124,7 @@
 	const trackRef = ref<UniElement | null>(null)
 	const scrollProgress = ref(0)   // 0~1 表示滚动进度
 	const isDragging = ref(false)
+	const currentScrollLeft = ref(0)
 	
 	// 布局缓存（从 scroll 事件中获取真实值）
 	let cachedScrollWidth = 0
@@ -181,15 +185,11 @@
 	}
 	
 	/**
-	 * 核心方法：直接操作 scroll-view 的原生滚动位置
-	 * 放弃 :scroll-left 属性绑定（在多平台上不可靠），
-	 * 改为通过 UniElement 的 scrollLeft 属性直接设置
+	 * 核心方法：设置 scroll-view 的原生滚动位置
+	 * 使用 :scroll-left 绑定响应式变量
 	 */
 	const scrollToPosition = (targetLeft: number) => {
-		if (scrollViewRef.value == null) return
-		const el = scrollViewRef.value!
-		// 直接设置原生 DOM 的 scrollLeft 属性
-		el.scrollLeft = targetLeft
+		currentScrollLeft.value = targetLeft
 	}
 	
 	// === 被动监听：用户手动滑动列表时同步指示器位置 ===
@@ -207,9 +207,19 @@
 		if (clientWidth == 0) {
 			clientWidth = (detail['clientWidth'] as number) ?? 0
 		}
-		// 如果仍然取不到，就用 scrollWidth 兜底（此时 maxScroll=0，不更新进度）
+		
+		// 动态同步组件变量，使得再次拖拽时平滑接续
+		currentScrollLeft.value = scrollLeft
+		
+		// 如果在事件中实在取不到 clientWidth，就用之前的估算值
 		if (clientWidth == 0) {
-			clientWidth = scrollWidth
+			if (cachedClientWidth > 0 && cachedClientWidth < scrollWidth) {
+				clientWidth = cachedClientWidth
+			} else if (trackRef.value != null) {
+				clientWidth = trackRef.value!.getBoundingClientRect().width + 40
+			} else {
+				clientWidth = 400 // 最差的保底
+			}
 		}
 		
 		// 缓存真实值，供拖拽时使用
@@ -258,9 +268,15 @@
 		// 更新指示器位置
 		scrollProgress.value = newProgress
 		
-		// 驱动列表滚动（核心：直接操作 DOM scrollLeft）
+		// 驱动列表滚动
 		if (cachedScrollWidth > cachedClientWidth) {
-			const targetLeft = newProgress * (cachedScrollWidth - cachedClientWidth)
+			let targetLeft = newProgress * (cachedScrollWidth - cachedClientWidth)
+			// 修正估算误差：拖到两端时强制贴边
+			if (newProgress > 0.99) {
+				targetLeft = cachedScrollWidth + 1000 // 赋予一个足够大的值，组件会自动截断到最大滚动距离
+			} else if (newProgress < 0.01) {
+				targetLeft = 0
+			}
 			scrollToPosition(targetLeft)
 		}
 	}
@@ -545,11 +561,13 @@
 	.card-info {
 		padding: 4px 6px;
 		flex-direction: column;
+		align-items: center;
 	}
 	
 	.card-info-selected {
 		padding: 4px 5px;
 		flex-direction: column;
+		align-items: center;
 	}
 	
 	.card-name {
@@ -558,25 +576,37 @@
 		overflow: hidden;
 		lines: 2;
 		text-overflow: ellipsis;
+		text-align: center;
 	}
 	
 	.card-duration {
 		font-size: 9px;
 		color: #6B7280;
 		margin-top: 2px;
+		text-align: center;
 	}
 	
 	/* 可拖拽滚动指示器 */
 	.scroll-indicator {
-		margin-top: 8px;
+		margin-top: 2px;
 		padding: 0 20px;
-		padding-bottom: 6px;
+		padding-bottom: 2px;
+	}
+	
+	.indicator-touch-area {
+		height: 24px;
+		justify-content: center;
+		position: relative;
+		/* #ifdef WEB */
+		cursor: pointer;
+		/* #endif */
 	}
 	
 	.indicator-track {
 		height: 4px;
 		background-color: #E2E6ED;
 		border-radius: 2px;
+		width: 100%;
 		position: relative;
 	}
 	

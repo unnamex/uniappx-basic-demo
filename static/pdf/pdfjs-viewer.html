@@ -559,17 +559,22 @@
 
     async function renderThumbnails() {
       thumbnailList.innerHTML = '';
+      // 至少超采样2倍，使缩略图更清晰
+      const outputScale = Math.max(2, window.devicePixelRatio || 1);
       for (let i = 1; i <= totalPages; i++) {
         const page = await pdfDoc.getPage(i);
-        const viewport = page.getViewport({ scale: THUMB_SCALE });
+        const renderViewport = page.getViewport({ scale: THUMB_SCALE * outputScale });
+        const logicalViewport = page.getViewport({ scale: THUMB_SCALE });
         const item = document.createElement('div');
         item.className = 'thumbnail-item';
         item.setAttribute('data-page', i);
         const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        canvas.width = Math.floor(renderViewport.width);
+        canvas.height = Math.floor(renderViewport.height);
+        canvas.style.width = Math.floor(logicalViewport.width) + "px";
+        canvas.style.height = Math.floor(logicalViewport.height) + "px";
         const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
         const label = document.createElement('span');
         label.className = 'thumbnail-label';
         label.textContent = i;
@@ -597,16 +602,21 @@
     async function renderAllPages() {
       const canvases = container.querySelectorAll('canvas');
       canvases.forEach(c => c.remove());
+      // 强制使用超采样 (至少3倍) 来确保渲染高清内容
+      const outputScale = Math.max(3, window.devicePixelRatio || 1);
       for (let i = 1; i <= totalPages; i++) {
         const page = await pdfDoc.getPage(i);
-        const viewport = page.getViewport({ scale: currentScale });
+        const renderViewport = page.getViewport({ scale: currentScale * outputScale });
+        const logicalViewport = page.getViewport({ scale: currentScale });
         const canvas = document.createElement('canvas');
         canvas.id = 'page-' + i;
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        canvas.width = Math.floor(renderViewport.width);
+        canvas.height = Math.floor(renderViewport.height);
+        canvas.style.width = Math.floor(logicalViewport.width) + "px";
+        canvas.style.height = Math.floor(logicalViewport.height) + "px";
         container.appendChild(canvas);
         const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
       }
     }
 

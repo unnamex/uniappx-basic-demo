@@ -8,13 +8,43 @@
 		
 		<!-- 图片预览 -->
 		<view v-else-if="resType == 'image'" class="preview-container image-preview">
-			<image 
-				class="preview-image"
-				:src="resPath"
-				mode="aspectFit"
-				@error="onImageError"
-			/>
-			<text v-if="resDescription != ''" class="resource-desc">{{ resDescription }}</text>
+			<view 
+				class="image-wrapper"
+				@mousedown="onImageMouseDown"
+				@mousemove="onImageMouseMove"
+				@mouseup="onImageMouseUp"
+				@mouseleave="onImageMouseUp"
+				@touchstart.stop="onImageTouchStart"
+				@touchmove.stop="onImageTouchMove"
+				@touchend.stop="onImageTouchEnd"
+			>
+				<image 
+					class="preview-image"
+					:class="{'dragging': isImageDragging, 'can-drag': imageScale > 1.0 || imageRotate !== 0}"
+					:src="resPath"
+					mode="aspectFit"
+					:style="{ transform: 'translate(' + imageTranslateX + 'px, ' + imageTranslateY + 'px) scale(' + imageScale + ') rotate(' + imageRotate + 'deg)', transition: isImageDragging ? 'none' : 'transform 0.2s' }"
+					@error="onImageError"
+				/>
+				<!-- 图片控制工具栏悬浮浮层 -->
+				<view class="image-toolbar">
+					<view class="toolbar-btn" @click="zoomInImage" title="放大">
+						<text class="toolbar-icon">+</text>
+					</view>
+					<view class="toolbar-btn" @click="zoomOutImage" title="缩小">
+						<text class="toolbar-icon">-</text>
+					</view>
+					<view class="toolbar-btn" @click="rotateLeftImage" title="向左旋转">
+						<text class="toolbar-icon">↺</text>
+					</view>
+					<view class="toolbar-btn" @click="rotateRightImage" title="向右旋转">
+						<text class="toolbar-icon">↻</text>
+					</view>
+					<view class="toolbar-btn" @click="resetImage" title="重置">
+						<text class="toolbar-icon">⟲</text>
+					</view>
+				</view>
+			</view>
 		</view>
 		
 		<!-- 视频预览 -->
@@ -124,6 +154,87 @@
 		(e: 'error', message: string): void
 		(e: 'loaded'): void
 	}>()
+	
+	// 图片控制状态
+	const imageScale = ref(1.0)
+	const imageRotate = ref(0)
+	const imageTranslateX = ref(0)
+	const imageTranslateY = ref(0)
+
+	const zoomInImage = () => {
+		imageScale.value += 0.2
+	}
+	const zoomOutImage = () => {
+		if (imageScale.value > 0.4) {
+			imageScale.value -= 0.2
+		}
+	}
+	const rotateLeftImage = () => {
+		imageRotate.value -= 90
+	}
+	const rotateRightImage = () => {
+		imageRotate.value += 90
+	}
+	const resetImage = () => {
+		imageScale.value = 1.0
+		imageRotate.value = 0
+		imageTranslateX.value = 0
+		imageTranslateY.value = 0
+	}
+	
+	// 图片拖拽状态
+	const isImageDragging = ref(false)
+	let imageDragStartX = 0
+	let imageDragStartY = 0
+	let initialTranslateX = 0
+	let initialTranslateY = 0
+
+	const startImageDrag = (clientX: number, clientY: number) => {
+		if (imageScale.value <= 1.0 && imageRotate.value === 0) return
+		isImageDragging.value = true
+		imageDragStartX = clientX
+		imageDragStartY = clientY
+		initialTranslateX = imageTranslateX.value
+		initialTranslateY = imageTranslateY.value
+	}
+
+	const moveImageDrag = (clientX: number, clientY: number) => {
+		if (!isImageDragging.value) return
+		const deltaX = clientX - imageDragStartX
+		const deltaY = clientY - imageDragStartY
+		imageTranslateX.value = initialTranslateX + deltaX
+		imageTranslateY.value = initialTranslateY + deltaY
+	}
+
+	const endImageDrag = () => {
+		isImageDragging.value = false
+	}
+
+	// Web 鼠标事件
+	const onImageMouseDown = (e: MouseEvent) => {
+		startImageDrag(e.clientX, e.clientY)
+	}
+	const onImageMouseMove = (e: MouseEvent) => {
+		moveImageDrag(e.clientX, e.clientY)
+	}
+	const onImageMouseUp = () => {
+		endImageDrag()
+	}
+
+	// App 触摸事件
+	const onImageTouchStart = (e: UniTouchEvent) => {
+		if (e.touches.length > 0) {
+			startImageDrag(e.touches[0].clientX, e.touches[0].clientY)
+		}
+	}
+	const onImageTouchMove = (e: UniTouchEvent) => {
+		if (e.touches.length > 0) {
+			moveImageDrag(e.touches[0].clientX, e.touches[0].clientY)
+		}
+	}
+	const onImageTouchEnd = () => {
+		endImageDrag()
+	}
 	
 	// 音频播放状态
 	
@@ -569,6 +680,8 @@
 	
 	// 监听资源变化，重置状态
 	watch(() => props.resource, (newVal: ResourceItem | null) => {
+		resetImage()
+		
 		// 停止当前播放
 		if (audioContext.value != null) {
 			const ctx = audioContext.value as any
@@ -651,13 +764,65 @@
 	.image-preview {
 		justify-content: center;
 		align-items: center;
+		flex-direction: column;
+	}
+	
+	.image-wrapper {
+		flex: 1;
+		width: 100%;
+		justify-content: center;
+		align-items: center;
+		overflow: hidden;
+		position: relative;
+		padding-bottom: 30px;
 	}
 	
 	.preview-image {
-		flex: 1;
 		width: 100%;
-		max-height: 300px;
-		border-radius: 4px;
+		height: 100%;
+	}
+	
+	.preview-image.can-drag {
+		cursor: grab;
+	}
+	
+	.preview-image.dragging {
+		cursor: grabbing;
+	}
+	
+	/* 现代悬浮控制工具栏 */
+	.image-toolbar {
+		position: absolute;
+		bottom: 12px;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		height: 44px;
+		background-color: rgba(17, 24, 39, 0.75);
+		border-radius: 22px;
+		padding: 0 8px;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
+	
+	.toolbar-btn {
+		width: 36px;
+		height: 36px;
+		justify-content: center;
+		align-items: center;
+		margin: 0 4px;
+		border-radius: 18px;
+		background-color: transparent;
+		cursor: pointer;
+		transition: background-color 0.15s;
+	}
+	.toolbar-btn:active, .toolbar-btn:hover {
+		background-color: rgba(255, 255, 255, 0.15);
+	}
+	
+	.toolbar-icon {
+		font-size: 18px;
+		color: #FFFFFF;
+		font-weight: 500;
 	}
 	
 	/* 视频预览 */

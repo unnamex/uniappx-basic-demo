@@ -352,15 +352,25 @@
 					<!-- 图片类型：自定义可变换预览 -->
 					<view v-if="previewResource != null && previewResource?.type == 'image'" class="image-viewer-container">
 						<scroll-view 
-							scroll-x="true" 
-							scroll-y="true" 
+							scroll-x="false" 
+							scroll-y="false" 
 							class="image-scroll-view"
 						>
-							<view class="image-transform-wrapper" :style="imageTransformStyle">
+							<view class="image-transform-wrapper" 
+								@mousedown="onImageMouseDown"
+								@mousemove="onImageMouseMove"
+								@mouseup="onImageMouseUp"
+								@mouseleave="onImageMouseUp"
+								@touchstart.stop="onImageTouchStart"
+								@touchmove.stop="onImageTouchMove"
+								@touchend.stop="onImageTouchEnd"
+							>
 								<image 
 									class="fullscreen-image" 
+									:class="{'dragging': isImageDragging, 'can-drag': imageScale > 1.0 || imageRotation !== 0}"
 									:src="previewResource?.path ?? ''" 
 									mode="aspectFit"
+									:style="imageTransformStyle"
 									@load="onFullscreenImageLoad"
 								/>
 							</view>
@@ -368,23 +378,18 @@
 						
 						<!-- 图片操作工具栏 -->
 						<view class="image-toolbar">
-							<view class="toolbar-btn" @click="imageZoomOut" title="缩小">
-								<text class="toolbar-icon">−</text>
-							</view>
-							<view class="toolbar-info">
-								<text class="zoom-percentage">{{ Math.round(imageScale * 100) }}%</text>
-							</view>
 							<view class="toolbar-btn" @click="imageZoomIn" title="放大">
 								<text class="toolbar-icon">+</text>
 							</view>
-							<view class="toolbar-divider"></view>
-							<view class="toolbar-btn" @click="imageRotateLeft" title="左旋">
+							<view class="toolbar-btn" @click="imageZoomOut" title="缩小">
+								<text class="toolbar-icon">-</text>
+							</view>
+							<view class="toolbar-btn" @click="imageRotateLeft" title="向左旋转">
 								<text class="toolbar-icon">↺</text>
 							</view>
-							<view class="toolbar-btn" @click="imageRotateRight" title="右旋">
+							<view class="toolbar-btn" @click="imageRotateRight" title="向右旋转">
 								<text class="toolbar-icon">↻</text>
 							</view>
-							<view class="toolbar-divider"></view>
 							<view class="toolbar-btn" @click="imageReset" title="重置">
 								<text class="toolbar-icon">⟲</text>
 							</view>
@@ -716,11 +721,68 @@
 	// 图片变换状态
 	const imageScale = ref(1)
 	const imageRotation = ref(0)
+	const imageTranslateX = ref(0)
+	const imageTranslateY = ref(0)
+	
+	// 图片拖拽状态
+	const isImageDragging = ref(false)
+	let imageDragStartX = 0
+	let imageDragStartY = 0
+	let initialTranslateX = 0
+	let initialTranslateY = 0
+
+	const startImageDrag = (clientX: number, clientY: number) => {
+		if (imageScale.value <= 1.0 && imageRotation.value === 0) return
+		isImageDragging.value = true
+		imageDragStartX = clientX
+		imageDragStartY = clientY
+		initialTranslateX = imageTranslateX.value
+		initialTranslateY = imageTranslateY.value
+	}
+
+	const moveImageDrag = (clientX: number, clientY: number) => {
+		if (!isImageDragging.value) return
+		const deltaX = clientX - imageDragStartX
+		const deltaY = clientY - imageDragStartY
+		imageTranslateX.value = initialTranslateX + deltaX
+		imageTranslateY.value = initialTranslateY + deltaY
+	}
+
+	const endImageDrag = () => {
+		isImageDragging.value = false
+	}
+
+	// Web 鼠标事件
+	const onImageMouseDown = (e: MouseEvent) => {
+		startImageDrag(e.clientX, e.clientY)
+	}
+	const onImageMouseMove = (e: MouseEvent) => {
+		moveImageDrag(e.clientX, e.clientY)
+	}
+	const onImageMouseUp = () => {
+		endImageDrag()
+	}
+
+	// App 触摸事件
+	const onImageTouchStart = (e: UniTouchEvent) => {
+		if (e.touches.length > 0) {
+			startImageDrag(e.touches[0].clientX, e.touches[0].clientY)
+		}
+	}
+	const onImageTouchMove = (e: UniTouchEvent) => {
+		if (e.touches.length > 0) {
+			moveImageDrag(e.touches[0].clientX, e.touches[0].clientY)
+		}
+	}
+	const onImageTouchEnd = () => {
+		endImageDrag()
+	}
 	
 	// 图片变换样式
 	const imageTransformStyle = computed((): string => {
 		// transform 在 App 端可能不完全支持，但通过内联 style 设置通常可用
-		return `transform: scale(${imageScale.value}) rotate(${imageRotation.value}deg);`
+		const transition = isImageDragging.value ? 'none' : 'transform 0.2s'
+		return `transform: translate(${imageTranslateX.value}px, ${imageTranslateY.value}px) scale(${imageScale.value}) rotate(${imageRotation.value}deg); transition: ${transition};`
 	})
 	
 	const formatName = (name: string): string => {
@@ -1763,6 +1825,8 @@
 	const resetImageTransform = () => {
 		imageScale.value = 1
 		imageRotation.value = 0
+		imageTranslateX.value = 0
+		imageTranslateY.value = 0
 	}
 	
 	/**
@@ -2734,6 +2798,14 @@
 		height: 100%;
 	}
 	
+	.fullscreen-image.can-drag {
+		cursor: grab;
+	}
+	
+	.fullscreen-image.dragging {
+		cursor: grabbing;
+	}
+	
 	/* 图片操作工具栏 - 悬浮胶囊 */
 	.image-toolbar {
 		position: absolute;
@@ -2744,73 +2816,41 @@
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		padding: 6px 12px;
-		background-color: rgba(255, 255, 255, 0.92);
-		border-radius: 28px;
-		border: 1px solid #E2E8F0;
+		height: 44px;
+		background-color: rgba(17, 24, 39, 0.75);
+		border-radius: 22px;
+		padding: 0 8px;
 		/* #ifdef WEB */
-		backdrop-filter: blur(16px);
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+		backdrop-filter: blur(8px);
 		/* #endif */
 		z-index: 200;
 	}
 	
 	.toolbar-btn {
+		width: 36px;
+		height: 36px;
 		display: flex;
-		flex-direction: column;
-		align-items: center;
-		width: 40px;
-		height: 40px;
 		justify-content: center;
-		margin: 0 2px;
+		align-items: center;
+		margin: 0 4px;
+		border-radius: 18px;
 		background-color: transparent;
-		border-radius: 20px;
-		transition-property: background-color, transform;
+		transition-property: background-color;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
 		cursor: pointer;
 		/* #endif */
 	}
 	
-	.toolbar-btn:active {
-		background-color: #E2E8F0;
-		transform: scale(0.9);
+	.toolbar-btn:active, .toolbar-btn:hover {
+		background-color: rgba(255, 255, 255, 0.15);
 	}
 	
 	.toolbar-icon {
-		font-size: 20px;
-		color: #334155;
-		font-weight: normal;
-	}
-	
-	.toolbar-label {
-		font-size: 10px;
-		color: #64748B;
-		margin-top: 2px;
-	}
-	
-	.toolbar-info {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		padding: 4px 12px;
-		margin: 0 4px;
-		background-color: #F1F5F9;
-		border-radius: 14px;
-		min-width: 50px;
-	}
-	
-	.zoom-percentage {
-		font-size: 13px;
-		color: #0F172A;
-		font-weight: 600;
-	}
-	
-	.toolbar-divider {
-		width: 1px;
-		height: 24px;
-		background-color: #E2E8F0;
-		margin: 0 4px;
+		font-size: 18px;
+		color: #FFFFFF;
+		font-weight: 500;
 	}
 	/* ========== 设置下拉菜单样式 ========== */
 	
