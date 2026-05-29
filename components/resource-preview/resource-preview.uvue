@@ -365,7 +365,7 @@
 	})
 	
 	const isOfficeDoc = (type: string): boolean => {
-		const docTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt']
+		const docTypes = ['docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'wps', 'wpt', 'et', 'ett', 'dps', 'dpt']
 		return docTypes.includes(type)
 	}
 	

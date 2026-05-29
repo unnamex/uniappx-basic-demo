@@ -144,7 +144,7 @@
 
 	// === 工具方法 ===
 	const getDocCategory = (type: string): string => {
-		if (['doc', 'docx', 'wps', 'wpt'].includes(type)) return 'word'
+		if (['docx', 'wps', 'wpt'].includes(type)) return 'word'
 		if (['xls', 'xlsx', 'et', 'ett'].includes(type)) return 'excel'
 		if (['ppt', 'pptx', 'dps', 'dpt'].includes(type)) return 'ppt'
 		if (type == 'pdf') return 'pdf'
