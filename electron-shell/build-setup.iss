@@ -9,8 +9,8 @@ AppId={{5E3F57B3-9D17-4F62-81A5-3C48809F3628}
 AppName=CraftX
 AppVersion=1.7.0-AIBeta-40
 AppPublisher=北京神舟航天软件技术股份有限公司
-; 默认安装到 C:\Program Files\Kaiwu 或 D盘
-DefaultDirName={autopf}\Kaiwu
+; 默认安装到 C:\Program Files\CraftX
+DefaultDirName={autopf}\CraftX
 DisableProgramGroupPage=yes
 ; 采用轻量级压缩以加快海量模型打包速度
 Compression=lzma2/fast

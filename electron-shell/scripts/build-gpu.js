@@ -9,8 +9,12 @@ console.log(`[build-gpu] 开始打包流程 (目标: ${target.toUpperCase()})`);
 console.log(`==============================================\n`);
 
 try {
-  console.log(`[1/3] 准备 AI 模型...`);
-  execSync('npm run prepare:pro', { stdio: 'inherit' });
+  if (target === 'noai') {
+    console.log(`[1/3] 跳过 AI 模型准备（无AI模式）...`);
+  } else {
+    console.log(`[1/3] 准备 AI 模型...`);
+    execSync('npm run prepare:pro', { stdio: 'inherit' });
+  }
   
   console.log(`\n[2/3] 清理旧产物...`);
   execSync('npm run clean', { stdio: 'inherit' });

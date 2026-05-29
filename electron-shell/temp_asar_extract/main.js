@@ -220,13 +220,6 @@ ipcMain.handle('get-version', () => {
   return app.getVersion()
 })
 
-ipcMain.handle('check-ai-feature', () => {
-  const ollamaPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'ollama', 'ollama.exe')
-    : path.join(__dirname, 'vendor', 'ollama', 'ollama.exe')
-  return fs.existsSync(ollamaPath)
-})
-
 // 获取 ranuts-document 内嵌服务器端口
 ipcMain.handle('get-ranuts-doc-port', () => {
   return ranutsDocPort

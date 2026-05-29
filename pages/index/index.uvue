@@ -59,7 +59,7 @@
 				<!-- 右侧操作区：设置按钮 + 企业Logo -->
 				<view class="header-actions">
 					<!-- 统一的 AI 模式切换开关 -->
-					<view :class="['header-ai-toggle', isAiMode ? 'ai-toggle-active' : '']" @click="toggleAiMode">
+					<view v-if="hasAiFeature" :class="['header-ai-toggle', isAiMode ? 'ai-toggle-active' : '']" @click="toggleAiMode">
 						<ai-siri-ball :isActive="isAiMode" />
 						<text :class="['header-ai-toggle-text', isAiMode ? 'ai-toggle-text-active' : '']">{{ isAiMode ? 'AI 模式' : '普通模式' }}</text>
 					</view>
@@ -281,8 +281,8 @@
 			<text class="menu-item-text" style="flex: 1;">导入数据包</text>
 			<text class="menu-item-shortcut">Ctrl+I</text>
 		</view>
-		<view class="menu-divider"></view>
-		<view class="menu-item" @click="toggleAiMode(); closeSettingsMenu()">
+		<view v-if="hasAiFeature" class="menu-divider"></view>
+		<view v-if="hasAiFeature" class="menu-item" @click="toggleAiMode(); closeSettingsMenu()">
 			<text class="menu-item-text" style="flex: 1;">{{ isAiMode ? '退出AI模式' : '进入AI模式' }}</text>
 			<text class="menu-item-shortcut">Ctrl+M</text>
 		</view>
@@ -560,6 +560,7 @@
 	const isPC = ref(false)
 
 	// ============ AI 模式状态 ============
+	const hasAiFeature = ref(true)
 	const isAiMode = ref(false)
 	const aiPanelRef = ref<ComponentPublicInstance | null>(null)
 	
@@ -569,7 +570,23 @@
 	const aiStartX = ref(0)
 	const aiStartWidth = ref(0)
 	
-	const toggleAiMode = () => {
+	const toggleAiMode = async () => {
+		if (!isAiMode.value) {
+			try {
+				await new Promise((resolve, reject) => {
+					uni.request({
+						url: 'http://localhost:3001/status',
+						method: 'GET',
+						timeout: 2000,
+						success: () => resolve(true),
+						fail: () => reject(new Error('AI Service not available'))
+					})
+				})
+			} catch (e) {
+				uni.showToast({ title: '当前版本未包含AI功能', icon: 'none' })
+				return
+			}
+		}
 		isAiMode.value = !isAiMode.value
 		if (isAiMode.value) {
 			if (selectedRow.value != null) {
@@ -801,6 +818,15 @@
 					isResourceMaximized.value = false
 				}
 			})
+			
+			// 检测 AI 特性是否可用
+			if (typeof electronAPI.checkAiFeature === 'function') {
+				electronAPI.checkAiFeature().then((available: boolean) => {
+					hasAiFeature.value = available
+				}).catch((e: any) => {
+					console.warn('AI feature check failed', e)
+				})
+			}
 		}
 		
 		window.addEventListener('keydown', handleGlobalKeyDown)

@@ -16,6 +16,7 @@
     "pack:win:cpu": "node scripts/build-gpu.js cpu",
     "pack:win:nvidia": "node scripts/build-gpu.js nvidia",
     "pack:win:amd": "node scripts/build-gpu.js amd",
+    "pack:win:noai": "node scripts/build-gpu.js noai",
     "pack:linux-x64": "npm run prepare:pro && electron-builder --linux --x64 --config electron-builder.js",
     "pack:linux-arm64": "npm run prepare:pro && electron-builder --linux --arm64 --config electron-builder.js",
     "pack:all": "npm run prepare:pro && electron-builder --win --linux --config electron-builder.js"

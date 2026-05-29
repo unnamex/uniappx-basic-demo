@@ -43,3 +43,4 @@ electron-shell/ai-service/*.json
 # Temp test files
 patch_doc_write.js
 process-dwg-viewer.html
+static/ranuts-document/single-file.html

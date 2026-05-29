@@ -33,7 +33,7 @@
 						<text class="info-label">Node.js:</text>
 						<text class="info-value">{{ nodeVersion }}</text>
 					</view>
-					<view class="info-row" v-if="currentAiModel != ''">
+					<view class="info-row" v-if="hasAiFeature && currentAiModel != ''">
 						<text class="info-label">AI 模型:</text>
 						<text class="info-value">{{ currentAiModel }}</text>
 					</view>
@@ -63,6 +63,7 @@
 	const chromeVersion = ref('')
 	const nodeVersion = ref('')
 	const currentAiModel = ref('')
+	const hasAiFeature = ref(true)
 	const isPC = ref(false)
 
 	onMounted(async () => {
@@ -72,23 +73,18 @@
 			currentAiModel.value = savedModel
 		}
 		
-		uni.request({
-			url: 'http://localhost:3001/status',
-			method: 'GET',
-			success: (res) => {
-				const data = res.data as UTSJSONObject | null;
-				if (data != null && data['currentModel'] != null) {
-					const cm = data['currentModel'] as string
-					currentAiModel.value = cm.replace('qwen2.5:', 'Qwen 2.5 ').toUpperCase()
-					uni.setStorageSync('aiModel', cm)
-				}
-			}
-		})
-
 		// #ifdef WEB
 		if ((window as any).electronAPI != null) {
 			isPC.value = true
 			const api = (window as any).electronAPI
+			
+			// 检测 AI 特性是否可用
+			if (typeof api.checkAiFeature === 'function') {
+				try {
+					hasAiFeature.value = await api.checkAiFeature()
+				} catch(e) {}
+			}
+			
 			try {
 				appVersion.value = await api.getVersion()
 			} catch (e) {}
@@ -103,6 +99,21 @@
 			} catch(e) {}
 		}
 		// #endif
+
+		if (hasAiFeature.value) {
+			uni.request({
+				url: 'http://localhost:3001/status',
+				method: 'GET',
+				success: (res) => {
+					const data = res.data as UTSJSONObject | null;
+					if (data != null && data['currentModel'] != null) {
+						const cm = data['currentModel'] as string
+						currentAiModel.value = cm.replace('qwen2.5:', 'Qwen 2.5 ').toUpperCase()
+						uni.setStorageSync('aiModel', cm)
+					}
+				}
+			})
+		}
 	})
 
 	const handleMaskClick = () => {

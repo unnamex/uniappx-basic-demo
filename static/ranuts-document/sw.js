@@ -1,4 +1,4 @@
-const CACHE_VERSION = '1779191701669'.includes('PLACEHOLDER') ? 'dev-' + Date.now() : 'SW_VERSION_PLACEHOLDER';
+const CACHE_VERSION = 'SW_VERSION_PLACEHOLDER'.includes('PLACEHOLDER') ? 'dev-' + Date.now() : 'SW_VERSION_PLACEHOLDER';
 const CACHE_NAME = `document-editor-${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = ['./', './index.html', './manifest.json', './img/64.png'];
 

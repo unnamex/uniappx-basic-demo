@@ -8,9 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取平台信息
   getPlatform: () => process.platform,
 
-  // 检测当前是否包含完整的 AI 功能模块
-  checkAiFeature: () => ipcRenderer.invoke('check-ai-feature'),
-
   // 获取更详细的操作系统信息
   getOsInfo: () => {
     try {
