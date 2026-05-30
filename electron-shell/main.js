@@ -230,6 +230,20 @@ function createWindow() {
     console.log('[CrashGuard] 窗口已恢复响应')
   })
 
+  // 将渲染进程的 console 输出转发到主进程日志文件
+  // 这样前端的 [Doc]、[Parent] 等日志也能被持久化，无需打开 DevTools
+  mainWindow.webContents.on('console-message', (_event, level, message) => {
+    const levelMap = ['INFO', 'WARN', 'ERROR']
+    const levelStr = levelMap[level] || 'INFO'
+    if (levelStr === 'ERROR') {
+      console.error('[Renderer]', message)
+    } else if (levelStr === 'WARN') {
+      console.warn('[Renderer]', message)
+    } else {
+      console.log('[Renderer]', message)
+    }
+  })
+
   createMenu()
 }
 

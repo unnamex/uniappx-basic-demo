@@ -37,6 +37,7 @@ let appFiles = [
   "dist/**/*",
   "main.js",
   "preload.js",
+  "logger.js",
   "icons/**/*",
   "ai-service/**/*",
   "node_modules/**/*"

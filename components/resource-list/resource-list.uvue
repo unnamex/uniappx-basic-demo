@@ -473,7 +473,7 @@
 	.doc-fold-excel { background-color: #86EFAC; }
 	.doc-fold-ppt { background-color: #FDBA74; }
 	.doc-fold-pdf { background-color: #FCA5A5; }
-	.doc-fold-clw { background-color: #D1D5DB; }
+	.doc-fold-clw { background-color: #A5B4FC; }
 	.doc-fold-dwg { background-color: #FCD34D; }
 	.doc-fold-audio { background-color: #6EE7B7; }
 	.doc-fold-txt { background-color: #CBD5E1; }
@@ -503,7 +503,7 @@
 	.doc-line-color-excel { background-color: #BBF7D0; }
 	.doc-line-color-ppt { background-color: #FED7AA; }
 	.doc-line-color-pdf { background-color: #FECACA; }
-	.doc-line-color-clw { background-color: #E5E7EB; }
+	.doc-line-color-clw { background-color: #C7D2FE; }
 	.doc-line-color-dwg { background-color: #FDE68A; }
 	.doc-line-color-audio { background-color: #A7F3D0; }
 	.doc-line-color-txt { background-color: #E2E8F0; }
@@ -530,7 +530,7 @@
 	.doc-bar-excel { background-color: #16A34A; }
 	.doc-bar-ppt { background-color: #D24726; }
 	.doc-bar-pdf { background-color: #B91C1C; }
-	.doc-bar-clw { background-color: #4B5563; }
+	.doc-bar-clw { background-color: #4F46E5; }
 	.doc-bar-dwg { background-color: #D97706; }
 	.doc-bar-audio { background-color: #059669; }
 	.doc-bar-txt { background-color: #64748B; }

@@ -413,11 +413,25 @@
 		})
 	}
 
+	// 防抖锁：防止加载过程中重复点击同一文档触发多次并行渲染
+	let docRenderingSrc = ''
+	
 	function renderDocIframe(src : string): void {
+		// 如果正在加载同一个文档，直接忽略
+		if (docRenderingSrc === src) {
+			console.log('[Doc] 忽略重复渲染请求:', src)
+			return
+		}
+		docRenderingSrc = src
+		
 		nextTick(async () => {
 			const el = docFrame.value as any
 			if (el != null) {
-				const encodedName = encodeURIComponent(props.resource?.name ?? 'document')
+				let docName = props.resource?.name ?? 'document'
+				if (props.resource?.type && !docName.toLowerCase().endsWith('.' + props.resource!.type.toLowerCase())) {
+					docName += '.' + props.resource!.type
+				}
+				const encodedName = encodeURIComponent(docName)
 				
 				// 确定 ranuts-document 的访问 URL 和 Electron 上下文
 				let targetUrl = './static/ranuts-document/index.html'
@@ -437,8 +451,11 @@
 				}
 
 				// 检查 URL 缓存
-				if (props.resource?.id) {
-					const cachedUrl = getCachedDocUrl(props.resource.id)
+				const resourceId = props.resource?.id ?? ''
+				console.log('[Doc] 缓存检查: resourceId=' + resourceId + ', electronPort=' + electronPort)
+				if (resourceId !== '') {
+					const cachedUrl = getCachedDocUrl(resourceId)
+					console.log('[Doc] 缓存查询结果: cachedUrl=' + (cachedUrl ?? 'null'))
 					if (cachedUrl != null && electronPort > 0) {
 						console.log('[Doc] 命中内存缓存，直接复用 HTTP URL:', cachedUrl)
 						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(cachedUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
@@ -566,13 +583,19 @@
 	// 监听资源变化，渲染PDF
 	watch(() => props.resource, (newVal : ResourceItem | null) => {
 		if (newVal != null && newVal.type == 'pdf') {
+			docRenderingSrc = '' // 切到其他类型，重置文档防抖锁
 			renderPdfIframe(newVal.path)
 		}
 		if (newVal != null && isCadType(newVal.type)) {
+			docRenderingSrc = '' // 切到其他类型，重置文档防抖锁
 			renderCadIframe(newVal.path)
 		}
 		if (newVal != null && isOfficeDoc(newVal.type)) {
 			renderDocIframe(newVal.path)
+		}
+		// 切到图片/视频/音频等非文档类型时，也要重置防抖锁
+		if (newVal != null && !isOfficeDoc(newVal.type)) {
+			docRenderingSrc = ''
 		}
 	}, { immediate: true })
 	// #endif
