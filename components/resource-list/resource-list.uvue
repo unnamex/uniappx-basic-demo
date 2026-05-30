@@ -133,11 +133,11 @@
 	// 拖拽起始记录
 	let dragStartX = 0
 	let dragStartProgress = 0
-	let cachedTrackWidth = 200
+	const cachedTrackWidth = ref(200)
 	
 	// === 计算属性 ===
 	const thumbTransform = computed((): string => {
-		const maxOffset = cachedTrackWidth - 30  // 30px 为 thumb 宽度
+		const maxOffset = cachedTrackWidth.value - 30  // 30px 为 thumb 宽度
 		const offset = scrollProgress.value * maxOffset
 		return `translateX(${offset}px)`
 	})
@@ -211,14 +211,24 @@
 		// 动态同步组件变量，使得再次拖拽时平滑接续
 		currentScrollLeft.value = scrollLeft
 		
-		// 如果在事件中实在取不到 clientWidth，就用之前的估算值
+		// 优先通过 trackRef 动态获取真实的容器宽度
 		if (clientWidth == 0) {
-			if (cachedClientWidth > 0 && cachedClientWidth < scrollWidth) {
-				clientWidth = cachedClientWidth
-			} else if (trackRef.value != null) {
-				clientWidth = trackRef.value!.getBoundingClientRect().width + 40
-			} else {
-				clientWidth = 400 // 最差的保底
+			if (trackRef.value != null) {
+				const trackWidth = trackRef.value!.getBoundingClientRect().width
+				if (trackWidth > 0) {
+					clientWidth = trackWidth + 40
+					// 同步更新 cachedTrackWidth，确保 thumbTransform 计算使用真实轨道宽度
+					cachedTrackWidth.value = trackWidth
+				}
+			}
+			
+			// 如果 trackRef 还没渲染出来，再使用回退方案
+			if (clientWidth == 0) {
+				if (cachedClientWidth > 0 && cachedClientWidth < scrollWidth) {
+					clientWidth = cachedClientWidth
+				} else {
+					clientWidth = 400 // 最差的保底
+				}
 			}
 		}
 		
@@ -242,21 +252,21 @@
 		
 		// 测量轨道实际宽度
 		if (trackRef.value != null) {
-			cachedTrackWidth = trackRef.value!.getBoundingClientRect().width
+			cachedTrackWidth.value = trackRef.value!.getBoundingClientRect().width
 		}
 		
 		// 如果从未触发过 onScroll（用户直接拖指示器），需要估算尺寸
 		if (cachedScrollWidth == 0 && props.resources.length > 0) {
 			// 每张卡片 84px 宽 + 6px 间距 = 90px
 			cachedScrollWidth = props.resources.length * 90
-			cachedClientWidth = cachedTrackWidth + 40
+			cachedClientWidth = cachedTrackWidth.value + 40
 		}
 	}
 	
 	/** 通用：拖拽移动 */
 	const handleDragMove = (clientX: number) => {
 		const deltaX = clientX - dragStartX
-		const maxTrackMove = cachedTrackWidth - 30
+		const maxTrackMove = cachedTrackWidth.value - 30
 		
 		if (maxTrackMove <= 0) return
 		
@@ -321,6 +331,40 @@
 		document.removeEventListener('mousemove', onDocMouseMove)
 		document.removeEventListener('mouseup', onDocMouseUp)
 	}
+	// #endif
+	
+	// === 窗口大小变化时重新测量轨道宽度，防止滑块飞出可视区域 ===
+	const remeasureTrack = () => {
+		// 记录缩放前是否在末尾
+		const wasAtEnd = scrollProgress.value > 0.95
+		
+		if (trackRef.value != null) {
+			const trackWidth = trackRef.value!.getBoundingClientRect().width
+			if (trackWidth > 0) {
+				cachedTrackWidth.value = trackWidth
+				cachedClientWidth = trackWidth + 40
+			}
+		}
+		// 重新计算滚动进度（窗口缩小后可滚动距离变化）
+		if (cachedScrollWidth > cachedClientWidth) {
+			const maxScroll = cachedScrollWidth - cachedClientWidth
+			if (wasAtEnd) {
+				// 之前在末尾，保持在末尾并同步 scroll-view 位置
+				scrollProgress.value = 1
+				currentScrollLeft.value = maxScroll
+			} else {
+				scrollProgress.value = Math.max(0, Math.min(1, currentScrollLeft.value / maxScroll))
+			}
+		}
+	}
+	
+	// #ifdef H5 || WEB
+	onMounted(() => {
+		window.addEventListener('resize', remeasureTrack)
+	})
+	onUnmounted(() => {
+		window.removeEventListener('resize', remeasureTrack)
+	})
 	// #endif
 </script>
 
