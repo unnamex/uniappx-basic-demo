@@ -3,6 +3,8 @@ const path = require('path')
 const http = require('http')
 const fs = require('fs')
 
+// 初始化日志持久化（必须在所有 console 输出之前）
+require('./logger').init()
 
 let mainWindow = null
 let ranutsDocPort = 0 // ranuts-document 内嵌 HTTP 服务器端口
@@ -203,6 +205,29 @@ function createWindow() {
   // 监听退出全屏事件（例如用户按下 ESC 键）
   mainWindow.on('leave-full-screen', () => {
     mainWindow.webContents.send('window-leave-full-screen')
+  })
+
+  // 渲染进程崩溃自动恢复（安全兜底）
+  // 当 iframe 内的 WASM 引擎触发 OOM 等致命错误时，
+  // 渲染进程会被操作系统杀死导致白屏。此处自动重新加载窗口，恢复应用。
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    console.error('[CrashGuard] 渲染进程已退出, 原因:', details.reason, '退出码:', details.exitCode)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      console.log('[CrashGuard] 正在自动恢复窗口...')
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))
+        }
+      }, 1000)
+    }
+  })
+
+  mainWindow.on('unresponsive', () => {
+    console.warn('[CrashGuard] 窗口无响应，可能正在处理大型文件...')
+  })
+
+  mainWindow.on('responsive', () => {
+    console.log('[CrashGuard] 窗口已恢复响应')
   })
 
   createMenu()
