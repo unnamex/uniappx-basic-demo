@@ -808,7 +808,7 @@ function isAssetFile(entryName: string): boolean {
 	
 	// 检查扩展名
 	const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
-	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv']
+	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.m4v', '.wmv']
 	const audioExts = ['.mp3', '.wav', '.aac', '.ogg', '.m4a']
 	const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
 	// CAD 图纸格式（卡伦特供应商的 HTML 封装 CAD）
@@ -1291,7 +1291,7 @@ function isAssetFileHarmony(entryName: string): boolean {
 	}
 	
 	const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
-	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv']
+	const videoExts = ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.m4v', '.wmv']
 	const audioExts = ['.mp3', '.wav', '.aac', '.ogg', '.m4a']
 	const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
 	// CAD 图纸格式（卡伦特供应商的 HTML 封装 CAD）

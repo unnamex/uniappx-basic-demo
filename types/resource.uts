@@ -124,7 +124,7 @@ export function inferResourceType(filename: string): string {
 	}
 	
 	// 视频格式
-	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].indexOf(ext) >= 0) {
+	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v', 'wmv'].indexOf(ext) >= 0) {
 		return ResourceType_VIDEO
 	}
 	
@@ -164,7 +164,7 @@ export function normalizeResourceType(type: string, path: string): string {
 	if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].indexOf(lowerType) >= 0) {
 		return ResourceType_IMAGE
 	}
-	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v'].indexOf(lowerType) >= 0) {
+	if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'm4v', 'wmv'].indexOf(lowerType) >= 0) {
 		return ResourceType_VIDEO
 	}
 	if (['mp3', 'wav', 'aac', 'ogg', 'm4a', 'flac'].indexOf(lowerType) >= 0) {
