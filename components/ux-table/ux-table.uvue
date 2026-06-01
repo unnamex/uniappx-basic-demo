@@ -59,7 +59,7 @@
 								   class="node-type-icon"
 								   :src="getNodeIconPath(row)"
 								   mode="aspectFit" />
-							<text class="cell-text">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
+							<text :class="row.id === selectedRowId ? 'cell-text-selected' : 'cell-text'">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
 						</view>
 						
 						<view v-else class="cell-content-wrapper">
@@ -71,7 +71,7 @@
 								</view>
 							</view>
 							<!-- 普通文本列 -->
-							<text v-else class="cell-text">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
+							<text v-else :class="row.id === selectedRowId ? 'cell-text-selected' : 'cell-text'">{{ getStringValue(row.originData, field['prop'] as string) }}</text>
 						</view>
 					</view>
 				</view>
@@ -869,6 +869,16 @@
 		flex: 1;
 	}
 
+	/* 选中行文字：品牌色加深，增强选中态辨识度 */
+	.cell-text-selected {
+		font-size: 14px;
+		color: #0E7490;
+		font-weight: 600;
+		lines: 1;
+		overflow: hidden;
+		flex: 1;
+	}
+
 	.expand-icon {
 		width: 20px;
 		height: 20px;
@@ -888,9 +898,10 @@
 		color: #94A3B8;
 	}
 
-	/* 选中行 — 极浅青碧 + 左侧品牌色指示条 */
+	/* 选中行 — 明显的品牌色背景 + 左侧指示条 + 选中行文字加深 */
+	/* 参考 VS Code / 飞书 / Figma 等主流做法，选中态背景色需足够醒目 */
 	.row-selected {
-		background-color: #F0FDFA;
+		background-color: #E6F4F7;
 		border-left-width: 3px;
 		border-left-style: solid;
 		border-left-color: #0891B2;

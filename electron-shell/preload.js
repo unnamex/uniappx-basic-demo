@@ -60,11 +60,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   decryptAES_CBC_Sync: (encryptedBuffer, keyString) => {
     try {
       const crypto = require('crypto')
-      // encryptedBuffer 从前端传过来可能被 contextBridge 处理为普通对象或 Uint8Array
-      const dataBytes = new Uint8Array(encryptedBuffer)
+      
+      // 安全地将前端传过来的对象转换为 Node.js Buffer
+      let dataBytes;
+      if (Buffer.isBuffer(encryptedBuffer)) {
+        dataBytes = encryptedBuffer;
+      } else if (encryptedBuffer instanceof Uint8Array) {
+        dataBytes = Buffer.from(encryptedBuffer.buffer, encryptedBuffer.byteOffset, encryptedBuffer.byteLength);
+      } else if (encryptedBuffer instanceof ArrayBuffer) {
+        dataBytes = Buffer.from(encryptedBuffer);
+      } else {
+        // Fallback for weird contextBridge serialized objects
+        dataBytes = Buffer.from(new Uint8Array(encryptedBuffer));
+      }
       
       if (dataBytes.length < 16) {
-        return { success: false, data: null, errorMessage: '数据包格式错误：数据太短' }
+        return { success: false, data: null, errorMessage: '数据包格式错误：数据太短 (' + dataBytes.length + ' bytes)' }
       }
       
       const iv = dataBytes.slice(0, 16)
@@ -74,12 +85,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const key = Buffer.from(keyString.substring(0, 32), 'utf-8')
       
       const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
-      // 注意：加密后端使用了 PKCS5Padding，在 Node.js 中 aes-256-cbc 默认就是启用 autoPadding (PKCS7/5) 的
       const decrypted = Buffer.concat([decipher.update(cipherText), decipher.final()])
       
-      // 返回 ArrayBuffer 给渲染进程
-      return { success: true, data: new Uint8Array(decrypted).buffer, errorMessage: '' }
+      // 【关键修复】返回一个新的独立 Uint8Array 以避免暴露底层的 Buffer pool
+      // 同时 Uint8Array 是 contextBridge 支持最佳的类型
+      const resultView = new Uint8Array(decrypted.buffer, decrypted.byteOffset, decrypted.length)
+      // 返回深拷贝以确保安全通过 Bridge
+      return { success: true, data: new Uint8Array(resultView), errorMessage: '' }
     } catch (e) {
+      console.error('Node解密异常:', e)
       return { success: false, data: null, errorMessage: 'Node 解密失败：' + e.message }
     }
   },

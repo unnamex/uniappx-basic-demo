@@ -171,11 +171,43 @@ function decryptWeb(encryptedData: ArrayBuffer): DecryptResult {
 	try {
 		// 检查是否在 Electron 环境下并提供了原生同步解密方法
 		if ((window as any).electronAPI != null && typeof (window as any).electronAPI.decryptAES_CBC_Sync === 'function') {
-			const res = (window as any).electronAPI.decryptAES_CBC_Sync(encryptedData, PRESET_KEY)
+			// 【关键修复】通过 contextBridge 传递时，ArrayBuffer 可能会丢失原型或数据。
+			// 转换为明确的 Uint8Array 确保跨环境序列化正常。
+			const inputBuffer = new Uint8Array(encryptedData)
+			const res = (window as any).electronAPI.decryptAES_CBC_Sync(inputBuffer, PRESET_KEY)
+			
+			if (!res.success) {
+				console.error('Electron 解密失败:', res.errorMessage)
+				return {
+					success: false,
+					data: null,
+					errorMessage: res.errorMessage as string
+				}
+			}
+
+			// 【关键修复】接收返回的 Uint8Array 并提取真实的 ArrayBuffer
+			let finalData: ArrayBuffer | null = null
+			const resData = res.data
+			if (resData != null) {
+				if (resData instanceof Uint8Array) {
+					// 已经是 Uint8Array，直接取 buffer，但要注意 byteOffset
+					if (resData.byteOffset === 0 && resData.byteLength === resData.buffer.byteLength) {
+						finalData = resData.buffer as ArrayBuffer
+					} else {
+						finalData = resData.buffer.slice(resData.byteOffset, resData.byteOffset + resData.byteLength) as ArrayBuffer
+					}
+				} else if (resData.buffer != null) {
+					finalData = resData.buffer as ArrayBuffer
+				} else {
+					// 退化为普通对象数组，重新构造
+					finalData = new Uint8Array(resData as Array<number>).buffer as ArrayBuffer
+				}
+			}
+
 			return {
-				success: res.success as boolean,
-				data: res.data as ArrayBuffer | null,
-				errorMessage: res.errorMessage as string
+				success: true,
+				data: finalData,
+				errorMessage: ''
 			}
 		}
 
@@ -187,6 +219,7 @@ function decryptWeb(encryptedData: ArrayBuffer): DecryptResult {
 			errorMessage: '纯 Web 环境加密模块待实现，当前仅支持 Electron 环境'
 		}
 	} catch (e: any) {
+		console.error('Web解密捕获到异常:', e)
 		return {
 			success: false,
 			data: null,
