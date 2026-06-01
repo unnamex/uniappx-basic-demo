@@ -1,6 +1,10 @@
 import { ComponentConfig, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
 import { ResourceItem, inferResourceType } from '@/types/resource'
-import { decryptPackage } from '@/utils/crypto'
+import { decryptPackage, decryptPackageAsync, PRESET_KEY } from '@/utils/crypto'
+// #ifdef APP-HARMONY
+import { streamDecryptHarmony } from '@/utils/crypto'
+// #endif
+import type { DecryptResult } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
 import { saveResource, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
 // #ifdef APP-ANDROID
@@ -24,6 +28,9 @@ export type ImportProgressCallback = (progress: ImportProgress) => void
  * 当前选中的文件路径
  */
 let selectedFilePath: string = ''
+// #ifdef WEB
+let selectedFileObjWeb: any | null = null
+// #endif
 
 /**
  * 选择数据包文件
@@ -176,6 +183,7 @@ function selectFileWeb(
  */
 function handleFileProcessWeb(file: File): PackageInfo {
 	selectedFilePath = URL.createObjectURL(file)
+	selectedFileObjWeb = file
 	return {
 		fileName: file.name,
 		fileSize: file.size,
@@ -216,27 +224,56 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 			reject(new Error('未选择数据包文件'))
 			return
 		}
+		
+		// #ifdef WEB
+		// 检查是否在 Electron 环境且支持流式解压
+		const isElectron = typeof window !== 'undefined' && (window as any).electronAPI != null && typeof (window as any).electronAPI.srdExtract === 'function';
+		if (isElectron && selectedFileObjWeb != null) {
+			const electronPath = selectedFileObjWeb['path'] as string; // Electron File API 会有真实路径
+			if (electronPath != null && electronPath != '') {
+				validatePackageElectronStreaming(electronPath)
+					.then(resolve)
+					.catch(reject);
+				return;
+			}
+		}
+		// #endif
+
+		// #ifdef APP-HARMONY
+		validatePackageHarmonyStreaming(actualPath)
+			.then(resolve)
+			.catch(reject);
+		return;
+		// #endif
+
 		readFileAsArrayBuffer(actualPath)
 			.then((encryptedData: ArrayBuffer) => {
-				// 尝试解密，如果失败则假设为未加密的ZIP
-				let zipData = encryptedData
-				const decryptResult = decryptPackage(encryptedData)
-				if (decryptResult.success && decryptResult.data != null) {
-					console.log('validatePackage: 数据包解密成功')
-					zipData = decryptResult.data!
-				} else {
-					console.log('validatePackage: 数据包未加密或解密跳过，尝试以原始ZIP解析')
-				}
-				
-				// 解压并读取清单文件
-				parseManifestFromZip(zipData)
-					.then((manifest: PackageManifest) => {
-						resolve(manifest)
+				// 异步解密（Web 端使用 Web Crypto API，APP 端包装为 Promise）
+				decryptPackageAsync(encryptedData)
+					.then((decryptResult: DecryptResult) => {
+						let zipData = encryptedData
+						if (decryptResult.success && decryptResult.data != null) {
+							console.log('validatePackage: 数据包解密成功')
+							zipData = decryptResult.data!
+						} else {
+							console.warn('validatePackage: 解密未成功或非加密包，将尝试以原始ZIP解析。原因:', decryptResult.errorMessage)
+						}
+						
+						// 解压并读取清单文件
+						parseManifestFromZip(zipData)
+							.then((manifest: PackageManifest) => {
+								resolve(manifest)
+							})
+							.catch((e: any) => {
+								console.error('validatePackage: parseManifestFromZip 失败:', e)
+								const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
+								reject(new Error(errMsg))
+							})
 					})
 					.catch((e: any) => {
-						console.error('validatePackage: parseManifestFromZip 失败:', e)
+						console.error('validatePackage: 解密异常:', e)
 						const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
-						reject(new Error(errMsg))
+						reject(new Error('解密失败: ' + errMsg))
 					})
 			})
 			.catch((e: any) => {
@@ -267,6 +304,27 @@ export function importPackage(
 			return
 		}
 		
+		// #ifdef WEB
+		// 检查是否在 Electron 环境且支持流式解压
+		const isElectron = typeof window !== 'undefined' && (window as any).electronAPI != null && typeof (window as any).electronAPI.srdExtract === 'function';
+		if (isElectron && selectedFileObjWeb != null) {
+			const electronPath = selectedFileObjWeb['path'] as string; // Electron File API 会有真实路径
+			if (electronPath != null && electronPath != '') {
+				importPackageElectronStreaming(electronPath, onProgress, startTime)
+					.then(resolve)
+					.catch(reject);
+				return;
+			}
+		}
+		// #endif
+		
+		// #ifdef APP-HARMONY
+		importPackageHarmonyStreaming(actualPath, onProgress, startTime)
+			.then(resolve)
+			.catch(reject);
+		return;
+		// #endif
+
 		// 更新进度：开始读取文件
 		if (onProgress != null) {
 			onProgress({
@@ -278,7 +336,6 @@ export function importPackage(
 		}
 		
 		readFileAsArrayBuffer(actualPath)
-
 			.then((encryptedData: ArrayBuffer) => {
 				// 更新进度：解密中
 				if (onProgress != null) {
@@ -290,42 +347,49 @@ export function importPackage(
 					})
 				}
 				
-				let zipData = encryptedData
-				const decryptResult = decryptPackage(encryptedData)
-				if (decryptResult.success && decryptResult.data != null) {
-					zipData = decryptResult.data!
-				}
-				
-				// 尝试作为普通 JSON 解析 (单文件数据包)
-				
-				// 更新进度：解压中
-				if (onProgress != null) {
-					onProgress({
-						current: 40,
-						total: 100,
-						currentFile: '解压数据包...',
-						status: 'extracting'
-					})
-				}
-				
-				// 解压并解析数据
-				extractAndParsePackage(zipData, onProgress)
-					.then((res: ImportResult) => {
-						// 更新进度：完成
+				// 异步解密（Web 端使用 Web Crypto API，APP 端包装为 Promise）
+				decryptPackageAsync(encryptedData)
+					.then((decryptResult: DecryptResult) => {
+						let zipData = encryptedData
+						if (decryptResult.success && decryptResult.data != null) {
+							zipData = decryptResult.data!
+						} else {
+							console.warn('importPackage: 解密未成功或非加密包，将尝试以原始ZIP解析。原因:', decryptResult.errorMessage)
+						}
+						
+						// 更新进度：解压中
 						if (onProgress != null) {
 							onProgress({
-								current: 100,
+								current: 40,
 								total: 100,
-								currentFile: '导入完成',
-								status: 'completed'
+								currentFile: '解压数据包...',
+								status: 'extracting'
 							})
 						}
 						
-						res.importTime = Date.now() - startTime
-						resolve(res)
+						// 解压并解析数据
+						extractAndParsePackage(zipData, onProgress)
+							.then((res: ImportResult) => {
+								// 更新进度：完成
+								if (onProgress != null) {
+									onProgress({
+										current: 100,
+										total: 100,
+										currentFile: '导入完成',
+										status: 'completed'
+									})
+								}
+								
+								res.importTime = Date.now() - startTime
+								resolve(res)
+							})
+							.catch((e: any) => {
+								reject(new Error(JSON.stringify(e)))
+							})
 					})
 					.catch((e: any) => {
-						reject(new Error(JSON.stringify(e)))
+						console.error('importPackage: 解密异常:', e)
+						reject(new Error('解密失败: ' + (e instanceof Error ? e.message : String(e))))
 					})
 			})
 			.catch((e: any) => {
@@ -338,7 +402,27 @@ export function importPackage(
  * 读取文件为 ArrayBuffer
  */
 function readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
-	return new Promise((resolve: (value: ArrayBuffer) => void, reject: (reason: Error) => void) => {
+	return new Promise((resolve, reject) => {
+		// #ifdef WEB
+		if (selectedFileObjWeb != null) {
+			const reader = new FileReader()
+			reader.onload = (e) => {
+				if (e.target != null && e.target.result != null) {
+					resolve(e.target.result as ArrayBuffer)
+				} else {
+					reject(new Error('FileReader读取结果为空'))
+				}
+			}
+			reader.onerror = (e) => reject(new Error('FileReader读取失败: ' + e))
+			reader.readAsArrayBuffer(selectedFileObjWeb as File)
+		} else {
+			fetch(filePath)
+				.then(res => res.arrayBuffer())
+				.then(buffer => resolve(buffer))
+				.catch(e => reject(e))
+		}
+		// #endif
+		
 		// #ifdef APP-ANDROID || APP-HARMONY
 		uni.getFileSystemManager().readFile({
 			filePath: filePath,
@@ -353,17 +437,6 @@ function readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
 		})
 		// #endif
 		
-		// #ifdef WEB
-		// @ts-ignore
-		fetch(filePath)
-			.then((response: Response) => response.arrayBuffer())
-			.then((buffer: ArrayBuffer) => {
-				resolve(buffer)
-			})
-			.catch((e: any) => {
-				reject(new Error(e.toString()))
-			})
-		// #endif
 	})
 }
 
@@ -588,6 +661,111 @@ function extractAndParsePackage(
 		// #endif
 	})
 }
+
+// #ifdef APP-HARMONY
+/**
+ * 鸿蒙端超大文件流式解压验证
+ */
+function validatePackageHarmonyStreaming(filePath: string): Promise<PackageManifest> {
+	return new Promise((resolve, reject) => {
+		const userDataPath = uni.env.USER_DATA_PATH as string
+		const tempZipPath = userDataPath + '/temp_manifest_' + Date.now() + '.zip'
+		const tempExtractDir = userDataPath + '/temp_extract_manifest_' + Date.now()
+		
+		streamDecryptHarmony(filePath, tempZipPath).then((success: boolean) => {
+			if (!success) {
+				reject(new Error('流式解密失败'))
+				return
+			}
+			
+			// 创建解压目录
+			try { uni.getFileSystemManager().mkdirSync(tempExtractDir, true) } catch (e: any) { }
+			
+			uni.getFileSystemManager().unzip({
+				zipFilePath: tempZipPath,
+				targetPath: tempExtractDir,
+				success: () => {
+					const manifestPath = tempExtractDir + '/manifest.json'
+					uni.getFileSystemManager().readFile({
+						filePath: manifestPath,
+						encoding: 'utf-8',
+						success: (res: ReadFileSuccessCallbackResult) => {
+							try {
+								const manifest = JSON.parse(res.data as string) as PackageManifest
+								cleanupTempFiles(tempZipPath, tempExtractDir)
+								resolve(manifest)
+							} catch (e: any) {
+								cleanupTempFiles(tempZipPath, tempExtractDir)
+								reject(new Error('解析清单失败: ' + e.message))
+							}
+						},
+						fail: () => {
+							cleanupTempFiles(tempZipPath, tempExtractDir)
+							reject(new Error('未找到清单文件'))
+						}
+					})
+				},
+				fail: (err: any) => {
+					cleanupTempFiles(tempZipPath, tempExtractDir)
+					reject(new Error('ZIP解压失败'))
+				}
+			})
+		})
+	})
+}
+
+/**
+ * 鸿蒙端超大文件流式解压导入
+ */
+function importPackageHarmonyStreaming(
+	filePath: string,
+	onProgress: ImportProgressCallback | null,
+	startTime: number
+): Promise<ImportResult> {
+	return new Promise((resolve, reject) => {
+		const userDataPath = uni.env.USER_DATA_PATH as string
+		const tempZipPath = userDataPath + '/temp_import_' + Date.now() + '.zip'
+		const tempExtractDir = userDataPath + '/temp_import_extract_' + Date.now()
+		
+		if (onProgress != null) onProgress({ current: 10, total: 100, currentFile: '流式解密中...', status: 'decrypting' })
+		
+		streamDecryptHarmony(filePath, tempZipPath).then((success: boolean) => {
+			if (!success) {
+				reject(new Error('流式解密失败'))
+				return
+			}
+			
+			if (onProgress != null) onProgress({ current: 40, total: 100, currentFile: '解压中...', status: 'extracting' })
+			
+			try { uni.getFileSystemManager().mkdirSync(tempExtractDir, true) } catch (e: any) { }
+			
+			uni.getFileSystemManager().unzip({
+				zipFilePath: tempZipPath,
+				targetPath: tempExtractDir,
+				success: () => {
+					processHarmonyExtractedFiles(
+						tempExtractDir,
+						onProgress,
+						(result: ImportResult) => {
+							cleanupTempFiles(tempZipPath, tempExtractDir)
+							result.importTime = Date.now() - startTime
+							resolve(result)
+						},
+						(error: Error) => {
+							cleanupTempFiles(tempZipPath, tempExtractDir)
+							reject(error)
+						}
+					)
+				},
+				fail: (err: any) => {
+					cleanupTempFiles(tempZipPath, tempExtractDir)
+					reject(new Error('ZIP解压失败'))
+				}
+			})
+		})
+	})
+}
+// #endif
 
 // #ifdef APP-ANDROID
 function extractAndParseAndroid(
@@ -1310,6 +1488,195 @@ function isAssetFileHarmony(entryName: string): boolean {
 // #endif
 
 // #ifdef WEB
+/**
+ * Electron 环境下使用流式解压验证数据包
+ */
+function validatePackageElectronStreaming(filePath: string): Promise<PackageManifest> {
+	return new Promise((resolve, reject) => {
+		const win = window as any;
+		win.electronAPI.srdExtract(filePath, PRESET_KEY)
+			.then((res: any) => {
+				if (res.success as boolean) {
+					// 提取 manifest
+					const manifest = res.manifest as PackageManifest;
+					// 验证完成后清理临时目录
+					win.electronAPI.srdCleanup(res.tempDir);
+					resolve(manifest);
+				} else {
+					reject(new Error(res.error as string || '解析失败'));
+				}
+			})
+			.catch((e: any) => reject(new Error('Electron流式解压失败: ' + e)));
+	});
+}
+
+/**
+ * Electron 环境下使用流式解压导入数据包
+ */
+function importPackageElectronStreaming(
+	filePath: string,
+	onProgress: ImportProgressCallback | null,
+	startTime: number
+): Promise<ImportResult> {
+	return new Promise((resolve, reject) => {
+		const win = window as any;
+		
+		if (onProgress != null) {
+			onProgress({
+				current: 10,
+				total: 100,
+				currentFile: '流式解密并解压数据包...',
+				status: 'extracting'
+			});
+		}
+		
+		win.electronAPI.srdExtract(filePath, PRESET_KEY)
+			.then((res: any) => {
+				if (!(res.success as boolean)) {
+					reject(new Error(res.error as string || '解析失败'));
+					return;
+				}
+				
+				const tempDir = res.tempDir as string;
+				const isEncrypted = res.isEncrypted as boolean;
+				const manifest = res.manifest as PackageManifest;
+				const jsonFiles = res.jsonFiles as any;
+				const assetFiles = res.assetFiles as any[];
+				const attachmentRecords = res.attachmentRecords as any[];
+				
+				if (onProgress != null) {
+					onProgress({
+						current: 60,
+						total: 100,
+						currentFile: '保存数据到数据库...',
+						status: 'extracting'
+					});
+				}
+				
+				// 提取数据
+				const groups = jsonFiles.groups as TabGroup[];
+				const tabs = jsonFiles.tabs as TabConfig[];
+				const components = jsonFiles.components as ComponentConfig[];
+				const processTreeStr = jsonFiles.processTreeStr as string;
+				const processRecords = jsonFiles.processRecords as any[];
+				const operationRecords = jsonFiles.operationRecords as any[];
+				const stepRecords = jsonFiles.stepRecords as any[];
+				const actionRecords = jsonFiles.actionRecords as any[];
+				
+				// 保存 UI 配置
+				saveUiConfigurationToDatabase(groups, tabs, components)
+					.then((componentsCount: number) => {
+						// 存储附加数据
+						if (processTreeStr != '') {
+							webPutData('t_system_config', { id: 'process_tree', value: processTreeStr, updated_at: Date.now() });
+						}
+						
+						if (processRecords.length > 0) webPutData('t_meta_process', { id: 'all_processes', data: processRecords, updated_at: Date.now() });
+						if (operationRecords.length > 0) webPutData('t_meta_operation', { id: 'all_operations', data: operationRecords, updated_at: Date.now() });
+						if (stepRecords.length > 0) webPutData('t_meta_step', { id: 'all_steps', data: stepRecords, updated_at: Date.now() });
+						if (actionRecords.length > 0) webPutData('t_meta_action', { id: 'all_actions', data: actionRecords, updated_at: Date.now() });
+						
+						// 处理资源文件，按需将原生 Buffer 存为 Blob
+						if (onProgress != null) {
+							onProgress({
+								current: 80,
+								total: 100,
+								currentFile: '处理资源文件...',
+								status: 'extracting'
+							});
+						}
+						
+						clearBlobUrls();
+						
+						const resources: ResourceItem[] = [];
+						const sortMap = new Map<string, number>();
+						
+						let processedAssets = 0;
+						const totalAssets = attachmentRecords.length;
+						
+						// 递归处理资源文件以避免阻塞
+						const processNextAsset = () => {
+							if (processedAssets >= totalAssets) {
+								// 完成
+								saveResources(resources).then(() => {
+									// 清理临时目录
+									win.electronAPI.srdCleanup(tempDir);
+									
+									if (onProgress != null) {
+										onProgress({ current: 100, total: 100, currentFile: '导入完成', status: 'completed' });
+									}
+									
+									resolve({
+										success: true,
+										manifest: manifest,
+										message: isEncrypted ? '加密数据包导入成功' : '非加密数据包导入成功',
+										componentsCount: componentsCount,
+										resourcesCount: resources.length,
+										importTime: Date.now() - startTime
+									} as ImportResult);
+								});
+								return;
+							}
+							
+							const resObj = attachmentRecords[processedAssets];
+							const nodeId = resObj.nodeId as string ?? 'unknown';
+							let sortOrder = sortMap.get(nodeId) ?? 0;
+							
+							const item: ResourceItem = {
+								id: resObj.id as string ?? `res_${nodeId}_${sortOrder}`,
+								type: resObj.type as string ?? 'unknown',
+								name: resObj.name as string ?? '未命名资源',
+								path: '',
+								originalPath: resObj.path as string ?? '',
+								thumbnail: '',
+								duration: resObj.duration as number ?? 0,
+								size: resObj.size as number ?? 0,
+								description: resObj.description as string ?? '',
+								nodeId: nodeId,
+								sortOrder: sortOrder
+							};
+							
+							// 查找对应磁盘路径并读取
+							if (resObj.path != null && resObj.path != '') {
+								const fileObj = assetFiles.find((f: any) => f.originalPath == resObj.path);
+								if (fileObj != null) {
+									win.electronAPI.srdReadAsset(fileObj.diskPath)
+										.then((buffer: any) => {
+											if (buffer != null) {
+												const blob = new Blob([buffer]);
+												item.path = storeBlobAndGetUrl(item.id, blob, item.name);
+											}
+											finishAsset(item, nodeId, sortOrder, sortMap, resources, processNextAsset);
+										});
+									return;
+								}
+							}
+							finishAsset(item, nodeId, sortOrder, sortMap, resources, processNextAsset);
+						};
+						
+						const finishAsset = (item: ResourceItem, nodeId: string, sortOrder: number, sortMap: Map<string, number>, resources: ResourceItem[], next: () => void) => {
+							resources.push(item);
+							sortMap.set(nodeId, sortOrder + 1);
+							processedAssets++;
+							if (onProgress != null && processedAssets % 10 == 0) {
+								onProgress({
+									current: 80 + Math.floor((processedAssets / totalAssets) * 15),
+									total: 100,
+									currentFile: `处理资源文件 (${processedAssets}/${totalAssets})`,
+									status: 'extracting'
+								});
+							}
+							next();
+						};
+						
+						processNextAsset();
+					})
+					.catch((e: any) => reject(new Error('保存数据库失败: ' + e)));
+			})
+			.catch((e: any) => reject(new Error('Electron流式解压失败: ' + e)));
+	});
+}
+
 function extractAndParseWeb(
 	zipData: ArrayBuffer,
 	onProgress: ImportProgressCallback | null,

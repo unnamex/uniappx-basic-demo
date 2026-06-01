@@ -183,7 +183,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,   // 安全：隔离上下文
       nodeIntegration: false,   // 安全：禁用 Node 集成
-      sandbox: true,            // 安全：启用沙箱
+      sandbox: false,           // 关闭沙箱：允许 preload.js 使用 Node.js 内置模块（如 crypto 用于 SRD 包解密）
       webSecurity: false        // 允许 file:// 协议加载 module 和跨域 fetch (解决离线文档预览 CORS)
     }
   })
@@ -372,6 +372,28 @@ ipcMain.handle('save-temp-doc-buffer', async (event, bufferData, fileName) => {
   console.log('[ranuts-document] 极速临时文档(Buffer)已异步保存:', filePath, '大小:', buffer.length)
   return '/_tmp/' + safeName
 })
+
+// --- 流式解密解压 SRD 包 ---
+ipcMain.handle('srd-extract', async (event, filePath, keyString) => {
+  const { extractSRD, readExtractedData } = require('./srd-stream');
+  try {
+    const { tempDir, isEncrypted } = await extractSRD(filePath, keyString);
+    const data = readExtractedData(tempDir);
+    return { success: true, tempDir, isEncrypted, ...data };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('srd-read-asset', async (event, filePath) => {
+  const { readAssetAsBuffer } = require('./srd-stream');
+  return readAssetAsBuffer(filePath); // 直接返回 Buffer 以提高大文件传输性能
+});
+
+ipcMain.handle('srd-cleanup', async (event, tempDir) => {
+  const { cleanupTempDir } = require('./srd-stream');
+  cleanupTempDir(tempDir);
+});
 
 // 窗口控制
 ipcMain.on('window-minimize', () => {

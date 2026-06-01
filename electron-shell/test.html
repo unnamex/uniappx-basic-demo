@@ -1,0 +1,15 @@
+
+        <script>
+            try {
+                const res = window.electronAPI.testSync();
+                window.electronAPI.report({
+                    isBuffer: res instanceof ArrayBuffer,
+                    byteLength: res ? res.byteLength : -1,
+                    type: typeof res,
+                    val: res instanceof ArrayBuffer ? new Uint8Array(res)[0] : -1
+                });
+            } catch(e) {
+                window.electronAPI.report({ error: e.message });
+            }
+        </script>
+    

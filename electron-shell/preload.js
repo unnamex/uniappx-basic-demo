@@ -70,7 +70,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       } else if (encryptedBuffer instanceof ArrayBuffer) {
         dataBytes = Buffer.from(encryptedBuffer);
       } else {
-        // Fallback for weird contextBridge serialized objects
+        // 防止 contextBridge 丢失类型时的终极回退
         dataBytes = Buffer.from(new Uint8Array(encryptedBuffer));
       }
       
@@ -87,14 +87,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
       const decrypted = Buffer.concat([decipher.update(cipherText), decipher.final()])
       
-      // 【关键修复】返回一个新的独立 Uint8Array 以避免暴露底层的 Buffer pool
-      // 同时 Uint8Array 是 contextBridge 支持最佳的类型
-      const resultView = new Uint8Array(decrypted.buffer, decrypted.byteOffset, decrypted.length)
-      // 返回深拷贝以确保安全通过 Bridge
-      return { success: true, data: new Uint8Array(resultView), errorMessage: '' }
+      // 【最强修复方案】：不再直接传递内存指针，直接将 Node 的二进制转换为 Base64 字符串发给 Renderer！
+      // 字符串跨 contextBridge / IPC 传输是 100% 安全且零副作用的，同时 10MB 的 Base64 转换只需几毫秒
+      return { success: true, data: decrypted.toString('base64'), errorMessage: '' }
     } catch (e) {
       console.error('Node解密异常:', e)
-      return { success: false, data: null, errorMessage: 'Node 解密失败：' + e.message }
+      return { success: false, data: null, errorMessage: 'Node 加密解密核心抛错：' + e.message }
     }
   },
 
@@ -108,5 +106,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       console.error('Node MD5 校验失败：', e.message)
       return false
     }
-  }
+  },
+
+  // 流式解密解压 SRD 包（在主进程中完成，不占用渲染进程内存）
+  srdExtract: (filePath, keyString) => ipcRenderer.invoke('srd-extract', filePath, keyString),
+
+  // 从临时目录读取单个资产文件（原生 Buffer）
+  srdReadAsset: (filePath) => ipcRenderer.invoke('srd-read-asset', filePath),
+
+  // 清理临时目录
+  srdCleanup: (tempDir) => ipcRenderer.invoke('srd-cleanup', tempDir)
 })

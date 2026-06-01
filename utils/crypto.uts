@@ -4,7 +4,7 @@
  */
 
 // 预置密钥（生产环境应使用更安全的密钥管理方式）
-const PRESET_KEY: string = 'MPM_OFFLINE_2026_SECURE_KEY_256B'
+export const PRESET_KEY: string = 'MPM_OFFLINE_2026_SECURE_KEY_256B'
 const ALGORITHM: string = 'AES-256-CBC'
 
 /**
@@ -40,6 +40,29 @@ export function decryptPackage(encryptedData: ArrayBuffer): DecryptResult {
 	
 	// #ifdef WEB
 	return decryptWeb(encryptedData)
+	// #endif
+}
+
+/**
+ * 异步解密数据包（Web 端使用 Web Crypto API，不走 IPC/contextBridge）
+ * @param encryptedData - 加密的数据
+ * @returns Promise<DecryptResult>
+ */
+export function decryptPackageAsync(encryptedData: ArrayBuffer): Promise<DecryptResult> {
+	// #ifdef APP-ANDROID
+	return new Promise((resolve: (value: DecryptResult) => void, reject: (reason: Error) => void) => {
+		resolve(decryptAndroid(encryptedData))
+	})
+	// #endif
+	
+	// #ifdef APP-HARMONY
+	return new Promise((resolve: (value: DecryptResult) => void, reject: (reason: Error) => void) => {
+		resolve(decryptHarmony(encryptedData))
+	})
+	// #endif
+	
+	// #ifdef WEB
+	return decryptWebAsync(encryptedData)
 	// #endif
 }
 
@@ -95,6 +118,7 @@ function decryptAndroid(encryptedData: ArrayBuffer): DecryptResult {
 // #ifdef APP-HARMONY
 import cryptoFramework from '@ohos.security.cryptoFramework';
 import buffer from '@ohos.buffer';
+import fs from '@ohos.file.fs';
 
 /**
  * HarmonyOS 平台解密实现
@@ -161,71 +185,173 @@ function decryptHarmony(encryptedData: ArrayBuffer): DecryptResult {
 		}
 	}
 }
+
+/**
+ * 鸿蒙平台超大文件流式解密
+ * @param sourcePath 原始加密文件路径
+ * @param destPath 解密后写出的路径
+ * @returns 解密是否成功
+ */
+export async function streamDecryptHarmony(sourcePath: string, destPath: string): Promise<boolean> {
+	let sourceFile: fs.File | null = null;
+	let destFile: fs.File | null = null;
+	try {
+		sourceFile = fs.openSync(sourcePath, fs.OpenMode.READ_ONLY);
+		
+		// 1. 读取前4字节判断是否为ZIP
+		let headerBuffer = new ArrayBuffer(4);
+		let readLen = fs.readSync(sourceFile.fd, headerBuffer, { offset: 0, length: 4 });
+		let isZip = false;
+		if (readLen == 4) {
+			const headerArray = new Uint8Array(headerBuffer);
+			isZip = headerArray[0] == 0x50 && headerArray[1] == 0x4B && headerArray[2] == 0x03 && headerArray[3] == 0x04;
+		}
+
+		// 2. 若为未加密 ZIP，直接复制
+		if (isZip) {
+			fs.closeSync(sourceFile);
+			sourceFile = null;
+			fs.copyFileSync(sourcePath, destPath);
+			return true;
+		}
+
+		// 3. 若加密，读取前16字节为 IV
+		let ivBuffer = new ArrayBuffer(16);
+		readLen = fs.readSync(sourceFile.fd, ivBuffer, { offset: 0, length: 16 });
+		if (readLen < 16) {
+			throw new Error("数据包格式错误：文件大小不足");
+		}
+		const ivBytes = new Uint8Array(ivBuffer);
+
+		// 构建解密器
+		const keyStr = PRESET_KEY.substring(0, 32);
+		const keyBuffer = buffer.from(keyStr, 'utf-8');
+		const symKeyBlob: cryptoFramework.DataBlob = { data: new Uint8Array(keyBuffer.buffer) };
+		const symKeyGenerator = cryptoFramework.createSymKeyGenerator('AES256');
+		const symKey = symKeyGenerator.convertKeySync(symKeyBlob);
+		
+		const ivBlob: cryptoFramework.DataBlob = { data: ivBytes };
+		const ivParam: cryptoFramework.IvParamsSpec = { algName: 'IvParamsSpec', iv: ivBlob };
+		
+		const cipher = cryptoFramework.createCipher('AES256|CBC|PKCS7');
+		cipher.initSync(cryptoFramework.CryptoMode.DECRYPT_MODE, symKey, ivParam);
+
+		// 打开目标文件用于写入
+		destFile = fs.openSync(destPath, fs.OpenMode.WRITE_ONLY | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
+
+		// 4. 流式读取和解密 (每次 1MB)
+		let offset = 16;
+		let chunkSize = 1024 * 1024;
+		let chunkBuffer = new ArrayBuffer(chunkSize);
+		
+		while (true) {
+			let bytesRead = fs.readSync(sourceFile.fd, chunkBuffer, { offset: offset, length: chunkSize });
+			if (bytesRead <= 0) break;
+			
+			// 只取实际读取到的长度
+			const actualData = new Uint8Array(chunkBuffer).subarray(0, bytesRead);
+			let updateData: cryptoFramework.DataBlob = { data: actualData };
+			let res = cipher.updateSync(updateData);
+			
+			if (res != null && res.data != null && res.data.length > 0) {
+				fs.writeSync(destFile.fd, res.data.buffer);
+			}
+			offset += bytesRead;
+		}
+
+		// 5. 处理最后的分组和 padding
+		let finalResult = cipher.doFinalSync(null);
+		if (finalResult != null && finalResult.data != null && finalResult.data.length > 0) {
+			fs.writeSync(destFile.fd, finalResult.data.buffer);
+		}
+
+		return true;
+	} catch (e: any) {
+		console.error("鸿蒙流式解密失败: ", e.message);
+		return false;
+	} finally {
+		if (sourceFile != null) {
+			try { fs.closeSync(sourceFile); } catch (e: any) {}
+		}
+		if (destFile != null) {
+			try { fs.closeSync(destFile); } catch (e: any) {}
+		}
+	}
+}
 // #endif
 
 // #ifdef WEB
 /**
- * Web 平台解密实现
+ * Web 平台同步解密实现（保留兼容，但不推荐用于大文件）
  */
 function decryptWeb(encryptedData: ArrayBuffer): DecryptResult {
-	try {
-		// 检查是否在 Electron 环境下并提供了原生同步解密方法
-		if ((window as any).electronAPI != null && typeof (window as any).electronAPI.decryptAES_CBC_Sync === 'function') {
-			// 【关键修复】通过 contextBridge 传递时，ArrayBuffer 可能会丢失原型或数据。
-			// 转换为明确的 Uint8Array 确保跨环境序列化正常。
-			const inputBuffer = new Uint8Array(encryptedData)
-			const res = (window as any).electronAPI.decryptAES_CBC_Sync(inputBuffer, PRESET_KEY)
-			
-			if (!res.success) {
-				console.error('Electron 解密失败:', res.errorMessage)
-				return {
+	// 同步版本不再使用，直接返回提示使用异步版本
+	return {
+		success: false,
+		data: null,
+		errorMessage: 'Web 端请使用异步解密 decryptPackageAsync'
+	}
+}
+
+/**
+ * Web 平台异步解密实现（使用浏览器内置 Web Crypto API）
+ * @description 完全在渲染进程内完成解密，不走 IPC/contextBridge，避免大数据跨进程传输导致的 OOM 崩溃
+ */
+function decryptWebAsync(encryptedData: ArrayBuffer): Promise<DecryptResult> {
+	return new Promise((resolve: (value: DecryptResult) => void, reject: (reason: Error) => void) => {
+		try {
+			const data = new Uint8Array(encryptedData)
+			if (data.length < 16) {
+				resolve({
 					success: false,
 					data: null,
-					errorMessage: res.errorMessage as string
-				}
+					errorMessage: '数据包格式错误：数据太短'
+				} as DecryptResult)
+				return
 			}
-
-			// 【关键修复】接收返回的 Uint8Array 并提取真实的 ArrayBuffer
-			let finalData: ArrayBuffer | null = null
-			const resData = res.data
-			if (resData != null) {
-				if (resData instanceof Uint8Array) {
-					// 已经是 Uint8Array，直接取 buffer，但要注意 byteOffset
-					if (resData.byteOffset === 0 && resData.byteLength === resData.buffer.byteLength) {
-						finalData = resData.buffer as ArrayBuffer
-					} else {
-						finalData = resData.buffer.slice(resData.byteOffset, resData.byteOffset + resData.byteLength) as ArrayBuffer
-					}
-				} else if (resData.buffer != null) {
-					finalData = resData.buffer as ArrayBuffer
-				} else {
-					// 退化为普通对象数组，重新构造
-					finalData = new Uint8Array(resData as Array<number>).buffer as ArrayBuffer
-				}
+			
+			// 提取 IV（前 16 字节）和密文
+			const iv = data.slice(0, 16)
+			const cipherText = data.slice(16)
+			
+			// 构建密钥（UTF-8 编码，截取前 32 字节）
+			const keyStr = PRESET_KEY.substring(0, 32)
+			const keyBytes = new Uint8Array(32)
+			for (let i = 0; i < 32; i++) {
+				keyBytes[i] = keyStr.charCodeAt(i)
 			}
-
-			return {
-				success: true,
-				data: finalData,
-				errorMessage: ''
-			}
+			
+			// 使用 Web Crypto API 解密（完全在渲染进程本地完成，零 IPC 开销）
+			const subtle = (window as any).crypto.subtle
+			subtle.importKey('raw', keyBytes.buffer as ArrayBuffer, { name: 'AES-CBC' }, false, ['decrypt'])
+				.then((key: any) => {
+					return subtle.decrypt({ name: 'AES-CBC', iv: iv }, key, cipherText)
+				})
+				.then((decrypted: any) => {
+					console.log('Web Crypto API 解密成功，数据大小:', (decrypted as ArrayBuffer).byteLength)
+					resolve({
+						success: true,
+						data: decrypted as ArrayBuffer,
+						errorMessage: ''
+					} as DecryptResult)
+				})
+				.catch((e: any) => {
+					console.error('Web Crypto API 解密失败:', e)
+					resolve({
+						success: false,
+						data: null,
+						errorMessage: 'Web Crypto 解密失败：' + (e.message != null ? e.message : String(e))
+					} as DecryptResult)
+				})
+		} catch (e: any) {
+			console.error('Web 解密异常:', e)
+			resolve({
+				success: false,
+				data: null,
+				errorMessage: '解密异常：' + (e.message != null ? e.message : String(e))
+			} as DecryptResult)
 		}
-
-		// 如果不是 Electron，仍提示待实现（或保留后续接入 Web SubtleCrypto 的可能性）
-		console.log('Web decrypt called but SubtleCrypto is not implemented yet')
-		return {
-			success: false,
-			data: null,
-			errorMessage: '纯 Web 环境加密模块待实现，当前仅支持 Electron 环境'
-		}
-	} catch (e: any) {
-		console.error('Web解密捕获到异常:', e)
-		return {
-			success: false,
-			data: null,
-			errorMessage: '解密失败：' + e.message
-		}
-	}
+	})
 }
 // #endif
 
