@@ -62,11 +62,72 @@
 								<view class="doc-paper">
 									<!-- 折角装饰 -->
 									<view class="doc-fold" :class="'doc-fold-' + getDocCategory(item.type)"></view>
-									<!-- 内容区域：横线模拟文档内容 -->
-									<view class="doc-content-lines">
-										<view class="doc-line doc-line-long" :class="'doc-line-color-' + getDocCategory(item.type)"></view>
-										<view class="doc-line doc-line-medium" :class="'doc-line-color-' + getDocCategory(item.type)"></view>
-										<view class="doc-line doc-line-short" :class="'doc-line-color-' + getDocCategory(item.type)"></view>
+									<!-- 内容区域：根据文件类型显示不同图案 -->
+									<!-- Word: 段落横线 -->
+									<view v-if="getDocCategory(item.type) == 'word'" class="doc-content-lines">
+										<view class="doc-line doc-line-long doc-line-color-word"></view>
+										<view class="doc-line doc-line-medium doc-line-color-word"></view>
+										<view class="doc-line doc-line-short doc-line-color-word"></view>
+										<view class="doc-line doc-line-long doc-line-color-word"></view>
+									</view>
+									<!-- Excel: 表格网格 -->
+									<view v-else-if="getDocCategory(item.type) == 'excel'" class="doc-content-grid">
+										<view class="doc-grid-row">
+											<view class="doc-grid-cell"></view>
+											<view class="doc-grid-cell"></view>
+											<view class="doc-grid-cell"></view>
+										</view>
+										<view class="doc-grid-row">
+											<view class="doc-grid-cell"></view>
+											<view class="doc-grid-cell"></view>
+											<view class="doc-grid-cell"></view>
+										</view>
+										<view class="doc-grid-row">
+											<view class="doc-grid-cell"></view>
+											<view class="doc-grid-cell"></view>
+											<view class="doc-grid-cell"></view>
+										</view>
+									</view>
+									<!-- PPT: 柱状图 -->
+									<view v-else-if="getDocCategory(item.type) == 'ppt'" class="doc-content-chart">
+										<view class="doc-chart-col doc-col-short"></view>
+										<view class="doc-chart-col doc-col-tall"></view>
+										<view class="doc-chart-col doc-col-mid"></view>
+									</view>
+									<!-- PDF: 密排文字+印章 -->
+									<view v-else-if="getDocCategory(item.type) == 'pdf'" class="doc-content-pdf">
+										<view class="doc-line doc-line-long doc-line-color-pdf"></view>
+										<view class="doc-line doc-line-long doc-line-color-pdf"></view>
+										<view class="doc-line doc-line-medium doc-line-color-pdf"></view>
+										<view class="doc-pdf-stamp"></view>
+									</view>
+									<!-- CLW: 3D立方体 -->
+									<view v-else-if="getDocCategory(item.type) == 'clw'" class="doc-content-3d">
+										<view class="doc-cube-back"></view>
+										<view class="doc-cube-front"></view>
+									</view>
+									<!-- DWG: 工程图纸标注 -->
+									<view v-else-if="getDocCategory(item.type) == 'dwg'" class="doc-content-dwg">
+										<view class="doc-dwg-h"></view>
+										<view class="doc-dwg-v"></view>
+										<view class="doc-dwg-dot"></view>
+									</view>
+									<!-- Audio: 均衡器波形 -->
+									<view v-else-if="getDocCategory(item.type) == 'audio'" class="doc-content-audio">
+										<view class="doc-eq-bar doc-eq-h1"></view>
+										<view class="doc-eq-bar doc-eq-h2"></view>
+										<view class="doc-eq-bar doc-eq-h3"></view>
+										<view class="doc-eq-bar doc-eq-h4"></view>
+										<view class="doc-eq-bar doc-eq-h5"></view>
+									</view>
+									<!-- TXT: 简约文字 -->
+									<view v-else-if="getDocCategory(item.type) == 'txt'" class="doc-content-lines">
+										<view class="doc-line doc-line-long doc-line-color-txt"></view>
+										<view class="doc-line doc-line-medium doc-line-color-txt"></view>
+									</view>
+									<!-- FILE: 通用文件 -->
+									<view v-else class="doc-content-lines">
+										<view class="doc-line doc-line-medium doc-line-color-file"></view>
 									</view>
 								</view>
 								<!-- 底部品牌色带 + 字母 -->
@@ -517,7 +578,7 @@
 	.doc-fold-excel { background-color: #86EFAC; }
 	.doc-fold-ppt { background-color: #FDBA74; }
 	.doc-fold-pdf { background-color: #FCA5A5; }
-	.doc-fold-clw { background-color: #A5B4FC; }
+	.doc-fold-clw { background-color: #D8B4FE; }
 	.doc-fold-dwg { background-color: #FCD34D; }
 	.doc-fold-audio { background-color: #6EE7B7; }
 	.doc-fold-txt { background-color: #CBD5E1; }
@@ -542,16 +603,160 @@
 	.doc-line-medium { width: 18px; }
 	.doc-line-short { width: 14px; }
 	
-	/* 横线颜色 - 各类型 */
+	/* 横线颜色 - 使用横线图案的类型 */
 	.doc-line-color-word { background-color: #BFDBFE; }
-	.doc-line-color-excel { background-color: #BBF7D0; }
-	.doc-line-color-ppt { background-color: #FED7AA; }
 	.doc-line-color-pdf { background-color: #FECACA; }
-	.doc-line-color-clw { background-color: #C7D2FE; }
-	.doc-line-color-dwg { background-color: #FDE68A; }
-	.doc-line-color-audio { background-color: #A7F3D0; }
 	.doc-line-color-txt { background-color: #E2E8F0; }
 	.doc-line-color-file { background-color: #E5E7EB; }
+	
+	/* === Excel 表格网格 === */
+	.doc-content-grid {
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 4px;
+		padding-right: 8px;
+		padding-top: 10px;
+	}
+	.doc-grid-row {
+		flex-direction: row;
+		margin-bottom: 1px;
+	}
+	.doc-grid-cell {
+		width: 6px;
+		height: 4px;
+		margin-right: 1px;
+		border-radius: 1px;
+		background-color: #86EFAC;
+	}
+	
+	/* === PPT 柱状图 === */
+	.doc-content-chart {
+		flex: 1;
+		flex-direction: row;
+		align-items: flex-end;
+		padding-left: 6px;
+		padding-right: 10px;
+		padding-top: 10px;
+		padding-bottom: 2px;
+	}
+	.doc-chart-col {
+		width: 5px;
+		margin-right: 2px;
+		border-radius: 1px;
+		background-color: #FDBA74;
+	}
+	.doc-col-short { height: 7px; }
+	.doc-col-tall { height: 14px; }
+	.doc-col-mid { height: 10px; }
+	
+	/* === PDF 密排文档+印章 === */
+	.doc-content-pdf {
+		flex: 1;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 5px;
+		padding-right: 10px;
+		padding-top: 10px;
+		position: relative;
+	}
+	.doc-pdf-stamp {
+		position: absolute;
+		bottom: 2px;
+		right: 3px;
+		width: 7px;
+		height: 7px;
+		border-radius: 4px;
+		background-color: rgba(185, 28, 28, 0.3);
+		border-width: 1px;
+		border-style: solid;
+		border-color: #B91C1C;
+	}
+	
+	/* === CLW 3D立方体 === */
+	.doc-content-3d {
+		flex: 1;
+		position: relative;
+		padding-top: 8px;
+	}
+	.doc-cube-back {
+		position: absolute;
+		width: 12px;
+		height: 10px;
+		border-radius: 1px;
+		top: 9px;
+		left: 7px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #C084FC;
+		background-color: #F3E8FF;
+	}
+	.doc-cube-front {
+		position: absolute;
+		width: 12px;
+		height: 10px;
+		border-radius: 1px;
+		top: 14px;
+		left: 13px;
+		background-color: #E9D5FF;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #A855F7;
+	}
+	
+	/* === DWG 工程图纸标注 === */
+	.doc-content-dwg {
+		flex: 1;
+		position: relative;
+		padding-top: 8px;
+	}
+	.doc-dwg-h {
+		position: absolute;
+		width: 17px;
+		height: 1px;
+		top: 17px;
+		left: 6px;
+		background-color: #F59E0B;
+	}
+	.doc-dwg-v {
+		position: absolute;
+		width: 1px;
+		height: 17px;
+		top: 9px;
+		left: 14px;
+		background-color: #F59E0B;
+	}
+	.doc-dwg-dot {
+		position: absolute;
+		width: 5px;
+		height: 5px;
+		top: 15px;
+		left: 12px;
+		background-color: #FFFBEB;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D97706;
+	}
+	
+	/* === Audio 均衡器波形 === */
+	.doc-content-audio {
+		flex: 1;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding-top: 8px;
+	}
+	.doc-eq-bar {
+		width: 2px;
+		margin-right: 2px;
+		border-radius: 1px;
+		background-color: #6EE7B7;
+	}
+	.doc-eq-h1 { height: 6px; }
+	.doc-eq-h2 { height: 12px; }
+	.doc-eq-h3 { height: 8px; }
+	.doc-eq-h4 { height: 14px; }
+	.doc-eq-h5 { height: 5px; }
 	
 	/* 底部品牌色带 */
 	.doc-brand-bar {
@@ -574,7 +779,7 @@
 	.doc-bar-excel { background-color: #16A34A; }
 	.doc-bar-ppt { background-color: #D24726; }
 	.doc-bar-pdf { background-color: #B91C1C; }
-	.doc-bar-clw { background-color: #4F46E5; }
+	.doc-bar-clw { background-color: #9333EA; }
 	.doc-bar-dwg { background-color: #D97706; }
 	.doc-bar-audio { background-color: #059669; }
 	.doc-bar-txt { background-color: #64748B; }

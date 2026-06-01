@@ -169,13 +169,22 @@ function decryptHarmony(encryptedData: ArrayBuffer): DecryptResult {
  */
 function decryptWeb(encryptedData: ArrayBuffer): DecryptResult {
 	try {
-		// Web 平台使用 SubtleCrypto API
-		// 此处为占位实现，实际需要异步处理
-		console.log('Web decrypt called')
+		// 检查是否在 Electron 环境下并提供了原生同步解密方法
+		if ((window as any).electronAPI != null && typeof (window as any).electronAPI.decryptAES_CBC_Sync === 'function') {
+			const res = (window as any).electronAPI.decryptAES_CBC_Sync(encryptedData, PRESET_KEY)
+			return {
+				success: res.success as boolean,
+				data: res.data as ArrayBuffer | null,
+				errorMessage: res.errorMessage as string
+			}
+		}
+
+		// 如果不是 Electron，仍提示待实现（或保留后续接入 Web SubtleCrypto 的可能性）
+		console.log('Web decrypt called but SubtleCrypto is not implemented yet')
 		return {
 			success: false,
 			data: null,
-			errorMessage: 'Web 加密模块待实现'
+			errorMessage: '纯 Web 环境加密模块待实现，当前仅支持 Electron 环境'
 		}
 	} catch (e: any) {
 		return {
@@ -269,8 +278,17 @@ function verifyChecksumHarmony(data: ArrayBuffer, expectedChecksum: string): boo
 
 // #ifdef WEB
 function verifyChecksumWeb(data: ArrayBuffer, expectedChecksum: string): boolean {
-	// Web 实现
-	console.log('Web checksum verification')
-	return true
+	try {
+		// 检查是否在 Electron 环境下并提供了 MD5 校验方法
+		if ((window as any).electronAPI != null && typeof (window as any).electronAPI.verifyMD5_Sync === 'function') {
+			return (window as any).electronAPI.verifyMD5_Sync(data, expectedChecksum) as boolean
+		}
+		
+		console.log('Web checksum verification (placeholder)')
+		return true
+	} catch (e: any) {
+		console.error('Web MD5 校验失败：', e.message)
+		return false
+	}
 }
 // #endif
