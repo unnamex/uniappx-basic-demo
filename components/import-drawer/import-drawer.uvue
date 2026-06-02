@@ -4,8 +4,8 @@
 			<!-- 头部：普通对话框标题栏 -->
 			<view class="modal-header">
 				<view class="header-left">
-					<text class="modal-icon">📦</text>
-					<text class="modal-title">导入工艺数据包</text>
+					<image src="/static/icons/ui/import_package.svg" class="modal-icon" mode="aspectFit" />
+					<text class="modal-title">导入数据包</text>
 				</view>
 				<view class="close-btn" @click="handleClose" v-if="!isImporting">
 					<text class="close-icon">✕</text>
@@ -25,7 +25,7 @@
 						@dragleave="handleDragLeave"
 						@drop.prevent="handleDrop"
 					>
-						<text class="drop-icon">📂</text>
+						<image src="/static/icons/ui/upload_folder.svg" class="drop-icon" mode="aspectFit" />
 						<text class="drop-text">{{ isDragOver ? '松开以导入' : '点击或拖拽 .srd 文件到此处' }}</text>
 						<view class="browse-btn">
 							<text class="browse-btn-text">选择文件</text>
@@ -413,7 +413,8 @@
 	}
 	
 	.modal-icon {
-		font-size: 16px;
+		width: 18px;
+		height: 18px;
 		margin-right: 8px;
 	}
 	
@@ -469,7 +470,8 @@
 	}
 	
 	.drop-icon {
-		font-size: 32px;
+		width: 48px;
+		height: 48px;
 		margin-bottom: 12px;
 	}
 	
