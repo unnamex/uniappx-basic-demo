@@ -1,0 +1,3 @@
+// 这个文件是 UTS 插件的入口标识。
+// 在 uni-app x 中，通过在前端代码里 import 这个模块，可以告诉编译器将本插件（包含 utssdk/app-harmony 等平台原生代码）加入编译打包，从而解决原生 defineNativeEmbed 找不到组件导致的白屏问题。
+export default {}

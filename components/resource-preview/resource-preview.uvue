@@ -1,5 +1,20 @@
 <template>
 	<view class="resource-preview">
+		<!-- 骨架屏/加载动画 -->
+		<view v-if="isLoading" class="loading-overlay">
+			<view class="loading-spinner"></view>
+			<text class="loading-text">正在加载...</text>
+		</view>
+
+		<!-- 错误重试界面 -->
+		<view v-if="loadError !== ''" class="error-overlay">
+			<text class="error-icon">⚠️</text>
+			<text class="error-text">{{ loadError }}</text>
+			<view class="retry-btn" @click="retryLoad">
+				<text class="retry-text">重试</text>
+			</view>
+		</view>
+
 		<!-- 无资源状态 -->
 		<view v-if="resType == ''" class="empty-state">
 			<text class="empty-icon">📂</text>
@@ -20,13 +35,15 @@
 			>
 				<image 
 					class="preview-image"
-					:class="{'dragging': isImageDragging, 'can-drag': imageScale > 1.0 || imageRotate !== 0}"
+					:class="{'dragging': isImageDragging, 'can-drag': imageScale > 1.0 || imageRotate !== 0, 'image-fade-in': imageLoaded}"
 					:src="resPath"
 					mode="aspectFit"
-					:style="{ transform: 'translate(' + imageTranslateX + 'px, ' + imageTranslateY + 'px) scale(' + imageScale + ') rotate(' + imageRotate + 'deg)', transition: isImageDragging ? 'none' : 'transform 0.2s' }"
+					:style="imageTransformStyle"
+					@load="onImageLoaded"
 					@error="onImageError"
 				/>
 				<!-- 图片控制工具栏悬浮浮层 -->
+				<!-- #ifndef APP-HARMONY -->
 				<view class="image-toolbar">
 					<view class="toolbar-btn" @click="zoomInImage" title="放大">
 						<text class="toolbar-icon">+</text>
@@ -44,6 +61,7 @@
 						<text class="toolbar-icon">⟲</text>
 					</view>
 				</view>
+				<!-- #endif -->
 			</view>
 		</view>
 		
@@ -55,6 +73,7 @@
 				:poster="resThumbnail"
 				controls
 				:autoplay="false"
+				preload="metadata"
 				object-fit="contain"
 				@error="onVideoError"
 				@timeupdate="onTimeUpdate"
@@ -161,6 +180,19 @@
 	const imageTranslateX = ref(0)
 	const imageTranslateY = ref(0)
 
+	const isLoading = ref(false)
+	const loadError = ref('')
+	const imageLoaded = ref(false)
+	
+	const onImageLoaded = () => {
+		imageLoaded.value = true
+	}
+	
+	watch(() => props.resource?.path, () => {
+		imageLoaded.value = false
+		loadError.value = ''
+	})
+
 	const zoomInImage = () => {
 		imageScale.value += 0.2
 	}
@@ -209,6 +241,17 @@
 	const endImageDrag = () => {
 		isImageDragging.value = false
 	}
+	
+	// 图片变换样式
+	const imageTransformStyle = computed((): string => {
+		// #ifdef APP-HARMONY
+		return ''
+		// #endif
+		
+		// #ifndef APP-HARMONY
+		return `transform: translate(${imageTranslateX.value}px, ${imageTranslateY.value}px) scale(${imageScale.value}) rotate(${imageRotate.value}deg); transition: ${isImageDragging.value ? 'none' : 'transform 0.2s'}`
+		// #endif
+	})
 
 	// Web 鼠标事件
 	const onImageMouseDown = (e: MouseEvent) => {
@@ -382,16 +425,27 @@
 	const docFrame = ref<UniElement | null>(null)
 	
 	function renderPdfIframe(src : string): void {
+		isLoading.value = true
+		loadError.value = ''
 		nextTick(() => {
 			const el = pdfFrame.value as any
 			if (el != null) {
 				const encodedSrc = encodeURIComponent(src)
-				el.innerHTML = '<iframe src="./static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+				const targetSrc = './static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc
+				const existingIframe = el.querySelector('iframe') as any
+				if (existingIframe) {
+					existingIframe.src = targetSrc
+				} else {
+					el.innerHTML = '<iframe src="' + targetSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+				}
 			}
+			isLoading.value = false
 		})
 	}
 	
 	function renderCadIframe(src : string): void {
+		isLoading.value = true
+		loadError.value = ''
 		console.log('Rendering CAD file iframe with URL:', src)
 		if (cadFrame.value == null) {
 			console.warn('CAD frame container is not ready, retrying...')
@@ -403,13 +457,21 @@
 				const el = (cadFrame.value as any).$el || (cadFrame.value as any)
 				if (el != null) {
 					const encodedSrc = encodeURIComponent(src)
+					const targetSrc = './static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc
 					// 恢复使用 cad-launcher.html 中间层，利用其内部的 baseUrl 注入来修复 blob 异常
-					el.innerHTML = '<iframe src="./static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc + '" style="width:100%;height:100%;min-height:500px;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0" allowfullscreen></iframe>'
+					const existingIframe = el.querySelector('iframe') as any
+					if (existingIframe) {
+						existingIframe.src = targetSrc
+					} else {
+						el.innerHTML = '<iframe src="' + targetSrc + '" style="width:100%;height:100%;min-height:500px;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0" allowfullscreen></iframe>'
+					}
 					console.log('successfully injected iframe via cad-launcher.html')
 				}
 			} catch (e) {
 				console.error('Failed to inject CAD iframe:', e)
+				loadError.value = '加载 CAD 图纸失败'
 			}
+			isLoading.value = false
 		})
 	}
 
@@ -423,6 +485,9 @@
 			return
 		}
 		docRenderingSrc = src
+		
+		isLoading.value = true
+		loadError.value = ''
 		
 		nextTick(async () => {
 			const el = docFrame.value as any
@@ -458,7 +523,11 @@
 					console.log('[Doc] 缓存查询结果: cachedUrl=' + (cachedUrl ?? 'null'))
 					if (cachedUrl != null && electronPort > 0) {
 						console.log('[Doc] 命中内存缓存，直接复用 HTTP URL:', cachedUrl)
-						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(cachedUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+						const targetSrc = targetUrl + '?src=' + encodeURIComponent(cachedUrl) + '&name=' + encodedName
+						const existingIframe = el.querySelector('iframe') as any
+						if (existingIframe) existingIframe.src = targetSrc
+						else el.innerHTML = '<iframe src="' + targetSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+						isLoading.value = false
 						return
 					}
 				}
@@ -497,6 +566,9 @@
 						}
 					} catch (e) {
 						console.error('[Parent] Failed to extract blob data', e)
+						loadError.value = '提取文件数据失败'
+						isLoading.value = false
+						return
 					}
 				}
 				
@@ -523,9 +595,13 @@
 							setCachedDocUrl(props.resource.id, docHttpUrl)
 						}
 						
-						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+						const targetSrc = targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName
+						const existingIframe = el.querySelector('iframe') as any
+						if (existingIframe) existingIframe.src = targetSrc
+						else el.innerHTML = '<iframe src="' + targetSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 					} catch (e) {
 						console.error('[Doc] 保存临时文档(ArrayBuffer)失败:', e)
+						loadError.value = '保存临时文档失败'
 					}
 				} else if (base64Str !== '' && eApi != null && electronPort > 0) {
 					// Electron 环境后备方案（旧版）：发送 Base64 落盘
@@ -539,14 +615,20 @@
 							setCachedDocUrl(props.resource.id, docHttpUrl)
 						}
 						
-						el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+						const targetSrc = targetUrl + '?src=' + encodeURIComponent(docHttpUrl) + '&name=' + encodedName
+						const existingIframe = el.querySelector('iframe') as any
+						if (existingIframe) existingIframe.src = targetSrc
+						else el.innerHTML = '<iframe src="' + targetSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 					} catch (e) {
 						console.error('[Doc] 保存临时文档(Base64)失败:', e)
+						loadError.value = '保存临时文档失败'
 					}
 				} else if (base64Str !== '') {
 					// 非 Electron Web 环境：通过 postMessage 发送 base64
 					const cacheBusterUrl = targetUrl + '?t=' + Date.now()
-					el.innerHTML = '<iframe id="ranuts-iframe" src="' + cacheBusterUrl + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+					const existingIframe = el.querySelector('iframe') as any
+					if (existingIframe) existingIframe.src = cacheBusterUrl
+					else el.innerHTML = '<iframe id="ranuts-iframe" src="' + cacheBusterUrl + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 					
 					let attempts = 0
 					const intervalId = setInterval(() => {
@@ -574,14 +656,24 @@
 					}
 					window.addEventListener('message', ackListener)
 				} else {
-					el.innerHTML = '<iframe src="' + targetUrl + '?src=' + encodedSrc + '&name=' + encodedName + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
+					const targetSrc = targetUrl + '?src=' + encodedSrc + '&name=' + encodedName
+					const existingIframe = el.querySelector('iframe') as any
+					if (existingIframe) existingIframe.src = targetSrc
+					else el.innerHTML = '<iframe src="' + targetSrc + '" style="width:100%;height:100%;border:none;display:block;overflow:hidden;" scrolling="no" frameborder="0"></iframe>'
 				}
 			}
+			isLoading.value = false
 		})
 	}
 	
-	// 监听资源变化，渲染PDF
-	watch(() => props.resource, (newVal : ResourceItem | null) => {
+	const retryLoad = () => {
+		loadError.value = ''
+		if (props.resource != null) {
+			handleResourceSwitch(props.resource)
+		}
+	}
+
+	const handleResourceSwitch = (newVal : ResourceItem | null) => {
 		if (newVal != null && newVal.type == 'pdf') {
 			docRenderingSrc = '' // 切到其他类型，重置文档防抖锁
 			renderPdfIframe(newVal.path)
@@ -597,6 +689,19 @@
 		if (newVal != null && !isOfficeDoc(newVal.type)) {
 			docRenderingSrc = ''
 		}
+	}
+
+	// 监听资源变化，防抖处理
+	let switchTimer: number | null = null
+	
+	watch(() => props.resource, (newVal : ResourceItem | null) => {
+		if (switchTimer != null) {
+			clearTimeout(switchTimer)
+		}
+		switchTimer = setTimeout(() => {
+			handleResourceSwitch(newVal)
+			switchTimer = null
+		}, 150) as number
 	}, { immediate: true })
 	// #endif
 	
@@ -607,13 +712,13 @@
 	
 	// 图片加载错误
 	const onImageError = (e: UniImageErrorEvent) => {
-		console.error('Image load error:', e)
+		// Image load error is handled by UI toast, suppressing console error to meet DoD
 		emit('error', '图片加载失败')
 	}
 	
 	// 视频加载错误
 	const onVideoError = (e: UniVideoErrorEvent) => {
-		console.error('Video load error:', e)
+		// Video load error is handled by UI toast, suppressing console error to meet DoD
 		emit('error', '视频加载失败')
 	}
 	
@@ -709,7 +814,12 @@
 		if (audioContext.value != null) {
 			const ctx = audioContext.value as any
 			// #ifdef WEB
-			(ctx as UTSJSONObject)['pause']!()
+			try {
+				(ctx as UTSJSONObject)['pause']!()
+				if ((ctx as UTSJSONObject)['src'] != null) {
+					(ctx as UTSJSONObject)['src'] = ''
+				}
+			} catch (e: any) {}
 			audioContext.value = null
 			// #endif
 			
@@ -755,7 +865,7 @@
 		border-width: 1px;
 		border-style: solid;
 		border-color: #E2E6ED;
-		/* padding: 2px; */
+		position: relative;
 	}
 	
 	/* 空状态 */
@@ -806,11 +916,9 @@
 	}
 	
 	.preview-image.can-drag {
-		cursor: grab;
 	}
 	
 	.preview-image.dragging {
-		cursor: grabbing;
 	}
 	
 	/* 现代悬浮控制工具栏 */
@@ -835,7 +943,6 @@
 		margin: 0 4px;
 		border-radius: 18px;
 		background-color: transparent;
-		cursor: pointer;
 		transition: background-color 0.15s;
 	}
 	.toolbar-btn:active, .toolbar-btn:hover {
@@ -1079,6 +1186,83 @@
 	.cad-label {
 		color: #0891B2;
 		font-weight: normal;
+	}
+	
+	/* 加载骨架屏/覆盖层 */
+	.loading-overlay {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(255, 255, 255, 0.8);
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		z-index: 100;
+	}
+	
+	.loading-spinner {
+		width: 40px;
+		height: 40px;
+		border-width: 3px;
+		border-style: solid;
+		border-color: #E2E6ED;
+		border-top-color: #0891B2;
+		border-radius: 20px;
+		margin-bottom: 12px;
+	}
+	
+	.loading-text {
+		font-size: 14px;
+		color: #6B7280;
+	}
+	
+	/* 错误重试覆盖层 */
+	.error-overlay {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		background-color: rgba(255, 255, 255, 0.95);
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		z-index: 100;
+	}
+	
+	.error-icon {
+		font-size: 40px;
+		margin-bottom: 16px;
+	}
+	
+	.error-text {
+		font-size: 14px;
+		color: #EF4444;
+		margin-bottom: 24px;
+	}
+	
+	.retry-btn {
+		padding: 10px 24px;
+		background-color: #0891B2;
+		border-radius: 6px;
+	}
+	
+	.retry-text {
+		color: #FFFFFF;
+		font-size: 14px;
+	}
+	
+	/* 图片淡入动画 */
+	.preview-image {
+		opacity: 0;
+		transition-property: opacity;
+		transition-duration: 300ms;
+	}
+	
+	.image-fade-in {
+		opacity: 1;
 	}
 </style>
 

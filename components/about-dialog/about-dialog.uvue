@@ -63,7 +63,12 @@
 	const chromeVersion = ref('')
 	const nodeVersion = ref('')
 	const currentAiModel = ref('')
+	// #ifdef WEB
 	const hasAiFeature = ref(true)
+	// #endif
+	// #ifndef WEB
+	const hasAiFeature = ref(false)
+	// #endif
 	const isPC = ref(false)
 
 	onMounted(async () => {

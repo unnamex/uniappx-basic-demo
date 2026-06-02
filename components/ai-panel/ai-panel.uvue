@@ -1837,18 +1837,19 @@
 	.aip-msg-bubble {
 		border-radius: 10px;
 		padding: 8px 12px;
-		max-width: 85%;
 	}
 
 	.aip-bubble-user {
 		background-color: #0284C7;
 		border-bottom-right-radius: 3px;
+		margin-left: 40px;
 	}
 
 	.aip-bubble-ai {
 		background-color: #FFFFFF;
 		border: 1px solid #E2E8F0;
 		border-bottom-left-radius: 3px;
+		margin-right: 40px;
 	}
 
 	.aip-typing-bubble {
@@ -2115,7 +2116,6 @@
 		flex-direction: row;
 		justify-content: center;
 		align-items: center;
-		cursor: pointer;
 		transition-property: background-color, border-color;
 		transition-duration: 0.2s;
 	}

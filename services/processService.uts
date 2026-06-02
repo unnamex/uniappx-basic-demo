@@ -7,7 +7,7 @@ import { PageParams, PageResult } from '@/types/common'
 import { querySQL, executeSQL } from '@/services/database'
 
 // #ifdef WEB
-import { webGetAll, webGetByIndex, webClearStore } from '@/services/database'
+import { webGetAll, webGetByKey, webGetByIndex, webClearStore } from '@/services/database'
 // #endif
 
 /**
@@ -324,14 +324,12 @@ export function queryNodeById(nodeType: string, nodeId: string): Promise<UTSJSON
 
         // #ifdef WEB
         // Web 使用 webGetByKey 按主键精确查找
-        import('@/services/database').then((db) => {
-            db.webGetByKey(tableName, nodeId).then((res) => {
-                if (res != null) {
-                    resolve(res)
-                } else {
-                    resolve(null)
-                }
-            }).catch(e => reject(e as Error))
+        webGetByKey(tableName, nodeId).then((res) => {
+            if (res != null) {
+                resolve(res)
+            } else {
+                resolve(null)
+            }
         }).catch(e => reject(e as Error))
         // #endif
 
@@ -377,17 +375,15 @@ export function queryChildrenByParentId(parentType: string, parentId: string): P
         }
 
         // #ifdef WEB
-        import('@/services/database').then((db) => {
-            db.webGetByIndex(childTableName, foreignKey, parentId).then((res) => {
-                const list = res as UTSJSONObject[]
-                // Web 端查询回来的是对象数组，按照 sortOrder 排序
-                list.sort((a, b) => {
-                    const sa = (a['sortOrder'] as number | null) ?? 0
-                    const sb = (b['sortOrder'] as number | null) ?? 0
-                    return sa - sb
-                })
-                resolve(list)
-            }).catch(e => reject(e as Error))
+        webGetByIndex(childTableName, foreignKey, parentId).then((res) => {
+            const list = res as UTSJSONObject[]
+            // Web 端查询回来的是对象数组，按照 sortOrder 排序
+            list.sort((a, b) => {
+                const sa = (a['sortOrder'] as number | null) ?? 0
+                const sb = (b['sortOrder'] as number | null) ?? 0
+                return sa - sb
+            })
+            resolve(list)
         }).catch(e => reject(e as Error))
         // #endif
 

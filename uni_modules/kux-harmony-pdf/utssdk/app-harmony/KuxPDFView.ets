@@ -90,6 +90,16 @@ struct KuxPDFViewComponent {
 				const relativePath = filePath.replace('unifile://usr/', '');
 				filePath = context.filesDir + '/' + relativePath;
 				console.log('[KuxPDFView] 转换用户路径: ' + srcPath + ' -> ' + filePath);
+			} else if (filePath.startsWith('internal://app/')) {
+				const context = getContext() as common.UIAbilityContext;
+				const relativePath = filePath.replace('internal://app/', '');
+				filePath = context.filesDir + '/' + relativePath;
+				console.log('[KuxPDFView] 转换 internal app 路径: ' + srcPath + ' -> ' + filePath);
+			} else if (filePath.startsWith('internal://cache/')) {
+				const context = getContext() as common.UIAbilityContext;
+				const relativePath = filePath.replace('internal://cache/', '');
+				filePath = context.cacheDir + '/' + relativePath;
+				console.log('[KuxPDFView] 转换 internal cache 路径: ' + srcPath + ' -> ' + filePath);
 			}
 
 			// 检查文件是否存在

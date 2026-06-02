@@ -6,7 +6,7 @@ import { streamDecryptHarmony } from '@/utils/crypto'
 // #endif
 import type { DecryptResult } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
-import { saveResource, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
+import { saveResource, saveResources, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
 // #ifdef APP-ANDROID
 import { ensureDirectory, writeFileBytes } from '@/services/resourceService'
 // #endif
@@ -416,10 +416,10 @@ function readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
 			reader.onerror = (e) => reject(new Error('FileReader读取失败: ' + e))
 			reader.readAsArrayBuffer(selectedFileObjWeb as File)
 		} else {
-			fetch(filePath)
-				.then(res => res.arrayBuffer())
-				.then(buffer => resolve(buffer))
-				.catch(e => reject(e))
+			(window as any).fetch(filePath)
+				.then((res: any): any => res.arrayBuffer())
+				.then((buffer: any) => resolve(buffer as ArrayBuffer))
+				.catch((e: any) => reject(new Error(String(e))))
 		}
 		// #endif
 		
@@ -668,9 +668,14 @@ function extractAndParsePackage(
  */
 function validatePackageHarmonyStreaming(filePath: string): Promise<PackageManifest> {
 	return new Promise((resolve, reject) => {
-		const userDataPath = uni.env.USER_DATA_PATH as string
-		const tempZipPath = userDataPath + '/temp_manifest_' + Date.now() + '.zip'
-		const tempExtractDir = userDataPath + '/temp_extract_manifest_' + Date.now()
+		let nativeTempDir = ''
+		try {
+			nativeTempDir = (getContext() as any).tempDir as string
+		} catch (e) {
+			nativeTempDir = (getContext() as any).filesDir as string
+		}
+		const tempZipPath = nativeTempDir + '/temp_manifest_' + Date.now() + '.zip'
+		const tempExtractDir = nativeTempDir + '/temp_extract_manifest_' + Date.now()
 		
 		streamDecryptHarmony(filePath, tempZipPath).then((success: boolean) => {
 			if (!success) {
@@ -723,9 +728,14 @@ function importPackageHarmonyStreaming(
 	startTime: number
 ): Promise<ImportResult> {
 	return new Promise((resolve, reject) => {
-		const userDataPath = uni.env.USER_DATA_PATH as string
-		const tempZipPath = userDataPath + '/temp_import_' + Date.now() + '.zip'
-		const tempExtractDir = userDataPath + '/temp_import_extract_' + Date.now()
+		let nativeTempDir = ''
+		try {
+			nativeTempDir = (getContext() as any).tempDir as string
+		} catch (e) {
+			nativeTempDir = (getContext() as any).filesDir as string
+		}
+		const tempZipPath = nativeTempDir + '/temp_import_' + Date.now() + '.zip'
+		const tempExtractDir = nativeTempDir + '/temp_import_extract_' + Date.now()
 		
 		if (onProgress != null) onProgress({ current: 10, total: 100, currentFile: '流式解密中...', status: 'decrypting' })
 		
@@ -1608,10 +1618,10 @@ function importPackageElectronStreaming(
 									
 									resolve({
 										success: true,
-										manifest: manifest,
 										message: isEncrypted ? '加密数据包导入成功' : '非加密数据包导入成功',
-										componentsCount: componentsCount,
-										resourcesCount: resources.length,
+										nodeCount: processRecords.length,
+										uiConfigCount: componentsCount,
+										resourceCount: resources.length,
 										importTime: Date.now() - startTime
 									} as ImportResult);
 								});

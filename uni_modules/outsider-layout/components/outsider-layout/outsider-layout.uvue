@@ -51,9 +51,9 @@
 					</view>
 					
 					<!-- Standard Layout (Single Main Content) -->
-					<scroll-view v-else scroll-y class="outsider-main-content-full">
+					<view v-else class="outsider-main-content-full" style="display: flex; flex-direction: column; overflow: hidden; flex: 1;">
 						<slot></slot>
-					</scroll-view>
+					</view>
 				</view>
 
 				<!-- Divider (Main-Right) -->

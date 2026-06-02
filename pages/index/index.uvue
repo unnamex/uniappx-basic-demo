@@ -13,7 +13,7 @@
 			:initMainTopRatio="0.52"
 			:initRightWidth="adaptiveRightWidth"
 			:maxRightWidth="1200"
-			:showMainBottom="true"
+			:showMainBottom="bottomGroup != null"
 			:showRightBottom="true"
 			:minMainWidthRatio="0.25"
 		>
@@ -59,11 +59,13 @@
 				<!-- 右侧操作区：设置按钮 + 企业Logo -->
 				<view class="header-actions">
 					<!-- 统一的 AI 模式切换开关 -->
+					<!-- #ifdef WEB -->
 					<view v-if="hasAiFeature" :class="['header-ai-toggle', isAiMode ? 'ai-toggle-active' : '']" @click="toggleAiMode">
 						<ai-siri-ball :isActive="isAiMode" />
 						<text :class="['header-ai-toggle-text', isAiMode ? 'ai-toggle-text-active' : '']">{{ isAiMode ? 'AI 模式' : '普通模式' }}</text>
 					</view>
-					<view v-if="!isPC" class="settings-icon-btn" @click="toggleSettingsMenu">
+					<!-- #endif -->
+					<view v-if="!isPC" class="settings-icon-btn" @click="toggleMenu('settings')">
 						<image class="settings-icon-img" src="/static/icons/settings_icon.svg" mode="aspectFit"></image>
 					</view>
 					<image class="header-logo" src="/static/icons/casc_logo.png" mode="aspectFit"></image>
@@ -138,6 +140,15 @@
 			<view v-else class="loading-state">
 				<text>请在左侧工艺树中选择节点查看详情</text>
 			</view>
+			
+			<view v-if="bottomGroup == null" class="main-nav-actions">
+				<view class="nav-action-btn" :class="{ 'btn-disabled': !hasPrevNode }" @click="goToPrevNode">
+					<text class="nav-action-text" :class="{ 'nav-text-disabled': !hasPrevNode }">上一步</text>
+				</view>
+				<view class="nav-action-btn nav-action-btn-primary" :class="{ 'btn-primary-disabled': !hasNextNode }" @click="goToNextNode">
+					<text class="nav-action-text-primary">下一步</text>
+				</view>
+			</view>
 		</view>
 		
 		<!-- Main Bottom Area (Dynamic Group) -->
@@ -200,9 +211,6 @@
 							</ux-tab-pane>
 						</ux-tabs>
 					</view>
-					<view v-else class="no-selection">
-						<text>选择节点查看概览</text>
-					</view>
 				</view>
 				
 				<!-- 底部节点导航区域 -->
@@ -247,6 +255,7 @@
 	</outsider-layout>
 	
 		<!-- AI 面板拖拽分隔线 -->
+		<!-- #ifdef WEB -->
 		<view v-if="isAiMode" class="ai-panel-divider"
 			@touchstart="onAiDragStart"
 			@touchmove="onAiDragMove"
@@ -265,6 +274,7 @@
 			style="flex: none;"
 			:class="isAiMaximized ? 'ai-panel-maximized' : ''"
 		/>
+		<!-- #endif -->
 	</view>
 	
 	<!-- 拖拽全局遮罩：防止鼠标滑入 iframe/原生组件导致拖拽粘连丢失事件 -->
@@ -276,20 +286,32 @@
 	<view v-if="activeMenu != ''" class="settings-overlay" @click.stop="closeSettingsMenu" @mousedown.stop="closeSettingsMenu"></view>
 	
 	<!-- 文件下拉菜单 (根据平台调整位置) -->
+	<!-- #ifdef WEB -->
 	<view v-if="activeMenu == 'file'" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '36px' : 'auto', right: isPC ? 'auto' : '20px' }">
+	<!-- #endif -->
+	<!-- #ifndef WEB -->
+	<view v-if="activeMenu == 'file'" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', right: '20px' }">
+	<!-- #endif -->
 		<view class="menu-item" @click="handleImportData">
 			<text class="menu-item-text" style="flex: 1;">导入数据包</text>
 			<text class="menu-item-shortcut">Ctrl+I</text>
 		</view>
+		<!-- #ifdef WEB -->
 		<view v-if="hasAiFeature" class="menu-divider"></view>
 		<view v-if="hasAiFeature" class="menu-item" @click="toggleAiMode(); closeSettingsMenu()">
 			<text class="menu-item-text" style="flex: 1;">{{ isAiMode ? '退出AI模式' : '进入AI模式' }}</text>
 			<text class="menu-item-shortcut">Ctrl+M</text>
 		</view>
+		<!-- #endif -->
 	</view>
 
 	<!-- 设置下拉菜单 (根据平台调整位置) -->
+	<!-- #ifdef WEB -->
 	<view v-if="activeMenu == 'settings'" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', left: isPC ? '80px' : 'auto', right: isPC ? 'auto' : '20px' }">
+	<!-- #endif -->
+	<!-- #ifndef WEB -->
+	<view v-if="activeMenu == 'settings'" class="settings-dropdown" :style="{ top: settingsMenuTop + 'px', right: '20px' }">
+	<!-- #endif -->
 		<view class="menu-item menu-item-danger" @click="handleResetData">
 			<text class="menu-item-text-danger" style="flex: 1;">重置数据</text>
 			<text class="menu-item-shortcut">Ctrl+R</text>
@@ -377,6 +399,7 @@
 						</scroll-view>
 						
 						<!-- 图片操作工具栏 -->
+						<!-- #ifndef APP-HARMONY -->
 						<view class="image-toolbar">
 							<view class="toolbar-btn" @click="imageZoomIn" title="放大">
 								<text class="toolbar-icon">+</text>
@@ -394,6 +417,7 @@
 								<text class="toolbar-icon">⟲</text>
 							</view>
 						</view>
+						<!-- #endif -->
 					</view>
 					
 					<!-- 非图片类型：使用原组件 -->
@@ -456,7 +480,9 @@
 	import { getIconPath } from '@/utils/iconRegistry.uts'
 
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
+	// #ifdef WEB
 	import AiPanel from '@/components/ai-panel/ai-panel.uvue'
+	// #endif
 	import UxTabs from '@/components/ux-tabs/ux-tabs.uvue'
 	import UxTabPane from '@/components/ux-tab-pane/ux-tab-pane.uvue'
 	import UxTable from '@/components/ux-table/ux-table.uvue'
@@ -565,9 +591,19 @@
 	const isPC = ref(false)
 
 	// ============ AI 模式状态 ============
+	// #ifdef WEB
 	const hasAiFeature = ref(true)
+	// #endif
+	// #ifndef WEB
+	const hasAiFeature = ref(false)
+	// #endif
 	const isAiMode = ref(false)
+	// #ifdef WEB
 	const aiPanelRef = ref<ComponentPublicInstance | null>(null)
+	// #endif
+	// #ifndef WEB
+	const aiPanelRef = ref<any | null>(null)
+	// #endif
 	
 	const aiPanelWidth = ref(420)
 	const isAiMaximized = ref(false)
@@ -780,9 +816,14 @@
 	
 	// 图片变换样式
 	const imageTransformStyle = computed((): string => {
+		// #ifdef APP-HARMONY
+		return ''
+		// #endif
+		// #ifndef APP-HARMONY
 		// transform 在 App 端可能不完全支持，但通过内联 style 设置通常可用
 		const transition = isImageDragging.value ? 'none' : 'transform 0.2s'
 		return `transform: translate(${imageTranslateX.value}px, ${imageTranslateY.value}px) scale(${imageScale.value}) rotate(${imageRotation.value}deg); transition: ${transition};`
+		// #endif
 	})
 	
 	const formatName = (name: string): string => {
@@ -2380,7 +2421,6 @@
 		transition-property: background-color, box-shadow, transform;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 	
@@ -2487,7 +2527,6 @@
 		transition-property: background-color, transform;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 	
@@ -2563,7 +2602,6 @@
 		transition-property: background-color, box-shadow, transform, border-color;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 	
@@ -2594,7 +2632,6 @@
 		transition-property: background-color, box-shadow, transform, border-color;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 	
@@ -2669,7 +2706,6 @@
 		border-color: rgba(0, 0, 0, 0.06);
 		z-index: 10;
 		/* #ifdef WEB */
-		cursor: pointer;
 		backdrop-filter: blur(12px);
 		opacity: 0.6;
 		/* #endif */
@@ -2799,11 +2835,9 @@
 	}
 	
 	.fullscreen-image.can-drag {
-		cursor: grab;
 	}
 	
 	.fullscreen-image.dragging {
-		cursor: grabbing;
 	}
 	
 	/* 图片操作工具栏 - 悬浮胶囊 */
@@ -2839,7 +2873,6 @@
 		transition-property: background-color;
 		transition-duration: 0.15s;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 	
@@ -2867,7 +2900,6 @@
 		min-height: 28px;
 		line-height: 20px;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 	
@@ -2903,7 +2935,6 @@
 		padding: 10px 14px;
 		/* #ifdef WEB */
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 		/* #endif */
 	}
@@ -2973,7 +3004,6 @@
 		transition-property: background-color, border-color;
 		transition-duration: 0.3s;
 		/* #ifdef WEB */
-		cursor: pointer;
 		/* #endif */
 	}
 
@@ -2999,7 +3029,6 @@
 		background-color: transparent;
 		justify-content: center;
 		align-items: center;
-		/* cursor: col-resize; */
 		position: relative;
 		z-index: 10;
 		flex: none;
@@ -3013,10 +3042,6 @@
 		transition-duration: 0.2s;
 	}
 	
-	.ai-panel-divider:hover .ai-divider-line {
-		background-color: #007AFF;
-		width: 3px;
-	}
 	
 	.ai-drag-overlay {
 		position: fixed;

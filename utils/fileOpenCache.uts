@@ -1,18 +1,58 @@
 /**
  * 附件预览 URL 内存缓存
  * 用于避免在 Web/Electron 端重复从 IndexedDB 中提取大文件 Blob 并通过 IPC 发送写盘。
- * 通过 resource.id 作为 Key，缓存主进程返回的最终 HTTP URL。
+ * 通过 resource.id 作为 Key，缓存主进程返回的最终 HTTP URL 或 Blob URL。
  */
-const docUrlCache = new Map<string, string>()
 
-export function getCachedDocUrl(id: string): string | null {
-	return docUrlCache.get(id) || null
+type CacheEntry = {
+	url: string
+	timestamp: number
+	isBlobUrl: boolean
 }
 
-export function setCachedDocUrl(id: string, url: string): void {
-	docUrlCache.set(id, url)
+const MAX_CACHE_SIZE = 10
+const docUrlCache = new Map<string, CacheEntry>()
+
+export function getCachedDocUrl(id: string): string | null {
+	const entry = docUrlCache.get(id)
+	if (entry != null) {
+		entry.timestamp = Date.now() // 更新访问时间
+		return entry.url
+	}
+	return null
+}
+
+export function setCachedDocUrl(id: string, url: string, isBlobUrl: boolean = false): void {
+	// LRU 淘汰
+	if (docUrlCache.size >= MAX_CACHE_SIZE && !docUrlCache.has(id)) {
+		let oldestKey = ''
+		let oldestTime = Date.now()
+		docUrlCache.forEach((entry, key) => {
+			if (entry.timestamp < oldestTime) {
+				oldestTime = entry.timestamp
+				oldestKey = key
+			}
+		})
+		if (oldestKey !== '') {
+			const evicted = docUrlCache.get(oldestKey)
+			if (evicted != null && evicted.isBlobUrl) {
+				// #ifdef WEB
+				URL.revokeObjectURL(evicted.url)
+				// #endif
+			}
+			docUrlCache.delete(oldestKey)
+		}
+	}
+	docUrlCache.set(id, { url, timestamp: Date.now(), isBlobUrl })
 }
 
 export function clearDocUrlCache(): void {
+	docUrlCache.forEach((entry) => {
+		if (entry.isBlobUrl) {
+			// #ifdef WEB
+			URL.revokeObjectURL(entry.url)
+			// #endif
+		}
+	})
 	docUrlCache.clear()
 }

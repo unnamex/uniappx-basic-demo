@@ -24,6 +24,10 @@
 </template>
 
 <script setup lang="uts">
+	// #ifdef APP-HARMONY
+	import '../../index.uts'
+	// #endif
+	
 	const props = defineProps<{
 		src: string
 	}>()
@@ -154,38 +158,23 @@
 				}
 			}
 			
-			// 处理 unifile 协议路径，拷贝到缓存目录
-			if (targetPath.startsWith('unifile://')) {
-				try {
-					const cachePath = uni.env.CACHE_PATH
-					const cacheDir = cachePath + (cachePath.endsWith('/') ? '' : '/') + 'pdf_native'
-					const fs = uni.getFileSystemManager()
-					
-					// 确保缓存目录存在
-					try {
-						fs.accessSync(cacheDir)
-					} catch (e) {
-						fs.mkdirSync(cacheDir, true)
-					}
-					
-					const tempPath = cacheDir + '/view_document.pdf'
-					console.log('[KuxPDF] 拷贝文件到缓存:', targetPath, '->', tempPath);
-					fs.copyFileSync(targetPath, tempPath)
-					targetPath = tempPath
-				} catch (e) {
-					console.error('[KuxPDF] 拷贝文件失败:', e);
-					errorMsg.value = '文件准备失败'
-					isLoading.value = false
-					return
-				}
-			}
+			// 清理路径中可能存在的双斜杠（如 unifile://usr//assets -> unifile://usr/assets）
+			targetPath = targetPath.replace('usr//', 'usr/')
+			targetPath = targetPath.replace('cache//', 'cache/')
+
 			
 			if (useNative.value) {
 				console.log('[KuxPDF] 尝试原生方案, 设置路径:', targetPath);
 				nativeSrc.value = targetPath
 				isLoading.value = false
-				// 原生组件加载结果通过 @load 和 @error 事件回调处理
-				// 不再使用超时检测机制
+				
+				// 兜底超时检测：如果原生加载没有在规定时间内触发回调（比如组件未注册成功），强制降级
+				setTimeout(() => {
+					if (useNative.value && !nativeLoaded.value) {
+						console.warn('[KuxPDF] 原生方案超时未响应，执行兜底降级 WebView');
+						fallbackToWebView();
+					}
+				}, 1500);
 			} else {
 				// 直接使用 WebView 方案
 				setupWebViewSrc()
