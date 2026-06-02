@@ -25,7 +25,7 @@
 						@dragleave="handleDragLeave"
 						@drop.prevent="handleDrop"
 					>
-						<image src="/static/icons/ui/upload_folder.svg" class="drop-icon" mode="aspectFit" />
+						<text class="drop-icon">📂</text>
 						<text class="drop-text">{{ isDragOver ? '松开以导入' : '点击或拖拽 .srd 文件到此处' }}</text>
 						<view class="browse-btn">
 							<text class="browse-btn-text">选择文件</text>
@@ -470,8 +470,7 @@
 	}
 	
 	.drop-icon {
-		width: 48px;
-		height: 48px;
+		font-size: 32px;
 		margin-bottom: 12px;
 	}
 	
