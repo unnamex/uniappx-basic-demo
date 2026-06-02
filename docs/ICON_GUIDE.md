@@ -23,7 +23,7 @@
 ### 步骤 1：准备图标文件
 
 1. 准备 SVG 格式的图标文件（推荐 24x24 尺寸）
-2. 将图标文件放入 `static/icons/` 目录
+2. 将图标文件放入 `static/icons/tree/` 或相应分类目录
 3. 建议使用描述性的文件名，如 `tool.svg`、`material.svg`
 
 **SVG 图标模板：**
@@ -43,7 +43,7 @@
 {
   "nodeIcons": {
     "process": {
-      "icon": "process",      // 对应 static/icons/process.svg
+      "icon": "process",      // 对应 static/icons/tree/process.svg
       "fallback": "📋"        // 文本场景的回退 emoji
     },
     "procedure": {
@@ -55,7 +55,7 @@
       "fallback": "⚙️"
     },
     "tool": {                  // 新增类型
-      "icon": "tool",          // 对应 static/icons/tool.svg
+      "icon": "tool",          // 对应 static/icons/tree/tool.svg
       "fallback": "🔨"
     },
     "default": {
@@ -86,7 +86,7 @@ Move-Item -Path static/data_package.zip -Destination static/data_package.srd -Fo
 | 字段 | 类型 | 用途 |
 |------|------|------|
 | `displayName` | `📋 工艺名称` | 文本场景（表格列） |
-| `iconPath` | `/static/icons/process.svg` | 图片场景（可扩展） |
+| `iconPath` | `/static/icons/tree/process.svg` | 图片场景（可扩展） |
 
 ### 在表格中使用（当前）
 

@@ -66,9 +66,9 @@
 					</view>
 					<!-- #endif -->
 					<view v-if="!isPC" class="settings-icon-btn" @click="toggleMenu('settings')">
-						<image class="settings-icon-img" src="/static/icons/settings_icon.svg" mode="aspectFit"></image>
+						<image class="settings-icon-img" src="/static/icons/ui/settings_icon.svg" mode="aspectFit"></image>
 					</view>
-					<image class="header-logo" src="/static/icons/casc_logo.png" mode="aspectFit"></image>
+					<image class="header-logo" src="/static/icons/brand/casc_logo.png" mode="aspectFit"></image>
 				</view>
 			</view>
 		</template>

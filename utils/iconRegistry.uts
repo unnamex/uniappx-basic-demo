@@ -11,5 +11,5 @@ export function getIconPath(name: string): string {
         return '';
     }
     // 直接动态组装统一路径
-    return `/static/icons/${name}.svg`;
+    return `/static/icons/tree/${name}.svg`;
 }

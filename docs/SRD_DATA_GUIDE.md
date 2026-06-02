@@ -606,7 +606,7 @@ assets/
 | `icon` | SVG 图标文件名（不含扩展名），系统从 `assets/icons/{icon}.svg` 加载 |
 | `fallback` | 加载 SVG 失败时显示的 emoji 备用字符 |
 
-> **提示**：如需自定义图标，将 SVG 文件放入包内 `assets/icons/` 目录，并在此处配置对应的文件名。`assets/icons/` 中的文件在导入时不会被复制到本地存储，只在需要时由客户端引用项目内 `/static/icons/` 下的静态资源。
+> **提示**：如需自定义图标，将 SVG 文件放入包内 `assets/icons/` 目录，并在此处配置对应的文件名。`assets/icons/` 中的文件在导入时不会被复制到本地存储，只在需要时由客户端引用项目内 `/static/icons/tree/` 下的静态资源。
 
 ---
 

@@ -47,7 +47,7 @@
 
 		<!-- 底部区域 (左侧Logo, 右侧版本) -->
 		<view class="bottom-footer">
-			<image class="brand-logo" src="/static/icons/casc_full_name.png" mode="heightFix"></image>
+			<image class="brand-logo" src="/static/icons/brand/casc_full_name.png" mode="heightFix"></image>
 			<text class="version-text">v{{ appVersion }}</text>
 		</view>
 
