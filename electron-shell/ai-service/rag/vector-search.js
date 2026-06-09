@@ -138,7 +138,7 @@ function reciprocalRankFusion(resultsLists, k = 60) {
  * @param {number} minSim - 最低相似度阈值
  * @returns {Array} 命中的工序 id 列表
  */
-function h2rStage1(questionEmbedding, operationChunks, topN = 3, minSim = 0.40) {
+function h2rStage1(questionEmbedding, operationChunks, topN = 3, minSim = 0.30) {
   if (!operationChunks || operationChunks.length === 0) return []
 
   const scored = operationChunks.map(chunk => ({
@@ -169,7 +169,7 @@ function h2rStage1(questionEmbedding, operationChunks, topN = 3, minSim = 0.40) 
  * @param {number} minSim - 最低相似度阈值
  * @returns {Array} 精细检索结果列表
  */
-function h2rStage2(questionEmbedding, childMap, hitOperationIds, topK = 2, minSim = 0.50) {
+function h2rStage2(questionEmbedding, childMap, hitOperationIds, topK = 2, minSim = 0.35) {
   if (!childMap || hitOperationIds.length === 0) return []
 
   // 收集所有命中工序的子chunk
@@ -313,23 +313,28 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
   if (cachedVectorIndex && cachedVectorIndex.chunks && cachedVectorIndex.chunks.length > 0) {
     try {
       const questionEmbedding = await getEmbedding(question)
-      const MIN_SIMILARITY_THRESHOLD = profile?.rag?.minSimilarity ?? 0.55
+      const MIN_SIMILARITY_THRESHOLD = profile?.rag?.minSimilarity ?? 0.35
 
-      // ===== H2R 层次检索 vs 扁平检索 =====
+      // ===== H2R 层次检索 + 扁平检索 融合策略 =====
+      // 核心思路：H2R 作为「增强」而非「替代」
+      // 始终执行扁平检索保证覆盖面，H2R 命中的结果获得加权优势
       const hasH2RIndex = useH2R && cachedVectorIndex.h2rIndex 
         && cachedVectorIndex.h2rIndex.operationChunks 
         && cachedVectorIndex.h2rIndex.operationChunks.length > 0
 
+      // 扁平检索（始终执行，作为基础召回保障）
+      const flatResults = flatVectorSearch(questionEmbedding, cachedVectorIndex.chunks, topK * 2, MIN_SIMILARITY_THRESHOLD)
+
       if (hasH2RIndex) {
         // H2R 两阶段检索（论文创新点①）
-        console.log(`[H2R] 使用层次化两阶段检索`)
+        console.log(`[H2R] 使用层次化两阶段检索（增强模式）`)
         
         // 第一阶段：工序级粗检索
         const hitOpIds = h2rStage1(
           questionEmbedding, 
           cachedVectorIndex.h2rIndex.operationChunks,
           3,   // 最多命中3个工序
-          0.40 // 工序级阈值较低（粗筛）
+          0.30 // 工序级阈值（粗筛）
         )
 
         if (hitOpIds.length > 0) {
@@ -341,9 +346,8 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
             topK * 2,
             MIN_SIMILARITY_THRESHOLD
           )
-          vectorResults = h2rResults
 
-          // 同时将命中工序本身也加入候选（作为上下文补充）
+          // 命中工序本身也加入候选
           const hitOpChunks = cachedVectorIndex.h2rIndex.operationChunks
             .filter(c => hitOpIds.includes(c.id))
             .map(c => ({
@@ -353,17 +357,32 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
               metadata: c.metadata,
               score: cosineSimilarity(questionEmbedding, c.embedding)
             }))
-          vectorResults = [...vectorResults, ...hitOpChunks]
-        }
 
-        // 如果 H2R 没有检索到结果，回退到扁平检索
-        if (vectorResults.length === 0) {
-          console.log(`[H2R] 层次检索未命中，回退到扁平检索`)
-          vectorResults = flatVectorSearch(questionEmbedding, cachedVectorIndex.chunks, topK * 2, MIN_SIMILARITY_THRESHOLD)
+
+          // H2R 命中的结果打标记（排在扁平结果前面，天然获得 RRF 排名优势）
+          // 注意：不做 score boost，避免影响 JCS 基于真实分数的可靠性判断
+          const h2rCandidates = [...h2rResults, ...hitOpChunks].map(r => ({
+            ...r,
+            isH2RHit: true
+          }))
+
+          // 合并：H2R 命中优先排前 + 扁平结果补全（去重）
+          const seenIds = new Set()
+          vectorResults = []
+          for (const item of [...h2rCandidates, ...flatResults]) {
+            if (!seenIds.has(item.id)) {
+              seenIds.add(item.id)
+              vectorResults.push(item)
+            }
+          }
+          console.log(`[H2R] 增强合并完成: H2R命中 ${h2rCandidates.length} 条 + 扁平 ${flatResults.length} 条 → 去重后 ${vectorResults.length} 条`)
+
+        } else {
+          vectorResults = flatResults
         }
       } else {
-        // 扁平检索（兼容旧索引 / 消融实验中关闭H2R时使用）
-        vectorResults = flatVectorSearch(questionEmbedding, cachedVectorIndex.chunks, topK * 2, MIN_SIMILARITY_THRESHOLD)
+        // 消融实验中关闭H2R时，仅使用扁平检索
+        vectorResults = flatResults
       }
 
       // 记录最高向量相似度（供 JCS 使用）

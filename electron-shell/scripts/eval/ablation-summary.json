@@ -1,0 +1,70 @@
+[
+  {
+    "experiment": "Baseline",
+    "label": "原始系统(无创新模块)",
+    "cas": false,
+    "h2r": false,
+    "jcs": false,
+    "synth_r1": "70.0",
+    "synth_r5": "97.0",
+    "real_r1": "60.0",
+    "real_r5": "100.0",
+    "oos_rate": "0.0",
+    "avg_latency": "13.37",
+    "cas_routes": null
+  },
+  {
+    "experiment": "+CAS",
+    "label": "仅口语化路由",
+    "cas": true,
+    "h2r": false,
+    "jcs": false,
+    "synth_r1": "69.0",
+    "synth_r5": "97.0",
+    "real_r1": "80.0",
+    "real_r5": "100.0",
+    "oos_rate": "0.0",
+    "avg_latency": "12.37",
+    "cas_routes": {
+      "FAST": 39,
+      "DICT": 110,
+      "REWRITE": 6
+    }
+  },
+  {
+    "experiment": "+CAS+H2R",
+    "label": "口语化路由+层次检索",
+    "cas": true,
+    "h2r": true,
+    "jcs": false,
+    "synth_r1": "39.0",
+    "synth_r5": "74.0",
+    "real_r1": "40.0",
+    "real_r5": "100.0",
+    "oos_rate": "0.0",
+    "avg_latency": "12.39",
+    "cas_routes": {
+      "FAST": 39,
+      "DICT": 110,
+      "REWRITE": 6
+    }
+  },
+  {
+    "experiment": "Full(CAS+H2R+JCS)",
+    "label": "完整系统",
+    "cas": true,
+    "h2r": true,
+    "jcs": true,
+    "synth_r1": "33.0",
+    "synth_r5": "59.0",
+    "real_r1": "40.0",
+    "real_r5": "100.0",
+    "oos_rate": "96.0",
+    "avg_latency": "12.56",
+    "cas_routes": {
+      "FAST": 39,
+      "DICT": 110,
+      "REWRITE": 6
+    }
+  }
+]

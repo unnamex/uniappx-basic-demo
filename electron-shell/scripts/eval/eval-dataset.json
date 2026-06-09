@@ -1,0 +1,1681 @@
+[
+  {
+    "id": "q_real_1",
+    "query": "那刀老是烫怎么搞啊",
+    "formal_query": "刀具切削温度过高如何处理",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "切削",
+      "冷却",
+      "刀具"
+    ]
+  },
+  {
+    "id": "q_real_2",
+    "query": "师傅这个水压不够了是不是要换啥",
+    "formal_query": "冷却液压力不足时如何处理",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "冷却液",
+      "压力"
+    ]
+  },
+  {
+    "id": "q_real_3",
+    "query": "轴承装上去咋转不动呢",
+    "formal_query": "轴承安装后转动不灵活的原因",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "轴承",
+      "预紧",
+      "装配"
+    ]
+  },
+  {
+    "id": "q_real_4",
+    "query": "这个齿轮泡油里泡多久出来啊",
+    "formal_query": "齿轮淬火油冷时间要求",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "淬火",
+      "冷却",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_real_5",
+    "query": "焊完了不做处理会咋样",
+    "formal_query": "焊接完成后不进行热处理的后果",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊后",
+      "热处理",
+      "固溶"
+    ]
+  },
+  {
+    "id": "q_real_6",
+    "query": "[请人工填入真实车间口语问题 6]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_7",
+    "query": "[请人工填入真实车间口语问题 7]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_8",
+    "query": "[请人工填入真实车间口语问题 8]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_9",
+    "query": "[请人工填入真实车间口语问题 9]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_10",
+    "query": "[请人工填入真实车间口语问题 10]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_11",
+    "query": "[请人工填入真实车间口语问题 11]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_12",
+    "query": "[请人工填入真实车间口语问题 12]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_13",
+    "query": "[请人工填入真实车间口语问题 13]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_14",
+    "query": "[请人工填入真实车间口语问题 14]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_15",
+    "query": "[请人工填入真实车间口语问题 15]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_16",
+    "query": "[请人工填入真实车间口语问题 16]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_17",
+    "query": "[请人工填入真实车间口语问题 17]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_18",
+    "query": "[请人工填入真实车间口语问题 18]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_19",
+    "query": "[请人工填入真实车间口语问题 19]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_real_20",
+    "query": "[请人工填入真实车间口语问题 20]",
+    "formal_query": "",
+    "type": "colloquial_real",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": []
+  },
+  {
+    "id": "q_synth_21",
+    "query": "那个钛合金的刀片总是磨得快怎么办？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_22",
+    "query": "师傅，TC4的转速到底调多少合适？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_23",
+    "query": "五轴联动的时候刀老是撞怎么回事？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_24",
+    "query": "这个叶片加工表面老有刀纹咋整？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_25",
+    "query": "铣削钛合金的时候冷却液开多大流量？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_26",
+    "query": "为什么加工TC4的刀具寿命这么短？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_27",
+    "query": "叶片精铣的时候余量留多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_28",
+    "query": "球头铣刀的径向跳动多少才算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_29",
+    "query": "荧光检测是检查啥的？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_30",
+    "query": "这个钛合金毛坯检验都看些什么东西？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_31",
+    "query": "钛合金加工能用普通乳化液不？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_32",
+    "query": "冷却液浓度怎么看啊？用什么仪器测？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_33",
+    "query": "叶片装夹的时候夹多紧合适？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_34",
+    "query": "对刀仪怎么用来着？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_35",
+    "query": "三坐标检测采多少个点够？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_36",
+    "query": "精铣叶身的粗糙度能到多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_37",
+    "query": "半精铣后面留量是多少来着？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_38",
+    "query": "什么时候该换刀了怎么判断？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_39",
+    "query": "VB磨损到多少就不能用了？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_40",
+    "query": "粗铣和精铣的进给差多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "TC4",
+      "钛合金",
+      "铣削",
+      "叶片"
+    ]
+  },
+  {
+    "id": "q_synth_41",
+    "query": "管子焊之前坡口角度开多大？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_42",
+    "query": "焊的时候氩气开多大流量？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_43",
+    "query": "管内充氩的氧含量降到多少才能焊？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_44",
+    "query": "焊丝用哪个型号的？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_45",
+    "query": "打底焊电流调多少安？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_46",
+    "query": "焊缝余高超了怎么处理？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_47",
+    "query": "层间温度不能超过多少度？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_48",
+    "query": "焊完为啥要做固溶处理？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_49",
+    "query": "固溶处理温度和时间是多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_50",
+    "query": "射线检测用什么标准验收？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_51",
+    "query": "焊工没有ASME证能焊不？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_52",
+    "query": "焊的时候出现气孔是什么原因？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_53",
+    "query": "渗透检测能查出啥缺陷？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_54",
+    "query": "钨极用多粗的？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_55",
+    "query": "打底焊和盖面焊电流一样吗？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_56",
+    "query": "焊缝返修最多能修几次？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "焊接",
+      "304",
+      "不锈钢",
+      "TIG"
+    ]
+  },
+  {
+    "id": "q_synth_57",
+    "query": "车铝合金的时候老缠铝屑咋办？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_58",
+    "query": "铝合金精车用什么刀片？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_59",
+    "query": "7075的外圆公差一般给多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_60",
+    "query": "车内孔的时候震刀是什么原因？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_61",
+    "query": "啄式进刀是啥意思？每次进多深？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_62",
+    "query": "阳极氧化的电压调多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_63",
+    "query": "氧化膜厚度多少算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_64",
+    "query": "软爪怎么车修？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_65",
+    "query": "外圆跳动多少算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_66",
+    "query": "铝合金精车表面粗糙度能到多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_67",
+    "query": "PCD刀具是啥材质的？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_68",
+    "query": "阳极氧化后出现色差怎么处理？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_69",
+    "query": "卡盘爪子上有铝屑影响大不？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_70",
+    "query": "深径比超3倍用啥刀杆？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_71",
+    "query": "铝合金内孔车削进给调多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_72",
+    "query": "首件检测都测哪些尺寸？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "铝合金",
+      "7075",
+      "车削",
+      "数控"
+    ]
+  },
+  {
+    "id": "q_synth_73",
+    "query": "渗碳炉温度设多少度？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_74",
+    "query": "碳势是什么意思？调多少合适？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_75",
+    "query": "淬火油温高了会怎样？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_76",
+    "query": "为什么要低温回火？直接用行不？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_77",
+    "query": "渗碳层深度怎么测？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_78",
+    "query": "金相检验都看哪几项？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_79",
+    "query": "淬火转移时间为啥要控制在15秒内？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_80",
+    "query": "碳势偏差多少就要调整了？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_81",
+    "query": "装炉的时候齿轮之间隔多远？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_82",
+    "query": "喷丸强度怎么判断够不够？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_83",
+    "query": "齿面硬度HRC多少算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_84",
+    "query": "残余奥氏体太多会咋样？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_85",
+    "query": "淬火油含水了怎么处理？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_86",
+    "query": "氧探头多久校准一次？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_87",
+    "query": "回火温度和保温时间是多少来着？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_88",
+    "query": "防渗碳涂料涂在哪些部位？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "热处理",
+      "渗碳",
+      "淬火",
+      "齿轮"
+    ]
+  },
+  {
+    "id": "q_synth_89",
+    "query": "偏心轴承为啥要加热装？加热到多少度？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_90",
+    "query": "两片摆线轮错位多少度安装？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_91",
+    "query": "针齿销一共多少根？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_92",
+    "query": "法兰螺栓力矩拧多大？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_93",
+    "query": "什么顺序拧螺栓？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_94",
+    "query": "密封胶涂多厚合适？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_95",
+    "query": "减速机用什么型号的齿轮油？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_96",
+    "query": "空载跑合要跑多久？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_97",
+    "query": "轴承温升不能超过多少度？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_98",
+    "query": "回差达到多少算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_99",
+    "query": "力矩扳手多久校准一次？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_100",
+    "query": "轴承预紧力怎么测？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_101",
+    "query": "启动力矩多少算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_102",
+    "query": "跑合后油里有碎屑算正常吗？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_103",
+    "query": "噪声控制在多少分贝以内？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_104",
+    "query": "传动效率低于多少就不合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "装配",
+      "减速机",
+      "轴承",
+      "力矩"
+    ]
+  },
+  {
+    "id": "q_synth_105",
+    "query": "绝缘电阻用多少伏的表测？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_106",
+    "query": "耐压测试电压加多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_107",
+    "query": "漏电流不能超过多少毫安？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_108",
+    "query": "老化试验要跑多少小时？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_109",
+    "query": "老化温度设多少度？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_110",
+    "query": "湿度太高能做绝缘测试吗？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_111",
+    "query": "过载保护多久要跳？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_112",
+    "query": "测试前为啥要断电等5分钟？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_113",
+    "query": "耐压测试的安全围栏没关能测吗？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_114",
+    "query": "通讯丢包率多少算合格？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_115",
+    "query": "散热器导热硅脂涂多厚？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_116",
+    "query": "接地电阻要求多少？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_117",
+    "query": "IGBT结温监控是什么意思？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_118",
+    "query": "PCB板目视检查主要看啥？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_119",
+    "query": "紧急停止按钮要测试吗？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_synth_120",
+    "query": "测试完为啥要先放电再拆线？",
+    "type": "colloquial_synth",
+    "expected_action": "retrieve",
+    "ground_truth_keywords": [
+      "检测",
+      "伺服",
+      "驱动器",
+      "耐压"
+    ]
+  },
+  {
+    "id": "q_oos_121",
+    "query": "中午食堂有什么好吃的？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_122",
+    "query": "鲁迅写过狂人日记吗？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_123",
+    "query": "帮我写一段Python代码来排序",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_124",
+    "query": "明天天气怎么样？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_125",
+    "query": "厂长今天来不来车间？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_126",
+    "query": "怎么投资股票赚钱？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_127",
+    "query": "最近有什么好看的电影推荐？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_128",
+    "query": "帮我分析一下当前的国际局势",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_129",
+    "query": "给我讲个笑话吧",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_130",
+    "query": "你知道秦始皇是谁吗？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_131",
+    "query": "今晚加班到几点？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_132",
+    "query": "公司年会什么时候？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_133",
+    "query": "帮我翻译一段英语",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_134",
+    "query": "怎么减肥最快？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_135",
+    "query": "推荐几首好听的歌",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_136",
+    "query": "手机卡了怎么办？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_137",
+    "query": "教我做红烧肉",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_138",
+    "query": "地球到月球有多远？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_139",
+    "query": "足球比赛结果是多少？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_140",
+    "query": "附近哪家火锅好吃？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_141",
+    "query": "怎么跟女朋友道歉？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_142",
+    "query": "考驾照科目二难不难？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_143",
+    "query": "比特币现在多少钱？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_144",
+    "query": "怎么写辞职信？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_145",
+    "query": "高铁票怎么改签？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_146",
+    "query": "你会唱歌吗？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_147",
+    "query": "猫和狗哪个好养？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_148",
+    "query": "宇宙是怎么诞生的？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_149",
+    "query": "李白是哪个朝代的？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_150",
+    "query": "怎么申请专利？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_151",
+    "query": "今年高考分数线多少？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_152",
+    "query": "你觉得AI会取代人类吗？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_153",
+    "query": "手机哪个牌子好？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_154",
+    "query": "租房子要注意什么？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_155",
+    "query": "怎么提高英语口语？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_156",
+    "query": "感冒了吃什么药？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_157",
+    "query": "油价什么时候降？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_158",
+    "query": "五险一金怎么算？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_159",
+    "query": "怎么做PPT更好看？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_160",
+    "query": "信用卡逾期了怎么办？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_161",
+    "query": "跑步和游泳哪个减肥效果好？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_162",
+    "query": "你知道光速是多少吗？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_163",
+    "query": "怎么清理电脑垃圾？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_164",
+    "query": "考研和考公哪个好？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_165",
+    "query": "晚上失眠怎么办？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_166",
+    "query": "摆地摊卖什么赚钱？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_167",
+    "query": "怎么分辨翡翠的真假？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_168",
+    "query": "现在房价会降吗？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_169",
+    "query": "量子力学到底在说什么？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  },
+  {
+    "id": "q_oos_170",
+    "query": "隔壁老王是做什么的？",
+    "type": "out_of_scope",
+    "expected_action": "intercept"
+  }
+]

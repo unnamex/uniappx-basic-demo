@@ -1,0 +1,28 @@
+{
+  "stats": {
+    "synth": {
+      "total": 100,
+      "r1Hit": 25,
+      "r5Hit": 50,
+      "totalLatency": 556
+    },
+    "real": {
+      "total": 5,
+      "r1Hit": 1,
+      "r5Hit": 3,
+      "totalLatency": 160
+    },
+    "oos": {
+      "total": 50,
+      "intercepted": 48,
+      "totalLatency": 190
+    },
+    "casRoutes": {
+      "FAST": 39,
+      "DICT": 110,
+      "REWRITE": 6
+    }
+  },
+  "totalTestCount": 155,
+  "avgLatency": 5.84516129032258
+}
