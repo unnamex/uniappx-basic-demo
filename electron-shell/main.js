@@ -459,6 +459,7 @@ function startAiService() {
     const { buildGraphIndex, loadGraphIndex, buildProcessSummary } = require('./ai-service/rag/graph-builder')
     const { getSystemMemoryInfo, getMemoryPressureLevel, getPackagedModel } = require('./ai-service/rag/memory-guard')
     const { searchSimilar, clearCache } = require('./ai-service/rag/vector-search')
+    const { preprocessQuery } = require('./ai-service/rag/query-classifier')
 
     function getOllamaErrorMessage(error) {
       if (error.code === 'ECONNREFUSED') {
@@ -559,28 +560,38 @@ function startAiService() {
             const enhancedQuestion = topic ? `${topic}的${question}` : question;
             console.log(`[AI Service] 检索词增强: ${enhancedQuestion}`);
 
-            docs = searchKnowledge(enhancedQuestion); // 静态知识库
+            // ===== CAS 口语化自适应路由（论文创新点②）=====
+            const { processedQuery, casResult } = preprocessQuery(enhancedQuestion);
+            console.log(`[AI Service] CAS路由: ${casResult.route} (C(q)=${casResult.score.toFixed(3)})`);
 
-            let searchKeyword = enhancedQuestion;
-            try {
-              // HyDE: 生成假设工艺文档
-              const hydePrompt = buildHyDEPrompt(enhancedQuestion, profile);
-              const hydeRes = await axios.post(
-                'http://127.0.0.1:11435/api/generate',
-                {
-                  model: clientModel,
-                  prompt: hydePrompt,
-                  stream: false,
-                  options: profile.hyde
-                },
-                { timeout: profile.rag.hydeTimeout } // 动态超时，避免阻塞太久
-              )
-              if (hydeRes.data && hydeRes.data.response) {
-                searchKeyword = hydeRes.data.response;
-                console.log(`[HyDE] 生成假设文档完成`)
+            docs = searchKnowledge(processedQuery); // 静态知识库（用词典预处理后的查询）
+
+            let searchKeyword = processedQuery;
+
+            // 仅在 REWRITE 路径才调用昂贵的 LLM 生成假设文档（HyDE）
+            // FAST 和 DICT 路径直接使用预处理后的查询，节省离线算力
+            if (casResult.route === 'REWRITE') {
+              try {
+                const hydePrompt = buildHyDEPrompt(processedQuery, profile);
+                const hydeRes = await axios.post(
+                  'http://127.0.0.1:11435/api/generate',
+                  {
+                    model: clientModel,
+                    prompt: hydePrompt,
+                    stream: false,
+                    options: profile.hyde
+                  },
+                  { timeout: profile.rag.hydeTimeout }
+                )
+                if (hydeRes.data && hydeRes.data.response) {
+                  searchKeyword = hydeRes.data.response;
+                  console.log(`[HyDE] CAS-REWRITE路径：生成假设文档完成`)
+                }
+              } catch (e) {
+                console.warn('[HyDE] 极速生成失败，降级使用词典预处理后的查询:', e.message)
               }
-            } catch (e) {
-              console.warn('[HyDE] 极速生成失败，降级使用原问题:', e.message)
+            } else {
+              console.log(`[AI Service] CAS-${casResult.route}路径：跳过HyDE，直接检索`)
             }
 
             const VECTOR_SEARCH_TIMEOUT = profile.rag.vectorTimeout // 动态超时
@@ -589,16 +600,19 @@ function startAiService() {
             const timeoutPromise = new Promise((resolve) => {
               timerId = setTimeout(() => {
                 console.warn(`[AI Service] 混合检索超时（>${VECTOR_SEARCH_TIMEOUT}ms）`)
-                resolve([]) 
+                resolve({ results: [], jcsScore: 0, jcsReliable: false }) 
               }, VECTOR_SEARCH_TIMEOUT)
             })
 
             let retrievedChunks = []
+            let jcsReliable = true
             try {
-              retrievedChunks = await Promise.race([
-                searchSimilar(searchKeyword, profile.rag.topK, profile.rag.contextTruncate, profile), // 动态 TopK 和截断
+              const searchResult = await Promise.race([
+                searchSimilar(searchKeyword, profile.rag.topK, profile.rag.contextTruncate, profile),
                 timeoutPromise
               ])
+              retrievedChunks = searchResult.results || []
+              jcsReliable = searchResult.jcsReliable !== false
             } catch (e) {
               console.error('[AI Service] 混合检索异常:', e.message)
             } finally {
@@ -608,9 +622,8 @@ function startAiService() {
             // 推送：检索完成状态
             res.write(JSON.stringify({ type: 'status', stage: 'retrieved', count: retrievedChunks.length }) + '\n');
 
-            // 核心安全防线：如果用户问了与工业毫无关系的问题（如“鲁迅是谁”），向量检索相似度必定低于阈值导致召回数为0。
-            // 此时直接硬拦截，不让大模型自行发挥幻觉知识，同时节省大量的思考和生成时间！
-            if (retrievedChunks.length === 0 && docs.length === 0) {
+            // JCS 联合置信度安全拦截（论文创新点③）：替代原有硬规则
+            if (!jcsReliable && docs.length === 0) {
                 const outOfScopeReply = "抱歉，这个问题超出了当前工艺的范畴。为了确保车间生产安全，咱们还是聊聊具体的工艺步骤、设备参数或者质检问题吧。"
                 res.write(JSON.stringify({ response: outOfScopeReply, done: true }) + '\n');
                 res.end();
@@ -734,10 +747,11 @@ function startAiService() {
           const searchKeyword = task.nodeName
           let retrievedChunks = [];
           try {
-            retrievedChunks = await Promise.race([
+            const searchResult = await Promise.race([
               searchSimilar(searchKeyword, profile.rag.topK, profile.rag.contextTruncate, profile),
-              new Promise((resolve) => setTimeout(() => resolve([]), profile.rag.vectorTimeout))
+              new Promise((resolve) => setTimeout(() => resolve({ results: [], jcsScore: 0, jcsReliable: false }), profile.rag.vectorTimeout))
             ]);
+            retrievedChunks = searchResult.results || [];
           } catch (e) {}
 
           const prompt = buildNodeAnalysisPrompt(task.nodeName, task.nodeType, task.processName, docs, retrievedChunks, profile)
@@ -828,10 +842,11 @@ function startAiService() {
 
         let retrievedChunks = [];
         try {
-          retrievedChunks = await Promise.race([
+          const searchResult = await Promise.race([
             searchSimilar(searchKeyword, profile.rag.topK, profile.rag.contextTruncate, profile),
             timeoutPromise
           ]);
+          retrievedChunks = searchResult.results || [];
         } catch (e) {
           console.error('[AI Service] 节点分析检索异常:', e.message);
         } finally {

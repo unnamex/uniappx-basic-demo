@@ -1,6 +1,12 @@
 /**
- * 混合检索模块 (Hybrid Search)
- * 结合 知识图谱精准实体提取 (Graph Search) 与 向量相似度检索 (Vector Search)
+ * 混合检索模块 (Hybrid Search) v2.0
+ * 
+ * 集成三个论文创新点：
+ * ① H2R  - 工艺层次感知两阶段检索
+ * ② CAS  - 口语化程度自适应路由（在调用方集成）
+ * ③ JCS  - 联合置信度驱动的安全拦截
+ * 
+ * 原有功能保持兼容：Graph + BM25 + Vector 三路融合 + RRF排序
  */
 
 const { getEmbedding, loadIndex } = require('./vectorizer')
@@ -119,21 +125,155 @@ function reciprocalRankFusion(resultsLists, k = 60) {
   return fusedResults;
 }
 
-/**
- * 混合检索：根据用户问题提取 Graph 实体系与 Vector 相似块
- * @param {string} question - 用户问题
- * @param {number} topK - 返回的最大向量结果数，默认 2 (压缩上下文提速)
- * @param {number} maxContextLength - 返回结果的最大合并字符长度限制，默认 1500
- * @param {Object} profile - 模型配置
- * @returns {Promise<Array>} 融合后的 Context Chunk 列表
- */
-async function searchSimilar(question, topK = 2, maxContextLength = 1500, profile = null) {
-  if (!question || question.trim() === '') return []
 
-  // 如果缓存在 1 分钟内已经被预加载过该问题的结果，直接返回！偷走几百毫秒
+// ========== H2R 两阶段检索（论文创新点①）==========
+
+/**
+ * H2R 第一阶段：工序级粗检索
+ * 在工序级向量索引中定位相关工序
+ * 
+ * @param {Array} questionEmbedding - 查询向量
+ * @param {Array} operationChunks - 工序级 chunk 列表
+ * @param {number} topN - 返回的工序数量
+ * @param {number} minSim - 最低相似度阈值
+ * @returns {Array} 命中的工序 id 列表
+ */
+function h2rStage1(questionEmbedding, operationChunks, topN = 3, minSim = 0.40) {
+  if (!operationChunks || operationChunks.length === 0) return []
+
+  const scored = operationChunks.map(chunk => ({
+    id: chunk.id,
+    score: cosineSimilarity(questionEmbedding, chunk.embedding)
+  }))
+
+  scored.sort((a, b) => b.score - a.score)
+
+  // 只返回超过最低阈值的工序
+  const hits = scored.filter(s => s.score >= minSim).slice(0, topN)
+  
+  if (hits.length > 0) {
+    console.log(`[H2R Stage1] 粗检索命中 ${hits.length} 个工序: ${hits.map(h => `${h.id}(${h.score.toFixed(3)})`).join(', ')}`)
+  }
+
+  return hits.map(h => h.id)
+}
+
+/**
+ * H2R 第二阶段：工步级精细检索
+ * 仅在命中工序的子集中进行精细检索
+ * 
+ * @param {Array} questionEmbedding - 查询向量
+ * @param {object} childMap - 工序→子chunk映射
+ * @param {Array} hitOperationIds - 第一阶段命中的工序id
+ * @param {number} topK - 返回的最大结果数
+ * @param {number} minSim - 最低相似度阈值
+ * @returns {Array} 精细检索结果列表
+ */
+function h2rStage2(questionEmbedding, childMap, hitOperationIds, topK = 2, minSim = 0.50) {
+  if (!childMap || hitOperationIds.length === 0) return []
+
+  // 收集所有命中工序的子chunk
+  const candidateChunks = []
+  for (const opId of hitOperationIds) {
+    const children = childMap[opId]
+    if (children && children.length > 0) {
+      candidateChunks.push(...children)
+    }
+  }
+
+  if (candidateChunks.length === 0) return []
+
+  // 在缩小的候选集中做精细检索
+  const scored = candidateChunks.map(chunk => ({
+    id: chunk.id,
+    type: chunk.type,
+    text: chunk.text,
+    metadata: chunk.metadata,
+    score: cosineSimilarity(questionEmbedding, chunk.embedding)
+  }))
+
+  scored.sort((a, b) => b.score - a.score)
+  const results = scored.filter(s => s.score >= minSim).slice(0, topK)
+
+  if (results.length > 0) {
+    console.log(`[H2R Stage2] 从 ${candidateChunks.length} 个候选中精细检索，命中 ${results.length} 条 (最高: ${results[0].score.toFixed(4)})`)
+  }
+
+  return results
+}
+
+
+// ========== JCS 联合置信度安全拦截（论文创新点③）==========
+
+/**
+ * JCS 权重配置
+ * 三个维度的权重可在实验中调优
+ */
+const JCS_CONFIG = {
+  w1: 0.35,       // 图谱命中权重
+  w2: 0.45,       // 向量最高相似度权重
+  w3: 0.20,       // BM25 归一化分数权重
+  theta: 0.25,    // 安全阈值：低于此值拒绝回答
+  nMax: 3         // 图谱命中数量归一化上限
+}
+
+/**
+ * 计算联合置信度分数 JCS(q)
+ * 
+ * 公式：JCS(q) = w₁·min(N_graph/N_max, 1) + w₂·max_sim + w₃·BM25_norm
+ * 
+ * @param {number} graphHitCount - 图谱实体命中数量
+ * @param {number} maxVectorSim - 向量检索最高余弦相似度（0~1）
+ * @param {number} maxBM25Score - BM25最高分数（需归一化）
+ * @returns {{ score: number, isReliable: boolean, detail: string }}
+ */
+function calcJointConfidence(graphHitCount, maxVectorSim, maxBM25Score) {
+  const { w1, w2, w3, theta, nMax } = JCS_CONFIG
+
+  // 归一化各维度
+  const graphNorm = Math.min(graphHitCount / nMax, 1.0)
+  const vectorNorm = Math.max(0, Math.min(maxVectorSim, 1.0))
+  // BM25分数归一化：实践中BM25分数通常在0~15范围，除以10做软归一化
+  const bm25Norm = Math.min(maxBM25Score / 10.0, 1.0)
+
+  // 加权求和
+  const score = w1 * graphNorm + w2 * vectorNorm + w3 * bm25Norm
+  const isReliable = score >= theta
+
+  const detail = `JCS=${score.toFixed(3)} [Graph=${graphNorm.toFixed(2)}×${w1}, Vec=${vectorNorm.toFixed(2)}×${w2}, BM25=${bm25Norm.toFixed(2)}×${w3}] θ=${theta} → ${isReliable ? '可靠' : '拒绝'}`
+  console.log(`[JCS] ${detail}`)
+
+  return { score, isReliable, detail }
+}
+
+
+// ========== 主检索函数（集成 H2R + JCS）==========
+
+/**
+ * 混合检索：集成 H2R 层次检索、三路融合、JCS 安全拦截
+ * 
+ * @param {string} question - 用户问题（已经过 CAS 预处理）
+ * @param {number} topK - 返回的最大向量结果数，默认 2
+ * @param {number} maxContextLength - 返回结果的最大合并字符长度限制
+ * @param {Object} profile - 模型配置
+ * @param {Object} options - 扩展选项
+ * @param {boolean} options.useH2R - 是否使用 H2R 层次检索（默认 true）
+ * @param {boolean} options.useJCS - 是否使用 JCS 联合置信度（默认 true）
+ * @returns {Promise<{ results: Array, jcsScore: number, jcsReliable: boolean }>}
+ */
+async function searchSimilar(question, topK = 2, maxContextLength = 1500, profile = null, options = {}) {
+  const useH2R = options.useH2R !== false
+  const useJCS = options.useJCS !== false
+
+  if (!question || question.trim() === '') {
+    return { results: [], jcsScore: 0, jcsReliable: false }
+  }
+
+  // 如果缓存在 1 分钟内已经被预加载过该问题的结果，直接返回
   if (prefetchCache.has(question)) {
     console.log(`[Hybrid Search] 命中预查询缓存: "${question}"`)
-    return prefetchCache.get(question)
+    const cached = prefetchCache.get(question)
+    return { results: cached, jcsScore: 1.0, jcsReliable: true }
   }
 
   // 懒加载缓存
@@ -141,78 +281,139 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
   if (cachedGraphIndex == null) cachedGraphIndex = loadGraphIndex()
 
   let graphResults = []
+  let graphHitCount = 0
   
-  // 1. 图谱实体精确提取与模糊容错 (Graph Search) 同步执行
+  // 1. 图谱实体精确提取与模糊容错 (Graph Search)
   if (cachedGraphIndex && cachedGraphIndex.entities) {
     const matchedEntities = cachedGraphIndex.entities.filter(ent => {
       return fuzzyMatchKeyword(question, ent.keyword)
     })
     
+    graphHitCount = matchedEntities.length
+
     if (matchedEntities.length > 0) {
       console.log(`[Hybrid Search] 命中图谱实体: ${matchedEntities.map(e => e.keyword).join(', ')}`)
       graphResults = matchedEntities.map(e => ({
         id: `graph-${e.keyword}`,
         type: e.type,
         text: e.context,
-        score: 1.0 // 图谱命中赋予最高权重
+        score: 1.0
       }))
-      
-      // 【关键优化】：如果命中图谱实体，仍然可以和 BM25 结果做个融合，但这里为了避免打断大段完整上下文
-      // 如果只想要精确实体，可以提前返回。为了保持 RRF 的统一性，我们这里继续往下走。
-      // 但对于图谱强制排在最前面，我们给予额外的 boost
     }
   }
 
   // 2. BM25 检索 (同步)
   const bm25Results = searchBM25(question, 1);
+  const maxBM25Score = bm25Results.length > 0 ? bm25Results[0].score : 0
 
-  // 3. 向量检索 (异步)
+  // 3. 向量检索（支持 H2R 两阶段）
   let vectorResults = []
+  let maxVectorSim = 0
+
   if (cachedVectorIndex && cachedVectorIndex.chunks && cachedVectorIndex.chunks.length > 0) {
     try {
       const questionEmbedding = await getEmbedding(question)
-      const scored = cachedVectorIndex.chunks.map(chunk => ({
-        id: chunk.id,
-        type: chunk.type,
-        text: chunk.text,
-        metadata: chunk.metadata,
-        score: cosineSimilarity(questionEmbedding, chunk.embedding)
-      }))
-      
-      scored.sort((a, b) => b.score - a.score)
       const MIN_SIMILARITY_THRESHOLD = profile?.rag?.minSimilarity ?? 0.55
-      const validResults = scored.filter(item => item.score >= MIN_SIMILARITY_THRESHOLD)
-      vectorResults = validResults.slice(0, topK * 2)
-      
-      if (scored.length > 0) {
-        console.log(`[Hybrid Search] 向量最高相似度: ${scored[0].score.toFixed(4)}`)
+
+      // ===== H2R 层次检索 vs 扁平检索 =====
+      const hasH2RIndex = useH2R && cachedVectorIndex.h2rIndex 
+        && cachedVectorIndex.h2rIndex.operationChunks 
+        && cachedVectorIndex.h2rIndex.operationChunks.length > 0
+
+      if (hasH2RIndex) {
+        // H2R 两阶段检索（论文创新点①）
+        console.log(`[H2R] 使用层次化两阶段检索`)
+        
+        // 第一阶段：工序级粗检索
+        const hitOpIds = h2rStage1(
+          questionEmbedding, 
+          cachedVectorIndex.h2rIndex.operationChunks,
+          3,   // 最多命中3个工序
+          0.40 // 工序级阈值较低（粗筛）
+        )
+
+        if (hitOpIds.length > 0) {
+          // 第二阶段：在命中工序的子集中精细检索
+          const h2rResults = h2rStage2(
+            questionEmbedding,
+            cachedVectorIndex.h2rIndex.childMap,
+            hitOpIds,
+            topK * 2,
+            MIN_SIMILARITY_THRESHOLD
+          )
+          vectorResults = h2rResults
+
+          // 同时将命中工序本身也加入候选（作为上下文补充）
+          const hitOpChunks = cachedVectorIndex.h2rIndex.operationChunks
+            .filter(c => hitOpIds.includes(c.id))
+            .map(c => ({
+              id: c.id,
+              type: c.type,
+              text: c.text,
+              metadata: c.metadata,
+              score: cosineSimilarity(questionEmbedding, c.embedding)
+            }))
+          vectorResults = [...vectorResults, ...hitOpChunks]
+        }
+
+        // 如果 H2R 没有检索到结果，回退到扁平检索
+        if (vectorResults.length === 0) {
+          console.log(`[H2R] 层次检索未命中，回退到扁平检索`)
+          vectorResults = flatVectorSearch(questionEmbedding, cachedVectorIndex.chunks, topK * 2, MIN_SIMILARITY_THRESHOLD)
+        }
+      } else {
+        // 扁平检索（兼容旧索引 / 消融实验中关闭H2R时使用）
+        vectorResults = flatVectorSearch(questionEmbedding, cachedVectorIndex.chunks, topK * 2, MIN_SIMILARITY_THRESHOLD)
+      }
+
+      // 记录最高向量相似度（供 JCS 使用）
+      if (vectorResults.length > 0) {
+        maxVectorSim = Math.max(...vectorResults.map(r => r.score))
+        console.log(`[Hybrid Search] 向量最高相似度: ${maxVectorSim.toFixed(4)}`)
       }
     } catch (err) {
       console.error('[Hybrid Search] 问题向量化失败:', err.message)
     }
   }
 
+  // ===== JCS 联合置信度安全拦截（论文创新点③）=====
+  let jcsScore = 1.0
+  let jcsReliable = true
+
+  if (useJCS) {
+    const jcs = calcJointConfidence(graphHitCount, maxVectorSim, maxBM25Score)
+    jcsScore = jcs.score
+    jcsReliable = jcs.isReliable
+
+    if (!jcsReliable) {
+      console.log(`[JCS] 置信度不足，触发安全拦截，返回零召回`)
+      // 放入缓存（防止重复查询）
+      if (prefetchCache.size > 50) prefetchCache.clear()
+      prefetchCache.set(question, [])
+      return { results: [], jcsScore, jcsReliable: false }
+    }
+  } else {
+    // 不使用 JCS 时，回退到原有硬规则（消融实验用）
+    if (graphResults.length === 0 && vectorResults.length === 0) {
+      console.log(`[Hybrid Search] 图谱与向量均未命中（硬规则拦截）`)
+      return { results: [], jcsScore: 0, jcsReliable: false }
+    }
+  }
+
   // 4. 三路 RRF 融合 (Graph, BM25, Vector)
   let combined = [];
   
-  // 核心硬拦截优化：如果图谱和深度语义向量（>0.55阈值）都没有找到任何一条相关记录，
-  // 那么单靠 BM25 匹配出的（往往是“是”、“的”等停用词导致的低分假阳性）是纯纯的噪音。
-  // 在这种情况下，我们直接判定为“零召回”，返回空数组，以便上层网关触发硬拦截，避免大模型幻觉！
-  if (graphResults.length === 0 && vectorResults.length === 0) {
-      console.log(`[Hybrid Search] 图谱与向量均未命中，判定为域外闲聊/常识问题，丢弃 BM25 噪音并返回零召回。`);
-      // 不进行融合，直接保持 combined = []
-  } else if (graphResults.length > 0 || bm25Results.length > 0 || vectorResults.length > 0) {
-    // 为保证图谱的绝对优先级，我们让图谱列表在前，使得它在融合时 rank 高
+  if (graphResults.length > 0 || bm25Results.length > 0 || vectorResults.length > 0) {
     combined = reciprocalRankFusion([graphResults, bm25Results, vectorResults]);
     console.log(`[Hybrid Search] RRF 融合完成，共获取 ${combined.length} 条去重记录`);
   }
   
-  // 返回融合后的上下文片段，并根据总 Token 长度（近似控制在 maxContextLength 字符内）进行截断
+  // 返回融合后的上下文片段，根据 maxContextLength 截断
   const finalResults = [];
   let totalLength = 0;
   for (const item of combined) {
     if (totalLength + item.text.length > maxContextLength && finalResults.length > 0) {
-       break; // 超过字符长度限制
+       break;
     }
     finalResults.push(item);
     totalLength += item.text.length;
@@ -222,8 +423,26 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
   if (prefetchCache.size > 50) prefetchCache.clear()
   prefetchCache.set(question, finalResults)
   
-  return finalResults
+  return { results: finalResults, jcsScore, jcsReliable }
 }
+
+
+/**
+ * 扁平向量检索（原有逻辑，作为 H2R 关闭时的回退/消融对比基线）
+ */
+function flatVectorSearch(questionEmbedding, chunks, topK, minSimilarity) {
+  const scored = chunks.map(chunk => ({
+    id: chunk.id,
+    type: chunk.type,
+    text: chunk.text,
+    metadata: chunk.metadata,
+    score: cosineSimilarity(questionEmbedding, chunk.embedding)
+  }))
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored.filter(item => item.score >= minSimilarity).slice(0, topK)
+}
+
 
 /**
  * 清除缓存的索引（在重建索引后调用）
@@ -231,6 +450,7 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
 function clearCache() {
   cachedVectorIndex = null
   cachedGraphIndex = null
+  prefetchCache.clear()
   const { clearBM25Cache } = require('./bm25')
   clearBM25Cache()
   console.log('[Hybrid Search] 混合索引缓存已清除')
@@ -238,5 +458,12 @@ function clearCache() {
 
 module.exports = {
   searchSimilar,
-  clearCache
+  clearCache,
+  // 导出供消融实验和论文评估脚本使用
+  calcJointConfidence,
+  JCS_CONFIG,
+  h2rStage1,
+  h2rStage2,
+  flatVectorSearch,
+  cosineSimilarity
 }

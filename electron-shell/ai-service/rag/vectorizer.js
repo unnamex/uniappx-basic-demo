@@ -196,24 +196,54 @@ async function getEmbedding(text) {
  */
 async function buildIndex(chunks, onProgress) {
   const indexData = {
-    version: 1,
+    version: 2,  // 升级版本号：支持 H2R 分层索引
     model: 'Xenova/bge-small-zh-v1.5',
     createdAt: new Date().toISOString(),
     chunkCount: chunks.length,
-    chunks: []
+    chunks: [],
+    // ===== H2R 分层索引（论文创新点①）=====
+    // 将 chunk 按工艺层级分组，支持两阶段检索
+    h2rIndex: {
+      operationChunks: [],  // 工序级 chunk（粗检索层）
+      childMap: {}          // operationId → [step/action chunks]（细检索层）
+    }
   }
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]
     try {
       const embedding = await getEmbedding(chunk.text)
-      indexData.chunks.push({
+      const embeddedChunk = {
         id: chunk.id,
         type: chunk.type,
         text: chunk.text,
         metadata: chunk.metadata,
         embedding: embedding
-      })
+      }
+      indexData.chunks.push(embeddedChunk)
+
+      // ===== H2R：按层级分组 =====
+      if (chunk.type === 'operation') {
+        // 工序级 → 放入粗检索层
+        indexData.h2rIndex.operationChunks.push(embeddedChunk)
+        // 初始化该工序的子集容器
+        if (!indexData.h2rIndex.childMap[chunk.id]) {
+          indexData.h2rIndex.childMap[chunk.id] = []
+        }
+      } else if (chunk.type === 'step' || chunk.type === 'action') {
+        // 工步/动作级 → 关联到所属工序的子集
+        // 从 metadata 中的 serialNumber 推断所属工序
+        // 由于原始数据中工步/动作的 id 格式为 step-N / action-N，
+        // 我们用 metadata.processName 作为关联键
+        const parentKey = findParentOperationId(chunk, chunks)
+        if (parentKey) {
+          if (!indexData.h2rIndex.childMap[parentKey]) {
+            indexData.h2rIndex.childMap[parentKey] = []
+          }
+          indexData.h2rIndex.childMap[parentKey].push(embeddedChunk)
+        }
+      }
+      // process 级不参与 H2R（太粗，通常走图谱概览意图）
     } catch (err) {
       console.error(`[Vectorizer] 向量化 chunk "${chunk.id}" 失败:`, err.message)
       // 跳过失败的 chunk，继续处理
@@ -230,12 +260,19 @@ async function buildIndex(chunks, onProgress) {
     throw new Error(`向量化全部失败，无法加载本地嵌入模型，请检查环境。`)
   }
 
+  // H2R 索引统计
+  const opCount = indexData.h2rIndex.operationChunks.length
+  const childKeys = Object.keys(indexData.h2rIndex.childMap)
+  const totalChildren = childKeys.reduce((sum, k) => sum + indexData.h2rIndex.childMap[k].length, 0)
+  console.log(`[H2R] 分层索引构建完成: ${opCount} 个工序（粗检索层），${totalChildren} 个工步/动作（细检索层），覆盖 ${childKeys.length} 个工序分组`)
+
   // 保存到文件
   fs.writeFileSync(INDEX_FILE, JSON.stringify(indexData), 'utf-8')
   console.log(`[Vectorizer] 向量索引已保存: ${INDEX_FILE} (${indexData.chunks.length}/${chunks.length} chunks 成功)`)
 
   return indexData
 }
+
 
 /**
  * 加载已有的向量索引
@@ -266,10 +303,40 @@ function indexExists() {
   }
 }
 
+/**
+ * H2R 辅助函数：推断工步/动作所属的工序ID
+ * 
+ * 策略：
+ * 1. 按 chunk id 中的索引号，找到序号不大于当前 step/action 的最近 operation
+ * 2. 这种启发式方法基于：buildChunks 按顺序生成，每个 step/action 归属于其前面最近的 operation
+ * 
+ * @param {object} chunk - 当前工步/动作 chunk
+ * @param {Array} allChunks - 所有 chunk 列表（原始顺序）
+ * @returns {string|null} 父工序的 chunk id，如 "operation-2"
+ */
+function findParentOperationId(chunk, allChunks) {
+  // 提取当前 chunk 在原始数组中的索引位置
+  const currentIndex = allChunks.indexOf(chunk)
+  if (currentIndex < 0) return null
+
+  // 从当前位置向前搜索最近的 operation 类型 chunk
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    if (allChunks[i].type === 'operation') {
+      return allChunks[i].id
+    }
+  }
+
+  // 如果前面没有 operation（极端情况），尝试关联到第一个 operation
+  const firstOp = allChunks.find(c => c.type === 'operation')
+  return firstOp ? firstOp.id : null
+}
+
 module.exports = {
   buildChunks,
   getEmbedding,
   buildIndex,
   loadIndex,
-  indexExists
+  indexExists,
+  findParentOperationId  // 导出供测试使用
 }
+
