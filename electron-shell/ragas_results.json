@@ -1,0 +1,22 @@
+[
+  {
+    "Metric": "Faithfulness",
+    "w/o Self-Reflect": 0.78,
+    "w/ Self-Reflect": 0.85
+  },
+  {
+    "Metric": "Answer Relevancy",
+    "w/o Self-Reflect": 0.81,
+    "w/ Self-Reflect": 0.83
+  },
+  {
+    "Metric": "Context Precision",
+    "w/o Self-Reflect": 0.76,
+    "w/ Self-Reflect": 0.82
+  },
+  {
+    "Metric": "Context Recall",
+    "w/o Self-Reflect": 0.79,
+    "w/ Self-Reflect": 0.79
+  }
+]

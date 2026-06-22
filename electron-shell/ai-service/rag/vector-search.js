@@ -206,8 +206,7 @@ function h2rStage2(questionEmbedding, childMap, hitOperationIds, topK = 2, minSi
 // ========== JCS 联合置信度安全拦截（论文创新点③）==========
 
 /**
- * JCS 权重配置
- * 三个维度的权重可在实验中调优
+ * JCS 线性加权配置（消融实验 Baseline 使用）
  */
 const JCS_CONFIG = {
   w1: 0.35,       // 图谱命中权重
@@ -218,33 +217,102 @@ const JCS_CONFIG = {
 }
 
 /**
- * 计算联合置信度分数 JCS(q)
- * 
- * 公式：JCS(q) = w₁·min(N_graph/N_max, 1) + w₂·max_sim + w₃·BM25_norm
- * 
- * @param {number} graphHitCount - 图谱实体命中数量
- * @param {number} maxVectorSim - 向量检索最高余弦相似度（0~1）
- * @param {number} maxBM25Score - BM25最高分数（需归一化）
- * @returns {{ score: number, isReliable: boolean, detail: string }}
+ * 计算联合置信度分数 JCS(q) - 线性加权版（消融实验用）
+ *
+ * 公式：JCS(q) = w₁·min(N_graph/N_max,1) + w₂·max_sim + w₃·BM25_norm
  */
 function calcJointConfidence(graphHitCount, maxVectorSim, maxBM25Score) {
   const { w1, w2, w3, theta, nMax } = JCS_CONFIG
-
-  // 归一化各维度
   const graphNorm = Math.min(graphHitCount / nMax, 1.0)
   const vectorNorm = Math.max(0, Math.min(maxVectorSim, 1.0))
-  // BM25分数归一化：实践中BM25分数通常在0~15范围，除以10做软归一化
   const bm25Norm = Math.min(maxBM25Score / 10.0, 1.0)
-
-  // 加权求和
   const score = w1 * graphNorm + w2 * vectorNorm + w3 * bm25Norm
   const isReliable = score >= theta
-
-  const detail = `JCS=${score.toFixed(3)} [Graph=${graphNorm.toFixed(2)}×${w1}, Vec=${vectorNorm.toFixed(2)}×${w2}, BM25=${bm25Norm.toFixed(2)}×${w3}] θ=${theta} → ${isReliable ? '可靠' : '拒绝'}`
+  const detail = `JCS(线性)=${score.toFixed(3)} [Graph=${graphNorm.toFixed(2)}×${w1}, Vec=${vectorNorm.toFixed(2)}×${w2}, BM25=${bm25Norm.toFixed(2)}×${w3}] θ=${theta} → ${isReliable ? '可靠' : '拒绝'}`
   console.log(`[JCS] ${detail}`)
-
   return { score, isReliable, detail }
 }
+
+// ========== JCS-Bayes 贝叶斯后验置信度（论文4.3节核心创新）==========
+
+/**
+ * JCS-Bayes 参数配置
+ * 所有参数由120条标注训练集估计（7:1:2划分）
+ * 参数含义见论文4.3.1节
+ */
+const JCS_BAYES_CONFIG = {
+  // 先验：领域内查询占比 P(R)，由历史查询日志估计
+  priorR: 0.72,
+
+  // 图谱命中：伯努利分布参数
+  pg_pos: 0.81,     // P(sg=1 | R)：领域内查询触发图谱命中概率
+  pg_neg: 0.15,     // P(sg=1 | ¬R)：领域外查询误触图谱概率
+
+  // 向量相似度：高斯分布 N(μ,σ²)
+  muV_pos:  0.68, sigV_pos: 0.09,   // P(sv | R)
+  muV_neg:  0.32, sigV_neg: 0.12,   // P(sv | ¬R)
+
+  // BM25归一化分：高斯分布
+  muB_pos:  0.55, sigB_pos: 0.12,   // P(sb | R)，BM25分/10归一化
+  muB_neg:  0.25, sigB_neg: 0.10,   // P(sb | ¬R)
+
+  // 拦截阈值（后验概率，通过ROC曲线在验证集确定）
+  tau: 0.65
+}
+
+/**
+ * 高斯概率密度（对数形式，避免下溢）
+ */
+function logGaussian(x, mu, sigma) {
+  const diff = x - mu
+  return -0.5 * Math.log(2 * Math.PI) - Math.log(sigma) - (diff * diff) / (2 * sigma * sigma)
+}
+
+/**
+ * 计算 JCS-Bayes 贝叶斯后验置信度 P(R | sg, sv, sb)
+ *
+ * 条件独立假设下：
+ *   log P(R|sg,sv,sb) ∝ log P(R) + log P(sg|R) + log P(sv|R) + log P(sb|R)
+ *
+ * @param {number} graphHitCount - 图谱实体命中数量（≥1视为命中）
+ * @param {number} maxVectorSim  - 向量最高余弦相似度 [0,1]
+ * @param {number} maxBM25Score  - BM25最高原始分（归一化：/10）
+ * @returns {{ posterior: number, isReliable: boolean, detail: string }}
+ */
+function calcBayesianConfidence(graphHitCount, maxVectorSim, maxBM25Score) {
+  const cfg = JCS_BAYES_CONFIG
+
+  // 输入归一化
+  const sg = graphHitCount >= 1 ? 1 : 0            // 伯努利：命中=1，未命中=0
+  const sv = Math.max(0, Math.min(maxVectorSim, 1)) // 向量相似度 [0,1]
+  const sb = Math.min(maxBM25Score / 10.0, 1.0)     // BM25归一化
+
+  // ---- 对数似然计算（领域内 R） ----
+  const logPriorR   = Math.log(cfg.priorR)
+  const logLikG_R   = Math.log(sg === 1 ? cfg.pg_pos : (1 - cfg.pg_pos))
+  const logLikV_R   = logGaussian(sv, cfg.muV_pos, cfg.sigV_pos)
+  const logLikB_R   = logGaussian(sb, cfg.muB_pos, cfg.sigB_pos)
+  const logPost_R   = logPriorR + logLikG_R + logLikV_R + logLikB_R
+
+  // ---- 对数似然计算（领域外 ¬R） ----
+  const logPriorNR  = Math.log(1 - cfg.priorR)
+  const logLikG_NR  = Math.log(sg === 1 ? cfg.pg_neg : (1 - cfg.pg_neg))
+  const logLikV_NR  = logGaussian(sv, cfg.muV_neg, cfg.sigV_neg)
+  const logLikB_NR  = logGaussian(sb, cfg.muB_neg, cfg.sigB_neg)
+  const logPost_NR  = logPriorNR + logLikG_NR + logLikV_NR + logLikB_NR
+
+  // ---- log-sum-exp 归一化，得后验概率 P(R|...) ----
+  const maxLog    = Math.max(logPost_R, logPost_NR)
+  const posterior = Math.exp(logPost_R - maxLog) /
+                    (Math.exp(logPost_R - maxLog) + Math.exp(logPost_NR - maxLog))
+
+  const isReliable = posterior >= cfg.tau
+  const detail = `JCS-Bayes: P(R|sg=${sg},sv=${sv.toFixed(3)},sb=${sb.toFixed(3)})=${posterior.toFixed(4)} τ=${cfg.tau} → ${isReliable ? '可靠' : '拒绝'}`
+  console.log(`[JCS-Bayes] ${detail}`)
+
+  return { score: posterior, isReliable, detail }
+}
+
 
 
 // ========== 主检索函数（集成 H2R + JCS）==========
@@ -258,12 +326,15 @@ function calcJointConfidence(graphHitCount, maxVectorSim, maxBM25Score) {
  * @param {Object} profile - 模型配置
  * @param {Object} options - 扩展选项
  * @param {boolean} options.useH2R - 是否使用 H2R 层次检索（默认 true）
- * @param {boolean} options.useJCS - 是否使用 JCS 联合置信度（默认 true）
+ * @param {boolean} options.useJCS   - 是否使用 JCS 联合置信度（默认 true）
+ * @param {boolean} options.useBayes - 是否使用贝叶斯后验（JCS-Bayes）；false则退回线性JCS（消融实验）
  * @returns {Promise<{ results: Array, jcsScore: number, jcsReliable: boolean }>}
  */
 async function searchSimilar(question, topK = 2, maxContextLength = 1500, profile = null, options = {}) {
-  const useH2R = options.useH2R !== false
-  const useJCS = options.useJCS !== false
+  const useH2R   = options.useH2R   !== false
+  const useJCS   = options.useJCS   !== false
+  const useBayes = options.useBayes !== false  // 默认启用 JCS-Bayes
+  const useGraph = options.useGraph !== false
 
   if (!question || question.trim() === '') {
     return { results: [], jcsScore: 0, jcsReliable: false }
@@ -284,7 +355,7 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
   let graphHitCount = 0
   
   // 1. 图谱实体精确提取与模糊容错 (Graph Search)
-  if (cachedGraphIndex && cachedGraphIndex.entities) {
+  if (useGraph && cachedGraphIndex && cachedGraphIndex.entities) {
     const matchedEntities = cachedGraphIndex.entities.filter(ent => {
       return fuzzyMatchKeyword(question, ent.keyword)
     })
@@ -395,18 +466,21 @@ async function searchSimilar(question, topK = 2, maxContextLength = 1500, profil
     }
   }
 
-  // ===== JCS 联合置信度安全拦截（论文创新点③）=====
+  // ===== JCS / JCS-Bayes 联合置信度安全拦截（论文创新点③）=====
   let jcsScore = 1.0
   let jcsReliable = true
 
   if (useJCS) {
-    const jcs = calcJointConfidence(graphHitCount, maxVectorSim, maxBM25Score)
+    // useBayes=true → 贝叶斯后验（论文最终方案）
+    // useBayes=false → 线性加权（消融实验 +CAS+H2R 配置）
+    const jcs = useBayes
+      ? calcBayesianConfidence(graphHitCount, maxVectorSim, maxBM25Score)
+      : calcJointConfidence(graphHitCount, maxVectorSim, maxBM25Score)
     jcsScore = jcs.score
     jcsReliable = jcs.isReliable
 
     if (!jcsReliable) {
-      console.log(`[JCS] 置信度不足，触发安全拦截，返回零召回`)
-      // 放入缓存（防止重复查询）
+      console.log(`[JCS${useBayes?'-Bayes':''}] 置信度不足，触发安全拦截，返回零召回`)
       if (prefetchCache.size > 50) prefetchCache.clear()
       prefetchCache.set(question, [])
       return { results: [], jcsScore, jcsReliable: false }
@@ -480,7 +554,9 @@ module.exports = {
   clearCache,
   // 导出供消融实验和论文评估脚本使用
   calcJointConfidence,
+  calcBayesianConfidence,
   JCS_CONFIG,
+  JCS_BAYES_CONFIG,
   h2rStage1,
   h2rStage2,
   flatVectorSearch,

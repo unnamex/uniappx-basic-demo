@@ -7,11 +7,12 @@ const fs = require('fs');
 const path = require('path');
 const INDEX_FILE = path.join(__dirname, '..', 'bm25-index.json');
 
-// 简单的分词：按空格、标点符号切分，并转小写
 function tokenize(text) {
     if (!text) return [];
     // 移除 HTML 标签
-    const cleanText = text.replace(/<[^>]*>?/gm, ' ');
+    let cleanText = text.replace(/<[^>]*>?/gm, ' ');
+    // 为中文字符添加空格进行单字切分
+    cleanText = cleanText.replace(/([\u4e00-\u9fa5])/g, ' $1 ');
     return cleanText.toLowerCase().split(/[\s,.;:!?()\[\]{}'"]+/).filter(token => token.length > 0);
 }
 

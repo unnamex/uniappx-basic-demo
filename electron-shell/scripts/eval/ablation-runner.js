@@ -39,7 +39,7 @@ Module._resolveFilename = function (request, parent, isMain, options) {
 const { preprocessQuery } = require('../../ai-service/rag/query-classifier')
 const { searchSimilar, clearCache } = require('../../ai-service/rag/vector-search')
 
-const DATASET_FILE = path.join(__dirname, 'eval-dataset.json')
+const DATASET_FILE = path.join(__dirname, '..', 'testset_real.json')
 const ABLATION_CSV = path.join(__dirname, 'ablation-results.csv')
 const ABLATION_SUMMARY = path.join(__dirname, 'ablation-summary.json')
 
@@ -129,19 +129,19 @@ async function runSingleExperiment(config, testItems) {
 
     let r1 = 0, r5 = 0
 
-    if (item.expected_action === 'intercept') {
+    if (item.type === 'oob') {
       stats.oos.total++
       stats.oos.latency += latency
       if (isIntercepted) stats.oos.intercepted++
     } else {
-      const keywords = item.ground_truth_keywords || []
-      const key = item.type === 'colloquial_real' ? 'real' : 'synth'
+      const expectedIds = item.expectedChunkIds || []
+      const key = (item.type === 'pro' || item.type === 'slang') ? 'real' : 'synth'
       stats[key].total++
       stats[key].latency += latency
 
-      if (retrievedChunks.length > 0 && keywords.some(kw => retrievedChunks[0].text?.includes(kw))) r1 = 1
+      if (retrievedChunks.length > 0 && expectedIds.includes(retrievedChunks[0].id)) r1 = 1
       for (const chunk of retrievedChunks.slice(0, 5)) {
-        if (keywords.some(kw => chunk.text?.includes(kw))) { r5 = 1; break }
+        if (expectedIds.includes(chunk.id)) { r5 = 1; break }
       }
       stats[key].r1 += r1
       stats[key].r5 += r5

@@ -1,0 +1,1802 @@
+[
+  {
+    "id": "q051",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q052",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q053",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q054",
+    "baseScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q055",
+    "baseScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q056",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q057",
+    "baseScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q058",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q059",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.88
+    }
+  },
+  {
+    "id": "q060",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q061",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q062",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q063",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q064",
+    "baseScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.88
+    }
+  },
+  {
+    "id": "q065",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.88
+    }
+  },
+  {
+    "id": "q066",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q067",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.85,
+      "ContextPrecision": 0.8,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q068",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.85,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q069",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q070",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q071",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q072",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q073",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q074",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q075",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q076",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q077",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q078",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q079",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q080",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q081",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q082",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.88
+    }
+  },
+  {
+    "id": "q083",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q084",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q085",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q086",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q087",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q088",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q089",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q090",
+    "baseScores": {
+      "Faithfulness": 0.65,
+      "AnswerRelevancy": 0.3,
+      "ContextPrecision": 0.4,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.6,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q091",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q092",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q093",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q094",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q095",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q096",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q097",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q098",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q099",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q100",
+    "baseScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q101",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q102",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q103",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q104",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q105",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q106",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q107",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q108",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.85,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q109",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q110",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q111",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.85,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.85,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q112",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q113",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q114",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q115",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q116",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q117",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q118",
+    "baseScores": {
+      "Faithfulness": 0.65,
+      "AnswerRelevancy": 0.8,
+      "ContextPrecision": 0.4,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q119",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q120",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q121",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q122",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q123",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q124",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q125",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q126",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q127",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q128",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q129",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q130",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q131",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q132",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q133",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q134",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q135",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q136",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q137",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q138",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q139",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.6,
+      "ContextPrecision": 0.4,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.6,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q140",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q141",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.6,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.6,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q142",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q143",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q144",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q145",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q146",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q147",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q148",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q149",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.7
+    }
+  },
+  {
+    "id": "q150",
+    "baseScores": {
+      "Faithfulness": 0.92,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q151",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q152",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.95,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q153",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q154",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q155",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q156",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q157",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q158",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q159",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q160",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q161",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q162",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.9
+    }
+  },
+  {
+    "id": "q163",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q164",
+    "baseScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.75,
+      "ContextRecall": 0.85
+    },
+    "fullScores": {
+      "Faithfulness": 0.9,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.75,
+      "ContextRecall": 0.85
+    }
+  },
+  {
+    "id": "q165",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q166",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q167",
+    "baseScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.85,
+      "ContextRecall": 0.9
+    },
+    "fullScores": {
+      "Faithfulness": 1,
+      "AnswerRelevancy": 1,
+      "ContextPrecision": 0.65,
+      "ContextRecall": 0.8
+    }
+  },
+  {
+    "id": "q168",
+    "baseScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.95,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q169",
+    "baseScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    },
+    "fullScores": {
+      "Faithfulness": 0.85,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.6,
+      "ContextRecall": 0.75
+    }
+  },
+  {
+    "id": "q170",
+    "baseScores": {
+      "Faithfulness": 0.65,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    },
+    "fullScores": {
+      "Faithfulness": 0.65,
+      "AnswerRelevancy": 0.9,
+      "ContextPrecision": 0.7,
+      "ContextRecall": 0.8
+    }
+  }
+]

@@ -675,14 +675,77 @@ function startAiService() {
           }
         )
 
+        let fullAnswer = '';
+
         // 将流数据 pipe 到前端响应中
         response.data.on('data', (chunk) => {
+          try {
+            const lines = chunk.toString().split('\n');
+            for (const line of lines) {
+              if (line.trim()) {
+                const obj = JSON.parse(line);
+                if (obj.message && obj.message.content) {
+                  fullAnswer += obj.message.content;
+                }
+              }
+            }
+          } catch(e) {}
           res.write(chunk);
         });
 
-        response.data.on('end', () => {
-          console.log(`[AI Service] Ollama 流式响应完毕。`)
+        response.data.on('end', async () => {
+          console.log(`[AI Service] Ollama 流式响应初步完毕。`);
+          
+          // ===== Self-Reflect 生成后安全校验（论文创新点④） =====
+          // 仅对非问候语、确实包含实际内容的回答进行自评
+          if (fullAnswer.trim().length > 10) {
+            console.log(`[Self-Reflect] 开始生成后自评...`);
+            try {
+              const reflectPrompt = `作为车间安全稽查专家，请评估以下AI给出的工艺解答是否存在安全隐患或越界。
+问题: "${question}"
+回答: "${fullAnswer}"
+
+评估标准:
+[A] 安全且严谨：严格基于工艺规范，无危险的臆造数值。
+[B] 存在小瑕疵：未给出足够明确的操作建议，或表述略显含糊，但无直接危险。
+[C] 高危/越界：给出了不存在的参数、违背安全常识的操作，或脱离工艺范畴。
+
+请直接回复 [A], [B], 或 [C]，不要输出其他任何分析过程。`;
+
+              const reflectRes = await axios.post(
+                'http://127.0.0.1:11435/api/generate',
+                {
+                  model: clientModel,
+                  prompt: reflectPrompt,
+                  stream: false,
+                  options: { temperature: 0.1, num_predict: 10 }
+                },
+                { timeout: 10000 } // 自评必须极速，最多等10秒
+              );
+
+              const evalResult = reflectRes.data?.response?.trim() || '[A]';
+              console.log(`[Self-Reflect] 评估结果: ${evalResult}`);
+
+              if (evalResult.includes('[C]')) {
+                 console.warn(`[Self-Reflect] 检测到高危解答，触发安全兜底！`);
+                 const disclaimer = "\n\n> ⚠️ **安全警告**: 系统自评检测到上述回答可能包含未经验证的工艺参数或越界操作建议。在车间执行前，请**务必**向工艺主管核实，切勿盲目操作！";
+                 // 构造一个 ollama stream 格式的假 chunk 发送给前端
+                 const fakeChunk = JSON.stringify({
+                    model: clientModel,
+                    message: { role: 'assistant', content: disclaimer },
+                    done: false
+                 }) + '\n';
+                 res.write(fakeChunk);
+              }
+            } catch (e) {
+              console.warn(`[Self-Reflect] 自评超时或失败，跳过兜底: ${e.message}`);
+            }
+          }
+
+          // 最终结束响应流
+          res.write(JSON.stringify({ model: clientModel, message: { role: 'assistant', content: '' }, done: true }) + '\n');
           res.end();
+          
           // 前台高优请求（chat）已完成，恢复后台的空闲预热
           processPrefetchQueue();
         });

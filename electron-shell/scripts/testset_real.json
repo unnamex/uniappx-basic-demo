@@ -1,0 +1,1776 @@
+[
+  {
+    "id": "q001",
+    "type": "oob",
+    "query": "今天天气怎么样",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q002",
+    "type": "oob",
+    "query": "比特币现在多少钱",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q003",
+    "type": "oob",
+    "query": "帮我写一首关于春天的诗",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q004",
+    "type": "oob",
+    "query": "怎么做宫保鸡丁",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q005",
+    "type": "oob",
+    "query": "苹果手机怎么截图",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q006",
+    "type": "oob",
+    "query": "流浪地球2的导演是谁",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q007",
+    "type": "oob",
+    "query": "推荐几本好看的科幻小说",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q008",
+    "type": "oob",
+    "query": "怎样缓解颈椎病",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q009",
+    "type": "oob",
+    "query": "信用卡逾期了怎么办",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q010",
+    "type": "oob",
+    "query": "C++和Java哪个好",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q011",
+    "type": "oob",
+    "query": "中国的高铁有多快",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q012",
+    "type": "oob",
+    "query": "如何评价马斯克",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q013",
+    "type": "oob",
+    "query": "地球到月球有多远",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q014",
+    "type": "oob",
+    "query": "感冒了吃什么药",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q015",
+    "type": "oob",
+    "query": "世界上最高的山峰是哪座",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q016",
+    "type": "oob",
+    "query": "世界杯谁是冠军",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q017",
+    "type": "oob",
+    "query": "怎样快速减肥",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q018",
+    "type": "oob",
+    "query": "猫咪掉毛怎么办",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q019",
+    "type": "oob",
+    "query": "如何办理护照",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q020",
+    "type": "oob",
+    "query": "宇宙是怎么起源的",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q021",
+    "type": "oob",
+    "query": "股票怎么开户",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q022",
+    "type": "oob",
+    "query": "去日本旅游需要签证吗",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q023",
+    "type": "oob",
+    "query": "英雄联盟怎么打野",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q024",
+    "type": "oob",
+    "query": "周杰伦最好听的歌",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q025",
+    "type": "oob",
+    "query": "汽车机油多久换一次",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q026",
+    "type": "oob",
+    "query": "为什么天空是蓝色的",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q027",
+    "type": "oob",
+    "query": "怎么申请哈佛大学",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q028",
+    "type": "oob",
+    "query": "买房子需要注意什么",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q029",
+    "type": "oob",
+    "query": "电脑经常蓝屏怎么解决",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q030",
+    "type": "oob",
+    "query": "梦见掉牙是什么意思",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q031",
+    "type": "oob",
+    "query": "怎样做海绵蛋糕",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q032",
+    "type": "oob",
+    "query": "怎么看自己的星座",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q033",
+    "type": "oob",
+    "query": "跑步机什么牌子好",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q034",
+    "type": "oob",
+    "query": "考研复习时间怎么安排",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q035",
+    "type": "oob",
+    "query": "王者荣耀上分技巧",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q036",
+    "type": "oob",
+    "query": "五险一金怎么交",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q037",
+    "type": "oob",
+    "query": "飞机票怎么改签",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q038",
+    "type": "oob",
+    "query": "如何挑选二手车",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q039",
+    "type": "oob",
+    "query": "怎么腌制酸菜",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q040",
+    "type": "oob",
+    "query": "怀孕前三个月要注意什么",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q041",
+    "type": "oob",
+    "query": "三国演义是谁写的",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q042",
+    "type": "oob",
+    "query": "复联4大结局是什么",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q043",
+    "type": "oob",
+    "query": "什么牌子的防晒霜好用",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q044",
+    "type": "oob",
+    "query": "怎样清洗洗衣机",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q045",
+    "type": "oob",
+    "query": "路由器怎么设置密码",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q046",
+    "type": "oob",
+    "query": "去三亚旅游攻略",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q047",
+    "type": "oob",
+    "query": "狗可以吃巧克力吗",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q048",
+    "type": "oob",
+    "query": "怎么用烤箱烤地瓜",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q049",
+    "type": "oob",
+    "query": "如何挑选西瓜",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q050",
+    "type": "oob",
+    "query": "做俯卧撑的正确姿势",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q051",
+    "type": "oral",
+    "query": "这TC4钛合金真是个头疼的东西，切削速度还不能超过60m/min，咱们一天能加工完几个叶片啊？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q052",
+    "type": "oral",
+    "query": "毛坯检验都还好说，关键是后面那几道工序，半精铣、精铣叶身的精度要求太高了，咱这设备能不能顶得住？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q053",
+    "type": "oral",
+    "query": "抛光环节是不是有点多余？最后还不是要靠终检来发现问题。",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q054",
+    "type": "oral",
+    "query": "王工这次修改工艺路线，把粗铣型面放在前面，可别是想让我们多走冤枉路啊！",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q055",
+    "type": "oral",
+    "query": "这毛坯来的质量咋这么差啊？得用那么复杂的光谱仪查成分？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q056",
+    "type": "oral",
+    "query": "锻造流线方向还得符合图纸要求，这不是多此一举吗？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q057",
+    "type": "oral",
+    "query": "表面探伤还非得用荧光渗透检测，费时又费力的！",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q058",
+    "type": "oral",
+    "query": "这不合格品标记隔离再写NCR报告，不就是走过场嘛！",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q059",
+    "type": "oral",
+    "query": "这刀具不是刚从冰箱拿出来的，这切削速度也太猛了吧？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q060",
+    "type": "oral",
+    "query": "主轴转这么快，刀都快飞起来了，这得多费电啊！",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q061",
+    "type": "oral",
+    "query": "这TC4钛合金真是难搞，不给点凉水喝刀都得热化了？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q062",
+    "type": "oral",
+    "query": "粗铣后留量0.5mm？这不是让我们找茬嘛！",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q063",
+    "type": "oral",
+    "query": "这刀具换得太频繁了吧，是不是有点小题大做？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q064",
+    "type": "oral",
+    "query": "这切削参数调整得跟磨叽一样，转速和进给量调那么低干啥？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q065",
+    "type": "oral",
+    "query": "残留高度铣削这么讲究，搞半天就为了过渡光顺？这不是耽误时间吗？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q066",
+    "type": "oral",
+    "query": "留量才0.15mm，这不是没事找事嘛！",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q067",
+    "type": "oral",
+    "query": "这活儿不是人干的啊，切削参数这么高，一天能干多少活儿？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q068",
+    "type": "oral",
+    "query": "球头铣刀（金刚石涂层）用着舒服吗，这材料硬是真滴硬！",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q069",
+    "type": "oral",
+    "query": "三坐标测量机（CMM）天天对着那200个点数，眼睛都快瞎了！",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q070",
+    "type": "oral",
+    "query": "修磨返工还有机会，要是直接报废了咋办，得多大冤枉啊！",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q071",
+    "type": "oral",
+    "query": "这抛光工序得花多少时间啊？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q072",
+    "type": "oral",
+    "query": "这SiC磨料#600得多细啊？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q073",
+    "type": "oral",
+    "query": "MPa的压力咱真能受得住？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q074",
+    "type": "oral",
+    "query": "做完抛光还得挨目视检查，累不累啊？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q075",
+    "type": "oral",
+    "query": "这叶根定位面找得准不准啊？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q076",
+    "type": "oral",
+    "query": "夹具别太紧了，会不会把薄叶子给压变形了？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q077",
+    "type": "oral",
+    "query": "跳动量控制在0.02mm以内是啥概念？我们这能搞定不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q078",
+    "type": "oral",
+    "query": "千分表这活儿你真会用，不会是个摆设吧？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q079",
+    "type": "oral",
+    "query": "这刀具得检查那么严实啊？跳动都不能超过0.01毫米？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q080",
+    "type": "oral",
+    "query": "新刀具还试切验证呢，这不是多此一举吗？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q081",
+    "type": "oral",
+    "query": "这工具管理卡记录得太仔细了吧，生怕刀具跑了趟似的。",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q082",
+    "type": "oral",
+    "query": "这工序是不是有点坑人啊，刀具寿命还得这么详细记着？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q083",
+    "type": "oral",
+    "query": "这货得是专用切削液吧？不能用普通的机油顶缸的玩意儿？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q084",
+    "type": "oral",
+    "query": "这冷却液的压力和流速得达标吗？20bar压力和30L/min流量听起来挺唬人啊。",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q085",
+    "type": "oral",
+    "query": "检查折光仪读数8-12%，这是啥鬼操作？看得我头都大了。",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q086",
+    "type": "oral",
+    "query": "这pH值7.5-9.0，又是啥讲究？搞得跟泡茶一样。",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q087",
+    "type": "oral",
+    "query": "这个三坐标检测是不是又得熬夜排队了？",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q088",
+    "type": "oral",
+    "query": "首件检测200点，这活儿能轻松干完吗？",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q089",
+    "type": "oral",
+    "query": "前后缘圆角半径都得合格？这也太细节了吧！",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q090",
+    "type": "oral",
+    "query": "天天在这磨刀霍霍的，啥时候是个头啊？",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q091",
+    "type": "oral",
+    "query": "这焊接工艺得控制层间温度？不让加班我就满意了！",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q092",
+    "type": "oral",
+    "query": "这304不锈钢管路焊接咋这么麻烦？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q093",
+    "type": "oral",
+    "query": "焊后热处理还不能省？这不是多此一举嘛！",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q094",
+    "type": "oral",
+    "query": "这打底焊、填充焊、盖面焊 steps 一环扣一环，累死个人！",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q095",
+    "type": "oral",
+    "query": "这管子割完了还要铰刀整半天？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q096",
+    "type": "oral",
+    "query": "这氧化层和油污擦了有毛用，一会焊上还不是一样的脏兮兮！",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q097",
+    "type": "oral",
+    "query": "这1.5到2.5的间隙调起来比登天还难啊！",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q098",
+    "type": "oral",
+    "query": "对口器固定得紧巴巴的，干活还舒不舒服了？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q099",
+    "type": "oral",
+    "query": "这焊接参数是不是跟妈的天气一样乱啊？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q100",
+    "type": "oral",
+    "query": "焊丝都用到2.0mm了，操作起来方便不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q101",
+    "type": "oral",
+    "query": "这氩气流量还分前后保护呢，搞不懂！",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q102",
+    "type": "oral",
+    "query": "氧含量那么严苛，50ppm都得净化干净才引弧，真是够烦人的！",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q103",
+    "type": "oral",
+    "query": "这填充焊的电流范围是不是有点大啊？100到120A，搞得我手都酸了。",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q104",
+    "type": "oral",
+    "query": "清理层间的飞溅和氧化物这么麻烦，有没有啥省事的办法？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q105",
+    "type": "oral",
+    "query": "盖面焊缝宽窄还得控制在1-2mm之间，真是够烦人的。",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q106",
+    "type": "oral",
+    "query": "焊缝外观要求那么严格，万一没做好得多挨批啊。",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q107",
+    "type": "oral",
+    "query": "这焊接完咋就这么麻烦还要搞什么固溶处理啊？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q108",
+    "type": "oral",
+    "query": "温度定在1050±20℃还是挺难掌控的吧？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q109",
+    "type": "oral",
+    "query": "保温时间按壁厚算太费劲了吧，能不能简化点？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q110",
+    "type": "oral",
+    "query": "出炉后直接水冷就完事了，为啥不用别的冷却方式呢？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q111",
+    "type": "oral",
+    "query": "这RT检测这么严苛，娃儿们不是都累傻了？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q112",
+    "type": "oral",
+    "query": "液体渗透检测啥鬼，焊缝上喷点啥玩意儿啊？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q113",
+    "type": "oral",
+    "query": "不合格还让返修一次，这不是坑爹嘛！",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q114",
+    "type": "oral",
+    "query": "检验钢印得打哪啊，直接打在焊缝上面？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q115",
+    "type": "oral",
+    "query": "这充不充个氩气都得等那么久？能不能快点啊？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q116",
+    "type": "oral",
+    "query": "这测氧含量还非得那么严格？50ppm这么低的标准有必要吗？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q117",
+    "type": "oral",
+    "query": "焊完还得继续通氩气保护？真是的，多此一举吧！",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q118",
+    "type": "oral",
+    "query": "管口封堵那破纸能顶多少用？真他么麻烦！",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q119",
+    "type": "oral",
+    "query": "这活儿不是谁都能干的，得有那个ASME IX资质证书啊？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q120",
+    "type": "oral",
+    "query": "这个资质证书的有效期快到期了吧？又要跑腿去续吗？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q121",
+    "type": "oral",
+    "query": "上次用的新材料没过评定就直接焊上了，这次还让不让人喘口气了？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q122",
+    "type": "oral",
+    "query": "这WPQ工艺评定不是还得重新做一遍吧？是不是有点坑爹？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q123",
+    "type": "oral",
+    "query": "这铝合金壳体加工还讲究排屑和光洁度呢？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q124",
+    "type": "oral",
+    "query": "刘工制定的这个工艺流程是不是太复杂了点？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q125",
+    "type": "oral",
+    "query": "毛坯检验都得这么仔细？真是头大啊。",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q126",
+    "type": "oral",
+    "query": "阳极氧化之后还要去毛刺，这不是多此一举吗？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q127",
+    "type": "oral",
+    "query": "这车削参数设置的跟乱炖似的吗？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q128",
+    "type": "oral",
+    "query": "外圆留0.5mm，端面留0.3mm，这不是明摆着让人加班嘛！",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q129",
+    "type": "oral",
+    "query": "切削液开不开启有啥区别，还不是一样乱糟糟！",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q130",
+    "type": "oral",
+    "query": "三爪卡盘装夹，这活儿能不能换个人干啊？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q131",
+    "type": "oral",
+    "query": "这活儿不是人干的啊，内孔排屑都这么难？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q132",
+    "type": "oral",
+    "query": "加工参数记得这么清楚有木有？转速给到1500转了是吧？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q133",
+    "type": "oral",
+    "query": "啄式进刀这是啥鬼操作？每进5mm就退一次刀？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q134",
+    "type": "oral",
+    "query": "深径比那么高还得用减振刀杆，这不坑人嘛！",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q135",
+    "type": "oral",
+    "query": "这活儿得转多少圈啊？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q136",
+    "type": "oral",
+    "query": "刀片都快被磨秃了吧？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q137",
+    "type": "oral",
+    "query": "内孔这活儿不累死个人才怪呢？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q138",
+    "type": "oral",
+    "query": "抽检这事儿能不能晚点来？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q139",
+    "type": "oral",
+    "query": "这硫酸浓度也不稳定啊，15到20%，咱这机器能不能跟上？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q140",
+    "type": "oral",
+    "query": "温度控制在这18到22℃之间，真是够麻烦的！",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q141",
+    "type": "oral",
+    "query": "氧化电压14到18V，时间30到45分钟，这工序得做到啥时候是个头儿？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q142",
+    "type": "oral",
+    "query": "封孔处理用沸水还是重铬酸盐，选哪个靠谱点？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q143",
+    "type": "oral",
+    "query": "这三爪卡盘每次都得擦干净？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q144",
+    "type": "oral",
+    "query": "跳动还有个屁标准啊，搞这么严不嫌累？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q145",
+    "type": "oral",
+    "query": "每次校正都要用百分表？这不是找事儿吗？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q146",
+    "type": "oral",
+    "query": "软爪还得自己修内径，这活儿也太坑了吧！",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q147",
+    "type": "oral",
+    "query": "首件都得全检啊，这活儿不累死人吗？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q148",
+    "type": "oral",
+    "query": "这内径千分尺和外径千分尺得用多久换一次电池的？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q149",
+    "type": "oral",
+    "query": "粗糙度仪天天用是不是也得好好保养一下？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q150",
+    "type": "oral",
+    "query": "签字确认这步能不能快点，别耽误我干活时间？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q151",
+    "type": "pro",
+    "query": "渗碳温度是如何精确控制的？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q152",
+    "type": "pro",
+    "query": "在淬火过程中如何确保芯部保持足够的韧性？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q153",
+    "type": "pro",
+    "query": "清洗液的最佳温度范围是多少？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q154",
+    "type": "pro",
+    "query": "防渗碳涂料应涂覆在哪些表面？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q155",
+    "type": "pro",
+    "query": "渗碳阶段的温度控制如何确保精确到达920±10℃？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q156",
+    "type": "pro",
+    "query": "在强渗和扩散碳势过程中，氧探头是如何实时监控并调整碳势偏差的？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q157",
+    "type": "pro",
+    "query": "渗碳结束后炉温应如何精确控制？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q158",
+    "type": "pro",
+    "query": "淬火过程中搅拌时间对硬度均匀性有何影响？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q159",
+    "type": "pro",
+    "query": "低温回火的温度范围是多少？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q160",
+    "type": "pro",
+    "query": "淬火后的齿轮进行低温回火的主要目的是什么？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q161",
+    "type": "pro",
+    "query": "喷丸强化使用的铸钢丸直径是多少？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q162",
+    "type": "pro",
+    "query": "渗碳淬火后的有效渗碳层深度范围是多少？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q163",
+    "type": "pro",
+    "query": "如何确定碳势片的含碳量是否准确？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q164",
+    "type": "pro",
+    "query": "在什么情况下需要更换或重新标定氧探头？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q165",
+    "type": "pro",
+    "query": "淬火油温过低的具体影响是什么？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q166",
+    "type": "pro",
+    "query": "在什么情况下需要进行淬火油的脱水处理？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q167",
+    "type": "pro",
+    "query": "渗碳层的碳化物级别如何判定？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q168",
+    "type": "pro",
+    "query": "淬火后的马氏体级别有哪些具体的观察指标？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q169",
+    "type": "pro",
+    "query": "该工艺中对回差和传动效率有何具体要求？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q170",
+    "type": "pro",
+    "query": "在齿轮副装配步骤中应采用何种方法确保装配精度？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q171",
+    "type": "slang",
+    "slangWord": "蘸火",
+    "standardTerm": "淬火",
+    "query": "齿轮渗碳完了之后要立刻蘸火吗？还是要等炉温降下来再蘸？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "gear-ht"
+  },
+  {
+    "id": "q172",
+    "type": "slang",
+    "slangWord": "蘸火",
+    "standardTerm": "淬火",
+    "query": "蘸火的时候油温要控制在多少？油太凉了会不会蘸不硬？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "gear-ht"
+  },
+  {
+    "id": "q173",
+    "type": "slang",
+    "slangWord": "闷火",
+    "standardTerm": "回火",
+    "query": "蘸火完了要马上闷火吗？最长能等几个小时？闷火温度是多少？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "gear-ht"
+  },
+  {
+    "id": "q174",
+    "type": "slang",
+    "slangWord": "闷火",
+    "standardTerm": "回火",
+    "query": "这批齿轮闷火完了硬度还是不够，是不是闷火温度太高了把硬度给闷回去了？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "gear-ht"
+  },
+  {
+    "id": "q175",
+    "type": "slang",
+    "slangWord": "开粗",
+    "standardTerm": "粗铣",
+    "query": "叶片开粗用什么刀？转速和进给量怎么设？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q176",
+    "type": "slang",
+    "slangWord": "打刀",
+    "standardTerm": "刀具崩裂",
+    "query": "精铣叶身的时候打刀了，是不是转速设太高了？还是刀具磨损量超了？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q177",
+    "type": "slang",
+    "slangWord": "勒刀",
+    "standardTerm": "铣刀塑变",
+    "query": "叶片铣了一半铣刀勒了，换刀还是换参数？是不是冷却液没开够？",
+    "expectedChunkIds": [
+      "operation-1",
+      "operation-2"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q178",
+    "type": "slang",
+    "slangWord": "光一刀",
+    "standardTerm": "精铣最后一刀",
+    "query": "叶身型面最后光一刀，用什么刀具？转速要提到多少？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q179",
+    "type": "slang",
+    "slangWord": "道",
+    "standardTerm": "0.01mm",
+    "query": "精铣叶身型面公差是多少道？超了几道算废品？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q180",
+    "type": "slang",
+    "slangWord": "朴",
+    "standardTerm": "形位精度不合格",
+    "query": "叶片装夹定位后百分表检查朴了，是夹具问题还是工件问题？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q181",
+    "type": "slang",
+    "slangWord": "扒黑皮",
+    "standardTerm": "粗车毛坯外圆",
+    "query": "铝合金壳体扒黑皮的时候转速多少合适？一刀能吃多深？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q182",
+    "type": "slang",
+    "slangWord": "扒外圆",
+    "standardTerm": "车外圆",
+    "query": "扒完外圆检查了跳动，百分表打着朴，是三爪卡盘没校正好吗？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q183",
+    "type": "slang",
+    "slangWord": "光活",
+    "standardTerm": "精加工",
+    "query": "铝合金壳体内孔光活用什么刀？精车后表面粗糙度能到多少？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q184",
+    "type": "slang",
+    "slangWord": "丝",
+    "standardTerm": "0.01mm",
+    "query": "内孔精车留了几丝量，直接光活还是要再量一下？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q185",
+    "type": "slang",
+    "slangWord": "崴刀",
+    "standardTerm": "刀具扎入工件",
+    "query": "车内孔的时候崴刀了，工件缺了一块，这种情况能不能补救？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q186",
+    "type": "slang",
+    "slangWord": "公斤扳手",
+    "standardTerm": "扭矩扳手",
+    "query": "减速机螺栓紧固要用公斤扳手，公斤扳手用之前要校准吗？怎么校？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "reducer-asm"
+  },
+  {
+    "id": "q187",
+    "type": "slang",
+    "slangWord": "公斤扳手",
+    "standardTerm": "扭矩扳手",
+    "query": "针齿壳的螺栓用公斤扳手拧，扭矩值是多少？超了会不会把壳体拧裂？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "reducer-asm"
+  },
+  {
+    "id": "q188",
+    "type": "slang",
+    "slangWord": "摇把",
+    "standardTerm": "手轮",
+    "query": "总装跑合试验时摇把转起来有异响，是轴承预紧力太大了吗？",
+    "expectedChunkIds": [
+      "operation-4",
+      "step-1"
+    ],
+    "scenario": "reducer-asm"
+  },
+  {
+    "id": "q189",
+    "type": "slang",
+    "slangWord": "梢",
+    "standardTerm": "锥度",
+    "query": "焊接完管口有点梢，坡口角度没对上，重新打坡口要注意什么？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "tig-welding"
+  },
+  {
+    "id": "q190",
+    "type": "slang",
+    "slangWord": "蘸火",
+    "standardTerm": "固溶热处理",
+    "query": "304不锈钢管路焊完要做固溶，和蘸火是一个意思吗？温度控制在多少？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "tig-welding"
+  },
+  {
+    "id": "q191",
+    "type": "slang",
+    "slangWord": "弯尺",
+    "standardTerm": "直角尺",
+    "query": "驱动器外壳检验，用弯尺量了几个面，有个面朴了，这个能出货吗？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "servo-test"
+  },
+  {
+    "id": "q192",
+    "type": "slang",
+    "slangWord": "打刀",
+    "standardTerm": "设备故障",
+    "query": "老化试验做了30小时，驱动器突然打刀（跳闸故障），要从头重新来吗？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "servo-test"
+  },
+  {
+    "id": "q193",
+    "type": "slang",
+    "slangWord": "开壳",
+    "standardTerm": "磨断屑槽",
+    "query": "车削铝合金壳体时切屑缠刀，需要给刀具开壳吗？还是换个带壳的刀？",
+    "expectedChunkIds": [
+      "operation-0",
+      "operation-2"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q194",
+    "type": "slang",
+    "slangWord": "拉荒",
+    "standardTerm": "粗加工",
+    "query": "叶片先拉荒还是先蘸火？工艺路线上这两道工序哪个在前？",
+    "expectedChunkIds": [
+      "operation-1",
+      "operation-2"
+    ],
+    "scenario": "tc4-milling"
+  },
+  {
+    "id": "q195",
+    "type": "slang",
+    "slangWord": "朴",
+    "standardTerm": "同轴度超差",
+    "query": "减速机装好之后输出轴朴得厉害，同轴度超差，是轴承安装有问题吗？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "reducer-asm"
+  },
+  {
+    "id": "q196",
+    "type": "slang",
+    "slangWord": "个（=毫米）",
+    "standardTerm": "毫米",
+    "query": "精车完了量了下，内孔还差3个量，是继续切还是直接送检？",
+    "expectedChunkIds": [
+      "operation-2",
+      "step-1"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q197",
+    "type": "slang",
+    "slangWord": "端平面（=车平面）",
+    "standardTerm": "车端面",
+    "query": "壳体端平面光了一刀之后用百分表打，还是朴的，是转速不够还是走刀量太大？",
+    "expectedChunkIds": [
+      "operation-0",
+      "step-0"
+    ],
+    "scenario": "cnc-turning"
+  },
+  {
+    "id": "q198",
+    "type": "slang",
+    "slangWord": "巩丝（=攻丝）",
+    "standardTerm": "攻丝",
+    "query": "减速机箱体螺纹孔要巩丝，巩完之后螺钉拧进去发涩是什么问题？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "reducer-asm"
+  },
+  {
+    "id": "q199",
+    "type": "oob",
+    "query": "焙烧温度控制在多少？焙烧时间和铁矿石粒度有什么关系？",
+    "note": "冶金/矿石焙烧，不在机加工艺范围"
+  },
+  {
+    "id": "q200",
+    "type": "oob",
+    "query": "浸出率不够怎么提升？用酸浸法还是助浸法？液固比要调多少？",
+    "note": "湿法冶炼浸出工艺，不在机加工艺范围"
+  },
+  {
+    "id": "q201",
+    "type": "oob",
+    "query": "轧钢机轧辊磨损了怎么换？换辊周期一般是多少？",
+    "note": "冶金/轧钢工艺，不在机加工艺范围"
+  },
+  {
+    "id": "q202",
+    "type": "oob",
+    "query": "铸坯从连铸机出来之后要怎么处理？铸坯的温度是多少？",
+    "note": "炼钢/连铸工艺，不在机加工艺范围"
+  },
+  {
+    "id": "q203",
+    "type": "oob",
+    "query": "高炉渣怎么处理？可以做水泥吗？",
+    "note": "炼铁/冶金副产品处理，不在机加工艺范围"
+  }
+]

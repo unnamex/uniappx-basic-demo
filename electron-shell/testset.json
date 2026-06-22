@@ -1,0 +1,1432 @@
+[
+  {
+    "id": "q001",
+    "type": "oob",
+    "query": "今天天气怎么样",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q002",
+    "type": "oob",
+    "query": "比特币现在多少钱",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q003",
+    "type": "oob",
+    "query": "帮我写一首关于春天的诗",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q004",
+    "type": "oob",
+    "query": "怎么做宫保鸡丁",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q005",
+    "type": "oob",
+    "query": "苹果手机怎么截图",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q006",
+    "type": "oob",
+    "query": "流浪地球2的导演是谁",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q007",
+    "type": "oob",
+    "query": "推荐几本好看的科幻小说",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q008",
+    "type": "oob",
+    "query": "怎样缓解颈椎病",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q009",
+    "type": "oob",
+    "query": "信用卡逾期了怎么办",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q010",
+    "type": "oob",
+    "query": "C++和Java哪个好",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q011",
+    "type": "oob",
+    "query": "中国的高铁有多快",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q012",
+    "type": "oob",
+    "query": "如何评价马斯克",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q013",
+    "type": "oob",
+    "query": "地球到月球有多远",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q014",
+    "type": "oob",
+    "query": "感冒了吃什么药",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q015",
+    "type": "oob",
+    "query": "世界上最高的山峰是哪座",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q016",
+    "type": "oob",
+    "query": "世界杯谁是冠军",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q017",
+    "type": "oob",
+    "query": "怎样快速减肥",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q018",
+    "type": "oob",
+    "query": "猫咪掉毛怎么办",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q019",
+    "type": "oob",
+    "query": "如何办理护照",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q020",
+    "type": "oob",
+    "query": "宇宙是怎么起源的",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q021",
+    "type": "oob",
+    "query": "股票怎么开户",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q022",
+    "type": "oob",
+    "query": "去日本旅游需要签证吗",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q023",
+    "type": "oob",
+    "query": "英雄联盟怎么打野",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q024",
+    "type": "oob",
+    "query": "周杰伦最好听的歌",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q025",
+    "type": "oob",
+    "query": "汽车机油多久换一次",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q026",
+    "type": "oob",
+    "query": "为什么天空是蓝色的",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q027",
+    "type": "oob",
+    "query": "怎么申请哈佛大学",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q028",
+    "type": "oob",
+    "query": "买房子需要注意什么",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q029",
+    "type": "oob",
+    "query": "电脑经常蓝屏怎么解决",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q030",
+    "type": "oob",
+    "query": "梦见掉牙是什么意思",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q031",
+    "type": "oob",
+    "query": "怎样做海绵蛋糕",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q032",
+    "type": "oob",
+    "query": "怎么看自己的星座",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q033",
+    "type": "oob",
+    "query": "跑步机什么牌子好",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q034",
+    "type": "oob",
+    "query": "考研复习时间怎么安排",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q035",
+    "type": "oob",
+    "query": "王者荣耀上分技巧",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q036",
+    "type": "oob",
+    "query": "五险一金怎么交",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q037",
+    "type": "oob",
+    "query": "飞机票怎么改签",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q038",
+    "type": "oob",
+    "query": "如何挑选二手车",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q039",
+    "type": "oob",
+    "query": "怎么腌制酸菜",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q040",
+    "type": "oob",
+    "query": "怀孕前三个月要注意什么",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q041",
+    "type": "oob",
+    "query": "三国演义是谁写的",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q042",
+    "type": "oob",
+    "query": "复联4大结局是什么",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q043",
+    "type": "oob",
+    "query": "什么牌子的防晒霜好用",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q044",
+    "type": "oob",
+    "query": "怎样清洗洗衣机",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q045",
+    "type": "oob",
+    "query": "路由器怎么设置密码",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q046",
+    "type": "oob",
+    "query": "去三亚旅游攻略",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q047",
+    "type": "oob",
+    "query": "狗可以吃巧克力吗",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q048",
+    "type": "oob",
+    "query": "怎么用烤箱烤地瓜",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q049",
+    "type": "oob",
+    "query": "如何挑选西瓜",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q050",
+    "type": "oob",
+    "query": "做俯卧撑的正确姿势",
+    "expectedChunkIds": [],
+    "scenario": "领域外"
+  },
+  {
+    "id": "q051",
+    "type": "oral",
+    "query": "关于工艺: TC4钛合金压气机叶片，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q052",
+    "type": "oral",
+    "query": "那个工艺: TC4钛合金压气机叶片，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q053",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q054",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q055",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q056",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q057",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q058",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q059",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q060",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q061",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q062",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q063",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q064",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q065",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q066",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q067",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q068",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q069",
+    "type": "oral",
+    "query": "关于[TC4钛合金压气机叶片五轴铣，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q070",
+    "type": "oral",
+    "query": "那个[TC4钛合金压气机叶片五轴铣，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q071",
+    "type": "oral",
+    "query": "关于工艺: 304不锈钢液压管路T，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q072",
+    "type": "oral",
+    "query": "那个工艺: 304不锈钢液压管路T，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q073",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q074",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q075",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q076",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q077",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q078",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q079",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q080",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q081",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q082",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q083",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q084",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q085",
+    "type": "oral",
+    "query": "关于[304不锈钢液压管路TIG焊，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q086",
+    "type": "oral",
+    "query": "那个[304不锈钢液压管路TIG焊，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q087",
+    "type": "oral",
+    "query": "关于工艺: 7075铝合金电子设备，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q088",
+    "type": "oral",
+    "query": "那个工艺: 7075铝合金电子设备，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q089",
+    "type": "oral",
+    "query": "关于[7075铝合金电子设备壳体数，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q090",
+    "type": "oral",
+    "query": "那个[7075铝合金电子设备壳体数，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q091",
+    "type": "oral",
+    "query": "关于[7075铝合金电子设备壳体数，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q092",
+    "type": "oral",
+    "query": "那个[7075铝合金电子设备壳体数，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q093",
+    "type": "oral",
+    "query": "关于[7075铝合金电子设备壳体数，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q094",
+    "type": "oral",
+    "query": "那个[7075铝合金电子设备壳体数，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q095",
+    "type": "oral",
+    "query": "关于[7075铝合金电子设备壳体数，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q096",
+    "type": "oral",
+    "query": "那个[7075铝合金电子设备壳体数，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q097",
+    "type": "oral",
+    "query": "关于[7075铝合金电子设备壳体数，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q098",
+    "type": "oral",
+    "query": "那个[7075铝合金电子设备壳体数，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q099",
+    "type": "oral",
+    "query": "关于[7075铝合金电子设备壳体数，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q100",
+    "type": "oral",
+    "query": "那个[7075铝合金电子设备壳体数，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q101",
+    "type": "oral",
+    "query": "关于工艺: 20CrMnTi齿轮渗，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q102",
+    "type": "oral",
+    "query": "那个工艺: 20CrMnTi齿轮渗，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q103",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q104",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q105",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q106",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q107",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q108",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q109",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q110",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q111",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q112",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q113",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q114",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q115",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q116",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q117",
+    "type": "oral",
+    "query": "关于[20CrMnTi齿轮渗碳淬火，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q118",
+    "type": "oral",
+    "query": "那个[20CrMnTi齿轮渗碳淬火，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q119",
+    "type": "oral",
+    "query": "关于工艺: 精密减速机总装工艺, ，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q120",
+    "type": "oral",
+    "query": "那个工艺: 精密减速机总装工艺, ，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q121",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工序1，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q122",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工序1，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q123",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工序2，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q124",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工序2，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q125",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工序3，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q126",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工序3，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q127",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工序4，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q128",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工序4，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q129",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工序5，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q130",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工序5，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q131",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工步1，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q132",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工步1，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q133",
+    "type": "oral",
+    "query": "关于[精密减速机总装工艺] 工步2，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q134",
+    "type": "oral",
+    "query": "那个[精密减速机总装工艺] 工步2，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q135",
+    "type": "oral",
+    "query": "关于工艺: 伺服驱动器整机电气检测，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q136",
+    "type": "oral",
+    "query": "那个工艺: 伺服驱动器整机电气检测，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q137",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q138",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q139",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q140",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q141",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q142",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q143",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q144",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q145",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q146",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q147",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q148",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q149",
+    "type": "oral",
+    "query": "关于[伺服驱动器整机电气检测工艺]，这玩意儿怎么整？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q150",
+    "type": "oral",
+    "query": "那个[伺服驱动器整机电气检测工艺]，师傅，这个地方有什么讲究不？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q151",
+    "type": "pro",
+    "query": "针对工艺: TC4钛合金压气机叶片工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q152",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q153",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，请详述当前操作的标准规程和潜在风险评估。",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q154",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q155",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q156",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，请详述当前操作的标准规程和潜在风险评估。",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q157",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q158",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q159",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，请详述当前操作的标准规程和潜在风险评估。",
+    "expectedChunkIds": [
+      "step-2"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q160",
+    "type": "pro",
+    "query": "针对[TC4钛合金压气机叶片五轴铣工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "step-3"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q161",
+    "type": "pro",
+    "query": "针对工艺: 304不锈钢液压管路T工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q162",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，请详述当前操作的标准规程和潜在风险评估。",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q163",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "operation-1"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q164",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "operation-2"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q165",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，请详述当前操作的标准规程和潜在风险评估。",
+    "expectedChunkIds": [
+      "operation-3"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q166",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "operation-4"
+    ],
+    "scenario": "operation"
+  },
+  {
+    "id": "q167",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "step-0"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q168",
+    "type": "pro",
+    "query": "针对[304不锈钢液压管路TIG焊工艺，请详述当前操作的标准规程和潜在风险评估。",
+    "expectedChunkIds": [
+      "step-1"
+    ],
+    "scenario": "step"
+  },
+  {
+    "id": "q169",
+    "type": "pro",
+    "query": "针对工艺: 7075铝合金电子设备工艺，请提供该工序的关键工艺参数及容差范围。",
+    "expectedChunkIds": [
+      "process-0"
+    ],
+    "scenario": "process"
+  },
+  {
+    "id": "q170",
+    "type": "pro",
+    "query": "针对[7075铝合金电子设备壳体数工艺，在该工艺步骤中，常见的质量缺陷及其预防措施是什么？",
+    "expectedChunkIds": [
+      "operation-0"
+    ],
+    "scenario": "operation"
+  }
+]
