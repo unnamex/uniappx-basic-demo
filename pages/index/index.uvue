@@ -141,7 +141,7 @@
 				<text>请在左侧工艺树中选择节点查看详情</text>
 			</view>
 			
-			<view v-if="bottomGroup == null" class="main-nav-actions">
+			<view v-if="bottomGroup == null && !isProcessNode" class="main-nav-actions">
 				<view class="nav-action-btn" :class="{ 'btn-disabled': !hasPrevNode }" @click="goToPrevNode">
 					<text class="nav-action-text" :class="{ 'nav-text-disabled': !hasPrevNode }">上一步</text>
 				</view>
@@ -214,7 +214,7 @@
 				</view>
 				
 				<!-- 底部节点导航区域 -->
-				<view class="main-nav-actions">
+				<view v-if="!isProcessNode" class="main-nav-actions">
 					<view class="nav-action-btn" :class="{ 'btn-disabled': !hasPrevNode }" @click="goToPrevNode">
 						<text class="nav-action-text" :class="{ 'nav-text-disabled': !hasPrevNode }">上一步</text>
 					</view>
@@ -871,6 +871,11 @@
 	const selectedRowId = computed((): string | null => {
 		if (selectedRow.value == null) return null
 		return getNodeId(selectedRow.value!)
+	})
+	
+	const isProcessNode = computed((): boolean => {
+		if (selectedRow.value == null) return false
+		return (selectedRow.value!['type'] as string) == 'process'
 	})
 
 	const goToPrevNode = () => {
