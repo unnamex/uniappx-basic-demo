@@ -439,15 +439,7 @@
 								@click="onResourceSelect(item)"
 							>
 								<view class="thumb-wrapper">
-									<image 
-										v-if="item.type == 'image'" 
-										class="fullscreen-thumb-img"
-										:src="item.thumbnail != '' ? item.thumbnail : item.path"
-										mode="aspectFill"
-									/>
-									<text v-else-if="item.type == 'video'" class="fullscreen-thumb-icon">🎬</text>
-									<text v-else-if="item.type == 'audio'" class="fullscreen-thumb-icon">🎵</text>
-									<text v-else class="fullscreen-thumb-icon">📄</text>
+									<resource-icon :type="item.type" :thumbnail="item.thumbnail" :path="item.path" />
 								</view>
 								<text class="thumb-name" :numberOfLines="1">{{ formatName(item.name) }}</text>
 							</view>

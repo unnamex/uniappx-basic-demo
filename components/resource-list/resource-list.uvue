@@ -31,111 +31,7 @@
 				>
 					<!-- 缩略图/图标区域 -->
 					<view class="card-thumbnail">
-						<!-- 图片类型直接显示缩略图 -->
-						<image 
-							v-if="item.type == 'image'" 
-							class="thumb-image"
-							:src="item.thumbnail != '' ? item.thumbnail : item.path"
-							mode="aspectFill"
-						/>
-						
-						<!-- 视频类型显示缩略图+播放图标 -->
-						<view v-else-if="item.type == 'video'" class="thumb-video">
-							<image 
-								v-if="item.thumbnail != ''"
-								class="thumb-image"
-								:src="item.thumbnail"
-								mode="aspectFill"
-							/>
-							<view v-else class="thumb-placeholder video-placeholder">
-								<text class="placeholder-icon">🎬</text>
-							</view>
-							<view class="play-overlay">
-								<text class="play-icon">▶</text>
-							</view>
-						</view>
-						
-						<!-- 统一纸张图标：音频/文档/未知 全部使用一致的纸张+折角+底色带框架 -->
-						<view v-else class="thumb-placeholder">
-							<view class="doc-icon-wrapper">
-								<!-- 纸张主体 -->
-								<view class="doc-paper">
-									<!-- 折角装饰 -->
-									<view class="doc-fold" :class="'doc-fold-' + getDocCategory(item.type)"></view>
-									<!-- 内容区域：根据文件类型显示不同图案 -->
-									<!-- Word: 段落横线 -->
-									<view v-if="getDocCategory(item.type) == 'word'" class="doc-content-lines">
-										<view class="doc-line doc-line-long doc-line-color-word"></view>
-										<view class="doc-line doc-line-medium doc-line-color-word"></view>
-										<view class="doc-line doc-line-short doc-line-color-word"></view>
-										<view class="doc-line doc-line-long doc-line-color-word"></view>
-									</view>
-									<!-- Excel: 表格网格 -->
-									<view v-else-if="getDocCategory(item.type) == 'excel'" class="doc-content-grid">
-										<view class="doc-grid-row">
-											<view class="doc-grid-cell"></view>
-											<view class="doc-grid-cell"></view>
-											<view class="doc-grid-cell"></view>
-										</view>
-										<view class="doc-grid-row">
-											<view class="doc-grid-cell"></view>
-											<view class="doc-grid-cell"></view>
-											<view class="doc-grid-cell"></view>
-										</view>
-										<view class="doc-grid-row">
-											<view class="doc-grid-cell"></view>
-											<view class="doc-grid-cell"></view>
-											<view class="doc-grid-cell"></view>
-										</view>
-									</view>
-									<!-- PPT: 柱状图 -->
-									<view v-else-if="getDocCategory(item.type) == 'ppt'" class="doc-content-chart">
-										<view class="doc-chart-col doc-col-short"></view>
-										<view class="doc-chart-col doc-col-tall"></view>
-										<view class="doc-chart-col doc-col-mid"></view>
-									</view>
-									<!-- PDF: 密排文字+印章 -->
-									<view v-else-if="getDocCategory(item.type) == 'pdf'" class="doc-content-pdf">
-										<view class="doc-line doc-line-long doc-line-color-pdf"></view>
-										<view class="doc-line doc-line-long doc-line-color-pdf"></view>
-										<view class="doc-line doc-line-medium doc-line-color-pdf"></view>
-										<view class="doc-pdf-stamp"></view>
-									</view>
-									<!-- CLW: 3D立方体 -->
-									<view v-else-if="getDocCategory(item.type) == 'clw'" class="doc-content-3d">
-										<view class="doc-cube-back"></view>
-										<view class="doc-cube-front"></view>
-									</view>
-									<!-- DWG: 工程图纸标注 -->
-									<view v-else-if="getDocCategory(item.type) == 'dwg'" class="doc-content-dwg">
-										<view class="doc-dwg-h"></view>
-										<view class="doc-dwg-v"></view>
-										<view class="doc-dwg-dot"></view>
-									</view>
-									<!-- Audio: 均衡器波形 -->
-									<view v-else-if="getDocCategory(item.type) == 'audio'" class="doc-content-audio">
-										<view class="doc-eq-bar doc-eq-h1"></view>
-										<view class="doc-eq-bar doc-eq-h2"></view>
-										<view class="doc-eq-bar doc-eq-h3"></view>
-										<view class="doc-eq-bar doc-eq-h4"></view>
-										<view class="doc-eq-bar doc-eq-h5"></view>
-									</view>
-									<!-- TXT: 简约文字 -->
-									<view v-else-if="getDocCategory(item.type) == 'txt'" class="doc-content-lines">
-										<view class="doc-line doc-line-long doc-line-color-txt"></view>
-										<view class="doc-line doc-line-medium doc-line-color-txt"></view>
-									</view>
-									<!-- FILE: 通用文件 -->
-									<view v-else class="doc-content-lines">
-										<view class="doc-line doc-line-medium doc-line-color-file"></view>
-									</view>
-								</view>
-								<!-- 底部品牌色带 + 字母 -->
-								<view class="doc-brand-bar" :class="'doc-bar-' + getDocCategory(item.type)">
-									<text class="doc-brand-letter">{{ getDocLetter(item.type) }}</text>
-								</view>
-							</view>
-						</view>
+						<resource-icon :type="item.type" :thumbnail="item.thumbnail" :path="item.path" />
 					</view>
 					
 					<!-- 信息区域 -->
@@ -203,32 +99,7 @@
 		return `translateX(${offset}px)`
 	})
 
-	// === 工具方法 ===
-	const getDocCategory = (type: string): string => {
-		if (['docx', 'wps', 'wpt'].includes(type)) return 'word'
-		if (['xls', 'xlsx', 'et', 'ett'].includes(type)) return 'excel'
-		if (['ppt', 'pptx', 'dps', 'dpt'].includes(type)) return 'ppt'
-		if (type == 'pdf') return 'pdf'
-		if (type == 'clw') return 'clw'
-		if (type == 'dwg') return 'dwg'
-		if (type == 'audio') return 'audio'
-		if (type == 'txt') return 'txt'
-		return 'file'
-	}
 
-	const getDocLetter = (type: string): string => {
-		const cat = getDocCategory(type)
-		if (cat == 'word') return 'W'
-		if (cat == 'excel') return 'X'
-		if (cat == 'ppt') return 'P'
-		if (cat == 'pdf') return 'PDF'
-		if (cat == 'clw') return 'CLW'
-		if (cat == 'dwg') return 'DWG'
-		if (cat == 'audio') return '♪'
-		if (cat == 'txt') return 'TXT'
-		return 'FILE'
-	}
-	
 	const formatName = (name: string): string => {
 		const lastDotIndex = name.lastIndexOf('.')
 		if (lastDotIndex > 0) {

@@ -1,0 +1,442 @@
+<template>
+	<!-- 图片类型直接显示缩略图 -->
+	<image 
+		v-if="type == 'image'" 
+		class="thumb-image"
+		:src="thumbnail != '' ? thumbnail : path"
+		mode="aspectFill"
+	/>
+	
+	<!-- 视频类型显示缩略图+播放图标 -->
+	<view v-else-if="type == 'video'" class="thumb-video">
+		<image 
+			v-if="thumbnail != ''"
+			class="thumb-image"
+			:src="thumbnail"
+			mode="aspectFill"
+		/>
+		<view v-else class="thumb-placeholder video-placeholder">
+			<text class="placeholder-icon">🎬</text>
+		</view>
+		<view class="play-overlay">
+			<text class="play-icon">▶</text>
+		</view>
+	</view>
+	
+	<!-- 统一纸张图标：音频/文档/未知 全部使用一致的纸张+折角+底色带框架 -->
+	<view v-else class="thumb-placeholder">
+		<view class="doc-icon-wrapper">
+			<!-- 纸张主体 -->
+			<view class="doc-paper">
+				<!-- 折角装饰 -->
+				<view class="doc-fold" :class="'doc-fold-' + getDocCategory(type)"></view>
+				<!-- 内容区域：根据文件类型显示不同图案 -->
+				<!-- Word: 段落横线 -->
+				<view v-if="getDocCategory(type) == 'word'" class="doc-content-lines">
+					<view class="doc-line doc-line-long doc-line-color-word"></view>
+					<view class="doc-line doc-line-medium doc-line-color-word"></view>
+					<view class="doc-line doc-line-short doc-line-color-word"></view>
+					<view class="doc-line doc-line-long doc-line-color-word"></view>
+				</view>
+				<!-- Excel: 表格网格 -->
+				<view v-else-if="getDocCategory(type) == 'excel'" class="doc-content-grid">
+					<view class="doc-grid-row">
+						<view class="doc-grid-cell"></view>
+						<view class="doc-grid-cell"></view>
+						<view class="doc-grid-cell"></view>
+					</view>
+					<view class="doc-grid-row">
+						<view class="doc-grid-cell"></view>
+						<view class="doc-grid-cell"></view>
+						<view class="doc-grid-cell"></view>
+					</view>
+					<view class="doc-grid-row">
+						<view class="doc-grid-cell"></view>
+						<view class="doc-grid-cell"></view>
+						<view class="doc-grid-cell"></view>
+					</view>
+				</view>
+				<!-- PPT: 柱状图 -->
+				<view v-else-if="getDocCategory(type) == 'ppt'" class="doc-content-chart">
+					<view class="doc-chart-col doc-col-short"></view>
+					<view class="doc-chart-col doc-col-tall"></view>
+					<view class="doc-chart-col doc-col-mid"></view>
+				</view>
+				<!-- PDF: 密排文字+印章 -->
+				<view v-else-if="getDocCategory(type) == 'pdf'" class="doc-content-pdf">
+					<view class="doc-line doc-line-long doc-line-color-pdf"></view>
+					<view class="doc-line doc-line-long doc-line-color-pdf"></view>
+					<view class="doc-line doc-line-medium doc-line-color-pdf"></view>
+					<view class="doc-pdf-stamp"></view>
+				</view>
+				<!-- CLW: 3D立方体 -->
+				<view v-else-if="getDocCategory(type) == 'clw'" class="doc-content-3d">
+					<view class="doc-cube-back"></view>
+					<view class="doc-cube-front"></view>
+				</view>
+				<!-- DWG: 工程图纸标注 -->
+				<view v-else-if="getDocCategory(type) == 'dwg'" class="doc-content-dwg">
+					<view class="doc-dwg-h"></view>
+					<view class="doc-dwg-v"></view>
+					<view class="doc-dwg-dot"></view>
+				</view>
+				<!-- Audio: 均衡器波形 -->
+				<view v-else-if="getDocCategory(type) == 'audio'" class="doc-content-audio">
+					<view class="doc-eq-bar doc-eq-h1"></view>
+					<view class="doc-eq-bar doc-eq-h2"></view>
+					<view class="doc-eq-bar doc-eq-h3"></view>
+					<view class="doc-eq-bar doc-eq-h4"></view>
+					<view class="doc-eq-bar doc-eq-h5"></view>
+				</view>
+				<!-- TXT: 简约文字 -->
+				<view v-else-if="getDocCategory(type) == 'txt'" class="doc-content-lines">
+					<view class="doc-line doc-line-long doc-line-color-txt"></view>
+					<view class="doc-line doc-line-medium doc-line-color-txt"></view>
+				</view>
+				<!-- FILE: 通用文件 -->
+				<view v-else class="doc-content-lines">
+					<view class="doc-line doc-line-medium doc-line-color-file"></view>
+				</view>
+			</view>
+			<!-- 底部品牌色带 + 字母 -->
+			<view class="doc-brand-bar" :class="'doc-bar-' + getDocCategory(type)">
+				<text class="doc-brand-letter">{{ getDocLetter(type) }}</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	// Props
+	const props = defineProps<{
+		type: string
+		thumbnail: string
+		path: string
+	}>()
+
+	const getDocCategory = (type: string): string => {
+		if (['docx', 'wps', 'wpt'].includes(type)) return 'word'
+		if (['xls', 'xlsx', 'et', 'ett'].includes(type)) return 'excel'
+		if (['ppt', 'pptx', 'dps', 'dpt'].includes(type)) return 'ppt'
+		if (type == 'pdf') return 'pdf'
+		if (type == 'clw') return 'clw'
+		if (type == 'dwg') return 'dwg'
+		if (type == 'audio') return 'audio'
+		if (type == 'txt') return 'txt'
+		return 'file'
+	}
+
+	const getDocLetter = (type: string): string => {
+		const cat = getDocCategory(type)
+		if (cat == 'word') return 'W'
+		if (cat == 'excel') return 'X'
+		if (cat == 'ppt') return 'P'
+		if (cat == 'pdf') return 'PDF'
+		if (cat == 'clw') return 'CLW'
+		if (cat == 'dwg') return 'DWG'
+		if (cat == 'audio') return '♪'
+		if (cat == 'txt') return 'TXT'
+		return 'FILE'
+	}
+</script>
+
+<style scoped>
+	.thumb-image {
+		width: 100%;
+		height: 100%;
+	}
+	
+	.thumb-video {
+		width: 100%;
+		height: 100%;
+		position: relative;
+	}
+	
+	.thumb-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		background-color: #F0F2F5;
+	}
+	
+	.video-placeholder {
+		background-color: #E2E6ED;
+	}
+	
+	/* === 统一纸张文件图标系统 === */
+	.doc-icon-wrapper {
+		width: 42px;
+		height: 48px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	
+	/* 纸张主体 */
+	.doc-paper {
+		width: 36px;
+		height: 34px;
+		background-color: #FFFFFF;
+		border-radius: 3px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D1D5DB;
+		position: relative;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	/* 右上角折角 */
+	.doc-fold {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 8px;
+		height: 8px;
+		border-bottom-left-radius: 2px;
+	}
+	.doc-fold-word { background-color: #93C5FD; }
+	.doc-fold-excel { background-color: #86EFAC; }
+	.doc-fold-ppt { background-color: #FDBA74; }
+	.doc-fold-pdf { background-color: #FCA5A5; }
+	.doc-fold-clw { background-color: #D8B4FE; }
+	.doc-fold-dwg { background-color: #FCD34D; }
+	.doc-fold-audio { background-color: #6EE7B7; }
+	.doc-fold-txt { background-color: #CBD5E1; }
+	.doc-fold-file { background-color: #D1D5DB; }
+	
+	/* 内容横线区域 */
+	.doc-content-lines {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 5px;
+		padding-right: 10px;
+		padding-top: 10px;
+	}
+	
+	.doc-line {
+		height: 2px;
+		border-radius: 1px;
+		margin-bottom: 3px;
+	}
+	.doc-line-long { width: 22px; }
+	.doc-line-medium { width: 18px; }
+	.doc-line-short { width: 14px; }
+	
+	/* 横线颜色 - 使用横线图案的类型 */
+	.doc-line-color-word { background-color: #BFDBFE; }
+	.doc-line-color-pdf { background-color: #FECACA; }
+	.doc-line-color-txt { background-color: #E2E8F0; }
+	.doc-line-color-file { background-color: #E5E7EB; }
+	
+	/* === Excel 表格网格 === */
+	.doc-content-grid {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 4px;
+		padding-right: 8px;
+		padding-top: 10px;
+	}
+	.doc-grid-row {
+		display: flex;
+		flex-direction: row;
+		margin-bottom: 1px;
+	}
+	.doc-grid-cell {
+		width: 6px;
+		height: 4px;
+		margin-right: 1px;
+		border-radius: 1px;
+		background-color: #86EFAC;
+	}
+	
+	/* === PPT 柱状图 === */
+	.doc-content-chart {
+		flex: 1;
+		display: flex;
+		flex-direction: row;
+		align-items: flex-end;
+		padding-left: 6px;
+		padding-right: 10px;
+		padding-top: 10px;
+		padding-bottom: 2px;
+	}
+	.doc-chart-col {
+		width: 5px;
+		margin-right: 2px;
+		border-radius: 1px;
+		background-color: #FDBA74;
+	}
+	.doc-col-short { height: 7px; }
+	.doc-col-tall { height: 14px; }
+	.doc-col-mid { height: 10px; }
+	
+	/* === PDF 密排文档+印章 === */
+	.doc-content-pdf {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding-left: 5px;
+		padding-right: 10px;
+		padding-top: 10px;
+		position: relative;
+	}
+	.doc-pdf-stamp {
+		position: absolute;
+		bottom: 2px;
+		right: 3px;
+		width: 7px;
+		height: 7px;
+		border-radius: 4px;
+		background-color: rgba(185, 28, 28, 0.3);
+		border-width: 1px;
+		border-style: solid;
+		border-color: #B91C1C;
+	}
+	
+	/* === CLW 3D立方体 === */
+	.doc-content-3d {
+		flex: 1;
+		position: relative;
+		padding-top: 8px;
+	}
+	.doc-cube-back {
+		position: absolute;
+		width: 12px;
+		height: 10px;
+		border-radius: 1px;
+		top: 9px;
+		left: 7px;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #C084FC;
+		background-color: #F3E8FF;
+	}
+	.doc-cube-front {
+		position: absolute;
+		width: 12px;
+		height: 10px;
+		border-radius: 1px;
+		top: 14px;
+		left: 13px;
+		background-color: #E9D5FF;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #A855F7;
+	}
+	
+	/* === DWG 工程图纸标注 === */
+	.doc-content-dwg {
+		flex: 1;
+		position: relative;
+		padding-top: 8px;
+	}
+	.doc-dwg-h {
+		position: absolute;
+		width: 17px;
+		height: 1px;
+		top: 17px;
+		left: 6px;
+		background-color: #F59E0B;
+	}
+	.doc-dwg-v {
+		position: absolute;
+		width: 1px;
+		height: 17px;
+		top: 9px;
+		left: 14px;
+		background-color: #F59E0B;
+	}
+	.doc-dwg-dot {
+		position: absolute;
+		width: 5px;
+		height: 5px;
+		top: 15px;
+		left: 12px;
+		background-color: #FFFBEB;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D97706;
+	}
+	
+	/* === Audio 均衡器波形 === */
+	.doc-content-audio {
+		flex: 1;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		padding-top: 8px;
+	}
+	.doc-eq-bar {
+		width: 2px;
+		margin-right: 2px;
+		border-radius: 1px;
+		background-color: #6EE7B7;
+	}
+	.doc-eq-h1 { height: 6px; }
+	.doc-eq-h2 { height: 12px; }
+	.doc-eq-h3 { height: 8px; }
+	.doc-eq-h4 { height: 14px; }
+	.doc-eq-h5 { height: 5px; }
+	
+	/* 底部品牌色带 */
+	.doc-brand-bar {
+		width: 42px;
+		height: 14px;
+		border-radius: 2px;
+		margin-top: 1px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+	
+	.doc-brand-letter {
+		font-size: 9px;
+		font-weight: bold;
+		color: #FFFFFF;
+	}
+	
+	/* 各类型底部色带颜色 */
+	.doc-bar-word { background-color: #2563EB; }
+	.doc-bar-excel { background-color: #16A34A; }
+	.doc-bar-ppt { background-color: #D24726; }
+	.doc-bar-pdf { background-color: #B91C1C; }
+	.doc-bar-clw { background-color: #9333EA; }
+	.doc-bar-dwg { background-color: #D97706; }
+	.doc-bar-audio { background-color: #059669; }
+	.doc-bar-txt { background-color: #64748B; }
+	.doc-bar-file { background-color: #6B7280; }
+	
+	.placeholder-icon {
+		font-size: 28px;
+	}
+	
+	/* 播放覆盖层 */
+	.play-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: rgba(0, 0, 0, 0.2);
+	}
+	
+	.play-icon {
+		font-size: 20px;
+		color: rgba(255, 255, 255, 0.9);
+		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+	}
+</style>
