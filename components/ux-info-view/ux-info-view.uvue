@@ -100,7 +100,13 @@
 				if (this.data == null) return '—'
 				const vModel = field['vModel'] as string | null
 				if (vModel == null || vModel == '') return '—'
-				const val = this.data![vModel]
+				
+				const displayVModel = vModel + '_display'
+				let val = this.data![displayVModel]
+				if (val == null) {
+					val = this.data![vModel]
+				}
+				
 				if (val == null) return '—'
 				const str = val.toString()
 				if (str.trim() == '') return '—'

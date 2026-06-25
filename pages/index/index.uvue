@@ -2835,9 +2835,15 @@
 	}
 	
 	.fullscreen-image.can-drag {
+		/* #ifdef WEB */
+		cursor: grab;
+		/* #endif */
 	}
 	
 	.fullscreen-image.dragging {
+		/* #ifdef WEB */
+		cursor: grabbing;
+		/* #endif */
 	}
 	
 	/* 图片操作工具栏 - 悬浮胶囊 */

@@ -916,9 +916,15 @@
 	}
 	
 	.preview-image.can-drag {
+		/* #ifdef WEB */
+		cursor: grab;
+		/* #endif */
 	}
 	
 	.preview-image.dragging {
+		/* #ifdef WEB */
+		cursor: grabbing;
+		/* #endif */
 	}
 	
 	/* 现代悬浮控制工具栏 */

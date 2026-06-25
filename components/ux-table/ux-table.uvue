@@ -295,7 +295,11 @@
 				})
 			},
 			getStringValue(data : UTSJSONObject, key : string) : string {
-				const val = data[key]
+				const displayKey = key + '_display'
+				let val = data[displayKey]
+				if (val == null) {
+					val = data[key]
+				}
 				if (val == null) return ''
 				return val.toString()
 			},
