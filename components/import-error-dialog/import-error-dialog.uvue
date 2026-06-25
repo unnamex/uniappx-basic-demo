@@ -1,0 +1,249 @@
+<template>
+	<!-- 导入失败弹窗 -->
+	<view class="err-modal-mask" @click="handleClose">
+		<view class="err-modal-container" @click.stop="">
+			<!-- 顶部红色指示条 -->
+			<view class="err-modal-indicator"></view>
+
+			<!-- 头部 -->
+			<view class="err-modal-header">
+				<view class="err-header-left">
+					<text class="err-header-icon">⚠️</text>
+					<text class="err-header-title">导入失败</text>
+				</view>
+				<view class="err-close-btn" @click="handleClose">
+					<text class="err-close-icon">✕</text>
+				</view>
+			</view>
+
+			<!-- 错误信息区 -->
+			<view class="err-modal-body">
+				<view class="err-message-card">
+					<text class="err-message-label">错误详情</text>
+					<text class="err-message-text">{{ errorMessage }}</text>
+				</view>
+				<view class="err-suggestion-area">
+					<text class="err-suggestion-title">建议操作</text>
+					<text class="err-suggestion-item">• 确认文件为有效的 .srd 工艺数据包</text>
+					<text class="err-suggestion-item">• 检查文件是否完整（未被截断或损坏）</text>
+					<text class="err-suggestion-item">• 尝试通过"导入数据包"按钮重新选择文件</text>
+				</view>
+			</view>
+
+			<!-- 底部按钮 -->
+			<view class="err-modal-footer">
+				<view class="err-footer-actions">
+					<view class="err-secondary-btn" @click="handleClose">
+						<text class="err-secondary-btn-text">关闭</text>
+					</view>
+					<view class="err-primary-btn" @click="handleRetry">
+						<text class="err-primary-btn-text">重新选择</text>
+					</view>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	defineProps({
+		errorMessage: {
+			type: String,
+			default: '未知错误'
+		}
+	})
+
+	const emit = defineEmits(['close', 'retry'])
+
+	const handleClose = () => {
+		emit('close')
+	}
+
+	const handleRetry = () => {
+		emit('retry')
+	}
+</script>
+
+<style>
+	/* ====== 遮罩层 ====== */
+	.err-modal-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.45);
+		z-index: 2000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 20px;
+	}
+
+	/* ====== 弹窗容器 ====== */
+	.err-modal-container {
+		background-color: #FFFFFF;
+		width: 100%;
+		max-width: 480px;
+		border-radius: 8px;
+		display: flex;
+		flex-direction: column;
+		/* #ifdef WEB */
+		box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+		/* #endif */
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E5E7EB;
+		overflow: hidden;
+	}
+
+	/* ====== 顶部红色指示条 ====== */
+	.err-modal-indicator {
+		height: 3px;
+		background-color: #DC2626;
+	}
+
+	/* ====== 头部 ====== */
+	.err-modal-header {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 14px 16px;
+		background-color: #FEF2F2;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #FEE2E2;
+	}
+
+	.err-header-left {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.err-header-icon {
+		font-size: 18px;
+		margin-right: 8px;
+	}
+
+	.err-header-title {
+		font-size: 15px;
+		font-weight: 600;
+		color: #991B1B;
+	}
+
+	.err-close-btn {
+		padding: 4px;
+		border-radius: 4px;
+		transition-property: background-color;
+		transition-duration: 0.2s;
+	}
+
+	.err-close-btn:hover {
+		background-color: #FECACA;
+	}
+
+	.err-close-icon {
+		font-size: 12px;
+		color: #991B1B;
+	}
+
+	/* ====== 主体 ====== */
+	.err-modal-body {
+		padding: 20px;
+		flex-direction: column;
+	}
+
+	/* 错误信息卡片 */
+	.err-message-card {
+		background-color: #FEF2F2;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #FEE2E2;
+		border-radius: 6px;
+		padding: 12px 14px;
+		flex-direction: column;
+		margin-bottom: 16px;
+	}
+
+	.err-message-label {
+		font-size: 11px;
+		font-weight: 600;
+		color: #B91C1C;
+		margin-bottom: 6px;
+	}
+
+	.err-message-text {
+		font-size: 13px;
+		color: #7F1D1D;
+		line-height: 1.5;
+	}
+
+	/* 建议操作区 */
+	.err-suggestion-area {
+		flex-direction: column;
+	}
+
+	.err-suggestion-title {
+		font-size: 12px;
+		font-weight: 600;
+		color: #6B7280;
+		margin-bottom: 8px;
+	}
+
+	.err-suggestion-item {
+		font-size: 12px;
+		color: #4B5563;
+		line-height: 1.6;
+		margin-bottom: 2px;
+	}
+
+	/* ====== 底部按钮 ====== */
+	.err-modal-footer {
+		padding: 12px 16px;
+		background-color: #F9FAFB;
+		border-top-width: 1px;
+		border-top-style: solid;
+		border-top-color: #E5E7EB;
+	}
+
+	.err-footer-actions {
+		flex-direction: row;
+		justify-content: flex-end;
+	}
+
+	.err-secondary-btn {
+		padding: 6px 16px;
+		margin-right: 8px;
+		border-radius: 4px;
+		background-color: #FFFFFF;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #D1D5DB;
+	}
+
+	.err-secondary-btn:hover {
+		background-color: #F3F4F6;
+	}
+
+	.err-secondary-btn-text {
+		color: #374151;
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.err-primary-btn {
+		padding: 6px 20px;
+		background-color: #007ACC;
+		border-radius: 4px;
+	}
+
+	.err-primary-btn:hover {
+		background-color: #005F9E;
+	}
+
+	.err-primary-btn-text {
+		color: #FFFFFF;
+		font-size: 13px;
+		font-weight: 500;
+	}
+</style>

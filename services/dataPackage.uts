@@ -201,6 +201,43 @@ function handleFileProcessWeb(file: File): PackageInfo {
 export function handleDroppedFileWeb(file: any): PackageInfo {
 	return handleFileProcessWeb(file as File)
 }
+
+/**
+ * 拖拽文件一步到位导入：设置文件引用 → 解析manifest → 执行导入
+ * @param file - 拖拽进来的 File 对象
+ * @param onProgress - 导入进度回调
+ * @returns Promise<ImportResult> 导入结果
+ */
+export function handleDroppedFileWebAndImport(
+	file: any,
+	onProgress: ImportProgressCallback
+): Promise<ImportResult> {
+	// 1. 设置全局文件引用
+	handleFileProcessWeb(file as File)
+	
+	// 2. 解析 manifest → 3. 执行导入
+	return new Promise<ImportResult>((resolve: (value: ImportResult) => void, reject: (reason: Error) => void) => {
+		validatePackage('')
+			.then((_manifest: PackageManifest) => {
+				importPackage('', onProgress)
+					.then((result: ImportResult) => {
+						resolve(result)
+					})
+					.catch((importErr: any | null) => {
+						const errMsg = importErr instanceof Error
+							? (importErr as Error).message
+							: (importErr != null ? (importErr as UTSJSONObject)['message'] as string ?? '导入失败' : '导入失败')
+						reject(new Error(errMsg))
+					})
+			})
+			.catch((validateErr: any | null) => {
+				const errMsg = validateErr instanceof Error
+					? (validateErr as Error).message
+					: (validateErr != null ? (validateErr as UTSJSONObject)['message'] as string ?? '解析失败' : '解析失败')
+				reject(new Error('数据包解析失败: ' + errMsg))
+			})
+	})
+}
 // #endif
 
 /**

@@ -456,14 +456,27 @@
 	<!-- 关于弹窗组件 -->
 	<about-dialog v-if="showAboutDialog" @close="showAboutDialog = false" />
 
+	<!-- 全局拖拽蒙层 -->
+	<drag-drop-overlay :visible="isDragOverGlobal" />
+
+	<!-- 导入失败弹窗 -->
+	<import-error-dialog
+		v-if="showImportError"
+		:errorMessage="importErrorMessage"
+		@close="showImportError = false"
+		@retry="showImportError = false; handleImportData()"
+	/>
 
 
 </template>
 
 <script setup lang="uts">
 	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
+	import { ImportProgress, ImportResult } from '@/types/data-package.uts'
+	import { ImportProgressCallback } from '@/services/dataPackage.uts'
 	// #ifdef WEB
 	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database.uts'
+	import { handleDroppedFileWebAndImport } from '@/services/dataPackage.uts'
 	// #endif
 
 	import { ResourceItem } from '@/types/resource'
@@ -931,6 +944,9 @@
 		
 		window.addEventListener('keydown', handleGlobalKeyDown)
 		window.addEventListener('resize', onResizeCallback)
+		window.addEventListener('dragover', handleGlobalDragOver)
+		window.addEventListener('dragleave', handleGlobalDragLeave)
+		window.addEventListener('drop', handleGlobalDrop)
 		// #endif
 		const nodeId = options['id'] as string | null
 		initData(nodeId)
@@ -964,6 +980,9 @@
 		// #ifdef WEB
 		window.removeEventListener('keydown', handleGlobalKeyDown)
 		window.removeEventListener('resize', onResizeCallback)
+		window.removeEventListener('dragover', handleGlobalDragOver)
+		window.removeEventListener('dragleave', handleGlobalDragLeave)
+		window.removeEventListener('drop', handleGlobalDrop)
 		// #endif
 	})
 	
@@ -1031,6 +1050,12 @@
 	const showImportDrawer = ref(false)
 	const showAboutDialog = ref(false)
 
+	// ============ 全局拖拽导入状态 ============
+	const isDragOverGlobal = ref(false)
+	const showImportError = ref(false)
+	const importErrorMessage = ref('')
+	const isGlobalImporting = ref(false)
+	let dragLeaveTimer: number | null = null
 	
 	const handleImportSuccess = () => {
 		initData(null)
@@ -1952,6 +1977,107 @@
 		}
 	}
 	
+	// ============ 全局拖拽事件处理 ============
+	/**
+	 * 全局 dragover：阻止默认行为（防止浏览器打开文件），显示拖拽蒙层
+	 */
+	const handleGlobalDragOver = (e: any) => {
+		// #ifdef WEB
+		const dragEvent = e as DragEvent
+		dragEvent.preventDefault()
+		dragEvent.stopPropagation()
+		// 设置 dropEffect 提示可放置
+		if (dragEvent.dataTransfer != null) {
+			dragEvent.dataTransfer!.dropEffect = 'copy'
+		}
+		// 清除之前的延迟隐藏定时器
+		if (dragLeaveTimer != null) {
+			clearTimeout(dragLeaveTimer!)
+			dragLeaveTimer = null
+		}
+		// 当导入抽屉未打开且不在导入中时，显示全局蒙层
+		if (!showImportDrawer.value && !isGlobalImporting.value) {
+			isDragOverGlobal.value = true
+		}
+		// #endif
+	}
+
+	/**
+	 * 全局 dragleave：延迟隐藏蒙层（防止子元素边界触发误隐藏）
+	 */
+	const handleGlobalDragLeave = (e: any) => {
+		// #ifdef WEB
+		const dragEvent = e as DragEvent
+		dragEvent.preventDefault()
+		dragEvent.stopPropagation()
+		// 使用延迟来判断是否真的离开了窗口
+		if (dragLeaveTimer != null) {
+			clearTimeout(dragLeaveTimer!)
+		}
+		dragLeaveTimer = setTimeout(() => {
+			isDragOverGlobal.value = false
+			dragLeaveTimer = null
+		}, 100)
+		// #endif
+	}
+
+	/**
+	 * 全局 drop：处理拖拽放下的文件
+	 */
+	const handleGlobalDrop = (e: any) => {
+		// #ifdef WEB
+		const dragEvent = e as DragEvent
+		dragEvent.preventDefault()
+		dragEvent.stopPropagation()
+		isDragOverGlobal.value = false
+		
+		// 清除延迟定时器
+		if (dragLeaveTimer != null) {
+			clearTimeout(dragLeaveTimer!)
+			dragLeaveTimer = null
+		}
+		
+		// 如果导入抽屉已打开，交给抽屉组件自己的 drop 处理
+		if (showImportDrawer.value) return
+		
+		const files = dragEvent.dataTransfer?.files
+		if (files == null || files.length == 0) return
+		
+		const file = files[0]
+		
+		// 校验文件后缀
+		if (!file.name.endsWith('.srd')) {
+			importErrorMessage.value = '不支持的文件格式："' + file.name + '"\n仅支持 .srd 格式的工艺数据包文件。'
+			showImportError.value = true
+			return
+		}
+		
+		// 开始一步到位的导入流程
+		isGlobalImporting.value = true
+		uni.showLoading({ title: '正在解析并导入...', mask: true })
+		
+		const onProgress: ImportProgressCallback = (progress: ImportProgress) => {
+			// 全局拖拽模式下只使用 loading 提示，不展示详细进度
+		}
+		
+		handleDroppedFileWebAndImport(file, onProgress)
+			.then((_result: ImportResult) => {
+				uni.hideLoading()
+				isGlobalImporting.value = false
+				uni.showToast({ title: '导入成功', icon: 'success' })
+				handleImportSuccess()
+			})
+			.catch((err: any | null) => {
+				uni.hideLoading()
+				isGlobalImporting.value = false
+				const errMsg = err instanceof Error
+					? (err as Error).message
+					: (err != null ? (err as UTSJSONObject)['message'] as string ?? '未知错误' : '未知错误')
+				importErrorMessage.value = errMsg
+				showImportError.value = true
+			})
+		// #endif
+	}
 
 	
 </script>

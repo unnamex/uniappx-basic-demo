@@ -68,7 +68,7 @@
 					
 					<view class="doc-section">
 						<text class="doc-h3">2. 如何导入数据?</text>
-						<text class="doc-p">点击主界面的“导入数据包”按钮（或使用快捷键 Ctrl+I），选择本地准备好的 .srd 文件。系统将自动解析数据包，并在左侧侧边栏生成工艺结构树。</text>
+						<text class="doc-p">直接将 .srd 文件拖拽到窗口中即可自动解析导入。也可以点击"导入数据包"按钮（或使用快捷键 Ctrl+I）手动选择文件。系统将自动解析数据包，并在左侧侧边栏生成工艺结构树。</text>
 					</view>
 
 					<view class="doc-section">

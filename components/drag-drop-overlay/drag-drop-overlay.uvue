@@ -1,0 +1,105 @@
+<template>
+	<!-- 全局拖拽蒙层：拖拽文件进入窗口时显示 -->
+	<view v-if="visible" class="drag-overlay-root">
+		<!-- 半透明背景 -->
+		<view class="drag-overlay-bg">
+			<!-- 中心提示卡片 -->
+			<view class="drag-overlay-card">
+				<!-- 虚线放置区 -->
+				<view class="drag-drop-zone">
+					<image src="/static/icons/ui/import_package.svg" class="drag-zone-icon" mode="aspectFit" />
+					<text class="drag-zone-title">松开以导入 .srd 数据包</text>
+					<text class="drag-zone-hint">系统将自动解析并加载工艺数据</text>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	defineProps({
+		visible: {
+			type: Boolean,
+			default: false
+		}
+	})
+</script>
+
+<style>
+	/* ====== 根容器：铺满全屏 ====== */
+	.drag-overlay-root {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 9999;
+	}
+
+	/* ====== 半透明背景 ====== */
+	.drag-overlay-bg {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.55);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		/* 边缘高亮边框：表示整个窗口都是放置区 */
+		border-width: 3px;
+		border-style: solid;
+		border-color: #007ACC;
+	}
+
+	/* ====== 中心提示卡片 ====== */
+	.drag-overlay-card {
+		background-color: #FFFFFF;
+		border-radius: 12px;
+		padding: 40px 56px;
+		/* #ifdef WEB */
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+		/* #endif */
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	/* ====== 虚线放置区 ====== */
+	.drag-drop-zone {
+		border-width: 2px;
+		border-style: dashed;
+		border-color: #007ACC;
+		border-radius: 10px;
+		background-color: #F0F7FF;
+		padding: 40px 64px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* ====== 图标 ====== */
+	.drag-zone-icon {
+		width: 48px;
+		height: 48px;
+		margin-bottom: 16px;
+		opacity: 0.85;
+	}
+
+	/* ====== 主标题 ====== */
+	.drag-zone-title {
+		font-size: 17px;
+		font-weight: 600;
+		color: #0F172A;
+		margin-bottom: 8px;
+	}
+
+	/* ====== 辅助提示 ====== */
+	.drag-zone-hint {
+		font-size: 13px;
+		color: #64748B;
+	}
+</style>
