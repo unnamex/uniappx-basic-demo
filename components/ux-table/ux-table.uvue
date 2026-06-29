@@ -16,11 +16,11 @@
 				<view class="header">
 					<view class="header-row">
 						<view v-for="(field, index) in fields" :key="index" class="header-cell"
-							:style="{ flex: getFieldFlex(index), width: getFieldWidth(index) }">
+							:style="getCellStyle(index)">
 							<text class="header-text">{{ field['label'] }}</text>
 							
 							<!-- #ifdef H5 -->
-							<view class="resize-handle" 
+							<view v-if="index < fields.length - 1" class="resize-handle" 
 								@touchstart.stop.prevent="onResizeStart(index, $event)" 
 								@touchmove.stop.prevent="onResizeMove" 
 								@touchend="onResizeEnd"
@@ -29,7 +29,7 @@
 							</view>
 							<!-- #endif -->
 							<!-- #ifndef H5 -->
-							<view class="resize-handle" 
+							<view v-if="index < fields.length - 1" class="resize-handle" 
 								@touchstart.stop="(e : UniTouchEvent) => onResizeStart(index, e)" 
 								@touchmove.stop="onResizeMove" 
 								@touchend="onResizeEnd">
@@ -45,7 +45,7 @@
 				<!-- 行主体部分 -->
 				<view class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
 					<view v-for="(field, fieldIndex) in fields" :key="fieldIndex" class="cell"
-						:style="{ flex: getFieldFlex(fieldIndex), width: getFieldWidth(fieldIndex) }">
+						:style="getCellStyle(fieldIndex)">
 						
 						<view v-if="fieldIndex === 0" class="cell-content-wrapper">
 							<!-- 仅树模式显示缩进和展开图标 -->
@@ -134,6 +134,7 @@
 	type DragState = {
 		startX : number
 		startWidth : number
+		startNextWidth : number
 		fieldIndex : number
 	}
 
@@ -164,9 +165,11 @@
 				allRows: [] as TableRow[],
 				selectedRowId: null as string | null,
 				fieldWidths: [] as number[], // -1 indicates flex, >0 indicates px width
+				fieldMinWidths: [] as number[], // 0 表示无最小宽度限制，>0 表示最小像素宽度
 				dragState: {
 					startX: 0,
 					startWidth: 0,
+					startNextWidth: 0,
 					fieldIndex: -1
 				} as DragState,
 				isAllExpanded: false, // 懒加载模式下默认收起
@@ -176,8 +179,8 @@
 				loadingRowIds: [] as string[],
 				/** 容器实际宽度（由 UniResizeObserver 自动更新，用于原生端确保表格填满容器） */
 				measuredContainerWidth: 0 as number,
-				/** UniResizeObserver 实例引用，用于生命周期管理 */
-				resizeObserver: null as UniResizeObserver | null
+				/** ResizeObserver 实例引用（原生端为 UniResizeObserver，Web 端为浏览器 ResizeObserver） */
+				resizeObserver: null as any
 			}
 		},
 		computed: {
@@ -218,23 +221,22 @@
 				}
 				return ''
 			},
-			/** Web 端使用 min-width；原生端使用 width 配合 UniResizeObserver 自动测量的容器宽度 */
+			/** 表格内部宽度 = max(列宽总和, 容器实测宽度)，由 ResizeObserver 驱动自适应 */
 			tableInnerStyle() : string {
-				// #ifdef WEB
-				return 'min-width: ' + this.tableRealWidth + 'px'
-				// #endif
-				// #ifndef WEB
-				// 原生端：width = max(列宽总和, 容器实测宽度)
-				// 容器宽度由 UniResizeObserver 自动更新，确保面板折叠/展开/全屏后表格始终填满
 				return 'width: ' + this.tableRealWidth + 'px'
-				// #endif
 			},
 			/** 所有列的宽度总和（flex 列按默认 150px 计算） */
 			totalFixedWidth() : number {
 				let total = 0
 				for (let i = 0; i < this.fieldWidths.length; i++) {
 					const w = this.fieldWidths[i]
-					total += (w > 0 ? w : 150)
+					if (w > 0) {
+						total += w
+					} else {
+						// flex 列使用 minWidth 或默认 150 作为计算基准
+						const mw = i < this.fieldMinWidths.length ? this.fieldMinWidths[i] : 0
+						total += (mw > 0 ? mw : 150)
+					}
 				}
 				return total
 			},
@@ -274,24 +276,70 @@
 			}
 		},
 		methods: {
-			getFieldFlex(index: number): string {
+			/** 判断某一列是否应该在视觉上表现为 flex 弹性列 */
+			isColumnFlex(index: number): boolean {
 				const w = this.fieldWidths[index]
-				if (w <= 0) return '1'
+				if (w <= 0) return true
+				
+				// 如果当前是最后一列，且总宽度不足容器宽度，检查是否需要让最后一列强制撑满剩余空间
+				if (index === this.fieldWidths.length - 1) {
+					if (this.measuredContainerWidth > 0 && this.totalFixedWidth < this.measuredContainerWidth) {
+						let hasFlex = false
+						for (let i = 0; i < this.fieldWidths.length - 1; i++) {
+							if (this.fieldWidths[i] <= 0) {
+								hasFlex = true
+								break
+							}
+						}
+						// 如果前面的列全都是固定宽度，强制最后一列弹性撑开，防止右侧留白
+						if (!hasFlex) return true
+					}
+				}
+				return false
+			},
+			getFieldFlex(index: number): string {
+				if (this.isColumnFlex(index)) return '1'
 				return 'none'
 			},
 			getFieldWidth(index: number): string {
-				const w = this.fieldWidths[index]
-				if (w <= 0) return ''
-				return w + 'px'
+				if (this.isColumnFlex(index)) return ''
+				return this.fieldWidths[index] + 'px'
+			},
+			/** 生成列的完整 inline style 字符串，包含 flex/width/min-width */
+			getCellStyle(index: number): string {
+				let style = ''
+				if (!this.isColumnFlex(index)) {
+					style = 'flex: none; width: ' + this.fieldWidths[index] + 'px;'
+				} else {
+					style = 'flex: 1;'
+				}
+				if (index < this.fieldMinWidths.length) {
+					const mw = this.fieldMinWidths[index]
+					if (mw > 0) {
+						style += ' min-width: ' + mw + 'px;'
+					}
+				}
+				return style
 			},
 			initFields(fields: UTSJSONObject[]) {
 				this.fieldWidths = fields.map((field): number => {
 					const w = field['width']
 					if (w != null) {
-						// Ensure it is a number. field['width'] from JSON could be various types, assume number
 						return parseFloat(w.toString())
 					}
 					return -1 // Flag for flex
+				})
+				this.fieldMinWidths = fields.map((field): number => {
+					const mw = field['minWidth']
+					if (mw != null) {
+						return parseFloat(mw.toString())
+					}
+					// 智能计算默认最小宽度：保证表头文字完整显示
+					const label = (field['label'] as string | null) ?? ''
+					// 假设每个汉字约 14px，左右 padding 各 12px (24px)，加上调整把手/排序图标等冗余空间预留约 16px，总计 40px。
+					const computedMw = label.length * 14 + 40
+					// 设置一个保底的下限（如 80px）
+					return computedMw > 80 ? computedMw : 80
 				})
 			},
 			getStringValue(data : UTSJSONObject, key : string) : string {
@@ -593,31 +641,85 @@
 				this.$emit('row-click', row.originData)
 			},
 			// Drag / Resize Methods
+			/** 获取列的实际渲染宽度：固定列直接返回，flex 列根据表格实际宽度反算 */
+			getActualColumnWidth(index: number) : number {
+				if (!this.isColumnFlex(index)) {
+					return this.fieldWidths[index]
+				}
+				// flex 列：实际宽度 = (tableRealWidth - 所有固定列宽之和) / flex 列数量
+				let totalFixed = 0 as number
+				let flexCount = 0 as number
+				for (let i = 0; i < this.fieldWidths.length; i++) {
+					if (!this.isColumnFlex(i)) {
+						totalFixed += this.fieldWidths[i]
+					} else {
+						flexCount++
+					}
+				}
+				const mw = index < this.fieldMinWidths.length ? this.fieldMinWidths[index] : 0
+				const finalMw = mw > 50 ? mw : 50
+				if (flexCount <= 0) return finalMw
+				const flexWidth = (this.tableRealWidth - totalFixed) / flexCount
+				return flexWidth > finalMw ? flexWidth : finalMw
+			},
 			onResizeStart(index: number, e: UniTouchEvent) {
 				if (e.touches.length == 0) return
 				const touch = e.touches[0]
 				this.dragState.startX = touch.clientX
 				this.dragState.fieldIndex = index
 				
-				let currentW = this.fieldWidths[index]
-				if (currentW <= 0) {
-					currentW = 150
+				this.dragState.startWidth = this.getActualColumnWidth(index)
+				
+				// 记录右邻列初始视觉宽度，作为拖拽界限计算依据（无论是否 flex 列）
+				const nextIdx = index + 1
+				if (nextIdx < this.fieldWidths.length) {
+					this.dragState.startNextWidth = this.getActualColumnWidth(nextIdx)
+				} else {
+					this.dragState.startNextWidth = 0
 				}
-				this.dragState.startWidth = currentW
 			},
 			onResizeMove(e: UniTouchEvent) {
 				if (this.dragState.fieldIndex < 0) return
 				if (e.touches.length == 0) return
-				
 				const touch = e.touches[0]
-				const deltaPx = touch.clientX - this.dragState.startX
-				
-				const deltaRpx = deltaPx
-				
-				let newWidth = this.dragState.startWidth + deltaRpx
-				if (newWidth < 50) newWidth = 50
-				
-				this.fieldWidths[this.dragState.fieldIndex] = newWidth
+				const delta = touch.clientX - this.dragState.startX
+				this.applyResize(delta)
+			},
+			/** 联动调整列宽：当前列增大则右邻列缩小，反之亦然 */
+			applyResize(delta: number) {
+				const idx = this.dragState.fieldIndex
+				// 当前列的 minWidth
+				let minW = 50 as number
+				if (idx >= 0 && idx < this.fieldMinWidths.length) {
+					const cfgMin = this.fieldMinWidths[idx]
+					if (cfgMin > 0) minW = cfgMin
+				}
+				let newWidth = this.dragState.startWidth + delta
+				if (newWidth < minW) newWidth = minW
+
+				// 联动调整右邻列
+				const nextIdx = idx + 1
+				if (nextIdx < this.fieldWidths.length && this.dragState.startNextWidth > 0) {
+					let nextMinW = 50 as number
+					if (nextIdx < this.fieldMinWidths.length) {
+						const cfgNextMin = this.fieldMinWidths[nextIdx]
+						if (cfgNextMin > 0) nextMinW = cfgNextMin
+					}
+					// 右邻列宽度 = 初始宽度 - 实际偏移量
+					let nextWidth = this.dragState.startNextWidth - (newWidth - this.dragState.startWidth)
+					if (nextWidth < nextMinW) {
+						// 右列触底，反推限制当前列的最大宽度
+						nextWidth = nextMinW
+						newWidth = this.dragState.startWidth + (this.dragState.startNextWidth - nextMinW)
+						if (newWidth < minW) newWidth = minW
+					}
+					// 仅对固定宽度的列显式回写更新；对于 flex 列，只利用上面的界限计算约束本列的最大宽度，不破坏其弹性
+					if (!this.isColumnFlex(nextIdx)) {
+						this.fieldWidths[nextIdx] = nextWidth
+					}
+				}
+
+				this.fieldWidths[idx] = newWidth
 			},
 			onResizeEnd() {
 				this.dragState.fieldIndex = -1
@@ -627,15 +729,18 @@
 			},
 			// #ifdef H5
 			onResizeStartMouse(index: number, e: MouseEvent) {
-				const startX = e.clientX
-				this.dragState.startX = startX
+				this.dragState.startX = e.clientX
 				this.dragState.fieldIndex = index
 				
-				let currentW = this.fieldWidths[index]
-				if (currentW <= 0) {
-					currentW = 150
+				this.dragState.startWidth = this.getActualColumnWidth(index)
+				
+				// 记录右邻列初始视觉宽度，作为拖拽界限计算依据（无论是否 flex 列）
+				const nextIdx = index + 1
+				if (nextIdx < this.fieldWidths.length) {
+					this.dragState.startNextWidth = this.getActualColumnWidth(nextIdx)
+				} else {
+					this.dragState.startNextWidth = 0
 				}
-				this.dragState.startWidth = currentW
 				
 				// Bind global listeners
 				window.addEventListener('mousemove', this.onResizeMoveMouse)
@@ -645,21 +750,14 @@
 				if (this.dragState.fieldIndex < 0) return
 				
 				// 解决拖动时鼠标在外部或者被系统吞没mouseup事件导致的粘连问题
-				// 绕过 UTS 编译器对 UniPointerEvent(MouseEvent) 缺少 buttons 声明的限制
 				const buttons = (e as any)['buttons'] as number | null
 				if (buttons === 0) {
 					this.onResizeEndMouse()
 					return
 				}
 				
-				const deltaPx = e.clientX - this.dragState.startX
-				
-				const deltaRpx = deltaPx
-				
-				let newWidth = this.dragState.startWidth + deltaRpx
-				if (newWidth < 50) newWidth = 50
-				
-				this.fieldWidths[this.dragState.fieldIndex] = newWidth
+				const delta = e.clientX - this.dragState.startX
+				this.applyResize(delta)
 			},
 			onResizeEndMouse() {
 				this.dragState.fieldIndex = -1
@@ -669,6 +767,22 @@
 			// #endif
 		},
 		mounted() {
+			// #ifdef WEB
+			// Web 端：使用浏览器原生 ResizeObserver 监听容器尺寸变化
+			const webEl = (this as any).$el
+			if (webEl != null) {
+				const ro = new ResizeObserver((entries : any[]) => {
+					for (let i = 0; i < entries.length; i++) {
+						const w = (entries[i] as any).contentRect.width as number
+						if (w > 0 && Math.abs(w - this.measuredContainerWidth) > 2) {
+							this.measuredContainerWidth = w
+						}
+					}
+				})
+				ro.observe(webEl as any)
+				this.resizeObserver = ro
+			}
+			// #endif
 			// #ifndef WEB
 			// 原生端：使用 UniResizeObserver 自动监听容器尺寸变化
 			const el = this.$el as UniElement | null
@@ -688,13 +802,10 @@
 			// #endif
 		},
 		unmounted() {
-			// #ifndef WEB
-			// 释放 UniResizeObserver
 			if (this.resizeObserver != null) {
-				this.resizeObserver!.disconnect()
+				(this.resizeObserver as any).disconnect()
 				this.resizeObserver = null
 			}
-			// #endif
 		}
 	}
 </script>

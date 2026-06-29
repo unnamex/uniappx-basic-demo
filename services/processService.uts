@@ -291,7 +291,8 @@ export function clearAllProcesses(): Promise<void> {
             webClearStore('t_process'),
             webClearStore('t_operation'),
             webClearStore('t_step'),
-            webClearStore('t_action')
+            webClearStore('t_action'),
+            webClearStore('t_node_dataset')
         ]).then(() => resolve()).catch(e => reject(e as Error))
         // #endif
 
@@ -300,6 +301,7 @@ export function clearAllProcesses(): Promise<void> {
             .then(() => executeSQL('DELETE FROM t_operation'))
             .then(() => executeSQL('DELETE FROM t_step'))
             .then(() => executeSQL('DELETE FROM t_action'))
+            .then(() => executeSQL('DELETE FROM t_node_dataset'))
             .then(() => resolve())
             .catch((e: any | null) => reject(e as Error))
         // #endif

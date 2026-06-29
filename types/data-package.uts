@@ -33,6 +33,9 @@ export type ManifestFileRefs = {
     operation: string | null // data/operation.json
     step: string | null      // data/step.json
     action: string | null    // data/action.json
+    
+    // V6.1 节点关联数据集
+    nodeDatasets: string | null  // data/node_datasets.json
 }
 
 
@@ -65,7 +68,7 @@ export type TabConfig = {
 export type ComponentConfig = {
 	id: string
 	tab_id: string
-	type: string // 'table' | 'collapse' | 'tableTree' | 'infoView' | 'richText' | 'list'
+	type: string // 'table' | 'collapse' | 'tableTree' | 'infoView' | 'richText'
 	title: string
 	config: any // 组件自定义配置（JSON）
 	sort_order: number

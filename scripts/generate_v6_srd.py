@@ -26,7 +26,8 @@ def create_v6_srd(output_path):
             "process": "data/process.json",
             "operation": "data/operation.json",
             "step": "data/step.json",
-            "action": "data/action.json"
+            "action": "data/action.json",
+            "nodeDatasets": "data/node_datasets.json"
         }
     }
 
@@ -366,6 +367,8 @@ def create_v6_srd(output_path):
         {"id": "tab_bottom_proc_product", "group_id": "group_bottom_proc", "title": "产品信息", "sort_order": 1},
         # 下方 - 工序详情
         {"id": "tab_bottom_op_ov", "group_id": "group_bottom_op", "title": "概览", "sort_order": 0},
+        {"id": "tab_bottom_op_torque", "group_id": "group_bottom_op", "title": "拧紧记录", "sort_order": 1},
+        {"id": "tab_bottom_op_parts", "group_id": "group_bottom_op", "title": "装配物料", "sort_order": 2},
         # 下方 - 工步详情
         {"id": "tab_bottom_step_ov", "group_id": "group_bottom_step", "title": "说明", "sort_order": 0}
     ]
@@ -532,6 +535,41 @@ def create_v6_srd(output_path):
             "config": {
             }
         },
+        # ---- 下方 - 工序详情 - 拧紧记录 (V6.1 节点数据集数据源) ----
+        {
+            "id": "comp_bottom_op_torque", "tab_id": "tab_bottom_op_torque",
+            "type": "table", "title": "扭矩记录表", "sort_order": 0,
+            "config": {
+                "dataSource": {
+                    "type": "dataset",
+                    "dataKey": "torque_records"
+                },
+                "fields": [
+                    {"label": "步骤名称", "prop": "step_name", "width": 200},
+                    {"label": "目标扭矩 (N·m)", "prop": "target_torque", "width": 150},
+                    {"label": "实际扭矩 (N·m)", "prop": "actual_torque", "width": 150},
+                    {"label": "状态", "prop": "status", "width": 100},
+                    {"label": "操作工", "prop": "operator", "width": 120}
+                ]
+            }
+        },
+        # ---- 下方 - 工序详情 - 装配物料 (V6.1 节点数据集数据源) ----
+        {
+            "id": "comp_bottom_op_parts", "tab_id": "tab_bottom_op_parts",
+            "type": "list", "title": "主物料明细清单", "sort_order": 0,
+            "config": {
+                "dataSource": {
+                    "type": "dataset",
+                    "dataKey": "material_list"
+                },
+                "fields": [
+                    {"label": "物料代码", "prop": "part_code"},
+                    {"label": "物料名称", "prop": "part_name"},
+                    {"label": "数量", "prop": "quantity"},
+                    {"label": "单位", "prop": "unit"}
+                ]
+            }
+        },
 
         # ---- 下方 - 工步详情 ----
         {
@@ -575,6 +613,56 @@ def create_v6_srd(output_path):
         b'\x73\x2a\x4a\x00\x00\x00\x00IEND\xaeB`\x82'
     )
 
+    # ==================== 8.5 节点关联数据集 ====================
+    node_datasets = [
+        {
+            "id": "ds_torque_1",
+            "nodeInnerId": "op_4",
+            "dataKey": "torque_records",
+            "sortOrder": 1,
+            "rows": [
+                {
+                    "id": "tr_1",
+                    "step_name": "缸盖螺栓预紧",
+                    "target_torque": 40.0,
+                    "actual_torque": 40.2,
+                    "status": "OK",
+                    "operator": "张三"
+                },
+                {
+                    "id": "tr_2",
+                    "step_name": "缸盖螺栓终紧",
+                    "target_torque": 80.0,
+                    "actual_torque": 80.5,
+                    "status": "OK",
+                    "operator": "张三"
+                }
+            ]
+        },
+        {
+            "id": "ds_parts_1",
+            "nodeInnerId": "op_4",
+            "dataKey": "material_list",
+            "sortOrder": 2,
+            "rows": [
+                {
+                    "id": "mat_1",
+                    "part_code": "E02-001",
+                    "part_name": "气缸体",
+                    "quantity": 1,
+                    "unit": "件"
+                },
+                {
+                    "id": "mat_2",
+                    "part_code": "E02-002",
+                    "part_name": "气缸盖",
+                    "quantity": 1,
+                    "unit": "件"
+                }
+            ]
+        }
+    ]
+
     # ==================== 打包成 ZIP (.srd) ====================
     with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         # 包清单
@@ -587,6 +675,7 @@ def create_v6_srd(output_path):
         zf.writestr('data/step.json', json.dumps(step_data, ensure_ascii=False, indent=2))
         zf.writestr('data/action.json', json.dumps(action_data, ensure_ascii=False, indent=2))
         zf.writestr('data/attachment.json', json.dumps(attachment_data, ensure_ascii=False, indent=2))
+        zf.writestr('data/node_datasets.json', json.dumps(node_datasets, ensure_ascii=False, indent=2))
 
         # UI 布局
         zf.writestr('layout/tabs.json', json.dumps(tabs_data, ensure_ascii=False, indent=2))

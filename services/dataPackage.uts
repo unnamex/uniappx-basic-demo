@@ -877,6 +877,7 @@ function extractAndParseAndroid(
 		let operationRecords: UTSJSONObject[] = []
 		let stepRecords: UTSJSONObject[] = []
 		let actionRecords: UTSJSONObject[] = []
+		let nodeDatasetRecords: UTSJSONObject[] = []
 
 		if (manifest!.files != null) {
 			const files = manifest!.files as ManifestFileRefs
@@ -916,6 +917,11 @@ function extractAndParseAndroid(
 			
 			const actionJson = findJsonFile('data/action.json')
 			if (actionJson != null) actionRecords = JSON.parse(actionJson) as UTSJSONObject[]
+			
+			// 读取 V6.1 节点关联数据集
+			const ndPath = (files.nodeDatasets as string | null) ?? 'data/node_datasets.json'
+			const ndJson = findJsonFile(ndPath)
+			if (ndJson != null) nodeDatasetRecords = JSON.parse(ndJson) as UTSJSONObject[]
 		}
 		
 		const PROCESS_FIELDS = ['innerId', 'code', 'name', 'classId', 'classId_display', 'classId_business_icon', 'classId_icon', 'version', 'fullversionNo', 'stateName', 'checkoutState', 'checkoutState_display', 'modifyById', 'modifyById_display', 'modifyTime', 'createById', 'createById_display', 'createTime', 'createTime_display', 'contextName', 'contextId', 'contextId_display', 'departmentName', 'workshopName', 'personalworkspace', 'personalworkspace_display', 'folderPath', 'phaseId', 'phaseId_display', 'secretId', 'secretId_display', 'lifeCycleTemplate', 'lifeCycleTemplate_display', 'taskName', 'routeContent', 'mfgNodeName', 'processCharacteristics', 'note', 'partCode', 'partName', 'partClassId', 'partClassId_display', 'partClassId_business_icon', 'partModifyById', 'partModifyById_display', 'partModifyTime', 'partContextName', 'partPhaseId', 'partPhaseId_display', 'partSecretId', 'partSecretId_display', 'partStateName', 'partFullversionNo', 'tabs_top', 'tabs_bottom', 'sortOrder']
@@ -940,6 +946,34 @@ function extractAndParseAndroid(
 				})
 				.then((uiConfigCount: number) => {
 					return saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS).then(()=>uiConfigCount)
+				})
+				.then((uiConfigCount: number) => {
+					return new Promise<number>((resolveDs, rejectDs) => {
+						const runSave = async () => {
+							try {
+								for (let i = 0; i < nodeDatasetRecords.length; i++) {
+									const ds = nodeDatasetRecords[i]
+									const dsId = ((ds['id'] as string | null) ?? '')
+									const nodeInnerId = ((ds['nodeInnerId'] as string | null) ?? '')
+									const dataKey = ((ds['dataKey'] as string | null) ?? '')
+									if (dsId == '' || nodeInnerId == '' || dataKey == '') continue
+									const rowsJson = JSON.stringify(ds['rows'] ?? [])
+									const sortOrder = ((ds['sortOrder'] as number | null) ?? 0).toString()
+									await executeSQL(
+										'INSERT OR REPLACE INTO t_node_dataset (id, node_inner_id, data_key, rows_json, sort_order) VALUES (?, ?, ?, ?, ?)',
+										[dsId, nodeInnerId, dataKey, rowsJson, sortOrder]
+									)
+								}
+								if (nodeDatasetRecords.length > 0) {
+									console.log('Android: Saved node datasets:', nodeDatasetRecords.length)
+								}
+								resolveDs(uiConfigCount)
+							} catch (e: any) {
+								rejectDs(e)
+							}
+						}
+						runSave()
+					})
 				})
 				.then((uiConfigCount: number) => {
 					let resourceCount = 0
@@ -1191,6 +1225,7 @@ function processHarmonyExtractedFiles(
 		let operationRecords: UTSJSONObject[] = []
 		let stepRecords: UTSJSONObject[] = []
 		let actionRecords: UTSJSONObject[] = []
+		let nodeDatasetRecords: UTSJSONObject[] = []
 		let processTreeContent: string = ''
 		
 		const files = manifest.files as ManifestFileRefs
@@ -1254,10 +1289,20 @@ function processHarmonyExtractedFiles(
 			const actionContent = readJsonFileHarmony(actionKey != null ? files[actionKey] as string : 'data/action.json')
 			if (actionContent != '') actionRecords = JSON.parse(actionContent) as UTSJSONObject[]
 			
+			// 读取 V6.1 节点关联数据集
+			const ndKey = findKeyFuzzy(files, 'nodeDatasets')
+			const ndPath = ndKey != null ? files[ndKey] as string : 'data/node_datasets.json'
+			try {
+				const ndContent = readJsonFileHarmony(ndPath)
+				if (ndContent != '') nodeDatasetRecords = JSON.parse(ndContent) as UTSJSONObject[]
+			} catch (e: any) {
+				console.warn('Harmony: nodeDatasets 文件读取失败:', e)
+			}
+			
 			const pTreeKey = findKeyFuzzy(files, 'process_tree')
 			processTreeContent = readJsonFileHarmony(pTreeKey != null ? files[pTreeKey] as string : 'data/process_tree.json')
 			
-			console.log('Harmony解析完成: process=' + processRecords.length + ', op=' + operationRecords.length + ', step=' + stepRecords.length + ', action=' + actionRecords.length)
+			console.log('Harmony解析完成: process=' + processRecords.length + ', op=' + operationRecords.length + ', step=' + stepRecords.length + ', action=' + actionRecords.length + ', nodeDatasets=' + nodeDatasetRecords.length)
 			console.log('Harmony布局解析: groups=' + groups.length + ', tabs=' + tabs.length + ', components=' + components.length)
 		} catch(e) {
 			console.warn('Harmony: V6 表数据解析异常', e)
@@ -1365,6 +1410,34 @@ function processHarmonyExtractedFiles(
 				})
 				.then((uiConfigCount: number) => {
 					console.log('Harmony: t_action存储成功, count=' + actionRecords.length)
+					return new Promise<number>((resolveDs, rejectDs) => {
+						const runSave = async () => {
+							try {
+								for (let i = 0; i < nodeDatasetRecords.length; i++) {
+									const ds = nodeDatasetRecords[i]
+									const dsId = ((ds['id'] as string | null) ?? '')
+									const nodeInnerId = ((ds['nodeInnerId'] as string | null) ?? '')
+									const dataKey = ((ds['dataKey'] as string | null) ?? '')
+									if (dsId == '' || nodeInnerId == '' || dataKey == '') continue
+									const rowsJson = JSON.stringify(ds['rows'] ?? [])
+									const sortOrder = ((ds['sortOrder'] as number | null) ?? 0).toString()
+									await executeSQL(
+										'INSERT OR REPLACE INTO t_node_dataset (id, node_inner_id, data_key, rows_json, sort_order) VALUES (?, ?, ?, ?, ?)',
+										[dsId, nodeInnerId, dataKey, rowsJson, sortOrder]
+									)
+								}
+								if (nodeDatasetRecords.length > 0) {
+									console.log('Harmony: Saved node datasets:', nodeDatasetRecords.length)
+								}
+								resolveDs(uiConfigCount)
+							} catch (e: any) {
+								rejectDs(e)
+							}
+						}
+						runSave()
+					})
+				})
+				.then((uiConfigCount: number) => {
 					return new Promise<number>((res) => {
 						if (processTreeContent != '') {
 							executeSQL("INSERT OR REPLACE INTO meta_process_tree (id, data_json) VALUES (?, ?)", ['process_tree', processTreeContent])
@@ -1756,6 +1829,7 @@ function extractAndParseWeb(
 			let operationRecords: UTSJSONObject[] = []
 			let stepRecords: UTSJSONObject[] = []
 			let actionRecords: UTSJSONObject[] = []
+			let nodeDatasetRecords: UTSJSONObject[] = []
 			
 			const files = manifest.files as ManifestFileRefs
 			
@@ -1818,6 +1892,10 @@ function extractAndParseWeb(
 			stepRecords = await readTableFile(files['step'] as string | null, 'data/step.json')
 			actionRecords = await readTableFile(files['action'] as string | null, 'data/action.json')
 			
+			// 读取 V6.1 节点关联数据集
+			const ndPath = (files.nodeDatasets as string | null) ?? 'data/node_datasets.json'
+			nodeDatasetRecords = await readTableFile(ndPath, 'data/node_datasets.json')
+			
 			// 5. 保存到数据库
 			console.log('Web: Saving to database...');
 			
@@ -1830,6 +1908,7 @@ function extractAndParseWeb(
 				await webClearStore('t_operation')
 				await webClearStore('t_step')
 				await webClearStore('t_action')
+				await webClearStore('t_node_dataset')
 				
 				let uiConfigCount = 0
 				
@@ -1875,6 +1954,26 @@ function extractAndParseWeb(
 					row['process_id'] = row['process_id'] ?? row['processId'] ?? ''
 					if ((row['inner_id'] as string) === '') continue;
 					try { await webPutData('t_action', row) } catch(e) { console.error('Failed to put t_action:', e) }
+				}
+				
+				for (const row of nodeDatasetRecords) {
+					const dsId = ((row['id'] as string | null) ?? '')
+					const nodeInnerId = ((row['nodeInnerId'] as string | null) ?? '')
+					const dataKey = ((row['dataKey'] as string | null) ?? '')
+					if (dsId == '' || nodeInnerId == '' || dataKey == '') continue
+					
+					const dbRow = {
+						id: dsId,
+						node_inner_id: nodeInnerId,
+						data_key: dataKey,
+						rows_json: JSON.stringify(row['rows'] ?? []),
+						sort_order: ((row['sortOrder'] as number | null) ?? 0).toString()
+					}
+					try { await webPutData('t_node_dataset', dbRow) } catch(e) { console.error('Failed to put t_node_dataset:', e) }
+				}
+				
+				if (nodeDatasetRecords.length > 0) {
+					console.log('Web: Saved node datasets:', nodeDatasetRecords.length)
 				}
 				
 				// 资源处理

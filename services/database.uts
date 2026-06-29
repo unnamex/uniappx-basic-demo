@@ -393,6 +393,18 @@ function createTables(): Promise<void> {
 			)
 		`
 		
+		// 节点关联数据集表（V6.1）
+		const createNodeDatasetTableSQL = `
+			CREATE TABLE IF NOT EXISTS t_node_dataset (
+				id TEXT PRIMARY KEY,
+				node_inner_id TEXT NOT NULL,
+				data_key TEXT NOT NULL,
+				rows_json TEXT DEFAULT '[]',
+				sort_order INTEGER DEFAULT 0,
+				extra_json TEXT
+			)
+		`
+		
 		// #ifdef APP-ANDROID
 		if (dbInstance != null) {
 			try {
@@ -414,6 +426,10 @@ function createTables(): Promise<void> {
 				dbInstance!.execSQL(createAssetsTableSQL)
 				dbInstance!.execSQL(createResourcesTableSQL)
 				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)")
+				
+				// 节点关联数据集表
+				dbInstance!.execSQL(createNodeDatasetTableSQL)
+				dbInstance!.execSQL("CREATE INDEX IF NOT EXISTS idx_node_dataset_node_key ON t_node_dataset(node_inner_id, data_key)")
 				
 				// Dynamic Tab System Tables
 				dbInstance!.execSQL(createTabGroupsTableSQL)
@@ -453,6 +469,8 @@ function createTables(): Promise<void> {
 					createAssetsTableSQL,
 					createResourcesTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_resources_node_id ON t_resources(node_id)",
+					createNodeDatasetTableSQL,
+					"CREATE INDEX IF NOT EXISTS idx_node_dataset_node_key ON t_node_dataset(node_inner_id, data_key)",
 					createTabGroupsTableSQL,
 					createTabsTableSQL,
 					"CREATE INDEX IF NOT EXISTS idx_tab_group ON meta_tabs(group_id)",
@@ -766,7 +784,7 @@ export function endTransaction(): void {
 
 // #ifdef WEB
 // Web 端数据库版本，变更需增加版本号
-const WEB_DB_VERSION: number = 8
+const WEB_DB_VERSION: number = 9
 
 /**
  * 初始化 IndexedDB（Web端）
@@ -852,6 +870,12 @@ function initIndexedDB(): Promise<void> {
 					resourceStore.createIndex('node_id', 'node_id', { unique: false })
 					resourceStore.createIndex('type', 'type', { unique: false })
 				}
+				
+				// V6.1: 节点关联数据集表
+				if (db.objectStoreNames.contains('t_node_dataset')) db.deleteObjectStore('t_node_dataset')
+				const nodeDatasetStore = db.createObjectStore('t_node_dataset', { keyPath: 'id' })
+				nodeDatasetStore.createIndex('node_inner_id', 'node_inner_id', { unique: false })
+				nodeDatasetStore.createIndex('data_key', 'data_key', { unique: false })
 				
 				console.log('IndexedDB Object Stores 创建/更新完成')
 			}

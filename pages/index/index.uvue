@@ -117,13 +117,7 @@
 										<ux-richtext :content="comp.data.length > 0 ? ((comp.data[0]['content'] as string | null) ?? '无描述') : '无描述'"></ux-richtext>
 									</view>
 									
-									<!-- List Component -->
-									<view v-else-if="comp.type == 'list'" class="list-panel">
-										<view v-for="(item, idx) in comp.data" :key="idx" class="list-item-simple">
-											<text class="list-item-name">{{ item['text'] }}</text>
-										</view>
-										<text v-if="comp.data.length == 0" class="empty-hint">暂无数据</text>
-									</view>
+
 									
 								</view>
 							<!-- #ifdef WEB -->
@@ -192,13 +186,7 @@
 												<ux-richtext :content="comp.data.length > 0 ? ((comp.data[0]['content'] as string | null) ?? '无描述') : '无描述'"></ux-richtext>
 											</view>
 											
-											<!-- List Component -->
-											<view v-else-if="comp.type == 'list'" class="list-panel">
-												<view v-for="(item, idx) in comp.data" :key="idx" class="list-item-simple">
-													<text class="list-item-name">{{ item['text'] }}</text>
-												</view>
-												<text v-if="comp.data.length == 0" class="empty-hint">暂无数据</text>
-											</view>
+
 											
 										</view>
 									<!-- #ifdef WEB -->
@@ -1096,6 +1084,7 @@
 			await webClearStore('t_step')
 			await webClearStore('t_action')
 			await webClearStore('t_resources')  // V3: 清空资源表
+			await webClearStore('t_node_dataset') // V6.1: 清空数据集表
 			console.log('All data cleared')
 			// #endif
 			
@@ -1109,6 +1098,7 @@
 			await executeSQL('DELETE FROM t_step')
 			await executeSQL('DELETE FROM t_action')
 			await executeSQL('DELETE FROM t_resources')  // V3: 清空资源表
+			await executeSQL('DELETE FROM t_node_dataset') // V6.1: 清空数据集表
 			// #endif
 			
 			// 清理资源文件（仅 App 端）
@@ -1696,6 +1686,74 @@
 	}
 	
 	// 将节点数据绑定到 Group 中的各个组件
+	// 解析数据源类型（向后兼容：无 dataSource 时按组件类型默认）
+	const getDataSourceType = (comp: ComponentVM): string => {
+		if (comp.config != null) {
+			const confObj = comp.config as UTSJSONObject
+			const ds = confObj['dataSource']
+			if (ds != null) {
+				const dsObj = ds as UTSJSONObject
+				return (dsObj['type'] as string) ?? ''
+			}
+		}
+		// 默认规则（向后兼容）
+		if (comp.type == 'infoView' || comp.type == 'richText') return 'self'
+		return 'children'
+	}
+
+	// 获取 dataSource.dataKey
+	const getDataSourceKey = (comp: ComponentVM): string => {
+		if (comp.config != null) {
+			const confObj = comp.config as UTSJSONObject
+			const ds = confObj['dataSource']
+			if (ds != null) {
+				const dsObj = ds as UTSJSONObject
+				return (dsObj['dataKey'] as string) ?? ''
+			}
+		}
+		return ''
+	}
+
+	// 查询节点的关联数据集（返回纯数据行）
+	const queryNodeDatasetRows = async (nodeInnerId: string, dataKey: string): Promise<UTSJSONObject[]> => {
+		if (nodeInnerId == '' || dataKey == '') return []
+		// #ifdef WEB
+		try {
+			const all = await webGetByIndex('t_node_dataset', 'node_inner_id', nodeInnerId)
+			const matched = all.filter((d: any): boolean => {
+				const dk = ((d as UTSJSONObject)['data_key'] as string | null) ?? ''
+				return dk == dataKey
+			})
+			if (matched.length > 0) {
+				const ds = matched[0] as UTSJSONObject
+				let rows = ds['rows_json']
+				if (rows != null && typeof rows == 'string') {
+					rows = JSON.parse(rows as string)
+				}
+				if (rows != null && Array.isArray(rows)) {
+					return rows as UTSJSONObject[]
+				}
+			}
+		} catch (e) { console.error('queryNodeDatasetRows web error:', e) }
+		return []
+		// #endif
+		
+		// #ifndef WEB
+		try {
+			const result = await querySQL(
+				"SELECT rows_json FROM t_node_dataset WHERE node_inner_id = ? AND data_key = ?",
+				[nodeInnerId, dataKey]
+			)
+			if (result.length > 0) {
+				const rowsStr = (result[0]['rows_json'] as string) ?? '[]'
+				return JSON.parse(rowsStr) as UTSJSONObject[]
+			}
+		} catch (e) { console.error('queryNodeDatasetRows sql error:', e) }
+		return []
+		// #endif
+	}
+
+
 	const bindDataToGroup = async (group: GroupVM, node: UTSJSONObject) => {
 		const nodeType = (node['type'] as string) ?? ''
 		const nodeId = getNodeId(node)
@@ -1707,7 +1765,14 @@
 				// 始终先重置数据，防止任何残留
 				comp.data = []
 
-				if (comp.type == 'infoView' || comp.type == 'richText') {
+				// 解析 dataSource 配置（向后兼容）
+				const dataSourceType = getDataSourceType(comp)
+
+				if (dataSourceType == 'dataset') {
+					// 从关联数据集查询纯数据
+					const dataKey = getDataSourceKey(comp)
+					comp.data = await queryNodeDatasetRows(nodeId, dataKey)
+				} else if (dataSourceType == 'self') {
 					// 查自身
 					const record = await queryNodeById(nodeType, nodeId)
 					if (record != null) {
@@ -1716,8 +1781,8 @@
 						// Fallback: 如果数据库没查到，显示当前节点对象兜底
 						comp.data = [node]
 					}
-				} else if (comp.type == 'table' || comp.type == 'list') {
-					// 查子节点列表
+				} else {
+					// 'children' 或默认行为：查子节点列表
 					const children = await queryChildrenByParentId(nodeType, nodeId)
 					// 如果外键未匹配到（可能是更底层的 action），fallback 为拿内存节点的 children
 					if (children.length > 0) {
