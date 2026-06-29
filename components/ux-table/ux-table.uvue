@@ -307,19 +307,8 @@
 			},
 			/** 生成列的完整 inline style 字符串，包含 flex/width/min-width */
 			getCellStyle(index: number): string {
-				let style = ''
-				if (!this.isColumnFlex(index)) {
-					style = 'flex: none; width: ' + this.fieldWidths[index] + 'px;'
-				} else {
-					style = 'flex: 1;'
-				}
-				if (index < this.fieldMinWidths.length) {
-					const mw = this.fieldMinWidths[index]
-					if (mw > 0) {
-						style += ' min-width: ' + mw + 'px;'
-					}
-				}
-				return style
+				const actualW = this.getActualColumnWidth(index)
+				return 'flex: none; width: ' + actualW + 'px;'
 			},
 			initFields(fields: UTSJSONObject[]) {
 				this.fieldWidths = fields.map((field): number => {
@@ -688,23 +677,17 @@
 			/** 联动调整列宽：当前列增大则右邻列缩小，反之亦然 */
 			applyResize(delta: number) {
 				const idx = this.dragState.fieldIndex
-				// 当前列的 minWidth
-				let minW = 50 as number
-				if (idx >= 0 && idx < this.fieldMinWidths.length) {
-					const cfgMin = this.fieldMinWidths[idx]
-					if (cfgMin > 0) minW = cfgMin
-				}
+				// 手动拖拽时，赋予用户最大自由度，允许缩到极限 50px
+				const minW = 50 as number
+				
 				let newWidth = this.dragState.startWidth + delta
 				if (newWidth < minW) newWidth = minW
 
 				// 联动调整右邻列
 				const nextIdx = idx + 1
 				if (nextIdx < this.fieldWidths.length && this.dragState.startNextWidth > 0) {
-					let nextMinW = 50 as number
-					if (nextIdx < this.fieldMinWidths.length) {
-						const cfgNextMin = this.fieldMinWidths[nextIdx]
-						if (cfgNextMin > 0) nextMinW = cfgNextMin
-					}
+					const nextMinW = 50 as number
+					
 					// 右邻列宽度 = 初始宽度 - 实际偏移量
 					let nextWidth = this.dragState.startNextWidth - (newWidth - this.dragState.startWidth)
 					if (nextWidth < nextMinW) {
