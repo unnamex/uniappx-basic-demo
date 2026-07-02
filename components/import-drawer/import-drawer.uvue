@@ -106,14 +106,23 @@
 </template>
 
 <script setup lang="uts">
-	import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/data-package.uts'
-	import { selectPackageFile, validatePackage, importPackage, ImportProgressCallback } from '@/services/dataPackage.uts'
+	import { PackageManifest, ImportProgress, ImportResult, PackageInfo } from '@/types/data-package'
+	import { selectPackageFile, validatePackage, importPackage } from '@/services/dataPackage'
+	import { ImportProgressCallback } from '@/services/dataPackage'
 	// #ifdef WEB
-	import { handleDroppedFileWeb } from '@/services/dataPackage.uts'
+	import { handleDroppedFileWeb } from '@/services/dataPackage'
 	// #endif
-	import { initDatabase } from '@/services/database.uts'
+	import { initDatabase } from '@/services/database'
 	
 	const emit = defineEmits(['close', 'success'])
+
+	/**
+	 * 成功导入后返回主页并刷新
+	 */
+	const handleReturnHome = () => {
+		emit('success')
+		emit('close')
+	}
 
 	// 状态定义
 	const packageInfo = reactive({
@@ -354,13 +363,6 @@
 		emit('close')
 	}
 	
-	/**
-	 * 成功导入后返回主页并刷新
-	 */
-	const handleReturnHome = () => {
-		emit('success')
-		emit('close')
-	}
 </script>
 
 <style>

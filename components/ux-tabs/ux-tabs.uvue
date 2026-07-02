@@ -41,7 +41,7 @@
 	 * ux-tabs
 	 * Emulates Element UI Tabs with Fullscreen support
 	 */
-	import { toggleImmersiveFullscreen } from '@/utils/windowUtils.uts'
+	import { toggleImmersiveFullscreen } from '@/utils/windowUtils'
 
 	const props = defineProps({
 		modelValue: {

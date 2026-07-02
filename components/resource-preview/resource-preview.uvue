@@ -160,7 +160,8 @@
 
 <script setup lang="uts">
 	import KuxHarmonyPdf from '@/uni_modules/kux-harmony-pdf/components/kux-harmony-pdf/kux-harmony-pdf.uvue'
-	import { ResourceItem, formatDuration } from '@/types/resource'
+	import { ResourceItem } from '@/types/resource'
+	import { formatDuration } from '@/types/resource'
 	import { getCachedDocUrl, setCachedDocUrl } from '@/utils/fileOpenCache'
 	
 	// Props
@@ -173,6 +174,17 @@
 		(e: 'error', message: string): void
 		(e: 'loaded'): void
 	}>()
+
+	const resType = computed((): string => (props.resource as ResourceItem | null)?.type ?? '')
+	const resPath = computed((): string => (props.resource as ResourceItem | null)?.path ?? '')
+	const resName = computed((): string => {
+		const name = (props.resource as ResourceItem | null)?.name ?? ''
+		const lastDotIndex = name.lastIndexOf('.')
+		if (lastDotIndex > 0) {
+			return name.substring(0, lastDotIndex)
+		}
+		return name
+	})
 	
 	// 图片控制状态
 	const imageScale = ref(1.0)
@@ -209,7 +221,7 @@
 		imageLoaded.value = true
 	}
 	
-	watch(() => props.resource?.path, () => {
+	watch(resPath, () => {
 		imageLoaded.value = false
 		loadError.value = ''
 	})
@@ -301,21 +313,10 @@
 	}
 	
 	// 音频播放状态
-	
-	const resType = computed((): string => props.resource?.type ?? '')
-	const resPath = computed((): string => props.resource?.path ?? '')
-	const resName = computed((): string => {
-		const name = props.resource?.name ?? ''
-		const lastDotIndex = name.lastIndexOf('.')
-		if (lastDotIndex > 0) {
-			return name.substring(0, lastDotIndex)
-		}
-		return name
-	})
-	const resDuration = computed((): number => props.resource?.duration ?? 0)
-	const resThumbnail = computed((): string => props.resource?.thumbnail ?? '')
-	const resDescription = computed((): string => props.resource?.description ?? '')
-	const resId = computed((): string => props.resource?.id ?? '')
+	const resDuration = computed((): number => (props.resource as ResourceItem | null)?.duration ?? 0)
+	const resThumbnail = computed((): string => (props.resource as ResourceItem | null)?.thumbnail ?? '')
+	const resDescription = computed((): string => (props.resource as ResourceItem | null)?.description ?? '')
+	const resId = computed((): string => (props.resource as ResourceItem | null)?.id ?? '')
 	
 	// #ifdef APP
 	const webviewId = 'pdf_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
@@ -323,26 +324,26 @@
 	const docWebviewId = 'doc_' + Date.now() + '_' + Math.floor(Math.random() * 10000)
 
 	const pdfWebViewSrc = computed((): string => {
-		const res = props.resource
-		if (res == null || res.path == '') return ''
+		
+		if (resPath.value == '') return ''
 		// #ifdef APP-HARMONY
-		if (!res.path.startsWith('http://') && !res.path.startsWith('https://')) {
+		if (!resPath.value.startsWith('http://') && !resPath.value.startsWith('https://')) {
 			return '/static/pdf/pdfjs-viewer.html'
 		}
 		// #endif
-		const encodedSrc = encodeURIComponent(res.path)
+		const encodedSrc = encodeURIComponent(resPath.value)
 		return '/static/pdf/pdfjs-viewer.html?file=' + encodedSrc + '#?file=' + encodedSrc
 	})
 
 	const onPdfWebViewLoad = () => {
 		// #ifdef APP-HARMONY
-		const res = props.resource
-		if (res == null || res.path == '') return
-		if (res.path.startsWith('http://') || res.path.startsWith('https://')) return
+		
+		if (resPath.value == '') return
+		if (resPath.value.startsWith('http://') || resPath.value.startsWith('https://')) return
 		
 		try {
 			const fs = uni.getFileSystemManager()
-			const base64Str = fs.readFileSync(res.path, 'base64') as string
+			const base64Str = fs.readFileSync(resPath.value, 'base64') as string
 			// 修正: 传入第二个参数 component instance 以解决 cannot read property vm of undefined
 			const instance = getCurrentInstance()
 			const wvContext = uni.createWebviewContext(webviewId, instance?.proxy)
@@ -355,26 +356,26 @@
 	}
 
 	const cadWebViewSrc = computed((): string => {
-		const res = props.resource
-		if (res == null || res.path == '') return ''
+		
+		if (resPath.value == '') return ''
 		// #ifdef APP-HARMONY
-		if (!res.path.startsWith('http://') && !res.path.startsWith('https://')) {
+		if (!resPath.value.startsWith('http://') && !resPath.value.startsWith('https://')) {
 			return '/static/cad/cad-launcher.html'
 		}
 		// #endif
-		const encodedSrc = encodeURIComponent(res.path)
+		const encodedSrc = encodeURIComponent(resPath.value)
 		return '/static/cad/cad-launcher.html?file=' + encodedSrc + '#?file=' + encodedSrc
 	})
 
 	const onCadWebViewLoad = () => {
 		// #ifdef APP-HARMONY
-		const res = props.resource
-		if (res == null || res.path == '') return
-		if (res.path.startsWith('http://') || res.path.startsWith('https://')) return
+		
+		if (resPath.value == '') return
+		if (resPath.value.startsWith('http://') || resPath.value.startsWith('https://')) return
 		
 		try {
 			const fs = uni.getFileSystemManager()
-			const base64Str = fs.readFileSync(res.path, 'base64') as string
+			const base64Str = fs.readFileSync(resPath.value, 'base64') as string
 			const instance = getCurrentInstance()
 			const wvContext = uni.createWebviewContext(cadWebviewId, instance?.proxy)
 			wvContext.evalJS(`window.loadCadFromBase64('${base64Str}')`)
@@ -386,30 +387,30 @@
 	}
 
 	const docWebViewSrc = computed((): string => {
-		const res = props.resource
-		if (res == null || res.path == '') return ''
+		
+		if (resPath.value == '') return ''
 		// #ifdef APP-HARMONY
-		if (!res.path.startsWith('http://') && !res.path.startsWith('https://')) {
+		if (!resPath.value.startsWith('http://') && !resPath.value.startsWith('https://')) {
 			return '/static/ranuts-document/index.html'
 		}
 		// #endif
-		const encodedSrc = encodeURIComponent(res.path)
-		const encodedName = encodeURIComponent(res.name)
+		const encodedSrc = encodeURIComponent(resPath.value)
+		const encodedName = encodeURIComponent(resName.value)
 		return '/static/ranuts-document/index.html?src=' + encodedSrc + '&name=' + encodedName
 	})
 
 	const onDocWebViewLoad = () => {
 		// #ifdef APP-HARMONY
-		const res = props.resource
-		if (res == null || res.path == '') return
-		if (res.path.startsWith('http://') || res.path.startsWith('https://')) return
+		
+		if (resPath.value == '') return
+		if (resPath.value.startsWith('http://') || resPath.value.startsWith('https://')) return
 		
 		try {
 			const fs = uni.getFileSystemManager()
-			const base64Str = fs.readFileSync(res.path, 'base64') as string
+			const base64Str = fs.readFileSync(resPath.value, 'base64') as string
 			const instance = getCurrentInstance()
 			const wvContext = uni.createWebviewContext(docWebviewId, instance?.proxy)
-			wvContext.evalJS(`if(window.openDocumentFromBase64){ window.openDocumentFromBase64('${base64Str}', '${res.name}') }`)
+			wvContext.evalJS(`if(window.openDocumentFromBase64){ window.openDocumentFromBase64('${base64Str}', '${resName.value}') }`)
 		} catch (err: any) {
 			console.error("读取文档文件转 Base64 失败: ", err)
 			emit('error', '加载鸿蒙本地文档失败')
@@ -423,9 +424,9 @@
 	const audioContext = ref<any | null>(null)
 	
 	const progressPercent = computed((): number => {
-		const res = props.resource
-		if (res == null || res.duration <= 0) return 0
-		return (currentTime.value / res.duration) * 100
+		
+		if (resDuration.value <= 0) return 0
+		return (currentTime.value / resDuration.value) * 100
 	})
 	
 	const isOfficeDoc = (type: string): boolean => {
@@ -437,6 +438,16 @@
 		return ['clw', 'dwg'].includes(type)
 	}
 	
+	const retryLoad = () => {
+		loadError.value = ''
+		imageLoaded.value = false
+		if (props.resource != null) {
+			// #ifdef WEB
+			handleResourceSwitch(props.resource)
+			// #endif
+		}
+	}
+
 	// #ifdef WEB
 	// PDF预览容器引用
 	const pdfFrame = ref<UniElement | null>(null)
@@ -687,13 +698,6 @@
 		})
 	}
 	
-	const retryLoad = () => {
-		loadError.value = ''
-		if (props.resource != null) {
-			handleResourceSwitch(props.resource)
-		}
-	}
-
 	const handleResourceSwitch = (newVal : ResourceItem | null) => {
 		if (newVal != null && newVal.type == 'pdf') {
 			docRenderingSrc = '' // 切到其他类型，重置文档防抖锁
@@ -755,12 +759,12 @@
 	}
 	
 	const toggleAudio = (): void => {
-		const res = props.resource
-		if (res == null) return
+		
+		if (resPath.value == '') return
 		
 		// #ifdef WEB
 		if (audioContext.value == null) {
-			const audio = new Audio(res.path)
+			const audio = new Audio(resPath.value)
 			audio.ontimeupdate = () => {
 				currentTime.value = audio.currentTime
 			}
@@ -784,7 +788,7 @@
 		// App 端使用 uni.createInnerAudioContext
 		if (audioContext.value == null) {
 			const innerCtx = uni.createInnerAudioContext()
-			innerCtx.src = res.path
+			innerCtx.src = resPath.value
 			innerCtx.onTimeUpdate(() => {
 				currentTime.value = innerCtx.currentTime
 			})
@@ -805,13 +809,11 @@
 		// #endif
 	}
 	
-	const openDocument = (): void => {
-		const res = props.resource
-		if (res == null) return
-		
+	const openExternalResource = () => {
+		if (resPath.value == '') return
 		// #ifdef APP-ANDROID || APP-HARMONY
 		uni.openDocument({
-			filePath: res.path,
+			filePath: resPath.value,
 			fail: (err: any) => {
 				const errMsg = err instanceof Error ? err.message : (err != null ? err.toString() : 'unknown');
 				uni.showToast({
@@ -823,12 +825,12 @@
 		// #endif
 		
 		// #ifdef WEB
-		window.open(res.path, '_blank')
+		window.open(resPath.value, '_blank')
 		// #endif
 	}
 	
 	// 监听资源变化，重置状态
-	watch(() => props.resource, (newVal: ResourceItem | null) => {
+	watch(resPath, () => {
 		resetImage()
 		
 		// 停止当前播放

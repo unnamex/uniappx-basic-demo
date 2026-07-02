@@ -96,7 +96,7 @@
 	const showDocModal = ref(false)
 
 	// 获取应用版本号
-	const appVersion = ref(uni.getAppBaseInfo().appVersion || '1.0.0')
+	const appVersion = ref(uni.getAppBaseInfo().appVersion ?? '1.0.0')
 
 	const isPC = ref(false)
 	// #ifdef WEB
@@ -105,15 +105,18 @@
 	}
 	// #endif
 
-	onMounted(async () => {
-		// #ifdef WEB
-		if ((window as any).electronAPI != null) {
-			const api = (window as any).electronAPI
-			try {
-				appVersion.value = await api.getVersion()
-			} catch (e) {}
+	onMounted(() => {
+		const checkSys = async () => {
+			// #ifdef WEB
+			if ((window as any).electronAPI != null) {
+				const api = (window as any).electronAPI
+				try {
+					appVersion.value = await api.getVersion()
+				} catch (e) {}
+			}
+			// #endif
 		}
-		// #endif
+		checkSys()
 	})
 
 	const handleImport = () => {

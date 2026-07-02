@@ -62,7 +62,8 @@
 </template>
 
 <script setup lang="uts">
-	import { ResourceItem, formatDuration } from '@/types/resource'
+	import { ResourceItem } from '@/types/resource'
+	import { formatDuration } from '@/types/resource'
 	
 	// Props
 	const props = defineProps<{

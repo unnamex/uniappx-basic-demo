@@ -1,4 +1,4 @@
-import { Interceptors, RequestInterceptor, RequestInterceptorSync, ResponseInterceptor, ResponseInterceptorSync, ResponseXhrInterceptor, ResponseRejectInterceptor, RequestRejectInterceptor, RequestRejectInterceptorSync, ResponseFailInterceptor } from "../utssdk/interface.uts";
+import { Interceptors, RequestInterceptor, RequestInterceptorSync, ResponseInterceptor, ResponseInterceptorSync, ResponseXhrInterceptor, ResponseRejectInterceptor, RequestRejectInterceptor, RequestRejectInterceptorSync, ResponseFailInterceptor } from "../utssdk/interface";
 // import * as KuxRequest from '../utssdk/interface';
 import { setInterceptors } from './store/index';
 

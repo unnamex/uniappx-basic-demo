@@ -17,37 +17,37 @@ export const ResourceType_DWG = 'dwg'
  * 资源项类型
  */
 export type ResourceItem = {
-	id: string              // 唯一ID: "res_001"
-	type: string            // 资源类型: image | video | audio | document
-	name: string            // 显示名称: "装配示意图"
-	path: string            // 本地存储路径（导入后更新）
-	originalPath: string    // 原始包内路径: "assets/images/img_001.jpg"
-	thumbnail: string       // 缩略图路径（图片可为空，视频/音频需要）
-	duration: number        // 时长（视频/音频，秒）, 0 表示无时长
-	size: number            // 文件大小（字节）, 0 表示未知
-	description: string     // 描述
-	nodeId: string          // 关联节点ID（工艺/工序/工步）
-	sortOrder: number       // 排序序号
+	id: string;// 唯一ID: "res_001"
+	type: string;// 资源类型: image | video | audio | document
+	name: string;// 显示名称: "装配示意图"
+	path: string;// 本地存储路径（导入后更新）
+	originalPath: string;// 原始包内路径: "assets/images/img_001.jpg"
+	thumbnail: string;// 缩略图路径（图片可为空，视频/音频需要）
+	duration: number;// 时长（视频/音频，秒）, 0 表示无时长
+	size: number;// 文件大小（字节）, 0 表示未知
+	description: string;// 描述
+	nodeId: string;// 关联节点ID（工艺/工序/工步）
+	sortOrder: number;// 排序序号
 }
 
 /**
  * 预览状态类型
  */
 export type PreviewState = {
-	resource: ResourceItem | null  // 当前预览的资源
-	isPlaying: boolean             // 是否正在播放（视频/音频）
-	currentTime: number            // 当前播放时间（秒）
-	duration: number               // 总时长（秒）
+	resource: ResourceItem | null;// 当前预览的资源
+	isPlaying: boolean;// 是否正在播放（视频/音频）
+	currentTime: number;// 当前播放时间（秒）
+	duration: number;// 总时长（秒）
 }
 
 /**
  * 资源列表数据（按节点分组）
  */
 export type NodeResources = {
-	nodeId: string           // 节点ID
-	nodeName: string         // 节点名称
-	nodeType: string         // 节点类型: process | operation | step
-	attachment: ResourceItem[] // 附件列表
+	nodeId: string;// 节点ID
+	nodeName: string;// 节点名称
+	nodeType: string;// 节点类型: process | operation | step
+	attachment: ResourceItem[];// 附件列表
 }
 
 /**

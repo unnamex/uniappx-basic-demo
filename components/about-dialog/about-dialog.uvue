@@ -71,39 +71,42 @@
 	// #endif
 	const isPC = ref(false)
 
-	onMounted(async () => {
-		// 获取模型信息
-		const savedModel = uni.getStorageSync('aiModel') as string | null
-		if (savedModel != null && savedModel != '') {
-			currentAiModel.value = savedModel
-		}
-		
-		// #ifdef WEB
-		if ((window as any).electronAPI != null) {
-			isPC.value = true
-			const api = (window as any).electronAPI
-			
-			// 检测 AI 特性是否可用
-			if (typeof api.checkAiFeature === 'function') {
-				try {
-					hasAiFeature.value = await api.checkAiFeature()
-				} catch(e) {}
+	onMounted(() => {
+		const checkSys = async () => {
+			// 获取模型信息
+			const savedModel = uni.getStorageSync('aiModel') as string | null
+			if (savedModel != null && savedModel != '') {
+				currentAiModel.value = savedModel
 			}
 			
-			try {
-				appVersion.value = await api.getVersion()
-			} catch (e) {}
-
-			try {
-				const versions = api.getVersions()
-				if (versions != null) {
-					electronVersion.value = versions.electron || ''
-					chromeVersion.value = versions.chrome || ''
-					nodeVersion.value = versions.node || ''
+			// #ifdef WEB
+			if ((window as any).electronAPI != null) {
+				isPC.value = true
+				const api = (window as any).electronAPI
+				
+				// 检测 AI 特性是否可用
+				if (typeof api.checkAiFeature === 'function') {
+					try {
+						hasAiFeature.value = await api.checkAiFeature()
+					} catch(e) {}
 				}
-			} catch(e) {}
+				
+				try {
+					appVersion.value = await api.getVersion()
+				} catch (e) {}
+
+				try {
+					const versions = api.getVersions()
+					if (versions != null) {
+						electronVersion.value = versions.electron || ''
+						chromeVersion.value = versions.chrome || ''
+						nodeVersion.value = versions.node || ''
+					}
+				} catch(e) {}
+			}
+			// #endif
 		}
-		// #endif
+		checkSys()
 
 		if (hasAiFeature.value) {
 			uni.request({
@@ -121,12 +124,12 @@
 		}
 	})
 
-	const handleMaskClick = () => {
-		close()
-	}
-
 	const close = () => {
 		emit('close')
+	}
+
+	const handleMaskClick = () => {
+		close()
 	}
 
 	const copyInfo = () => {

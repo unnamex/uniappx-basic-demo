@@ -459,18 +459,18 @@
 </template>
 
 <script setup lang="uts">
-	import { initDatabase, querySQL, executeSQL } from '@/services/database.uts'
-	import { ImportProgress, ImportResult } from '@/types/data-package.uts'
-	import { ImportProgressCallback } from '@/services/dataPackage.uts'
+	import { initDatabase, querySQL, executeSQL } from '@/services/database'
+	import { ImportProgress, ImportResult } from '@/types/data-package'
+	import { ImportProgressCallback } from '@/services/dataPackage'
 	// #ifdef WEB
-	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database.uts'
-	import { handleDroppedFileWebAndImport } from '@/services/dataPackage.uts'
+	import { webGetAll, webGetByIndex, webGetCount, webClearStore } from '@/services/database'
+	import { handleDroppedFileWebAndImport } from '@/services/dataPackage'
 	// #endif
 
 	import { ResourceItem } from '@/types/resource'
-	import { getResourcesByNodeId, clearAllResources } from '@/services/resourceService.uts'
-	import { queryNodeById, queryChildrenByParentId } from '@/services/processService.uts'
-	import { getIconPath } from '@/utils/iconRegistry.uts'
+	import { getResourcesByNodeId, clearAllResources } from '@/services/resourceService'
+	import { queryNodeById, queryChildrenByParentId } from '@/services/processService'
+	import { getIconPath } from '@/utils/iconRegistry'
 
 	import OutsiderLayout from '@/uni_modules/outsider-layout/components/outsider-layout/outsider-layout.uvue'
 	// #ifdef WEB
@@ -484,7 +484,7 @@
 	import ResourceList from '@/components/resource-list/resource-list.uvue'
 	import UxBreadcrumb from '@/components/ux-breadcrumb/ux-breadcrumb.uvue'
 	import WelcomeView from '@/components/welcome-view/welcome-view.uvue'
-	import { toggleImmersiveFullscreen } from '@/utils/windowUtils.uts'
+	import { toggleImmersiveFullscreen } from '@/utils/windowUtils'
 
 	// 获取状态栏高度（自定义导航栏模式下需要手动避让状态栏）
 	const statusBarHeight = ref(0)
@@ -496,6 +496,36 @@
 		windowInfo.value = uni.getWindowInfo()
 	}
 	// #endif
+
+	// State
+	const leftGroup = ref<GroupVM | null>(null)
+	const topGroup = ref<GroupVM | null>(null)
+	const bottomGroup = ref<GroupVM | null>(null)
+	
+	const activeTabs = reactive(new Map<string, string>())
+	const statusMessage = ref('Ready')
+	const isPC = ref(false)
+
+	// ============ AI 模式状态 ============
+	// #ifdef WEB
+	const hasAiFeature = ref(true)
+	// #endif
+	// #ifndef WEB
+	const hasAiFeature = ref(false)
+	// #endif
+	const isAiMode = ref(false)
+	// #ifdef WEB
+	const aiPanelRef = ref<ComponentPublicInstance | null>(null)
+	// #endif
+	// #ifndef WEB
+	const aiPanelRef = ref<any | null>(null)
+	// #endif
+	
+	const aiPanelWidth = ref(420)
+	const isAiMaximized = ref(false)
+	const isAiDragging = ref(false)
+	const aiStartX = ref(0)
+	const aiStartWidth = ref(0)
 
 	const settingsMenuTop = computed((): number => {
 		// PC端自定义标题栏高度为36px，其他端为基础偏移量加状态栏高度
@@ -574,35 +604,7 @@
 		tabs: TabVM[]
 	}
 
-	// State
-	const leftGroup = ref<GroupVM | null>(null)
-	const topGroup = ref<GroupVM | null>(null)
-	const bottomGroup = ref<GroupVM | null>(null)
-	
-	const activeTabs = reactive(new Map<string, string>())
-	const statusMessage = ref('Ready')
-	const isPC = ref(false)
 
-	// ============ AI 模式状态 ============
-	// #ifdef WEB
-	const hasAiFeature = ref(true)
-	// #endif
-	// #ifndef WEB
-	const hasAiFeature = ref(false)
-	// #endif
-	const isAiMode = ref(false)
-	// #ifdef WEB
-	const aiPanelRef = ref<ComponentPublicInstance | null>(null)
-	// #endif
-	// #ifndef WEB
-	const aiPanelRef = ref<any | null>(null)
-	// #endif
-	
-	const aiPanelWidth = ref(420)
-	const isAiMaximized = ref(false)
-	const isAiDragging = ref(false)
-	const aiStartX = ref(0)
-	const aiStartWidth = ref(0)
 	
 	const toggleAiMode = async () => {
 		if (!isAiMode.value) {
@@ -695,13 +697,13 @@
 	}
 	// ===================================
 
-	const isDataLoaded = computed((): boolean => tableData.value.length > 0)
-	
 	// Left panel Tree Data (Ref to data in leftGroup for template compatibility)
 	const tableData = ref([] as UTSJSONObject[])
 	// 树表字段配置 - 将从数据包中加载，此处为默认值
 	const fields = ref([] as UTSJSONObject[])
 	const selectedRow = ref(null as UTSJSONObject | null)
+
+	const isDataLoaded = computed((): boolean => tableData.value.length > 0)
 	
 	// 资源预览相关状态
 	const nodeResources = ref([] as ResourceItem[])
@@ -828,7 +830,8 @@
 	}
 
 	// ====== 树节点扁平化及导航 ======
-	const flattenTree = (nodes: UTSJSONObject[]): UTSJSONObject[] => {
+	let flattenTree: ((nodes: UTSJSONObject[]) => UTSJSONObject[]) | null = null
+	flattenTree = (nodes: UTSJSONObject[]): UTSJSONObject[] => {
 		const result = [] as UTSJSONObject[]
 		for (let i = 0; i < nodes.length; i++) {
 			const node = nodes[i]
@@ -836,7 +839,7 @@
 			const children = node['children']
 			if (children != null && Array.isArray(children)) {
 				const childNodes = children as UTSJSONObject[]
-				const flatChildren = flattenTree(childNodes)
+				const flatChildren = flattenTree!(childNodes)
 				for (let j = 0; j < flatChildren.length; j++) {
 					result.push(flatChildren[j])
 				}
@@ -855,51 +858,10 @@
 		return (node['innerId'] as string | null) ?? (node['id'] as string | null) ?? ''
 	}
 
-	const hasPrevNode = computed((): boolean => {
-		if (selectedRow.value == null) return false
-		const targetId = getNodeId(selectedRow.value!)
-		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
-		return index > 0
-	})
 
-	const hasNextNode = computed((): boolean => {
-		if (selectedRow.value == null) return false
-		const targetId = getNodeId(selectedRow.value!)
-		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
-		return index >= 0 && index < flatNodes.value.length - 1
-	})
 
-	const selectedRowId = computed((): string | null => {
-		if (selectedRow.value == null) return null
-		return getNodeId(selectedRow.value!)
-	})
-	
-	const isProcessNode = computed((): boolean => {
-		if (selectedRow.value == null) return false
-		return (selectedRow.value!['type'] as string) == 'process'
-	})
-
-	const goToPrevNode = () => {
-		if (!hasPrevNode.value) return
-		const list = flatNodes.value
-		const targetId = getNodeId(selectedRow.value!)
-		const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
-		if (index > 0) {
-			const prevNode = list[index - 1]
-			handleRowClick(prevNode)
-		}
-	}
-
-	const goToNextNode = () => {
-		if (!hasNextNode.value) return
-		const list = flatNodes.value
-		const targetId = getNodeId(selectedRow.value!)
-		const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
-		if (index >= 0 && index < list.length - 1) {
-			const nextNode = list[index + 1]
-			handleRowClick(nextNode)
-		}
-	}
+	let initData: ((targetNodeId: string | null) => Promise<void>) | null = null
+	let loadLeftPanel: ((targetNodeId: string | null) => Promise<void>) | null = null
 
 	onLoad((options: OnLoadOptions) => {
 		// console.log('Page Load')
@@ -937,7 +899,7 @@
 		window.addEventListener('drop', handleGlobalDrop)
 		// #endif
 		const nodeId = options['id'] as string | null
-		initData(nodeId)
+		initData!(nodeId)
 	})
 	
 	// 自动静默重建 AI 索引
@@ -974,7 +936,7 @@
 		// #endif
 	})
 	
-	const initData = async (targetNodeId: string | null = null) => {
+	initData = async (targetNodeId: string | null) => {
 		// #ifdef WEB
 		// Web: Check if data exists in IndexedDB
 		await initDatabase()
@@ -993,12 +955,12 @@
 			// 尝试多种可能的列名
 			const val = row['total'] ?? row['count'] ?? row['count(*)'] ?? row['COUNT(*)']
 			if (val != null) {
-				count = Number(val)
+				count = parseInt(`${val}`)
 			} else {
 				// 如果所有已知列名都不匹配，取第一个 key 的值
 				const keys = Object.keys(row)
 				if (keys.length > 0) {
-					count = Number(row[keys[0]])
+					count = parseInt(`${row[keys[0]]}`)
 				}
 			}
 		}
@@ -1010,7 +972,7 @@
 			console.log('No data found, attempting to load default package if available...')
 		} else {
 			statusMessage.value = 'Data loaded from DB'
-			await loadLeftPanel(targetNodeId)
+			await loadLeftPanel!(targetNodeId)
 		}
 	}
 	
@@ -1046,7 +1008,7 @@
 	let dragLeaveTimer: number | null = null
 	
 	const handleImportSuccess = () => {
-		initData(null)
+		initData!(null)
 		autoRebuildAiIndex()
 	}
 	
@@ -1137,8 +1099,8 @@
 		}
 	}
 	
-	const loadLeftPanel = async (targetNodeId: string | null = null) => {
-		// 首先获取左侧树数据
+	loadLeftPanel = async (targetNodeId: string | null) => {
+		// 查询顶层工艺节点首先获取左侧树数据
 		const treeData = await loadTableTreeFromMeta()
 		if (treeData.length > 0) {
 			// 将数据加工并直接赋值给左侧树
@@ -1685,6 +1647,52 @@
 		}
 	}
 	
+	const hasPrevNode = computed((): boolean => {
+		if (selectedRow.value == null) return false
+		const targetId = getNodeId(selectedRow.value!)
+		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
+		return index > 0
+	})
+
+	const hasNextNode = computed((): boolean => {
+		if (selectedRow.value == null) return false
+		const targetId = getNodeId(selectedRow.value!)
+		const index = flatNodes.value.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
+		return index >= 0 && index < flatNodes.value.length - 1
+	})
+
+	const selectedRowId = computed((): string | null => {
+		if (selectedRow.value == null) return null
+		return getNodeId(selectedRow.value!)
+	})
+	
+	const isProcessNode = computed((): boolean => {
+		if (selectedRow.value == null) return false
+		return (selectedRow.value!['type'] as string) == 'process'
+	})
+
+	const goToPrevNode = () => {
+		if (!hasPrevNode.value) return
+		const list = flatNodes.value
+		const targetId = getNodeId(selectedRow.value!)
+		const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
+		if (index > 0) {
+			const prevNode = list[index - 1]
+			handleRowClick(prevNode)
+		}
+	}
+
+	const goToNextNode = () => {
+		if (!hasNextNode.value) return
+		const list = flatNodes.value
+		const targetId = getNodeId(selectedRow.value!)
+		const index = list.findIndex((n: UTSJSONObject): boolean => getNodeId(n) == targetId)
+		if (index >= 0 && index < list.length - 1) {
+			const nextNode = list[index + 1]
+			handleRowClick(nextNode)
+		}
+	}
+
 	// 将节点数据绑定到 Group 中的各个组件
 	// 解析数据源类型（向后兼容：无 dataSource 时按组件类型默认）
 	const getDataSourceType = (comp: ComponentVM): string => {

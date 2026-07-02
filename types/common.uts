@@ -7,36 +7,36 @@
  * 通用 API 响应类型
  */
 export type ApiResponse<T> = {
-	code: number
-	message: string
-	data: T | null
+	code: number;
+	message: string;
+	data: T | null;
 }
 
 /**
  * 分页参数类型
  */
 export type PageParams = {
-	page: number
-	pageSize: number
-	keyword: string
+	page: number;
+	pageSize: number;
+	keyword: string;
 }
 
 /**
  * 分页结果类型
  */
 export type PageResult<T> = {
-	list: T[]
-	total: number
-	page: number
-	pageSize: number
+	list: T[];
+	total: number;
+	page: number;
+	pageSize: number;
 }
 
 /**
  * 文件信息类型
  */
 export type FileInfo = {
-	name: string
-	path: string
-	size: number
-	extension: string
+	name: string;
+	path: string;
+	size: number;
+	extension: string;
 }

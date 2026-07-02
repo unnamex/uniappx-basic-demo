@@ -25,7 +25,7 @@
 
 <script setup lang="uts">
 	// #ifdef APP-HARMONY
-	import '../../index.uts'
+	import '../../index'
 	// #endif
 	
 	const props = defineProps<{

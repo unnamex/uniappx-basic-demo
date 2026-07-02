@@ -25,9 +25,5 @@
 		"navigationBarBackgroundColor": "#FFFFFF",
 		"backgroundColor": "#F5F7FA",
 		"pageOrientation": "auto"
-	},
-	"uniIdRouter": {
-		"loginPage": "",
-		"needLogin": []
 	}
 }

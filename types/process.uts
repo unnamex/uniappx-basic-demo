@@ -12,13 +12,13 @@ export const NodeLevel_ACTION_UNIT = 'ActionUnit'
  * 关联资源类型 (V5/V6 均使用)
  */
 export type NodeResource = {
-	id: string              // 资源唯一 ID
-	type: string            // 资源类型: image | video | audio | document | cad
-	name: string            // 显示名称
-	path: string            // 包内路径（导入后更新为本地路径）
-	thumbnail: string       // 缩略图路径
-	duration: number        // 时长（秒）
-	description: string     // 描述
+	id: string;// 资源唯一 ID
+	type: string;// 资源类型: image | video | audio | document | cad
+	name: string;// 显示名称
+	path: string;// 包内路径（导入后更新为本地路径）
+	thumbnail: string;// 缩略图路径
+	duration: number;// 时长（秒）
+	description: string;// 描述
 }
 
 /**
@@ -26,14 +26,14 @@ export type NodeResource = {
  * V6 中轻量化树结构
  */
 export type ProcessTreeNode = {
-	innerId: string
-	code: string
-	name: string
-	targetClassId: string
-	classId: string
-	tabs_top: string
-	tabs_bottom: string
-	children: ProcessTreeNode[]
+	innerId: string;
+	code: string;
+	name: string;
+	targetClassId: string;
+	classId: string;
+	tabs_top: string;
+	tabs_bottom: string;
+	children: ProcessTreeNode[];
 }
 
 /**
@@ -45,127 +45,127 @@ export type ProcessTreeNode = {
 
 /** 工艺实体 */
 export type ProcessEntity = {
-	inner_id: string
-	code: string
-	name: string
-	class_id: string | null
-	class_id_display: string | null
-	class_id_business_icon: string | null
-	class_id_icon: string | null
-	version: string | null
-	full_version_no: string | null
-	state_name: string | null
+	inner_id: string;
+	code: string;
+	name: string;
+	class_id: string | null;
+	class_id_display: string | null;
+	class_id_business_icon: string | null;
+	class_id_icon: string | null;
+	version: string | null;
+	full_version_no: string | null;
+	state_name: string | null;
 	
-	checkout_state: string | null
-	checkout_state_display: string | null
-	modify_by_id: string | null
-	modify_by_id_display: string | null
-	modify_time: string | null
-	create_by_id: string | null
-	create_by_id_display: string | null
-	create_time: string | null
-	create_time_display: string | null
-	context_name: string | null
-	context_id: string | null
-	context_id_display: string | null
-	department_name: string | null
-	workshop_name: string | null
-	personalworkspace: string | null
-	personalworkspace_display: string | null
-	folder_path: string | null
-	phase_id: string | null
-	phase_id_display: string | null
-	secret_id: string | null
-	secret_id_display: string | null
-	life_cycle_template: string | null
-	life_cycle_template_display: string | null
-	task_name: string | null
-	route_content: string | null
-	mfg_node_name: string | null
-	process_characteristics: string | null
-	note: string | null
+	checkout_state: string | null;
+	checkout_state_display: string | null;
+	modify_by_id: string | null;
+	modify_by_id_display: string | null;
+	modify_time: string | null;
+	create_by_id: string | null;
+	create_by_id_display: string | null;
+	create_time: string | null;
+	create_time_display: string | null;
+	context_name: string | null;
+	context_id: string | null;
+	context_id_display: string | null;
+	department_name: string | null;
+	workshop_name: string | null;
+	personalworkspace: string | null;
+	personalworkspace_display: string | null;
+	folder_path: string | null;
+	phase_id: string | null;
+	phase_id_display: string | null;
+	secret_id: string | null;
+	secret_id_display: string | null;
+	life_cycle_template: string | null;
+	life_cycle_template_display: string | null;
+	task_name: string | null;
+	route_content: string | null;
+	mfg_node_name: string | null;
+	process_characteristics: string | null;
+	note: string | null;
 	
-	part_code: string | null
-	part_name: string | null
-	part_class_id: string | null
-	part_class_id_display: string | null
-	part_class_id_business_icon: string | null
-	part_modify_by_id: string | null
-	part_modify_by_id_display: string | null
-	part_modify_time: string | null
-	part_context_name: string | null
-	part_phase_id: string | null
-	part_phase_id_display: string | null
-	part_secret_id: string | null
-	part_secret_id_display: string | null
-	part_state_name: string | null
-	part_full_version_no: string | null
+	part_code: string | null;
+	part_name: string | null;
+	part_class_id: string | null;
+	part_class_id_display: string | null;
+	part_class_id_business_icon: string | null;
+	part_modify_by_id: string | null;
+	part_modify_by_id_display: string | null;
+	part_modify_time: string | null;
+	part_context_name: string | null;
+	part_phase_id: string | null;
+	part_phase_id_display: string | null;
+	part_secret_id: string | null;
+	part_secret_id_display: string | null;
+	part_state_name: string | null;
+	part_full_version_no: string | null;
 	
-	tabs_top: string | null
-	tabs_bottom: string | null
-	sort_order: number
-	extra_json: string | null
-	created_at: string | null
-	updated_at: string | null
+	tabs_top: string | null;
+	tabs_bottom: string | null;
+	sort_order: number;
+	extra_json: string | null;
+	created_at: string | null;
+	updated_at: string | null;
 }
 
 /** 工序实体 */
 export type OperationEntity = {
-	inner_id: string
-	process_id: string
-	code: string | null
-	name: string
-	serial_number: string | null
-	class_id: string | null
-	class_id_display: string | null
-	is_key: string | null
-	is_key_display: string | null
-	content: string | null
-	tabs_top: string | null
-	tabs_bottom: string | null
-	sort_order: number
-	extra_json: string | null
-	created_at: string | null
-	updated_at: string | null
+	inner_id: string;
+	process_id: string;
+	code: string | null;
+	name: string;
+	serial_number: string | null;
+	class_id: string | null;
+	class_id_display: string | null;
+	is_key: string | null;
+	is_key_display: string | null;
+	content: string | null;
+	tabs_top: string | null;
+	tabs_bottom: string | null;
+	sort_order: number;
+	extra_json: string | null;
+	created_at: string | null;
+	updated_at: string | null;
 }
 
 /** 工步实体 */
 export type StepEntity = {
-	inner_id: string
-	operation_id: string
-	process_id: string
-	code: string | null
-	name: string
-	serial_number: string | null
-	class_id: string | null
-	class_id_display: string | null
-	note: string | null
-	content: string | null
-	tabs_top: string | null
-	tabs_bottom: string | null
-	sort_order: number
-	extra_json: string | null
-	created_at: string | null
-	updated_at: string | null
+	inner_id: string;
+	operation_id: string;
+	process_id: string;
+	code: string | null;
+	name: string;
+	serial_number: string | null;
+	class_id: string | null;
+	class_id_display: string | null;
+	note: string | null;
+	content: string | null;
+	tabs_top: string | null;
+	tabs_bottom: string | null;
+	sort_order: number;
+	extra_json: string | null;
+	created_at: string | null;
+	updated_at: string | null;
 }
 
 /** 动作实体 */
 export type ActionEntity = {
-	inner_id: string
-	step_id: string
-	operation_id: string
-	process_id: string
-	code: string | null
-	name: string
-	serial_number: string | null
-	class_id: string | null
-	class_id_display: string | null
-	note: string | null
-	content: string | null
-	tabs_top: string | null
-	tabs_bottom: string | null
-	sort_order: number
-	extra_json: string | null
-	created_at: string | null
-	updated_at: string | null
+	inner_id: string;
+	step_id: string;
+	operation_id: string;
+	process_id: string;
+	code: string | null;
+	name: string;
+	serial_number: string | null;
+	class_id: string | null;
+	class_id_display: string | null;
+	note: string | null;
+	content: string | null;
+	tabs_top: string | null;
+	tabs_bottom: string | null;
+	sort_order: number;
+	extra_json: string | null;
+	created_at: string | null;
+	updated_at: string | null;
 }

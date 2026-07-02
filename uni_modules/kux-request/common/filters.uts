@@ -1,4 +1,4 @@
-import { FilterOptions, PendingRequests, RequestConfig } from "../utssdk/interface.uts";
+import { FilterOptions, PendingRequests, RequestConfig } from "../utssdk/interface";
 // import * as KuxRequest from '../utssdk/interface';
 
 export class RequestFilters {

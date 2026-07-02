@@ -1,4 +1,4 @@
-import { Interceptors, PendingRequests } from "../../utssdk/interface.uts";
+import { Interceptors, PendingRequests } from "../../utssdk/interface";
 // #ifdef APP-HARMONY
 import { reactive } from '../../utssdk/app-harmony/NativeCode.ets';
 // #endif

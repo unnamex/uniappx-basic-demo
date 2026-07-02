@@ -1,4 +1,4 @@
-import { RequestConfig } from "../utssdk/interface.uts";
+import { RequestConfig } from "../utssdk/interface";
 // import * as KuxRequest from '../utssdk/interface';
 import { Request } from './request';
 import { Utils } from './utils/index';

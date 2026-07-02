@@ -137,6 +137,9 @@
 		startNextWidth : number
 		fieldIndex : number
 	}
+	interface IResizeObserver {
+		disconnect(): void
+	}
 
 	export default {
 		name: "ux-table",
@@ -180,7 +183,7 @@
 				/** 容器实际宽度（由 UniResizeObserver 自动更新，用于原生端确保表格填满容器） */
 				measuredContainerWidth: 0 as number,
 				/** ResizeObserver 实例引用（原生端为 UniResizeObserver，Web 端为浏览器 ResizeObserver） */
-				resizeObserver: null as any
+				resizeObserver: null as any | null
 			}
 		},
 		computed: {
@@ -786,7 +789,8 @@
 		},
 		unmounted() {
 			if (this.resizeObserver != null) {
-				(this.resizeObserver as any).disconnect()
+				// @ts-ignore
+				(this.resizeObserver as IResizeObserver).disconnect()
 				this.resizeObserver = null
 			}
 		}

@@ -127,7 +127,7 @@ export function initDatabase(): Promise<boolean> {
  * 初始化 SQLite 数据库（App端）
  */
 function initSQLiteDatabase(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
+	return new Promise<void>((resolve, reject) => {
 		try {
 			// #ifdef APP-ANDROID
 			const context = UTSAndroid.getAppContext()
@@ -186,7 +186,7 @@ function initHarmonyDatabase(): Promise<void> {
  * 创建数据表
  */
 function createTables(): Promise<void> {
-	return new Promise((resolve: () => void, reject: (reason: any) => void) => {
+	return new Promise<void>((resolve, reject) => {
 		const createProcessTableSQL = `
 			CREATE TABLE IF NOT EXISTS t_process (
 				inner_id TEXT PRIMARY KEY,
@@ -605,15 +605,16 @@ export function querySQL(sql: string, params: any[] = []): Promise<UTSJSONObject
 					const row: UTSJSONObject = {}
 					const columnCount = cursor.getColumnCount()
 					for (let i = 0; i < columnCount; i++) {
-						const columnName = cursor.getColumnName(i)
-						const type = cursor.getType(i)
+						const idx = i as Int
+						const columnName = cursor.getColumnName(idx)
+						const type = cursor.getType(idx)
 						
 						if (type == 3) { // STRING
-							row[columnName] = cursor.getString(i)
+							row[columnName] = cursor.getString(idx)
 						} else if (type == 1) { // INTEGER
-							row[columnName] = cursor.getLong(i)
+							row[columnName] = cursor.getLong(idx)
 						} else if (type == 2) { // FLOAT
-							row[columnName] = cursor.getDouble(i)
+							row[columnName] = cursor.getDouble(idx)
 						} else if (type == 0) { // NULL
 							row[columnName] = null
 						} else if (type == 4) { // BLOB

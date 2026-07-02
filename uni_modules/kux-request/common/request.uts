@@ -1,4 +1,4 @@
-import { RequestFilters } from "./filters.uts";
+import { RequestFilters } from "./filters";
 import { FilterOptions, RequestConfig, RequestInterceptor, RequestInterceptorSync, ResponseInterceptor, ResponseXhrInterceptor, UseOptions, UseRetryOptions, RequestFailCallback, ResponseRejectInterceptor, RequestRejectInterceptor, ResponseFailInterceptor } from "../utssdk/interface";
 // import * as KuxRequest from '../utssdk/interface';
 import { getState, State } from './store/index';

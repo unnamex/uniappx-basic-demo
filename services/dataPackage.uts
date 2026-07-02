@@ -1,10 +1,11 @@
-import { ComponentConfig, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package.uts'
-import { ResourceItem, inferResourceType } from '@/types/resource'
+import { ComponentConfig, ImportProgress, ImportResult, ManifestFileRefs, PackageInfo, PackageManifest, TabConfig, TabGroup } from '@/types/data-package'
+import { ResourceItem } from '@/types/resource'
+import { inferResourceType } from '@/types/resource'
 import { decryptPackage, decryptPackageAsync, PRESET_KEY } from '@/utils/crypto'
 // #ifdef APP-HARMONY
 import { streamDecryptHarmony } from '@/utils/crypto'
 // #endif
-import type { DecryptResult } from '@/utils/crypto'
+import { DecryptResult } from '@/utils/crypto'
 import { beginTransaction, endTransaction, executeSQL, setTransactionSuccessful } from '@/services/database'
 import { saveResource, saveResources, parseAttachmentFile, getAssetsBasePath } from '@/services/resourceService'
 // #ifdef APP-ANDROID
@@ -16,6 +17,16 @@ import { ensureDirectory as ensureDirectoryHarmony } from '@/services/resourceSe
 // #ifdef WEB
 import { webPutData, webClearStore } from '@/services/database'
 import { storeBlobAndGetUrl, clearBlobUrls } from '@/services/resourceService'
+import JSZip from 'jszip'
+// #endif
+
+// #ifdef APP-ANDROID
+import Intent from 'android.content.Intent';
+import Activity from 'android.app.Activity';
+import Uri from 'android.net.Uri';
+import ZipInputStream from 'java.util.zip.ZipInputStream';
+import ByteArrayInputStream from 'java.io.ByteArrayInputStream';
+import ByteArrayOutputStream from 'java.io.ByteArrayOutputStream';
 // #endif
 
 
@@ -53,9 +64,6 @@ export function selectPackageFile(): Promise<PackageInfo> {
 }
 
 // #ifdef APP-ANDROID
-import Intent from 'android.content.Intent';
-import Activity from 'android.app.Activity';
-import Uri from 'android.net.Uri';
 
 /**
  * Android 平台文件选择
@@ -68,26 +76,17 @@ function selectFileAndroid(
 		uni.chooseFile({
 			count: 1,
 			extension: ['.srd'],
-			success: (res: UniChooseFileSuccessCallbackResult) => {
-				if (res.tempFilePaths.length > 0) {
-					const filePath = res.tempFilePaths[0]
+			success: (res) => {
+				if (res.tempFiles.length > 0) {
+					const filePath = res.tempFiles[0].path
 					selectedFilePath = filePath
 					
-					// 获取文件信息
-					uni.getFileInfo({
-						filePath: filePath,
-						success: (fileInfo: UniGetFileInfoSuccessCallbackResult) => {
-							resolve({
-								fileName: getFileName(filePath),
-								fileSize: fileInfo.size,
-								manifest: null,
-								isValid: true,
-								errorMessage: ''
-							})
-						},
-						fail: (err: any) => {
-							reject(new Error('获取文件信息失败'))
-						}
+					resolve({
+						fileName: getFileName(filePath),
+						fileSize: res.tempFiles[0].size,
+						manifest: null,
+						isValid: true,
+						errorMessage: ''
 					})
 				} else {
 					reject(new Error('未选择文件'))
@@ -115,25 +114,17 @@ function selectFileHarmony(
 		uni.chooseFile({
 			count: 1,
 			extension: ['.srd'],
-			success: (res: UniChooseFileSuccessCallbackResult) => {
-				if (res.tempFilePaths.length > 0) {
-					const filePath = res.tempFilePaths[0]
+			success: (res) => {
+				if (res.tempFiles.length > 0) {
+					const filePath = res.tempFiles[0].path
 					selectedFilePath = filePath
 					
-					uni.getFileInfo({
-						filePath: filePath,
-						success: (fileInfo: UniGetFileInfoSuccessCallbackResult) => {
-							resolve({
-								fileName: getFileName(filePath),
-								fileSize: fileInfo.size,
-								manifest: null,
-								isValid: true,
-								errorMessage: ''
-							})
-						},
-						fail: (err: any) => {
-							reject(new Error('获取文件信息失败'))
-						}
+					resolve({
+						fileName: getFileName(filePath),
+						fileSize: res.tempFiles[0].size,
+						manifest: null,
+						isValid: true,
+						errorMessage: ''
 					})
 				} else {
 					reject(new Error('未选择文件'))
@@ -301,19 +292,19 @@ export function validatePackage(filePath: string = selectedFilePath): Promise<Pa
 							.then((manifest: PackageManifest) => {
 								resolve(manifest)
 							})
-							.catch((e: any) => {
+							.catch((e) => {
 								console.error('validatePackage: parseManifestFromZip 失败:', e)
 								const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
 								reject(new Error(errMsg))
 							})
 					})
-					.catch((e: any) => {
+					.catch((e) => {
 						console.error('validatePackage: 解密异常:', e)
 						const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
 						reject(new Error('解密失败: ' + errMsg))
 					})
 			})
-			.catch((e: any) => {
+			.catch((e) => {
 				console.error('validatePackage: readFileAsArrayBuffer 失败:', e)
 				const errMsg = e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown')
 				reject(new Error(errMsg))
@@ -420,16 +411,16 @@ export function importPackage(
 								res.importTime = Date.now() - startTime
 								resolve(res)
 							})
-							.catch((e: any) => {
+							.catch((e) => {
 								reject(new Error(JSON.stringify(e)))
 							})
 					})
-					.catch((e: any) => {
+					.catch((e) => {
 						console.error('importPackage: 解密异常:', e)
-						reject(new Error('解密失败: ' + (e instanceof Error ? e.message : String(e))))
+						reject(new Error('解密失败: ' + (e instanceof Error ? e.message : (e != null ? e.toString() : 'unknown'))))
 					})
 			})
-			.catch((e: any) => {
+			.catch((e) => {
 				reject(new Error(JSON.stringify(e)))
 			})
 	})
@@ -456,14 +447,14 @@ function readFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
 			(window as any).fetch(filePath)
 				.then((res: any): any => res.arrayBuffer())
 				.then((buffer: any) => resolve(buffer as ArrayBuffer))
-				.catch((e: any) => reject(new Error(String(e))))
+				.catch((e) => reject(new Error(e != null ? e.toString() : 'unknown')))
 		}
 		// #endif
 		
 		// #ifdef APP-ANDROID || APP-HARMONY
 		uni.getFileSystemManager().readFile({
 			filePath: filePath,
-			success: (res: ReadFileSuccessCallbackResult) => {
+			success: (res) => {
 				resolve(res.data as ArrayBuffer)
 			},
 			fail: (err: any) => {
@@ -497,9 +488,6 @@ function parseManifestFromZip(zipData: ArrayBuffer): Promise<PackageManifest> {
 }
 
 // #ifdef APP-ANDROID
-import ZipInputStream from 'java.util.zip.ZipInputStream';
-import ByteArrayInputStream from 'java.io.ByteArrayInputStream';
-import ByteArrayOutputStream from 'java.io.ByteArrayOutputStream';
 
 function parseManifestAndroid(
 	zipData: ArrayBuffer,
@@ -640,7 +628,6 @@ function cleanupTempFiles(zipPath: string, extractDir: string): void {
 // #endif
 
 // #ifdef WEB
-import JSZip from 'jszip'
 
 function parseManifestWeb(
 	zipData: ArrayBuffer,
@@ -662,7 +649,7 @@ function parseManifestWeb(
 					console.error('Web: Manifest JSON parse error:', e);
 					reject(new Error("清单文件解析失败: " + e.message))
 				}
-			}).catch((e: any) => {
+			}).catch((e) => {
 				console.error('Web: Manifest file read error:', e);
 				reject(new Error("读取清单文件失败: " + e.message))
 			})
@@ -670,7 +657,7 @@ function parseManifestWeb(
 			console.error('Web: manifest.json not found in ZIP');
 			reject(new Error("数据包中未找到 manifest.json"))
 		}
-	}).catch((e: any) => {
+	}).catch((e) => {
 		console.error('Web: ZIP load failed:', e);
 		reject(new Error("ZIP 加载失败: " + e.message))
 	})
@@ -874,6 +861,7 @@ function extractAndParseAndroid(
 		let tabs: TabConfig[] = []
 		let components: ComponentConfig[] = []
 		let processRecords: UTSJSONObject[] = []
+		let processTreeStr: string = '[]'
 		let operationRecords: UTSJSONObject[] = []
 		let stepRecords: UTSJSONObject[] = []
 		let actionRecords: UTSJSONObject[] = []
@@ -889,7 +877,7 @@ function extractAndParseAndroid(
 				content = jsonFiles.get(altPath)
 				if (content != null) return content
 				const altPath2 = path.replace(/\\\\/g, '/')
-				return jsonFiles.get(altPath2) || null
+				return jsonFiles.get(altPath2) ?? null
 			}
 
 			if (files.tabs != null) {
@@ -908,6 +896,8 @@ function extractAndParseAndroid(
 			// 读取 V6 数据表
 			const processJson = findJsonFile('data/process.json')
 			if (processJson != null) processRecords = JSON.parse(processJson) as UTSJSONObject[]
+			
+			processTreeStr = findJsonFile('data/process_tree.json') ?? '[]'
 			
 			const opJson = findJsonFile('data/operation.json')
 			if (opJson != null) operationRecords = JSON.parse(opJson) as UTSJSONObject[]
@@ -932,121 +922,98 @@ function extractAndParseAndroid(
 		// 开始事务
 		beginTransaction()
 		
-		try {
-			// 保存 UI 配置（链式调用）
-			saveUiConfigurationToDatabase(groups, tabs, components)
-				.then((uiConfigCount: number) => {
-					return executeSQL('INSERT OR REPLACE INTO meta_process_tree (id, data_json) VALUES (?, ?)', ['process_tree', processTreeStr]).then(() => saveRelationalDataToDatabase('t_process', processRecords, PROCESS_FIELDS)).then(()=>uiConfigCount)
-				})
-				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_operation', operationRecords, OPERATION_FIELDS).then(()=>uiConfigCount)
-				})
-				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_step', stepRecords, STEP_FIELDS).then(()=>uiConfigCount)
-				})
-				.then((uiConfigCount: number) => {
-					return saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS).then(()=>uiConfigCount)
-				})
-				.then((uiConfigCount: number) => {
-					return new Promise<number>((resolveDs, rejectDs) => {
-						const runSave = async () => {
-							try {
-								for (let i = 0; i < nodeDatasetRecords.length; i++) {
-									const ds = nodeDatasetRecords[i]
-									const dsId = ((ds['id'] as string | null) ?? '')
-									const nodeInnerId = ((ds['nodeInnerId'] as string | null) ?? '')
-									const dataKey = ((ds['dataKey'] as string | null) ?? '')
-									if (dsId == '' || nodeInnerId == '' || dataKey == '') continue
-									const rowsJson = JSON.stringify(ds['rows'] ?? [])
-									const sortOrder = ((ds['sortOrder'] as number | null) ?? 0).toString()
-									await executeSQL(
-										'INSERT OR REPLACE INTO t_node_dataset (id, node_inner_id, data_key, rows_json, sort_order) VALUES (?, ?, ?, ?, ?)',
-										[dsId, nodeInnerId, dataKey, rowsJson, sortOrder]
-									)
-								}
-								if (nodeDatasetRecords.length > 0) {
-									console.log('Android: Saved node datasets:', nodeDatasetRecords.length)
-								}
-								resolveDs(uiConfigCount)
-							} catch (e: any) {
-								rejectDs(e)
-							}
-						}
-						runSave()
-					})
-				})
-				.then((uiConfigCount: number) => {
-					let resourceCount = 0
-					const allResources: ResourceItem[] = []
-					const rawResources: ResourceItem[] = []
-					
-					if (manifest?.files != null) {
-						const files = manifest!.files as ManifestFileRefs
-						const attPath = files.attachment // V6 强制存在
-						let attContent = jsonFiles.get(attPath)
-						if (attContent == null) attContent = jsonFiles.get(attPath.replace(/\/\//g, '\\\\'))
-						if (attContent == null) attContent = jsonFiles.get(attPath.replace(/\\\\/g, '/'))
-						
-						if (attContent != null) {
-							const indRes = parseAttachmentFile(attContent)
-							for (const res of indRes) {
-								rawResources.push(res)
-							}
-						}
-					}
-
-					for (const res of rawResources) {
-						const originalPath = res.originalPath
-						const localPath = savedAssetPaths.get(originalPath) || savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
-						
-						if (localPath != null) {
-							res.path = localPath
-						} else {
-							continue
-						}
-						
-						if (res.thumbnail != '') {
-							const thumbPath = savedAssetPaths.get(res.thumbnail)
-							if (thumbPath != null) res.thumbnail = thumbPath
-							else res.thumbnail = ''
-						}
-						allResources.push(res)
-					}
-					
-					const executeDbSave = async () => {
-						try {
-							for (const res of allResources) {
-								await saveResource(res)
-								resourceCount++
-							}
-							console.log('Android: Saved resources:', resourceCount)
-							
-							setTransactionSuccessful()
-							resolve({
-								success: true,
-								message: '导入成功',
-								nodeCount: processRecords.length,
-								uiConfigCount: uiConfigCount,
-								resourceCount: resourceCount,
-								importTime: 0
-							})
-						} catch(e: any | null) {
-							endTransaction()
-							reject(new Error(e != null ? e.toString() : '数据库保存失败'))
-						}
-					}
-					// @ts-ignore
-					executeDbSave().then(()=>{}).catch((e: any | null)=>{})
-				})
-				.catch((uiErr: any) => {
-					endTransaction()
-					reject(new Error('数据入库失败: ' + (uiErr != null ? uiErr.toString() : 'unknown')))
-				})
+		const executeDbSave = async () => {
+			try {
+				let uiConfigCount = await saveUiConfigurationToDatabase(groups, tabs, components)
 				
-		} catch (e: any) {
-			endTransaction()
-			reject(new Error('数据库保存失败: ' + e.toString()))
+				await executeSQL('INSERT OR REPLACE INTO meta_process_tree (id, data_json) VALUES (?, ?)', ['process_tree', processTreeStr])
+				await saveRelationalDataToDatabase('t_process', processRecords, PROCESS_FIELDS)
+				await saveRelationalDataToDatabase('t_operation', operationRecords, OPERATION_FIELDS)
+				await saveRelationalDataToDatabase('t_step', stepRecords, STEP_FIELDS)
+				await saveRelationalDataToDatabase('t_action', actionRecords, ACTION_FIELDS)
+				
+				for (let i = 0; i < nodeDatasetRecords.length; i++) {
+					const ds = nodeDatasetRecords[i]
+					const dsId = ((ds['id'] as string | null) ?? '')
+					const nodeInnerId = ((ds['nodeInnerId'] as string | null) ?? '')
+					const dataKey = ((ds['dataKey'] as string | null) ?? '')
+					if (dsId == '' || nodeInnerId == '' || dataKey == '') continue
+					const rowsJson = JSON.stringify(ds['rows'] ?? ([] as any[]))
+					const sortOrder = ((ds['sortOrder'] as number | null) ?? 0).toString()
+					await executeSQL(
+						'INSERT OR REPLACE INTO t_node_dataset (id, node_inner_id, data_key, rows_json, sort_order) VALUES (?, ?, ?, ?, ?)',
+						[dsId, nodeInnerId, dataKey, rowsJson, sortOrder]
+					)
+				}
+				if (nodeDatasetRecords.length > 0) {
+					console.log('Android: Saved node datasets:', nodeDatasetRecords.length)
+				}
+				
+				let resourceCount = 0
+				const allResources: ResourceItem[] = []
+				const rawResources: ResourceItem[] = []
+				
+				if (manifest?.files != null) {
+					const files = manifest!.files as ManifestFileRefs
+					const attPath = files.attachment // V6 强制存在
+					let attContent = jsonFiles.get(attPath)
+					if (attContent == null) attContent = jsonFiles.get(attPath.replace(/\/\//g, '\\\\'))
+					if (attContent == null) attContent = jsonFiles.get(attPath.replace(/\\\\/g, '/'))
+					
+					if (attContent != null) {
+						const indRes = parseAttachmentFile(attContent)
+						for (const res of indRes) {
+							rawResources.push(res)
+						}
+					}
+				}
+
+				for (const res of rawResources) {
+					const originalPath = res.originalPath
+					const localPath = savedAssetPaths.get(originalPath) ?? savedAssetPaths.get(originalPath.replace(/\/\//g, '\\\\'))
+					
+					if (localPath != null) {
+						res.path = localPath
+					} else {
+						continue
+					}
+					
+					if (res.thumbnail != '') {
+						const thumbPath = savedAssetPaths.get(res.thumbnail)
+						if (thumbPath != null) res.thumbnail = thumbPath
+						else res.thumbnail = ''
+					}
+					allResources.push(res)
+				}
+				
+				for (const res of allResources) {
+					await saveResource(res)
+					resourceCount++
+				}
+				console.log('Android: Saved resources:', resourceCount)
+				
+				setTransactionSuccessful()
+				resolve({
+					success: true,
+					message: '导入成功',
+					nodeCount: processRecords.length,
+					uiConfigCount: uiConfigCount,
+					resourceCount: resourceCount,
+					importTime: 0
+				})
+			} catch (e: any) {
+				endTransaction()
+				reject(new Error('数据库保存失败: ' + e.toString()))
+			}
 		}
+		
+		// @ts-ignore
+		executeDbSave().then(()=>{}).catch((e: any | null)=>{})
+
+	} catch (e: any) {
+		reject(new Error('解压或解析失败: ' + e.toString()))
+	}
+}
 
 /**
  * 判断是否为资源文件
@@ -1478,7 +1445,7 @@ function processHarmonyExtractedFiles(
 								resourceCount++
 								saveNextResourceAsync(index + 1, uiCount, resolveData)
 							})
-							.catch((resErr: any) => {
+							.catch((e) => {
 								console.error('Harmony: 保存单一资源失败:', resErr)
 								saveNextResourceAsync(index + 1, uiCount, resolveData)
 							})
@@ -1486,7 +1453,7 @@ function processHarmonyExtractedFiles(
 					
 					saveNextResourceAsync(0, uiConfigCount, resolve)
 				})
-				.catch((dbErr: any) => {
+				.catch((dbErr) => {
 					console.error('Harmony: 数据库保存异常:', dbErr)
 					endTransaction()
 					const errMsg = dbErr instanceof Error ? dbErr.message : (dbErr != null ? dbErr.toString() : 'unknown')
@@ -1626,7 +1593,7 @@ function validatePackageElectronStreaming(filePath: string): Promise<PackageMani
 					reject(new Error(res.error as string || '解析失败'));
 				}
 			})
-			.catch((e: any) => reject(new Error('Electron流式解压失败: ' + e)));
+			.catch((e) => reject(new Error('Electron流式解压失败: ' + e)));
 	});
 }
 
@@ -1791,9 +1758,9 @@ function importPackageElectronStreaming(
 						
 						processNextAsset();
 					})
-					.catch((e: any) => reject(new Error('保存数据库失败: ' + e)));
+					.catch((e) => reject(new Error('保存数据库失败: ' + e)));
 			})
-			.catch((e: any) => reject(new Error('Electron流式解压失败: ' + e)));
+			.catch((e) => reject(new Error('Electron流式解压失败: ' + e)));
 	});
 }
 
@@ -2059,7 +2026,7 @@ function extractAndParseWeb(
 			console.error('Web: Extraction error', e);
 			reject(new Error("Web 导入处理失败: " + e.message))
 		}
-	}).catch((e: any) => {
+	}).catch((e) => {
 		console.error('Web: ZIP load failed in extraction', e);
 		reject(new Error("ZIP 加载失败: " + e.message))
 	})
@@ -2117,7 +2084,8 @@ function saveUiConfigurationToDatabase(
 		
 		// 使用递归 .then() 链逐条执行 SQL，确保顺序
 		let completed = 0
-		const executeNext = (index: number) => {
+		let executeNext: ((index: number) => void) | null = null
+		executeNext = (index: number) => {
 			if (index >= sqlQueue.length) {
 				resolve(completed)
 				return
@@ -2128,12 +2096,12 @@ function saveUiConfigurationToDatabase(
 			executeSQL(sql, params)
 				.then((_: any) => {
 					completed++
-					executeNext(index + 1)
+					executeNext!(index + 1)
 				})
-				.catch((e: any) => {
+				.catch((e: any | null) => {
 					console.error('saveUiConfig SQL 失败:', sql, e)
 					// 容错：跳过失败的 SQL 继续执行
-					executeNext(index + 1)
+					executeNext!(index + 1)
 				})
 		}
 		executeNext(0)
@@ -2161,7 +2129,7 @@ export function saveRelationalDataToDatabase(
 			
 			for (let j = 0; j < standardFields.length; j++) {
 				const jsonKey = standardFields[j]
-				params.push(row[jsonKey] ?? null)
+				params.push(row[jsonKey] ?? '')
 			}
 			
 			for (const key in row) {
@@ -2171,9 +2139,9 @@ export function saveRelationalDataToDatabase(
 			}
 			params.push(JSON.stringify(extra))
 			
-			const placeholders = params.map(():string => '?').join(',')
+			const placeholders = params.map((_: any):string => '?').join(',')
 			const dbCols = standardFields.map((s:string):string => {
-				return s.replace(/[A-Z]/g, (letter:string):string => '_' + letter.toLowerCase())
+				return s.replace(/[A-Z]/g, (letter:string, _idx: number, _str: string):string => '_' + letter.toLowerCase())
 			}).join(',') + ',extra_json'
 			
 			sqlQueue.push({
@@ -2183,7 +2151,8 @@ export function saveRelationalDataToDatabase(
 		}
 		
 		let completed = 0
-		const executeNext = (index: number) => {
+		let executeNext: ((index: number) => void) | null = null
+		executeNext = (index: number) => {
 			if (index >= sqlQueue.length) {
 				resolve(completed)
 				return
@@ -2194,11 +2163,11 @@ export function saveRelationalDataToDatabase(
 			executeSQL(sql, paramsList)
 				.then((_: any) => {
 					completed++
-					executeNext(index + 1)
+					executeNext!(index + 1)
 				})
-				.catch((e: any) => {
+				.catch((e: any | null) => {
 					console.error(tableName + ' insert error:', sql, e)
-					executeNext(index + 1)
+					executeNext!(index + 1)
 				})
 		}
 		executeNext(0)

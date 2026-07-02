@@ -3,7 +3,8 @@
  * @description 处理静态资源的存储、加载和管理
  */
 
-import { ResourceItem, inferResourceType, normalizeResourceType } from '@/types/resource'
+import { ResourceItem } from '@/types/resource'
+import { inferResourceType, normalizeResourceType } from '@/types/resource'
 import { executeSQL, querySQL } from '@/services/database'
 // #ifdef WEB
 import { webPutData, webGetByIndex, webGetAll, webClearStore } from '@/services/database'
