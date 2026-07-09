@@ -91,8 +91,13 @@
 							<!-- #ifndef WEB -->
 							<scroll-view class="tab-content-wrap" :show-scrollbar="false" style="flex: 1; display: flex; flex-direction: column;">
 							<!-- #endif -->
-								<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper" :style="{ flex: comp.type == 'table' ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
-									<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
+								<!-- tab 级别无组件时的空状态 -->
+								<view v-if="tab.components.length == 0" class="tab-empty-state" style="flex: 1; display: flex; justify-content: center; align-items: center; min-height: 200px;">
+									<text style="color: #94A3B8; font-size: 14px;">暂无内容</text>
+								</view>
+								<template v-else>
+									<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper" :style="{ flex: comp.type == 'table' ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
+										<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
 									
 									<!-- Table Component -->
 									<view v-if="comp.type == 'table'" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 200px;">
@@ -119,7 +124,9 @@
 									
 
 									
-								</view>
+									</view>
+									
+								</template>
 							<!-- #ifdef WEB -->
 							</view>
 							<!-- #endif -->
@@ -160,8 +167,13 @@
 									<!-- #ifndef WEB -->
 									<scroll-view class="tab-content-wrap" :show-scrollbar="false" style="flex: 1; display: flex; flex-direction: column;">
 									<!-- #endif -->
-										<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper" :style="{ flex: comp.type == 'table' ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
-											<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
+										<!-- tab 级别无组件时的空状态 -->
+										<view v-if="tab.components.length == 0" class="tab-empty-state" style="flex: 1; display: flex; justify-content: center; align-items: center; min-height: 200px;">
+											<text style="color: #94A3B8; font-size: 14px;">暂无内容</text>
+										</view>
+										<template v-else>
+											<view v-for="comp in tab.components" :key="comp.id" class="component-wrapper" :style="{ flex: comp.type == 'table' ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
+												<text class="comp-title" v-if="comp.title && tab.components.length > 1">{{ comp.title }}</text>
 											
 											<!-- Table Component -->
 											<view v-if="comp.type == 'table'" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 200px;">
@@ -188,7 +200,8 @@
 											
 
 											
-										</view>
+											</view>
+										</template>
 									<!-- #ifdef WEB -->
 									</view>
 									<!-- #endif -->

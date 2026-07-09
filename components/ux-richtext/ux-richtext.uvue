@@ -112,11 +112,11 @@
 				// 构建完整的 HTML 文档写入 iframe
 				// 注意：body margin/padding 为 0，由内部 wrap div 控制间距
 				const htmlContent = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'
-					+ 'html,body{margin:0;padding:0;overflow:hidden;}'
-					+ '#rich-wrap{padding:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.6;color:#303133;}'
-					+ 'img{height:auto;display:inline-block;vertical-align:middle;}'
-					+ 'table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px;}'
-					+ 'table th,table td{border:1px solid #dcdfe6;padding:6px 10px;text-align:left;}'
+					+ 'html,body{margin:0;padding:0;overflow-y:hidden;overflow-x:auto;}'
+					+ '#rich-wrap{padding:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.6;color:#303133;word-wrap:break-word;word-break:break-all;}'
+					+ 'img{height:auto;max-width:100%;display:inline-block;vertical-align:middle;}'
+					+ 'table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px;word-break:normal;}'
+					+ 'table th,table td{border:1px solid #dcdfe6;padding:6px 10px;text-align:left;word-wrap:break-word;word-break:break-all;}'
 					+ 'table th{background-color:#f0f2f5;color:#303133;font-weight:bold;}'
 					+ 'table tr:nth-child(even){background-color:#fafafa;}'
 					+ 'h3,h4{margin:8px 0 4px;}'

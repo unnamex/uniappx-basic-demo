@@ -1,21 +1,28 @@
 <template>
 	<view class="ux-info-view">
-		<view v-for="(row, rowIdx) in intelligentRows" :key="rowIdx" class="info-view-row">
-			<view v-for="(field, colIdx) in row.fields" :key="colIdx" 
-				class="info-view-cell"
-				:class="{ 'info-view-cell-rich': row.isFullWidth }"
-				:style="{ width: row.isFullWidth ? '100%' : cellWidth }">
-				<text class="info-view-label" :class="{ 'info-view-label-rich': row.isFullWidth }">{{ field['label'] ?? '' }}：</text>
-				<view v-if="field['type'] == 'richText'" class="info-view-value-rich">
-					<ux-richtext :content="getFieldValue(field)"></ux-richtext>
-				</view>
-				<text v-else class="info-view-value">{{ getFieldValue(field) }}</text>
-			</view>
-		</view>
 		<!-- 无字段时的占位提示 -->
 		<view v-if="fields.length == 0" class="info-view-empty">
-			<text class="info-view-empty-text">暂无信息</text>
+			<text class="info-view-empty-text">暂无内容</text>
 		</view>
+		<!-- 无数据时的占位提示 -->
+		<view v-else-if="data == null" class="info-view-empty">
+			<text class="info-view-empty-text">暂无数据</text>
+		</view>
+		<!-- 正常显示内容 -->
+		<template v-else>
+			<view v-for="(row, rowIdx) in intelligentRows" :key="rowIdx" class="info-view-row">
+				<view v-for="(field, colIdx) in row.fields" :key="colIdx" 
+					class="info-view-cell"
+					:class="{ 'info-view-cell-rich': row.isFullWidth }"
+					:style="{ width: row.isFullWidth ? '100%' : cellWidth }">
+					<text class="info-view-label" :class="{ 'info-view-label-rich': row.isFullWidth }">{{ field['label'] ?? '' }}：</text>
+					<view v-if="field['type'] == 'richText'" class="info-view-value-rich">
+						<ux-richtext :content="getFieldValue(field)"></ux-richtext>
+					</view>
+					<text v-else class="info-view-value">{{ getFieldValue(field) }}</text>
+				</view>
+			</view>
+		</template>
 	</view>
 </template>
 
@@ -172,6 +179,7 @@
 		font-size: 14px;
 		color: #1E293B;
 		flex: 1;
+		word-break: break-all;
 	}
 	
 	/* 富文本的value：占满宽度 */
