@@ -53,7 +53,7 @@
 			</view>
 			<view v-for="(row, rowIndex) in visibleRows" :key="rowIndex">
 				<!-- 行主体部分 -->
-				<view class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)">
+				<view class="row" :class="{ 'row-selected': row.id === selectedRowId }" @click="handleRowClick(row)" :style="getRowStyle()">
 					<view v-for="(field, fieldIndex) in fields" :key="fieldIndex" class="cell"
 						:style="getCellStyle(fieldIndex)">
 						
@@ -73,8 +73,30 @@
 						</view>
 						
 						<view v-else class="cell-content-wrapper">
-							<!-- 富文本列：仅显示展开/收起按钮 -->
-							<view v-if="getCellType(field) == 'richText'" class="richtext-cell">
+							<!-- 行内模式：直接在单元格内渲染富文本 -->
+							<view v-if="getCellType(field) == 'richText' && richTextDisplayMode == 'inline'" 
+								class="richtext-inline-cell" @click.stop="openRichTextPreview(row)"
+								@mouseenter="onRichTextHover(row, $event)" @mouseleave="onRichTextLeave">
+								<!-- #ifdef WEB -->
+								<view class="richtext-inline-scroll" :style="getRichTextInlineScrollStyle()">
+									<ux-richtext v-if="row.expandContent != ''" :content="row.expandContent"></ux-richtext>
+									<view v-else class="richtext-inline-empty">
+										<text class="richtext-inline-empty-text">暂无内容</text>
+									</view>
+								</view>
+								<!-- #endif -->
+								<!-- #ifndef WEB -->
+								<scroll-view direction="vertical" scroll-y="true" class="richtext-inline-scroll" 
+									:style="getRichTextInlineScrollStyle()" :show-scrollbar="true">
+									<ux-richtext v-if="row.expandContent != ''" :content="row.expandContent"></ux-richtext>
+									<view v-else class="richtext-inline-empty">
+										<text class="richtext-inline-empty-text">暂无内容</text>
+									</view>
+								</scroll-view>
+								<!-- #endif -->
+							</view>
+							<!-- 展开模式：显示展开/收起按钮 -->
+							<view v-else-if="getCellType(field) == 'richText'" class="richtext-cell">
 								<view class="richtext-toggle-btn" @click.stop="toggleRowExpand(row.id)">
 									<text class="richtext-toggle-icon">{{ isRowExpanded(row.id) ? '▼' : '▶' }}</text>
 									<text class="richtext-toggle-label">{{ isRowExpanded(row.id) ? '收起' : '展开' }}</text>
@@ -86,7 +108,7 @@
 					</view>
 				</view>
 				<!-- 展开区域：如果该行有可展开字段且已展开，则在行下方显示完整内容 -->
-				<view v-if="hasExpandableField && isRowExpanded(row.id)" class="richtext-expand-area">
+				<view v-if="hasExpandableField && richTextDisplayMode == 'expand' && isRowExpanded(row.id)" class="richtext-expand-area">
 					<!-- 目前根据可展开类型进行渲染，暂时只有 richtext -->
 					<template v-if="expandableCellType == 'richText'">
 						<!-- 无内容时显示紧凑提示 -->
@@ -123,6 +145,37 @@
 		</scroll-view>
 		<!-- #endif -->
 		</template>
+		<!-- 富文本预览弹窗 -->
+		<view v-if="previewVisible" class="richtext-preview-overlay" @click="closeRichTextPreview">
+			<view class="richtext-preview-modal" @click.stop="">
+				<view class="richtext-preview-header">
+					<text class="richtext-preview-title">内容详情</text>
+					<view class="richtext-preview-close" @click="closeRichTextPreview">
+						<text class="richtext-preview-close-icon">✕</text>
+					</view>
+				</view>
+				<!-- #ifdef WEB -->
+				<view class="richtext-preview-body">
+					<view class="richtext-preview-content">
+						<ux-richtext :content="previewContent"></ux-richtext>
+					</view>
+				</view>
+				<!-- #endif -->
+				<!-- #ifndef WEB -->
+				<scroll-view direction="vertical" scroll-y="true" class="richtext-preview-body" :show-scrollbar="true">
+					<view class="richtext-preview-content">
+						<ux-richtext :content="previewContent"></ux-richtext>
+					</view>
+				</scroll-view>
+				<!-- #endif -->
+			</view>
+		</view>
+		<!-- 悬浮窗预览 (仅 Web 端支持鼠标悬停) -->
+		<!-- #ifdef WEB -->
+		<view v-if="hoverPreviewVisible" class="richtext-hover-popover" :style="hoverPreviewStyle">
+			<ux-richtext :content="hoverPreviewContent"></ux-richtext>
+		</view>
+		<!-- #endif -->
 	</view>
 </template>
 
@@ -169,6 +222,16 @@
 			selectedId: {
 				type: String as PropType<string | null>,
 				default: null
+			},
+			/** 富文本列的展示模式：'inline' 行内展示（默认）| 'expand' 展开/收起模式 */
+			richTextDisplayMode: {
+				type: String,
+				default: 'inline'
+			},
+			/** 行内模式下富文本单元格的高度（px），默认 200 */
+			richTextInlineHeight: {
+				type: Number,
+				default: 200
 			}
 		},
 		data() {
@@ -191,7 +254,17 @@
 				/** 容器实际宽度（由 UniResizeObserver 自动更新，用于原生端确保表格填满容器） */
 				measuredContainerWidth: 0 as number,
 				/** ResizeObserver 实例引用（原生端为 UniResizeObserver，Web 端为浏览器 ResizeObserver） */
-				resizeObserver: null as any
+				resizeObserver: null as any,
+				/** 富文本预览弹窗是否可见 */
+				previewVisible: false,
+				/** 弹窗中展示的富文本内容 */
+				previewContent: '' as string,
+				// #ifdef WEB
+				hoverPreviewVisible: false,
+				hoverPreviewContent: '',
+				hoverPreviewStyle: '',
+				hoverTimer: null as any | null
+				// #endif
 			}
 		},
 		computed: {
@@ -271,6 +344,8 @@
 			fields: {
 				handler(newFields : UTSJSONObject[]) {
 					this.initFields(newFields)
+					// 字段变化后检查是否需要自动加载行内富文本
+					this.autoLoadInlineContent()
 				},
 				deep: true,
 				immediate: true
@@ -433,6 +508,8 @@
 				}
 				// 节点内容按需加载，不再初始化时自动标记展开（除非是非常小的包，但为了性能一致性，此处改为手动触发）
 				this.expandedRowIds = []
+				// 行内模式下自动加载富文本内容
+				this.autoLoadInlineContent()
 			},
 			flatten(list : UTSJSONObject[], level : number, parentId : string | null) {
 				list.forEach((item, index) => {
@@ -721,6 +798,40 @@
 			getNodeIconPath(row: TableRow): string {
 				return (row.originData['iconPath'] as string | null) ?? ''
 			},
+			/** 获取行的动态样式（行内模式下统一行高） */
+			getRowStyle(): string {
+				if (this.richTextDisplayMode == 'inline' && this.hasExpandableField) {
+					return 'height: ' + this.richTextInlineHeight + 'px;'
+				}
+				return ''
+			},
+			/** 获取行内富文本滚动区域样式 */
+			getRichTextInlineScrollStyle(): string {
+				const scrollHeight = this.richTextInlineHeight - 16
+				return 'height: ' + scrollHeight + 'px;'
+			},
+			/** 打开富文本预览弹窗 */
+			openRichTextPreview(row: TableRow) {
+				if (row.expandContent == '') {
+					this.fetchExpandContent(row.id)
+				}
+				this.previewContent = row.expandContent
+				this.previewVisible = true
+			},
+			/** 关闭富文本预览弹窗 */
+			closeRichTextPreview() {
+				this.previewVisible = false
+			},
+			/** 行内模式下自动加载所有行的富文本内容 */
+			autoLoadInlineContent() {
+				if (this.richTextDisplayMode != 'inline' || !this.hasExpandableField) return
+				for (let i = 0; i < this.allRows.length; i++) {
+					const row = this.allRows[i]
+					if (row.expandContent == '') {
+						this.fetchExpandContent(row.id)
+					}
+				}
+			},
 			// #ifdef H5
 			onResizeStartMouse(index: number, e: MouseEvent) {
 				this.dragState.startX = e.clientX
@@ -757,6 +868,32 @@
 				this.dragState.fieldIndex = -1
 				window.removeEventListener('mousemove', this.onResizeMoveMouse)
 				window.removeEventListener('mouseup', this.onResizeEndMouse)
+			},
+			onRichTextHover(row: TableRow, e: MouseEvent) {
+				if (this.hoverTimer != null) clearTimeout(this.hoverTimer as number)
+				this.hoverTimer = setTimeout(() => {
+					if (row.expandContent == '') {
+						this.fetchExpandContent(row.id)
+					}
+					this.hoverPreviewContent = row.expandContent
+					// Calculate position to avoid going off-screen
+					let x = e.clientX + 15
+					let y = e.clientY + 15
+					const popoverWidth = 400
+					const popoverHeight = 300 // Max height roughly
+					if (x + popoverWidth > window.innerWidth) {
+						x = e.clientX - popoverWidth - 15
+					}
+					if (y + popoverHeight > window.innerHeight) {
+						y = window.innerHeight - popoverHeight - 15
+					}
+					this.hoverPreviewStyle = `left: ${x}px; top: ${y}px;`
+					this.hoverPreviewVisible = true
+				}, 400) // 400ms delay to prevent flickering on fast moves
+			},
+			onRichTextLeave() {
+				if (this.hoverTimer != null) clearTimeout(this.hoverTimer as number)
+				this.hoverPreviewVisible = false
 			},
 			// #endif
 		},
@@ -1128,7 +1265,145 @@
 		padding: 10px 12px;
 	}
 
+	/* ====== 行内富文本模式样式 ====== */
+	.richtext-inline-cell {
+		flex: 1;
+		overflow: hidden;
+		border-radius: 6px;
+		background-color: #FAFBFC;
+		border-width: 1px;
+		border-style: solid;
+		border-color: #E2E8F0;
+	}
+
+	.richtext-inline-scroll {
+		width: 100%;
+		/* #ifdef WEB */
+		overflow-y: auto;
+		overflow-x: hidden;
+		/* #endif */
+	}
+
+	/* #ifdef WEB */
+	/* 强制显示行内富文本滚动条，提示用户有更多内容 */
+	.richtext-inline-scroll::-webkit-scrollbar {
+		width: 6px;
+		background-color: transparent;
+	}
+	.richtext-inline-scroll::-webkit-scrollbar-thumb {
+		background-color: #CBD5E1;
+		border-radius: 3px;
+	}
+	.richtext-inline-scroll::-webkit-scrollbar-track {
+		background-color: #F8FAFC;
+		border-radius: 3px;
+	}
+	/* #endif */
+
+	.richtext-inline-empty {
+		flex: 1;
+		justify-content: center;
+		align-items: center;
+		padding: 8px;
+	}
+
+	.richtext-inline-empty-text {
+		font-size: 12px;
+		color: #94A3B8;
+	}
+
+	/* ====== 富文本预览弹窗样式 ====== */
+	/* #ifdef WEB */
+	.richtext-preview-overlay {
+		position: fixed;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.45);
+		z-index: 9999;
+		justify-content: center;
+		align-items: center;
+	}
+	/* #endif */
+	/* #ifndef WEB */
+	.richtext-preview-overlay {
+		position: absolute;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.45);
+		z-index: 200;
+		justify-content: center;
+		align-items: center;
+	}
+	/* #endif */
+
+	.richtext-preview-modal {
+		width: 85%;
+		height: 80%;
+		background-color: #FFFFFF;
+		border-radius: 12px;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.richtext-preview-header {
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		padding: 14px 20px;
+		background-color: #F8FAFC;
+		border-bottom-width: 1px;
+		border-bottom-style: solid;
+		border-bottom-color: #E2E8F0;
+	}
+
+	.richtext-preview-title {
+		font-size: 15px;
+		font-weight: 600;
+		color: #0E7490;
+	}
+
+	.richtext-preview-close {
+		width: 28px;
+		height: 28px;
+		justify-content: center;
+		align-items: center;
+		border-radius: 14px;
+	}
+
+	.richtext-preview-close-icon {
+		font-size: 14px;
+		color: #64748B;
+	}
+
+	.richtext-preview-body {
+		flex: 1;
+		/* #ifdef WEB */
+		overflow-y: auto;
+		/* #endif */
+	}
+
+	.richtext-preview-content {
+		padding: 16px 20px;
+	}
+
 	/* #ifdef WEB */
 	/* 滚动条样式已在 index.html 全局定义 */
+	.richtext-hover-popover {
+		position: fixed;
+		z-index: 10000;
+		background-color: #FFFFFF;
+		border: 1px solid #E2E8F0;
+		border-radius: 8px;
+		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+		width: 400px;
+		max-height: 300px;
+		overflow-y: hidden; /* Prevent scrollbar in hover to keep it clean, use click for full view */
+		padding: 12px;
+		pointer-events: none; /* Let mouse events pass through so we don't interrupt hover on cell */
+	}
 	/* #endif */
 </style>
