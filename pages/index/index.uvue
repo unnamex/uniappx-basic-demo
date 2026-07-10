@@ -257,11 +257,11 @@
 						<text v-if="previewResource != null" class="fullscreen-resource-name">{{ previewResourceNameDisplay }}</text>
 					</view>
 					<!-- 右侧操作区 -->
-					<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
-						<view class="header-action-btn" @click="toggleFullscreenList">
+					<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: isFullscreenListVisible ? 'center' : 'flex-end', position: 'relative', paddingRight: isFullscreenListVisible ? '0' : '12px', '-webkit-app-region': 'no-drag' }">
+						<view class="header-action-btn" @click="toggleFullscreenList" :style="!isFullscreenListVisible ? 'margin-right: 12px;' : ''">
 							<text class="header-action-icon" :style="isFullscreenListVisible ? 'margin-top: -1px;' : ''">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
 						</view>
-						<view class="fullscreen-close" @click="toggleResourceMaximize">
+						<view class="fullscreen-close" @click="toggleResourceMaximize" :style="isFullscreenListVisible ? 'position: absolute; right: 12px;' : ''">
 							<text class="close-icon" style="margin-top: -2px; margin-left: 2px;">🗗</text>
 						</view>
 					</view>
@@ -402,13 +402,13 @@
 				</view>
 
 				<!-- 右侧操作区 -->
-				<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
+				<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: isFullscreenListVisible ? 'center' : 'flex-end', position: 'relative', paddingRight: isFullscreenListVisible ? '0' : '12px', '-webkit-app-region': 'no-drag' }">
 					<!-- 列表显示/隐藏按钮 -->
-					<view class="header-action-btn" @click="toggleFullscreenList">
+					<view class="header-action-btn" @click="toggleFullscreenList" :style="!isFullscreenListVisible ? 'margin-right: 12px;' : ''">
 						<text class="header-action-icon" :style="isFullscreenListVisible ? 'margin-top: -1px;' : ''">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
 					</view>
 					<!-- 关闭按钮 -->
-					<view class="fullscreen-close" @click="toggleResourceMaximize">
+					<view class="fullscreen-close" @click="toggleResourceMaximize" :style="isFullscreenListVisible ? 'position: absolute; right: 12px;' : ''">
 						<text class="close-icon" style="margin-top: -2px; margin-left: 2px;">🗗</text>
 					</view>
 				</view>
