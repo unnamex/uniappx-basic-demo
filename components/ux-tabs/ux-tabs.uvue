@@ -24,7 +24,7 @@
 			
 			<!-- Fullscreen Toggle Button -->
 			<view :class="['ux-tabs__fullscreen-btn', { 'is-fullscreen-btn-active': isFullscreen }]" @click="toggleFullscreen" style="-webkit-app-region: no-drag;">
-				<text class="ux-tabs__fullscreen-icon">{{ isFullscreen ? '✕' : '⛶' }}</text>
+				<text class="ux-tabs__fullscreen-icon" :style="isFullscreen ? 'margin-top: -2px; margin-left: 2px;' : ''">{{ isFullscreen ? '🗗' : '⛶' }}</text>
 			</view>
 		</view>
 		

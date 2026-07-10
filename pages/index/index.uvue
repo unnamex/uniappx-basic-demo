@@ -233,7 +233,7 @@
 				<view class="right-header">
 					<text class="right-header-title">查看器</text>
 					<view class="right-header-btn" @click="toggleResourceMaximize">
-						<text class="btn-icon">{{ isResourceMaximized ? '✕' : '⛶' }}</text>
+						<text class="btn-icon" :style="isResourceMaximized ? 'margin-top: -2px; margin-left: 2px;' : ''">{{ isResourceMaximized ? '🗗' : '⛶' }}</text>
 					</view>
 				</view>
 				<view style="flex: 1; padding: 4px 4px 2px 4px; display: flex; flex-direction: column;">
@@ -354,11 +354,11 @@
 				<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
 					<!-- 列表显示/隐藏按钮 -->
 					<view class="header-action-btn" @click="toggleFullscreenList">
-						<text class="header-action-icon">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
+						<text class="header-action-icon" :style="isFullscreenListVisible ? 'margin-top: -1px;' : ''">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
 					</view>
 					<!-- 关闭按钮 -->
 					<view class="fullscreen-close" @click="toggleResourceMaximize">
-						<text class="close-icon">✕</text>
+						<text class="close-icon" style="margin-top: -2px; margin-left: 2px;">🗗</text>
 					</view>
 				</view>
 			</view>
