@@ -228,16 +228,67 @@
 
 		<!-- Right Sidebar Top Area - 资源预览 -->
 		<template #right>
-			<view class="right-panel">
-				<!-- 右侧区域头部 -->
-				<view class="right-header">
+			<view :class="isResourceMaximized && !isCurrentImageType ? 'right-panel right-panel-fullscreen' : 'right-panel'">
+				<!-- 常规模式头部：仅在非全屏或图片全屏时显示 -->
+				<view v-if="!isResourceMaximized || isCurrentImageType" class="right-header">
 					<text class="right-header-title">查看器</text>
 					<view class="right-header-btn" @click="toggleResourceMaximize">
 						<text class="btn-icon" :style="isResourceMaximized ? 'margin-top: -2px; margin-left: 2px;' : ''">{{ isResourceMaximized ? '🗗' : '⛶' }}</text>
 					</view>
 				</view>
-				<view style="flex: 1; padding: 4px 4px 2px 4px; display: flex; flex-direction: column;">
-					<resource-preview :resource="previewResource" @error="onPreviewError" />
+				<!-- 非图片全屏模式头部工具栏：文件切换导航 + 缩小按钮 -->
+				<view v-if="isResourceMaximized && !isCurrentImageType" class="fullscreen-header" :style="{ height: isPC ? '40px' : 'auto', '-webkit-app-region': isPC ? 'drag' : 'none' }">
+					<view class="header-left-spacer" style="-webkit-app-region: no-drag;"></view>
+					<!-- 居中导航区域：胶囊切换器 + 文件名 -->
+					<view class="header-center" :style="{ right: isFullscreenListVisible ? '160px' : '0', '-webkit-app-region': 'no-drag' }">
+						<view v-if="nodeResources.length > 1" class="nav-capsule">
+							<view class="capsule-btn" @click="goPrevResource">
+								<text class="capsule-arrow">‹</text>
+							</view>
+							<text class="capsule-counter">{{ currentResourceIndex + 1 }} / {{ nodeResources.length }}</text>
+							<view class="capsule-btn" @click="goNextResource">
+								<text class="capsule-arrow">›</text>
+							</view>
+						</view>
+						<view v-else-if="nodeResources.length == 1" class="nav-capsule-solo">
+							<text class="capsule-counter">1 / 1</text>
+						</view>
+						<text v-if="previewResource != null" class="header-dot-separator">·</text>
+						<text v-if="previewResource != null" class="fullscreen-resource-name">{{ previewResourceNameDisplay }}</text>
+					</view>
+					<!-- 右侧操作区 -->
+					<view class="header-right-actions" :style="{ width: isFullscreenListVisible ? '160px' : 'auto', justifyContent: 'center', '-webkit-app-region': 'no-drag' }">
+						<view class="header-action-btn" @click="toggleFullscreenList">
+							<text class="header-action-icon" :style="isFullscreenListVisible ? 'margin-top: -1px;' : ''">{{ isFullscreenListVisible ? '◧' : '☰' }}</text>
+						</view>
+						<view class="fullscreen-close" @click="toggleResourceMaximize">
+							<text class="close-icon" style="margin-top: -2px; margin-left: 2px;">🗗</text>
+						</view>
+					</view>
+				</view>
+				<!-- 内容区域：始终只保留一个 resource-preview 实例，全屏时通过外层容器样式变化实现 -->
+				<view :class="isResourceMaximized && !isCurrentImageType ? 'fullscreen-content' : ''" :style="isResourceMaximized && !isCurrentImageType ? '' : 'flex: 1; padding: 4px 4px 2px 4px; display: flex; flex-direction: column;'">
+					<view :class="isResourceMaximized && !isCurrentImageType && isFullscreenListVisible ? 'fullscreen-preview' : (isResourceMaximized && !isCurrentImageType ? 'fullscreen-preview-full' : '')" :style="isResourceMaximized && !isCurrentImageType ? 'padding: 4px;' : 'flex: 1; display: flex; flex-direction: column;'">
+						<resource-preview :resource="previewResource" @error="onPreviewError" />
+					</view>
+					<!-- 右侧缩略图列表（仅非图片全屏模式下可选显示） -->
+					<view v-if="isResourceMaximized && !isCurrentImageType && isFullscreenListVisible" class="fullscreen-list">
+						<scroll-view scroll-y="true" style="flex: 1;">
+							<view class="fullscreen-list-inner">
+								<view 
+									v-for="(item, index) in nodeResources" 
+									:key="item.id"
+									:class="previewResourceId == item.id ? 'fullscreen-thumb-item-selected' : 'fullscreen-thumb-item'"
+									@click="onResourceSelect(item)"
+								>
+									<view class="thumb-wrapper">
+										<resource-icon :type="item.type" :thumbnail="item.thumbnail" :path="item.path" />
+									</view>
+									<text class="thumb-name" :numberOfLines="1">{{ formatName(item.name) }}</text>
+								</view>
+							</view>
+						</scroll-view>
+					</view>
 				</view>
 			</view>
 		</template>
@@ -319,8 +370,8 @@
 		</view>
 	</view>
 	
-	<!-- 全屏资源预览覆盖层 -->
-	<view v-if="isResourceMaximized" class="resource-fullscreen-overlay">
+	<!-- 全屏资源预览覆盖层（仅图片类型使用，非图片类型通过 CSS fixed 提升原实例） -->
+	<view v-if="isResourceMaximized && isCurrentImageType" class="resource-fullscreen-overlay">
 		<view class="fullscreen-container" :style="{ paddingTop: (!isPC ? statusBarHeight : 0) + 'px' }">
 			<!-- 头部工具栏 -->
 			<view class="fullscreen-header" :style="{ height: isPC ? '40px' : 'auto', '-webkit-app-region': isPC ? 'drag' : 'none' }">
@@ -420,9 +471,6 @@
 						</view>
 						<!-- #endif -->
 					</view>
-					
-					<!-- 非图片类型：使用原组件 -->
-					<resource-preview v-else :resource="previewResource" @error="onPreviewError" />
 					
 					<view v-if="nodeResources.length > 1 && previewResource != null && previewResource?.type == 'image'" class="nav-btn nav-next" @click="goNextResource">
 						<text class="nav-icon">›</text>
@@ -731,6 +779,8 @@
 	const previewResourceId = computed((): string => previewResource.value != null ? previewResource.value!.id : '')
 	const isResourceMaximized = ref(false)
 	const isFullscreenListVisible = ref(false)
+	// 判断当前预览资源是否为图片类型
+	const isCurrentImageType = computed((): boolean => previewResource.value != null && previewResource.value!.type == 'image')
 	
 	// 当前工艺图标（左侧大图标），由面包屑更新时赋值，空值则不显示
 	const headerIconPath = ref('')
@@ -2253,6 +2303,17 @@
 		width: 100%;
 		height: 100%;
 		background-color: #FFFFFF;
+	}
+	
+	/* 非图片类型全屏模式：通过 CSS fixed 提升原实例为全屏覆盖，避免组件销毁重建导致文件重新加载 */
+	.right-panel-fullscreen {
+		position: fixed;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 9999;
+		background-color: #F0F2F5;
 	}
 	
 	.main-content-top {
