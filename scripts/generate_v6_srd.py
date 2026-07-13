@@ -421,11 +421,11 @@ def create_v6_srd(output_path):
             "type": "table", "title": "工序列表", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "序号", "prop": "serialNumber", "width": 80},
-                    {"label": "代码", "prop": "code", "width": 120},
-                    {"label": "名称", "prop": "name", "width": 150},
-                    {"label": "说明", "prop": "content", "width": -1, "type": "richText"},
-                    {"label": "关键", "prop": "isKey_display", "width": 80}
+                    {"label": "序号", "prop": "serialNumber", "width": 60},
+                    {"label": "代码", "prop": "code", "width": 100},
+                    {"label": "名称", "prop": "name", "width": 120},
+                    {"label": "说明", "prop": "content", "width": 600, "type": "richText"},
+                    {"label": "关键", "prop": "isKey_display", "width": 60}
                 ]
             }
         },

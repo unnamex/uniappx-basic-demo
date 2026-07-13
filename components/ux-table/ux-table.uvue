@@ -26,7 +26,7 @@
 							<text class="header-text">{{ field['label'] }}</text>
 							
 							<!-- #ifdef H5 -->
-							<view v-if="index < fields.length - 1" class="resize-handle" 
+							<view class="resize-handle" 
 								@touchstart.stop.prevent="onResizeStart(index, $event)" 
 								@touchmove.stop.prevent="onResizeMove" 
 								@touchend="onResizeEnd"
@@ -35,7 +35,7 @@
 							</view>
 							<!-- #endif -->
 							<!-- #ifndef H5 -->
-							<view v-if="index < fields.length - 1" class="resize-handle" 
+							<view class="resize-handle" 
 								@touchstart.stop="(e : UniTouchEvent) => onResizeStart(index, e)" 
 								@touchmove.stop="onResizeMove" 
 								@touchend="onResizeEnd">
@@ -79,7 +79,7 @@
 								@mouseenter="onRichTextHover(row, $event)" @mouseleave="onRichTextLeave">
 								<!-- #ifdef WEB -->
 								<view class="richtext-inline-scroll" :style="getRichTextInlineScrollStyle()">
-									<ux-richtext v-if="row.expandContent != ''" :content="row.expandContent"></ux-richtext>
+									<ux-richtext v-if="row.expandContent != ''" :key="richTextRenderKey" :content="row.expandContent"></ux-richtext>
 									<view v-else class="richtext-inline-empty">
 										<text class="richtext-inline-empty-text">暂无内容</text>
 									</view>
@@ -88,7 +88,7 @@
 								<!-- #ifndef WEB -->
 								<scroll-view direction="vertical" scroll-y="true" class="richtext-inline-scroll" 
 									:style="getRichTextInlineScrollStyle()" :show-scrollbar="true">
-									<ux-richtext v-if="row.expandContent != ''" :content="row.expandContent"></ux-richtext>
+									<ux-richtext v-if="row.expandContent != ''" :key="richTextRenderKey" :content="row.expandContent"></ux-richtext>
 									<view v-else class="richtext-inline-empty">
 										<text class="richtext-inline-empty-text">暂无内容</text>
 									</view>
@@ -255,6 +255,8 @@
 				measuredContainerWidth: 0 as number,
 				/** ResizeObserver 实例引用（原生端为 UniResizeObserver，Web 端为浏览器 ResizeObserver） */
 				resizeObserver: null as any,
+				/** 富文本渲染 key：当组件从隐藏变为可见时递增，强制 iframe 在正确宽度下重建 */
+				richTextRenderKey: 0 as number,
 				/** 富文本预览弹窗是否可见 */
 				previewVisible: false,
 				/** 弹窗中展示的富文本内容 */
@@ -359,6 +361,13 @@
 					}
 				},
 				immediate: true
+			},
+			// 监听容器宽度变化：从 0 变为正数说明组件从隐藏变为可见（如 Tab 切换）
+			measuredContainerWidth(newVal: number, oldVal: number) {
+				if (oldVal <= 0 && newVal > 0) {
+					// 递增 key 强制所有行内富文本 iframe 在正确宽度下重新创建
+					this.richTextRenderKey++
+				}
 			}
 		},
 		methods: {
@@ -899,9 +908,15 @@
 		},
 		mounted() {
 			// #ifdef WEB
-			// Web 端：使用浏览器原生 ResizeObserver 监听容器尺寸变化
+			// Web 端：先同步测量容器宽度，确保首帧渲染即使用真实宽度（不等 ResizeObserver 异步回调）
 			const webEl = (this as any).$el
 			if (webEl != null) {
+				// getBoundingClientRect() 强制浏览器完成布局计算，同步返回准确尺寸
+				const initRect = webEl.getBoundingClientRect()
+				if (initRect != null && initRect.width > 0) {
+					this.measuredContainerWidth = initRect.width
+				}
+				// 持续监听后续尺寸变化（窗口缩放、面板拖拽等）
 				const ro = new ResizeObserver((entries : any[]) => {
 					for (let i = 0; i < entries.length; i++) {
 						const w = (entries[i] as any).contentRect.width as number
@@ -915,9 +930,13 @@
 			}
 			// #endif
 			// #ifndef WEB
-			// 原生端：使用 UniResizeObserver 自动监听容器尺寸变化
+			// 原生端：先同步测量，再注册持续监听
 			const el = this.$el as UniElement | null
 			if (el != null) {
+				const nativeRect = el.getBoundingClientRect()
+				if (nativeRect.width > 0) {
+					this.measuredContainerWidth = nativeRect.width
+				}
 				const observer = new UniResizeObserver((entries: UniResizeObserverEntry[]) => {
 					for (const entry of entries) {
 						const rect = entry.contentRect
@@ -1280,7 +1299,7 @@
 		width: 100%;
 		/* #ifdef WEB */
 		overflow-y: auto;
-		overflow-x: hidden;
+		overflow-x: auto;
 		/* #endif */
 	}
 

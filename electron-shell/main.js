@@ -241,15 +241,17 @@ function createWindow() {
 
   // 将渲染进程的 console 输出转发到主进程日志文件
   // 这样前端的 [Doc]、[Parent] 等日志也能被持久化，无需打开 DevTools
-  mainWindow.webContents.on('console-message', (_event, level, message) => {
+  mainWindow.webContents.on('console-message', (event, level, message) => {
+    const msgLevel = event.level !== undefined ? event.level : level
+    const msgText = event.message !== undefined ? event.message : message
     const levelMap = ['INFO', 'WARN', 'ERROR']
-    const levelStr = levelMap[level] || 'INFO'
+    const levelStr = levelMap[msgLevel] || 'INFO'
     if (levelStr === 'ERROR') {
-      console.error('[Renderer]', message)
+      console.error('[Renderer]', msgText)
     } else if (levelStr === 'WARN') {
-      console.warn('[Renderer]', message)
+      console.warn('[Renderer]', msgText)
     } else {
-      console.log('[Renderer]', message)
+      console.log('[Renderer]', msgText)
     }
   })
 

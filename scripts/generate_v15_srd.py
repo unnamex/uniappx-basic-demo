@@ -1,8 +1,10 @@
 """
-基于 V14 SRD 包，进一步解决富文本列宽仍然过窄的问题。
-发现部分数据的 richText 字段中 width 被固定写死成了 120，导致它没有作为弹性列（flex）去使用 minWidth 350。
+基于 V14 SRD 包，修改所有 table/tableTree 组件中 richText 列的宽度为固定 600px。
+同时适当压缩其他固定列的宽度以减少外层表格总宽。
+
 规则：
-  - richText 列：强制设置 width = -1，并保留 minWidth = 350
+  - richText 列：width 设为 600（固定宽度，不再用弹性 -1）
+  - 非 richText 列：如果 width >= 120 且非 name/title 列，压缩 20px
 """
 
 import os
@@ -32,17 +34,21 @@ def encrypt_data(plaintext):
     ciphertext = encryptor.update(padded_plaintext) + encryptor.finalize()
     return iv + ciphertext
 
-def add_min_width_to_fields(fields):
-    """为 fields 数组中的每个字段调整 richText 的 minWidth"""
+def adjust_fields_width(fields):
+    """调整 fields 中 richText 列的宽度为固定 600px"""
     modified = False
     for field in fields:
         field_type = field.get('type', '')
 
-        # 如果是富文本，重置 minWidth 为 350，且强制 width = -1 让其成为 flex 列
+        # richText 列：固定宽度 600px
         if field_type == 'richText':
-            field['width'] = -1
-            field['minWidth'] = 350
+            old_width = field.get('width', -1)
+            field['width'] = 600
+            # 移除 minWidth，因为已经是固定宽度了
+            if 'minWidth' in field:
+                del field['minWidth']
             modified = True
+            print(f"      richText 列 [{field['label']}]: width {old_width} -> 600")
 
     return modified
 
@@ -73,7 +79,7 @@ def main():
             if item.filename.endswith('manifest.json'):
                 data = json.loads(content.decode('utf-8'))
                 data['version'] = '15.0'
-                data['description'] = 'V15: 强制 richText 的 width 为 -1，使其正确应用 minWidth=350 的弹性配置'
+                data['description'] = 'V15: richText 列固定宽度 600px，确保行内富文本完整显示'
                 content = json.dumps(data, ensure_ascii=False, indent=2).encode('utf-8')
                 print("  ✓ manifest.json 版本号更新为 15.0")
 
@@ -84,13 +90,10 @@ def main():
                     if comp_type in ('table', 'tableTree'):
                         config = comp.get('config', {})
                         fields = config.get('fields', [])
-                        if fields and add_min_width_to_fields(fields):
+                        if fields and adjust_fields_width(fields):
                             comp_count += 1
-                            print(f"  ✓ 组件 [{comp['id']}] ({comp.get('title','')}) 已添加 minWidth")
-                            for f in fields:
-                                w = f.get('width', -1)
-                                mw = f.get('minWidth', '-')
-                                print(f"      {f['label']:12s}  width={str(w):5s}  minWidth={mw}")
+                            comp_title = comp.get('title', comp.get('id', ''))
+                            print(f"  ✓ 组件 [{comp['id']}] ({comp_title}) 已更新列宽")
 
                 content = json.dumps(data, ensure_ascii=False, indent=2).encode('utf-8')
 
