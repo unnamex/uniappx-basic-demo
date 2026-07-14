@@ -1,17 +1,23 @@
 <template>
 	<view 
+		:id="componentId"
 		:class="['ux-tabs', { 'ux-tabs-fullscreen': isFullscreen }]" 
 		:style="isFullscreen ? { paddingTop: (!isPC ? statusBarHeight : 0) + 'px' } : {}"
 	>
 		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
 		<view :class="['ux-tabs__header-row', { 'is-fullscreen-header': isFullscreen }]"
 			  :style="isFullscreen && isPC ? { '-webkit-app-region': 'drag' } : {}">
-			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true" style="-webkit-app-region: no-drag;">
+			<view v-if="isScrollable" class="ux-tabs__scroll-btn" @click="scrollLeft" :style="{ backgroundColor: isFullscreen ? '#FFFFFF' : '#F8FAFC', zIndex: 10, '-webkit-app-region': 'no-drag' }">
+				<text class="ux-tabs__scroll-icon" :style="{ color: canScrollLeft ? '#475569' : '#D1D5DB', transform: 'translateX(-4px)' }">〈</text>
+			</view>
+
+			<scroll-view class="ux-tabs__header" direction="horizontal" :show-scrollbar="false" scroll-x="true" :scroll-left="scrollLeftValue" :scroll-into-view="scrollToViewId" :scroll-with-animation="!isWheeling" @scroll="onScroll" style="-webkit-app-region: no-drag; overflow: hidden; position: relative; z-index: 1;">
 				<view class="ux-tabs__nav-wrap">
 					<view class="ux-tabs__nav">
 						<view 
 							v-for="(pane, index) in panes" 
 							:key="index"
+							:id="'tab-item-' + pane['name']"
 							:class="['ux-tabs__item', { 'is-active': pane['name'] == currentName, 'is-disabled': pane['disabled'] == true, 'is-fullscreen-item': isFullscreen }]"
 							@click="handleTabClick(pane)"
 						>
@@ -21,6 +27,10 @@
 					</view>
 				</view>
 			</scroll-view>
+			
+			<view v-if="isScrollable" class="ux-tabs__scroll-btn" @click="scrollRight" :style="{ backgroundColor: isFullscreen ? '#FFFFFF' : '#F8FAFC', zIndex: 10, '-webkit-app-region': 'no-drag' }">
+				<text class="ux-tabs__scroll-icon" :style="{ color: canScrollRight ? '#475569' : '#D1D5DB', transform: 'translateX(4px)' }">〉</text>
+			</view>
 			
 			<!-- Fullscreen Toggle Button -->
 			<view :class="['ux-tabs__fullscreen-btn', { 'is-fullscreen-btn-active': isFullscreen }]" @click="toggleFullscreen" style="-webkit-app-region: no-drag;">
@@ -61,9 +71,156 @@
 	const isFullscreen = ref(false)
 	const isPC = ref(false)
 	
+	const componentId = 'tabs_' + Date.now() + '_' + Math.floor(Math.random() * 1000)
+	
+	const isScrollable = ref(false)
+	const canScrollLeft = ref(false)
+	const canScrollRight = ref(false)
+	
+	let currentHeaderWidth = 0
+	let currentNavWidth = 0
+	let checkTimer: number | null = null
+	let isRechecking = false
+	
+	const updateScrollBtnsVisibility = () => {
+		if (currentNavWidth <= 0 || currentHeaderWidth <= 0) return
+		
+		const wasScrollable = isScrollable.value
+		
+		// 理论上无按钮时 scroll-view 的最大可用宽度（两个按钮现为24+24=48）
+		const maxAvailableWidth = currentHeaderWidth + (isScrollable.value ? 48 : 0)
+		
+		// 容差 2px 防止边缘跳动
+		if (currentNavWidth > maxAvailableWidth + 2) {
+			isScrollable.value = true
+			canScrollLeft.value = currentScrollLeft > 2
+			canScrollRight.value = currentScrollLeft + currentHeaderWidth < currentNavWidth - 2
+		} else {
+			isScrollable.value = false
+			canScrollLeft.value = false
+			canScrollRight.value = false
+		}
+		
+		// 当 isScrollable 状态变化时，按钮的显示/隐藏会改变 scroll-view 的实际宽度，
+		// 需要在按钮渲染后重新测量以获取正确的 currentHeaderWidth，
+		// 否则首次点击 > 时 maxScrollLeft 会因旧的 headerWidth 偏大而导致滚动不到位
+		if (wasScrollable != isScrollable.value && !isRechecking) {
+			isRechecking = true
+			setTimeout(() => {
+				isRechecking = false
+				checkScrollBtns()
+			}, 80)
+		}
+	}
+	
+	const checkScrollBtns = () => {
+		if (checkTimer != null) {
+			clearTimeout(checkTimer as number)
+		}
+		checkTimer = setTimeout(() => {
+			uni.createSelectorQuery().select(`#${componentId} .ux-tabs__header`).boundingClientRect().exec((res1) => {
+				uni.createSelectorQuery().select(`#${componentId} .ux-tabs__nav`).boundingClientRect().exec((res2) => {
+					if (res1.length > 0 && res2.length > 0 && res1[0] != null && res2[0] != null) {
+						const headerNode = res1[0] as NodeInfo
+						const navNode = res2[0] as NodeInfo
+						currentHeaderWidth = headerNode.width ?? 0
+						currentNavWidth = navNode.width ?? 0
+						updateScrollBtnsVisibility()
+					}
+				})
+			})
+		}, 50) as number
+	}
+	
+	// Scroll State
+	const scrollLeftValue = ref(0)
+	const scrollToViewId = ref('')
+	let currentScrollLeft = 0
+	let isAnimating = false
+	
+	const onScroll = (e: any) => {
+		currentScrollLeft = e.detail.scrollLeft as number
+		if (isAnimating) return
+		updateScrollBtnsVisibility()
+	}
+	
+	const scrollLeft = () => {
+		if (!canScrollLeft.value || isAnimating) return
+		scrollToViewId.value = '' // 用空字符串彻底清除原生吸附锚点，避免 'none' 残留导致的牛皮糖回弹
+		
+		isAnimating = true
+		
+		// 动态步长：按可视宽度的大部分进行“翻页”，避免屏幕小的时候需要狂点
+		let step = currentHeaderWidth * 0.8
+		if (step < 150) step = 150 // 保底至少滑 150px
+		
+		let target = currentScrollLeft - step
+		if (target < 0) target = 0
+		
+		// 防死锁底线：如果在非0位置算出的目标依然原地踏步，强制向左强推
+		if (target >= currentScrollLeft && currentScrollLeft > 0) {
+			target = currentScrollLeft - step
+			if (target < 0) target = 0
+		}
+		
+		// 加入微量噪音破坏 Vue 的严格同值比对，避免引擎由于隐性精度导致更新被吞
+		target += (Math.random() * 0.001)
+		
+		scrollLeftValue.value = target
+		
+		setTimeout(() => {
+			isAnimating = false
+			updateScrollBtnsVisibility()
+		}, 350)
+	}
+	
+	const scrollRight = () => {
+		if (!canScrollRight.value || isAnimating) return
+		scrollToViewId.value = '' // 空字符串彻底释放吸附力
+		
+		isAnimating = true
+		
+		let step = currentHeaderWidth * 0.8
+		if (step < 150) step = 150
+		
+		let target = currentScrollLeft + step
+		
+		// 1. 精准吸附：拦截过度指令导致的触底橡皮筋回弹
+		let maxScrollLeft = currentNavWidth - currentHeaderWidth
+		if (maxScrollLeft < 0) maxScrollLeft = 0
+		
+		if (target > maxScrollLeft) {
+			target = maxScrollLeft
+		}
+		
+		// 2. 绝对防死锁：由于缩放时的转场动画容易让上述的 maxScrollLeft 量出偏小的错误值。
+		// 如果我们乖乖听命，就会导致 target <= currentScrollLeft，然后原地卡死。
+		// 一旦发现这种情况，不惜代价使用步长直接强推！哪怕引起一次物理橡皮筋，也绝不能彻底假死。
+		if (target <= currentScrollLeft) {
+			target = currentScrollLeft + step
+		}
+		
+		target += (Math.random() * 0.001)
+		
+		scrollLeftValue.value = target
+		
+		setTimeout(() => {
+			isAnimating = false
+			updateScrollBtnsVisibility()
+		}, 350)
+	}
+	
 	// Watch modelValue to update internal state
 	watch((): any => { return props.modelValue }, (newVal: any): void => {
 		currentName.value = newVal
+		if (newVal != '') {
+			setTimeout(() => {
+				scrollToViewId.value = 'tab-item-' + newVal
+				setTimeout(() => {
+					scrollToViewId.value = 'none'
+				}, 500)
+			}, 50)
+		}
 	})
 	
 	// Tab Click Handler
@@ -72,6 +229,12 @@
 		
 		const name = pane['name'] ?? ''
 		currentName.value = name
+		
+		scrollToViewId.value = 'tab-item-' + name
+		setTimeout(() => {
+			scrollToViewId.value = 'none'
+		}, 500)
+		
 		emit('update:modelValue', name)
 		emit('tab-click', pane)
 		emit('change', name)
@@ -81,6 +244,7 @@
 		isFullscreen.value = !isFullscreen.value
 		// 调用统一的客户端沉浸式全屏逻辑
 		toggleImmersiveFullscreen(isFullscreen.value)
+		checkScrollBtns()
 	}
 	
 	const handleKeyDown = (e : any) => {
@@ -89,18 +253,72 @@
 		}
 	}
 	
-	// #ifdef WEB
+	// 鼠标滚轮水平滚动tab栏
+	let headerRowEl: Element | null = null
+	const isWheeling = ref(false)
+	let wheelEndTimer: number | null = null
+	const handleWheel = (e: any) => {
+		if (!isScrollable.value) return
+		e.preventDefault()
+		
+		// deltaY 为垂直滚轮值，将其映射为水平滚动
+		const delta = (e.deltaY as number) != 0 ? (e.deltaY as number) : (e.deltaX as number)
+		if (delta == 0) return
+		
+		// 禁用 scroll-view 动画，避免高频滚轮时动画弹性导致回弹
+		isWheeling.value = true
+		
+		// 基于上次设定的目标位置累加
+		let target = scrollLeftValue.value + delta
+		if (target < 0) target = 0
+		
+		let maxScrollLeft = currentNavWidth - currentHeaderWidth
+		if (maxScrollLeft < 0) maxScrollLeft = 0
+		if (target > maxScrollLeft) target = maxScrollLeft
+		
+		// 微量噪音防止同值被吞
+		target += (Math.random() * 0.001)
+		scrollLeftValue.value = target
+		
+		// 滚轮停止后恢复动画并更新按钮状态
+		if (wheelEndTimer != null) clearTimeout(wheelEndTimer as number)
+		wheelEndTimer = setTimeout(() => {
+			isWheeling.value = false
+			updateScrollBtnsVisibility()
+		}, 150) as number
+	}
+	
 	onMounted(() => {
+		uni.$on('outsider-layout-resize', checkScrollBtns)
+		// #ifdef WEB
 		if ((window as any).electronAPI != null) {
 			isPC.value = true
 		}
 		window.addEventListener('keydown', handleKeyDown)
+		window.addEventListener('resize', checkScrollBtns)
+		// 在header-row上绑定滚轮事件
+		const el = document.querySelector(`#${componentId} .ux-tabs__header-row`)
+		if (el != null) {
+			headerRowEl = el
+			el.addEventListener('wheel', handleWheel, { passive: false })
+		}
+		// #endif
 	})
 	
 	onUnmounted(() => {
+		uni.$off('outsider-layout-resize', checkScrollBtns)
+		if (checkTimer != null) {
+			clearTimeout(checkTimer as number)
+		}
+		// #ifdef WEB
 		window.removeEventListener('keydown', handleKeyDown)
+		window.removeEventListener('resize', checkScrollBtns)
+		if (headerRowEl != null) {
+			headerRowEl!.removeEventListener('wheel', handleWheel)
+			headerRowEl = null
+		}
+		// #endif
 	})
-	// #endif
 	
 	// Registry for child Panes
 	const registerPane = (pane: UTSJSONObject) => {
@@ -112,8 +330,15 @@
 			if (firstName != null) {
 				currentName.value = firstName
 				emit('update:modelValue', firstName)
+				setTimeout(() => {
+					scrollToViewId.value = 'tab-item-' + firstName
+					setTimeout(() => {
+						scrollToViewId.value = ''
+					}, 500)
+				}, 50)
 			}
 		}
+		checkScrollBtns()
 	}
 	
 	const unregisterPane = (pane: UTSJSONObject) => {
@@ -121,6 +346,7 @@
 		if (index > -1) {
 			panes.value.splice(index, 1)
 		}
+		checkScrollBtns()
 	}
 	
 	// Provide context to children
@@ -181,6 +407,23 @@
 		flex-direction: row;
 	}
 	
+	.ux-tabs__scroll-btn {
+		width: 24px;
+		height: 40px;
+		justify-content: center;
+		align-items: center;
+		flex-shrink: 0;
+		/* 依赖行内动态绑定的背景色遮挡溢出内容 */
+	}
+	
+	.ux-tabs__scroll-icon {
+		font-size: 16px;
+		font-weight: bold;
+		line-height: 40px;
+		transition-property: color;
+		transition-duration: 0.2s;
+	}
+	
 	.ux-tabs__fullscreen-btn {
 		width: 40px;
 		height: 40px;
@@ -215,6 +458,7 @@
 	
 	.ux-tabs__nav-wrap {
 		flex-direction: row;
+		position: relative;
 	}
 	
 	.ux-tabs__nav {
@@ -223,11 +467,12 @@
 	}
 	
 	.ux-tabs__item {
-		padding: 0 20px;
+		padding: 0 12px;
 		height: 40px;
 		justify-content: center;
 		align-items: center;
 		position: relative;
+		flex-shrink: 0;
 		transition-property: height;
 		transition-duration: 0.3s;
 		/* cursor: pointer; */
