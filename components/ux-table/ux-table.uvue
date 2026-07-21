@@ -75,11 +75,13 @@
 						<view v-else class="cell-content-wrapper">
 							<!-- 行内模式：直接在单元格内渲染富文本 -->
 							<view v-if="getCellType(field) == 'richText' && richTextDisplayMode == 'inline'" 
-								class="richtext-inline-cell" @click.stop="openRichTextPreview(row)"
-								@mouseenter="onRichTextHover(row, $event)" @mouseleave="onRichTextLeave">
+								class="richtext-inline-cell" @dblclick.stop="openRichTextPreview(row)"
+								@mouseenter="onRichTextHover(row, $event)" @mouseleave="onRichTextLeave"
+								style="position: relative;">
+								
 								<!-- #ifdef WEB -->
 								<view class="richtext-inline-scroll" :style="getRichTextInlineScrollStyle()">
-									<ux-richtext v-if="row.expandContent != ''" :key="richTextRenderKey" :content="row.expandContent"></ux-richtext>
+									<ux-richtext v-if="row.expandContent != ''" :key="richTextRenderKey" :content="row.expandContent" @dblclick="openRichTextPreview(row)" @click="handleRowClick(row)"></ux-richtext>
 									<view v-else class="richtext-inline-empty">
 										<text class="richtext-inline-empty-text">暂无内容</text>
 									</view>
@@ -88,7 +90,7 @@
 								<!-- #ifndef WEB -->
 								<scroll-view direction="vertical" scroll-y="true" class="richtext-inline-scroll" 
 									:style="getRichTextInlineScrollStyle()" :show-scrollbar="true">
-									<ux-richtext v-if="row.expandContent != ''" :key="richTextRenderKey" :content="row.expandContent"></ux-richtext>
+									<ux-richtext v-if="row.expandContent != ''" :key="richTextRenderKey" :content="row.expandContent" @dblclick="openRichTextPreview(row)" @click="handleRowClick(row)"></ux-richtext>
 									<view v-else class="richtext-inline-empty">
 										<text class="richtext-inline-empty-text">暂无内容</text>
 									</view>
@@ -407,23 +409,35 @@
 			},
 			initFields(fields: UTSJSONObject[]) {
 				this.fieldWidths = fields.map((field): number => {
+					let wNum = -1
 					const w = field['width']
 					if (w != null) {
-						return parseFloat(w.toString())
+						wNum = parseFloat(w.toString())
 					}
-					return -1 // Flag for flex
+					// 针对富文本强制设置最小宽度 350px，若小于则按最小宽度展示
+					if (field['type'] === 'richText' && wNum > 0 && wNum < 350) {
+						return 350
+					}
+					return wNum
 				})
 				this.fieldMinWidths = fields.map((field): number => {
+					let parsedMw = -1
 					const mw = field['minWidth']
 					if (mw != null) {
-						return parseFloat(mw.toString())
+						parsedMw = parseFloat(mw.toString())
 					}
 					// 智能计算默认最小宽度：保证表头文字完整显示
 					const label = (field['label'] as string | null) ?? ''
 					// 假设每个汉字约 14px，左右 padding 各 12px (24px)，加上调整把手/排序图标等冗余空间预留约 16px，总计 40px。
 					const computedMw = label.length * 14 + 40
 					// 设置一个保底的下限（如 80px）
-					return computedMw > 80 ? computedMw : 80
+					let finalMw = parsedMw > 0 ? parsedMw : (computedMw > 80 ? computedMw : 80)
+					
+					// 针对富文本强制设置最小宽度 350px
+					if (field['type'] === 'richText' && finalMw < 350) {
+						finalMw = 350
+					}
+					return finalMw
 				})
 			},
 			getStringValue(data : UTSJSONObject, key : string) : string {
@@ -608,6 +622,11 @@
 
 				row.expanded = !row.expanded
 				this.updateChildrenVisibility(row)
+				
+				// 修复：懒加载展开子节点后，自动加载新行的行内富文本内容，避免新节点显示暂无内容
+				if (row.expanded) {
+					this.autoLoadInlineContent()
+				}
 			},
 			toggleAll() {
 				const targetState = !this.computedIsAllExpanded
@@ -633,6 +652,11 @@
 					}
 				})
 				this.refreshVisibility()
+				
+				// 修复：展开全部导致懒加载子节点插入后，需要触发内容提取
+				if (this.isAllExpanded) {
+					this.autoLoadInlineContent()
+				}
 			},
 			// 用于寻找目标节点时懒展开上级
 			autoExpandToId(targetId: string) {
@@ -659,6 +683,9 @@
 						}
 					}
 					this.refreshVisibility();
+					
+					// 修复：自动路由寻址展开沿途节点后，为新插入的节点加载内容
+					this.autoLoadInlineContent();
 				}
 			},
 			findPathInRaw(list: UTSJSONObject[], targetId: string, path: UTSJSONObject[]): boolean {

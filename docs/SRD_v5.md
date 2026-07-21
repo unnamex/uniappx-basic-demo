@@ -1,4 +1,4 @@
-# SRD 数据包规范说明 (V5)
+﻿# SRD 数据包规范说明 (V5)
 
 > **文档版本**: 5.4  
 > **最后更新**: 2026-04-20  
@@ -593,16 +593,16 @@ Process（工艺）
 
 #### fields（用于 infoView 类型）
 
-定义要展示的字段列表，使用 `vModel` 指定数据绑定的字段名，`columns` 指定每行列数：
+定义要展示的字段列表，使用 `prop` 指定数据绑定的字段名，`columns` 指定每行列数：
 
 ```json
 {
   "dataSource": "self",
   "fields": [
-    { "label": "工艺代码", "vModel": "code" },
-    { "label": "工艺名称", "vModel": "name" },
-    { "label": "版本", "vModel": "version" },
-    { "label": "状态", "vModel": "stateName" }
+    { "label": "工艺代码", "prop": "code" },
+    { "label": "工艺名称", "prop": "name" },
+    { "label": "版本", "prop": "version" },
+    { "label": "状态", "prop": "stateName" }
   ],
   "columns": 2
 }
@@ -673,10 +673,10 @@ Process（工艺）
   "config": {
     "dataSource": "self",
     "fields": [
-      { "label": "工艺代码", "vModel": "code" },
-      { "label": "工艺名称", "vModel": "name" },
-      { "label": "版本", "vModel": "version" },
-      { "label": "状态", "vModel": "stateName" }
+      { "label": "工艺代码", "prop": "code" },
+      { "label": "工艺名称", "prop": "name" },
+      { "label": "版本", "prop": "version" },
+      { "label": "状态", "prop": "stateName" }
     ],
     "columns": 2
   }

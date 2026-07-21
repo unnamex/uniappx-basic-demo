@@ -1,4 +1,4 @@
-"""
+﻿"""
 SRD V6 标准数据包生成器
 根据 SRD_PACKAGE_SPECIFICATION.md V6 规范和项目运行时代码实际需求生成测试包。
 
@@ -403,15 +403,15 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "工艺基本信息", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "工艺代码", "vModel": "code"},
-                    {"label": "工艺名称", "vModel": "name"},
-                    {"label": "版本", "vModel": "fullversionNo"},
-                    {"label": "状态", "vModel": "stateName"},
-                    {"label": "类型", "vModel": "classId_display"},
-                    {"label": "修改人", "vModel": "modifyById_display"},
-                    {"label": "修改时间", "vModel": "modifyTime"},
-                    {"label": "密级", "vModel": "secretId_display"},
-                    {"label": "工艺总览", "vModel": "content", "type": "richText"}
+                    {"label": "工艺代码", "prop": "code"},
+                    {"label": "工艺名称", "prop": "name"},
+                    {"label": "版本", "prop": "fullversionNo"},
+                    {"label": "状态", "prop": "stateName"},
+                    {"label": "类型", "prop": "classId_display"},
+                    {"label": "修改人", "prop": "modifyById_display"},
+                    {"label": "修改时间", "prop": "modifyTime"},
+                    {"label": "密级", "prop": "secretId_display"},
+                    {"label": "工艺总览", "prop": "content", "type": "richText"}
                 ],
                 "columns": 2
             }
@@ -436,12 +436,12 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "工序详情", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "工序代码", "vModel": "code"},
-                    {"label": "工序名称", "vModel": "name"},
-                    {"label": "序号", "vModel": "serialNumber"},
-                    {"label": "类型", "vModel": "classId_display"},
-                    {"label": "关键工序", "vModel": "isKey_display"},
-                    {"label": "详细说明", "vModel": "content", "type": "richText", "isFullWidth": True}
+                    {"label": "工序代码", "prop": "code"},
+                    {"label": "工序名称", "prop": "name"},
+                    {"label": "序号", "prop": "serialNumber"},
+                    {"label": "类型", "prop": "classId_display"},
+                    {"label": "关键工序", "prop": "isKey_display"},
+                    {"label": "详细说明", "prop": "content", "type": "richText", "isFullWidth": True}
                 ],
                 "columns": 2
             }
@@ -464,11 +464,11 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "基本信息", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "工步代码", "vModel": "code"},
-                    {"label": "工步名称", "vModel": "name"},
-                    {"label": "序号", "vModel": "serialNumber"},
-                    {"label": "类型", "vModel": "classId_display"},
-                    {"label": "备注", "vModel": "note"}
+                    {"label": "工步代码", "prop": "code"},
+                    {"label": "工步名称", "prop": "name"},
+                    {"label": "序号", "prop": "serialNumber"},
+                    {"label": "类型", "prop": "classId_display"},
+                    {"label": "备注", "prop": "note"}
                 ],
                 "columns": 2
             }
@@ -486,10 +486,10 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "工艺概览", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "版本", "vModel": "fullversionNo"},
-                    {"label": "状态", "vModel": "stateName"},
-                    {"label": "所属部门", "vModel": "contextName"},
-                    {"label": "阶段", "vModel": "phaseId_display"}
+                    {"label": "版本", "prop": "fullversionNo"},
+                    {"label": "状态", "prop": "stateName"},
+                    {"label": "所属部门", "prop": "contextName"},
+                    {"label": "阶段", "prop": "phaseId_display"}
                 ],
                 "columns": 2
             }
@@ -505,12 +505,12 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "关联产品", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "部件代码", "vModel": "partCode"},
-                    {"label": "部件名称", "vModel": "partName"},
-                    {"label": "部件类型", "vModel": "partClassId_display"},
-                    {"label": "部件版本", "vModel": "partFullversionNo"},
-                    {"label": "部件状态", "vModel": "partStateName"},
-                    {"label": "修改人", "vModel": "partModifyById_display"}
+                    {"label": "部件代码", "prop": "partCode"},
+                    {"label": "部件名称", "prop": "partName"},
+                    {"label": "部件类型", "prop": "partClassId_display"},
+                    {"label": "部件版本", "prop": "partFullversionNo"},
+                    {"label": "部件状态", "prop": "partStateName"},
+                    {"label": "修改人", "prop": "partModifyById_display"}
                 ],
                 "columns": 2
             }
@@ -522,9 +522,9 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "工序概览", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "代码", "vModel": "code"},
-                    {"label": "名称", "vModel": "name"},
-                    {"label": "关键工序", "vModel": "isKey_display"}
+                    {"label": "代码", "prop": "code"},
+                    {"label": "名称", "prop": "name"},
+                    {"label": "关键工序", "prop": "isKey_display"}
                 ],
                 "columns": 2
             }
@@ -577,9 +577,9 @@ def create_v6_srd(output_path):
             "type": "infoView", "title": "工步基本信息", "sort_order": 0,
             "config": {
                 "fields": [
-                    {"label": "代码", "vModel": "code"},
-                    {"label": "名称", "vModel": "name"},
-                    {"label": "备注", "vModel": "note"}
+                    {"label": "代码", "prop": "code"},
+                    {"label": "名称", "prop": "name"},
+                    {"label": "备注", "prop": "note"}
                 ],
                 "columns": 2
             }

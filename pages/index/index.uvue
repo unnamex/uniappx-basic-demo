@@ -230,14 +230,14 @@
 		<template #right>
 			<view :class="isResourceMaximized && !isCurrentImageType ? 'right-panel right-panel-fullscreen' : 'right-panel'">
 				<!-- 常规模式头部：仅在非全屏或图片全屏时显示 -->
-				<view v-if="!isResourceMaximized || isCurrentImageType" class="right-header">
+				<view v-if="!isResourceMaximized || isCurrentImageType" class="right-header" @dblclick="toggleResourceMaximize">
 					<text class="right-header-title">查看器</text>
 					<view class="right-header-btn" @click="toggleResourceMaximize">
 						<text class="btn-icon" :style="isResourceMaximized ? 'margin-top: -2px; margin-left: 2px;' : ''">{{ isResourceMaximized ? '🗗' : '⛶' }}</text>
 					</view>
 				</view>
 				<!-- 非图片全屏模式头部工具栏：文件切换导航 + 缩小按钮 -->
-				<view v-if="isResourceMaximized && !isCurrentImageType" class="fullscreen-header" :style="{ height: isPC ? '40px' : 'auto', '-webkit-app-region': isPC ? 'drag' : 'none' }">
+				<view v-if="isResourceMaximized && !isCurrentImageType" class="fullscreen-header" :style="{ height: isPC ? '40px' : 'auto', '-webkit-app-region': isPC ? 'drag' : 'none' }" @dblclick="toggleResourceMaximize">
 					<view class="header-left-spacer" style="-webkit-app-region: no-drag;"></view>
 					<!-- 居中导航区域：胶囊切换器 + 文件名 -->
 					<view class="header-center" :style="{ right: isFullscreenListVisible ? '160px' : '0', '-webkit-app-region': 'no-drag' }">
@@ -1697,6 +1697,7 @@
 		if (tabsTopId != '') {
 			const group = await loadGroup(tabsTopId)
 			if (group != null) {
+				filterGroupTabs(group, fullRow)
 				// 将当前节点数据绑定到 Group 的组件中
 				await bindDataToGroup(group, fullRow)
 				topGroup.value = group
@@ -1714,6 +1715,7 @@
 		if (tabsBottomId != '') {
 			const group = await loadGroup(tabsBottomId)
 			if (group != null) {
+				filterGroupTabs(group, fullRow)
 				await bindDataToGroup(group, fullRow)
 				bottomGroup.value = group
 				
@@ -1816,6 +1818,16 @@
 		// #endif
 	}
 
+
+	const filterGroupTabs = (group: GroupVM, node: UTSJSONObject) => {
+		const excludeTabsObj = node['exclude_tab']
+		if (excludeTabsObj != null && Array.isArray(excludeTabsObj)) {
+			const excludeTabs = excludeTabsObj as string[]
+			if (excludeTabs.length > 0) {
+				group.tabs = group.tabs.filter((tab: TabVM): boolean => !excludeTabs.includes(tab.id))
+			}
+		}
+	}
 
 	const bindDataToGroup = async (group: GroupVM, node: UTSJSONObject) => {
 		const nodeType = (node['type'] as string) ?? ''

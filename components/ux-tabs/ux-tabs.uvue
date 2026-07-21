@@ -6,7 +6,8 @@
 	>
 		<!-- Header Row with Scrollable Tabs and Fullscreen Button -->
 		<view :class="['ux-tabs__header-row', { 'is-fullscreen-header': isFullscreen }]"
-			  :style="isFullscreen && isPC ? { '-webkit-app-region': 'drag' } : {}">
+			  :style="isFullscreen && isPC ? { '-webkit-app-region': 'drag' } : {}"
+			  @dblclick="toggleFullscreen">
 			<view v-if="isScrollable" class="ux-tabs__scroll-btn" @click="scrollLeft" :style="{ backgroundColor: isFullscreen ? '#FFFFFF' : '#F8FAFC', zIndex: 10, '-webkit-app-region': 'no-drag' }">
 				<text class="ux-tabs__scroll-icon" :style="{ color: canScrollLeft ? '#475569' : '#D1D5DB', transform: 'translateX(-4px)' }">〈</text>
 			</view>

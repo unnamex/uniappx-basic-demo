@@ -19,6 +19,7 @@
 					<view v-if="field['type'] == 'richText'" class="info-view-value-rich">
 						<ux-richtext :content="getFieldValue(field)"></ux-richtext>
 					</view>
+					<rich-text v-else-if="isHtml(getFieldValue(field))" class="info-view-value" :nodes="getFieldValue(field)"></rich-text>
 					<text v-else class="info-view-value">{{ getFieldValue(field) }}</text>
 				</view>
 			</view>
@@ -37,7 +38,7 @@
 	export default {
 		name: "ux-info-view",
 		props: {
-			/** 字段配置数组，每项含 vModel（数据键名）和 label（显示标签） */
+			/** 字段配置数组，每项含 prop（数据键名）和 label（显示标签） */
 			fields: {
 				type: Array as PropType<UTSJSONObject[]>,
 				default: () => [] as UTSJSONObject[]
@@ -102,22 +103,29 @@
 			}
 		},
 		methods: {
-			/** 从 data 中读取 vModel 对应的值 */
+			/** 从 data 中读取 prop 对应的值 */
 			getFieldValue(field: UTSJSONObject): string {
 				if (this.data == null) return '—'
-				const vModel = field['vModel'] as string | null
-				if (vModel == null || vModel == '') return '—'
+				const prop = field['prop'] as string | null
+				if (prop == null || prop == '') return '—'
 				
-				const displayVModel = vModel + '_display'
-				let val = this.data![displayVModel]
+				const displayProp = prop + '_display'
+				let val = this.data![displayProp]
 				if (val == null) {
-					val = this.data![vModel]
+					val = this.data![prop]
 				}
 				
 				if (val == null) return '—'
 				const str = val.toString()
 				if (str.trim() == '') return '—'
 				return str
+			},
+			/** 检测字符串是否包含 HTML 标签 */
+			isHtml(str: string): boolean {
+				if (str == null || str == '') return false
+				// 简单的正则表达式判断是否包含HTML标签（例如 <span ...>, <div ...> 等）
+				const reg = new RegExp("<[a-zA-Z]+[\\s\\S]*?>")
+				return reg.test(str)
 			}
 		}
 	}

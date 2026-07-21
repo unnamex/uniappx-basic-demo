@@ -1,4 +1,4 @@
-# SRD 数据包制作指南
+﻿# SRD 数据包制作指南
 
 > **文档版本**: 6.3  
 > **最后更新**: 2026-04-24  
@@ -536,10 +536,10 @@ assets/
     "sort_order": 0,
     "config": {
       "fields": [
-        { "label": "工艺代码", "vModel": "code" },
-        { "label": "工艺名称", "vModel": "name" },
-        { "label": "版本",     "vModel": "fullversionNo" },
-        { "label": "状态",     "vModel": "stateName" }
+        { "label": "工艺代码", "prop": "code" },
+        { "label": "工艺名称", "prop": "name" },
+        { "label": "版本",     "prop": "fullversionNo" },
+        { "label": "状态",     "prop": "stateName" }
       ],
       "columns": 2 // 显示为一行两列
     }
@@ -575,7 +575,7 @@ assets/
 
 **`config` 中的关键配置：**
 
-- **`fields`**（用于 `infoView`）：数组，每项包含 `label`（显示标签）和 `vModel`（绑定数据字段名，camelCase）
+- **`fields`**（用于 `infoView`）：数组，每项包含 `label`（显示标签）和 `prop`（绑定数据字段名，camelCase）
 - **`columns`**（用于 `infoView`）：每行展示几列，默认值为 `2`
 - **`fields`**（用于 `table`）：数组，每项包含 `label`（列标题）、`prop`（绑定字段名）、`width`（列宽 px，填 **-1** 表示自适应填满剩余宽度）
 

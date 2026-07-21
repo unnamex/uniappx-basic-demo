@@ -122,7 +122,7 @@
 					+ 'p{margin:4px 0;}'
 					+ '</style></head><body><div id="rich-wrap">'
 					+ this.content
-					+ '</div><script>function reportHeight(){var wrap=document.getElementById("rich-wrap");if(wrap){var h=wrap.getBoundingClientRect().height;parent.postMessage({type:"ux-richtext-height",height:Math.ceil(h)},"*");}}window.addEventListener("load",reportHeight);setTimeout(reportHeight,100);setTimeout(reportHeight,500);if(window.ResizeObserver){var ro=new ResizeObserver(reportHeight);ro.observe(document.body);var wrap=document.getElementById("rich-wrap");if(wrap)ro.observe(wrap);}</' + 'script>'
+					+ '</div><script>function reportHeight(){var wrap=document.getElementById("rich-wrap");if(wrap){var h=wrap.getBoundingClientRect().height;parent.postMessage({type:"ux-richtext-height",height:Math.ceil(h)},"*");}}window.addEventListener("load",reportHeight);setTimeout(reportHeight,100);setTimeout(reportHeight,500);if(window.ResizeObserver){var ro=new ResizeObserver(reportHeight);ro.observe(document.body);var wrap=document.getElementById("rich-wrap");if(wrap)ro.observe(wrap);}window.addEventListener("dblclick", function(){parent.postMessage({type:"ux-richtext-dblclick"}, "*");});window.addEventListener("click", function(){parent.postMessage({type:"ux-richtext-click"}, "*");});var imgs=document.querySelectorAll("img");for(var i=0;i<imgs.length;i++){imgs[i].addEventListener("load",reportHeight);}</' + 'script>'
 					+ '</body></html>'
 				
 				const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
@@ -141,6 +141,10 @@
 								iframe.style.height = (h + 2) + 'px'
 						}
 						// 不移除监听，因为 iframe 内部会多次上报以确保准确
+					} else if (data != null && data.type == 'ux-richtext-dblclick') {
+						self.$emit('dblclick')
+					} else if (data != null && data.type == 'ux-richtext-click') {
+						self.$emit('click')
 					}
 				}
 				window.addEventListener('message', messageHandler)

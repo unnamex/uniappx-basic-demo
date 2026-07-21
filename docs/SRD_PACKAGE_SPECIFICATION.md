@@ -1,4 +1,4 @@
-# SRD 数据包规范说明 (V6)
+﻿# SRD 数据包规范说明 (V6)
 
 > **文档版本**: 6.3  
 > **最后更新**: 2026-04-24  
@@ -564,15 +564,15 @@ export type ResourceItem = {
 
 #### fields（用于 infoView 类型）
 
-使用 `vModel` 指定数据绑定的字段名（camelCase），`columns` 指定每行列数：
+使用 `prop` 指定数据绑定的字段名（camelCase），`columns` 指定每行列数：
 
 ```json
 {
   "fields": [
-    { "label": "工艺代码", "vModel": "code" },
-    { "label": "工艺名称", "vModel": "name" },
-    { "label": "版本", "vModel": "fullversionNo" },
-    { "label": "状态", "vModel": "stateName" }
+    { "label": "工艺代码", "prop": "code" },
+    { "label": "工艺名称", "prop": "name" },
+    { "label": "版本", "prop": "fullversionNo" },
+    { "label": "状态", "prop": "stateName" }
   ],
   "columns": 2
 }

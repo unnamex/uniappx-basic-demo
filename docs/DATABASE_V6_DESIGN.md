@@ -1,4 +1,4 @@
-# SRD V6 数据库改造设计文档
+﻿# SRD V6 数据库改造设计文档
 
 > **版本**: V6.0  
 > **日期**: 2026-04-21  
@@ -71,7 +71,7 @@ CREATE TABLE t_process (
 │                                                                    │
 │  树渲染：process_tree.json → 仅 innerId/code/name/children         │
 │  详情渲染：点击节点 → SELECT * FROM 对应表 WHERE inner_id = ?       │
-│           → 独立列直接取 + extra_json 中按 vModel 取               │
+│           → 独立列直接取 + extra_json 中按 prop 取               │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -529,7 +529,7 @@ t_action
 │                                                               │
 │  SRD 包中 JSON 有新字段 "reworkCount": 3                      │
 │  → 导入时发现无此列 → 自动存入 extra_json                      │
-│  → UI 组件 vModel="reworkCount" → 从 extra_json 取值渲染       │
+│  → UI 组件 prop="reworkCount" → 从 extra_json 取值渲染       │
 ├─────────────────────────────────────────────────────────────┤
 │  第二层：版本升级提升（下一版应用）                              │
 │                                                               │
@@ -836,18 +836,18 @@ SRD 包中 data/operation.json 的某条记录:
 | 查看工序详情 | 在内存树中遍历找到节点 | `SELECT * FROM t_operation WHERE inner_id = ?` |
 | 某工艺下所有工步 | 反序列化 → 遍历两级 children | `SELECT * FROM t_step WHERE process_id = ? ORDER BY sort_order` |
 | 查找关键工序 | 不支持 | `SELECT * FROM t_operation WHERE is_key_display = '是'` |
-| 新增字段展示 | 需改代码 | extra_json + vModel 自动适配 |
+| 新增字段展示 | 需改代码 | extra_json + prop 自动适配 |
 
 ### 8.2 UI 组件取值逻辑
 
 ```
-UI 组件 vModel="checkoutState_display"
+UI 组件 prop="checkoutState_display"
   │
   ├── 1. 查询数据库行独立列 checkout_state_display → 找到 "检入" ✅
   │
   └── 2. 若独立列不存在 → 解析 extra_json → 按 key 查找 → 渲染
 
-UI 组件 vModel="reworkCount" (临时新增的未知字段)
+UI 组件 prop="reworkCount" (临时新增的未知字段)
   │
   ├── 1. 查询数据库行独立列 → 无此列
   │
