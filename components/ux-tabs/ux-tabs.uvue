@@ -304,6 +304,18 @@
 			el.addEventListener('wheel', handleWheel, { passive: false })
 		}
 		// #endif
+		
+		// 初始化时：如果 modelValue 已有值，确保 scroll-view 滚动到选中 tab 位置
+		// （watch(modelValue) 只响应变化，不响应初始值，所以这里补一次）
+		if (currentName.value != '') {
+			scrollLeftValue.value = 0
+			setTimeout(() => {
+				scrollToViewId.value = 'tab-item-' + currentName.value
+				setTimeout(() => {
+					scrollToViewId.value = ''
+				}, 500)
+			}, 150)
+		}
 	})
 	
 	onUnmounted(() => {
@@ -321,9 +333,18 @@
 		// #endif
 	})
 	
+	const sortPanes = () => {
+		panes.value.sort((a: UTSJSONObject, b: UTSJSONObject): number => {
+			const indexA = (a['index'] as number | null) ?? 0
+			const indexB = (b['index'] as number | null) ?? 0
+			return indexA - indexB
+		})
+	}
+	
 	// Registry for child Panes
 	const registerPane = (pane: UTSJSONObject) => {
 		panes.value.push(pane)
+		sortPanes()
 		
 		// If no active tab, set first one active
 		if (currentName.value == '' && panes.value.length > 0) {
@@ -341,9 +362,10 @@
 		}
 		checkScrollBtns()
 	}
-	
+
 	const unregisterPane = (pane: UTSJSONObject) => {
-		const index = panes.value.indexOf(pane)
+		const uid = (pane['uid'] as string) ?? ''
+		const index = panes.value.findIndex((p: UTSJSONObject): boolean => p['uid'] == uid)
 		if (index > -1) {
 			panes.value.splice(index, 1)
 		}
@@ -354,7 +376,8 @@
 	provide('uxTabsContext', {
 		currentName: currentName,
 		registerPane: registerPane,
-		unregisterPane: unregisterPane
+		unregisterPane: unregisterPane,
+		sortPanes: sortPanes
 	})
 
 </script>

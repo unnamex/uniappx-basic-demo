@@ -23,6 +23,10 @@
 		disabled: {
 			type: Boolean,
 			default: false
+		},
+		index: {
+			type: Number,
+			default: 0
 		}
 	})
 	
@@ -36,6 +40,7 @@
 	baseConfig['label'] = props.label
 	baseConfig['name'] = props.name
 	baseConfig['disabled'] = props.disabled
+	baseConfig['index'] = props.index
 	baseConfig['uid'] = Math.random().toString()
 	
 	const paneConfig = reactive(baseConfig)
@@ -44,6 +49,13 @@
 	watch((): string => { return props.label as string }, (val: string): void => { paneConfig['label'] = val })
 	watch((): any => { return props.name }, (val: any): void => { paneConfig['name'] = val })
 	watch((): boolean => { return props.disabled as boolean }, (val: boolean): void => { paneConfig['disabled'] = val })
+	watch((): number => { return props.index as number }, (val: number): void => { 
+		paneConfig['index'] = val 
+		if (tabsContext != null) {
+			const sort = tabsContext['sortPanes'] as (() => void) | null
+			if (sort != null) sort()
+		}
+	})
 	
 	// Setup lifecycle
 	onMounted(() => {

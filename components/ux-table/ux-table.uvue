@@ -311,7 +311,7 @@
 			},
 			/** 表格内部宽度 = max(列宽总和, 容器实测宽度)，由 ResizeObserver 驱动自适应 */
 			tableInnerStyle() : string {
-				return 'width: ' + this.tableRealWidth + 'px'
+				return 'width: ' + Math.floor(this.tableRealWidth) + 'px'
 			},
 			/** 所有列的宽度总和（flex 列按默认 150px 计算） */
 			totalFixedWidth() : number {
@@ -404,7 +404,12 @@
 			},
 			/** 生成列的完整 inline style 字符串，包含 flex/width/min-width */
 			getCellStyle(index: number): string {
-				const actualW = this.getActualColumnWidth(index)
+				if (this.isColumnFlex(index)) {
+					const mw = index < this.fieldMinWidths.length ? this.fieldMinWidths[index] : 0
+					const finalMw = mw > 50 ? mw : 50
+					return 'flex: 1; min-width: ' + finalMw + 'px;'
+				}
+				const actualW = this.fieldWidths[index]
 				return 'flex: none; width: ' + actualW + 'px;'
 			},
 			initFields(fields: UTSJSONObject[]) {
@@ -754,26 +759,55 @@
 				this.$emit('row-click', row.originData)
 			},
 			// Drag / Resize Methods
-			/** 获取列的实际渲染宽度：固定列直接返回，flex 列根据表格实际宽度反算 */
+			/** 获取列的实际渲染宽度（用于拖拽调整基准）：固定列直接返回，flex 列根据表格实际宽度多轮反算 */
 			getActualColumnWidth(index: number) : number {
 				if (!this.isColumnFlex(index)) {
 					return this.fieldWidths[index]
 				}
-				// flex 列：实际宽度 = (tableRealWidth - 所有固定列宽之和) / flex 列数量
-				let totalFixed = 0 as number
-				let flexCount = 0 as number
+				
+				let availableW = this.tableRealWidth
+				let flexIndices: number[] = []
 				for (let i = 0; i < this.fieldWidths.length; i++) {
 					if (!this.isColumnFlex(i)) {
-						totalFixed += this.fieldWidths[i]
+						availableW -= this.fieldWidths[i]
 					} else {
-						flexCount++
+						flexIndices.push(i)
 					}
 				}
-				const mw = index < this.fieldMinWidths.length ? this.fieldMinWidths[index] : 0
-				const finalMw = mw > 50 ? mw : 50
-				if (flexCount <= 0) return finalMw
-				const flexWidth = (this.tableRealWidth - totalFixed) / flexCount
-				return flexWidth > finalMw ? flexWidth : finalMw
+				
+				if (flexIndices.length <= 0) {
+					const mw = index < this.fieldMinWidths.length ? this.fieldMinWidths[index] : 0
+					return mw > 50 ? mw : 50
+				}
+				
+				// 多轮分配，确保受到 min-width 限制的列先拿走它们的宽度
+				let unassignedIndices = [...flexIndices]
+				let changed = true
+				while (changed && unassignedIndices.length > 0) {
+					changed = false
+					const avgW = availableW / unassignedIndices.length
+					for (let i = 0; i < unassignedIndices.length; i++) {
+						const fIdx = unassignedIndices[i]
+						const mw = fIdx < this.fieldMinWidths.length ? this.fieldMinWidths[fIdx] : 0
+						const finalMw = mw > 50 ? mw : 50
+						if (finalMw >= avgW) {
+							// 这一列受到 minWidth 限制，拿走它的固定配额
+							availableW -= finalMw
+							unassignedIndices.splice(i, 1)
+							changed = true
+							if (fIdx === index) return finalMw // 提前返回当前计算的列
+							break // 重新计算剩余列的平均值
+						}
+					}
+				}
+				
+				// 剩下的列都可以平分 remaining availableW，没有受 minWidth 限制
+				if (unassignedIndices.includes(index)) {
+					return availableW / unassignedIndices.length
+				}
+				
+				const fallbackMw = index < this.fieldMinWidths.length ? this.fieldMinWidths[index] : 0
+				return fallbackMw > 50 ? fallbackMw : 50
 			},
 			onResizeStart(index: number, e: UniTouchEvent) {
 				if (e.touches.length == 0) return
@@ -938,21 +972,31 @@
 			// Web 端：先同步测量容器宽度，确保首帧渲染即使用真实宽度（不等 ResizeObserver 异步回调）
 			const webEl = (this as any).$el
 			if (webEl != null) {
-				// getBoundingClientRect() 强制浏览器完成布局计算，同步返回准确尺寸
-				const initRect = webEl.getBoundingClientRect()
-				if (initRect != null && initRect.width > 0) {
-					this.measuredContainerWidth = initRect.width
+				// 获取真正包含滚动条的容器，避免外层容易测出的宽度未扣除垂直滚动条宽度
+				const scrollEl = webEl.querySelector('.table-scroll-container')
+				const targetEl = scrollEl != null ? scrollEl : webEl
+				
+				// clientWidth 不包含滚动条（如果在元素内部的话），能得到更准确的可用宽度
+				if (targetEl.clientWidth > 0) {
+					this.measuredContainerWidth = targetEl.clientWidth
+				} else {
+					const initRect = targetEl.getBoundingClientRect()
+					if (initRect != null && initRect.width > 0) {
+						this.measuredContainerWidth = Math.floor(initRect.width)
+					}
 				}
+				
 				// 持续监听后续尺寸变化（窗口缩放、面板拖拽等）
 				const ro = new ResizeObserver((entries : any[]) => {
 					for (let i = 0; i < entries.length; i++) {
 						const w = (entries[i] as any).contentRect.width as number
-						if (w > 0 && Math.abs(w - this.measuredContainerWidth) > 2) {
-							this.measuredContainerWidth = w
+						const floorW = Math.floor(w)
+						if (floorW > 0 && floorW !== this.measuredContainerWidth) {
+							this.measuredContainerWidth = floorW
 						}
 					}
 				})
-				ro.observe(webEl as any)
+				ro.observe(targetEl as any)
 				this.resizeObserver = ro
 			}
 			// #endif
@@ -962,14 +1006,15 @@
 			if (el != null) {
 				const nativeRect = el.getBoundingClientRect()
 				if (nativeRect.width > 0) {
-					this.measuredContainerWidth = nativeRect.width
+					this.measuredContainerWidth = Math.floor(nativeRect.width)
 				}
 				const observer = new UniResizeObserver((entries: UniResizeObserverEntry[]) => {
 					for (const entry of entries) {
 						const rect = entry.contentRect
-						// 仅在宽度确实变化时更新，避免无意义的响应式触发
-						if (rect.width > 0 && Math.abs(rect.width - this.measuredContainerWidth) > 2) {
-							this.measuredContainerWidth = rect.width
+						const floorW = Math.floor(rect.width)
+						// 仅在宽度确实变化时更新，向下取整避免浮点数微小抖动
+						if (floorW > 0 && floorW !== this.measuredContainerWidth) {
+							this.measuredContainerWidth = floorW
 						}
 					}
 				})

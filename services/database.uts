@@ -20,7 +20,7 @@ const DB_NAME: string = 'mpm_offline.db'
 /**
  * 数据库版本
  */
-const DB_VERSION: number = 2
+const DB_VERSION: number = 3
 
 /**
  * 数据库实例引用
