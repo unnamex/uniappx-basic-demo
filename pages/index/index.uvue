@@ -176,7 +176,7 @@
 											<text style="color: #94A3B8; font-size: 14px;">暂无内容</text>
 										</view>
 										<template v-else>
-											<view v-for="comp in tab.components" :key="comp.id" :class="tab.components.length > 1 ? 'comp-card' : 'component-wrapper'" :style="{ flex: (comp.type == 'table' && tab.components.length == 1) ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: (comp.type == 'table' && tab.components.length > 1) ? '200px' : '0px' }">
+											<view v-for="comp in tab.components" :key="comp.id" :class="tab.components.length > 1 ? 'comp-card' : 'component-wrapper'" :style="{ flex: (comp.type == 'table' && tab.components.length == 1) ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
 												<!-- 多组件时显示卡片头部 -->
 												<view v-if="comp.title && tab.components.length > 1" class="comp-card-header">
 													<view class="comp-card-header-bar"></view>
@@ -184,9 +184,9 @@
 												</view>
 											
 											<!-- Table Component -->
-											<view v-if="comp.type == 'table'" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 200px;">
+											<view v-if="comp.type == 'table'" :style="{ flex: (tab.components.length == 1) ? 1 : 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden' }">
 												<ux-table 
-													style="flex: 1; height: 100%; display: flex; flex-direction: column;"
+													:style="{ flex: (tab.components.length == 1) ? 1 : 'none', height: (tab.components.length == 1) ? '100%' : 'auto', maxHeight: (tab.components.length > 1) ? '400px' : 'none', display: 'flex', flexDirection: 'column' }"
 													:fields="getFieldsFromConfig(comp.config)" 
 													:data="comp.data"
 													:showExpand="false"

@@ -946,18 +946,20 @@
 						this.fetchExpandContent(row.id)
 					}
 					this.hoverPreviewContent = row.expandContent
-					// Calculate position to avoid going off-screen
-					let x = e.clientX + 15
-					let y = e.clientY + 15
-					const popoverWidth = 400
-					const popoverHeight = 300 // Max height roughly
-					if (x + popoverWidth > window.innerWidth) {
-						x = e.clientX - popoverWidth - 15
+					// Calculate position to avoid going off-screen robustly by flipping sides
+					let style = ''
+					if (e.clientX > window.innerWidth / 2) {
+						style += `right: ${window.innerWidth - e.clientX + 15}px; `
+					} else {
+						style += `left: ${e.clientX + 15}px; `
 					}
-					if (y + popoverHeight > window.innerHeight) {
-						y = window.innerHeight - popoverHeight - 15
+					
+					if (e.clientY > window.innerHeight / 2) {
+						style += `bottom: ${window.innerHeight - e.clientY + 15}px; `
+					} else {
+						style += `top: ${e.clientY + 15}px; `
 					}
-					this.hoverPreviewStyle = `left: ${x}px; top: ${y}px;`
+					this.hoverPreviewStyle = style
 					this.hoverPreviewVisible = true
 				}, 400) // 400ms delay to prevent flickering on fast moves
 			},
@@ -1075,6 +1077,8 @@
 	
 	.table-inner {
 		flex-direction: column;
+		align-self: flex-start;
+		flex: none;
 		/* 去除 width: 100%，以支持内容宽度大于容器时的横向滚动 */
 	}
 
@@ -1182,18 +1186,20 @@
 	.body {
 		flex-direction: column;
 		width: 100%;
+		flex: none;
 	}
 
-	/* 数据行：紧凑间距 + Slate-100 极细分隔线 */
+	/* 数据行：紧凑间距 + Slate-200 分隔线以增强大屏对比度 */
 	.row {
 		flex-direction: row;
 		border-bottom-width: 1px;
 		border-bottom-style: solid;
-		border-bottom-color: #F1F5F9;
+		border-bottom-color: #E2E8F0;
 		background-color: #FFFFFF;
 		width: 100%;
 		padding-top: 8px;
 		padding-bottom: 8px;
+		flex: none;
 	}
 
 	.cell {
@@ -1490,9 +1496,9 @@
 		border: 1px solid #E2E8F0;
 		border-radius: 8px;
 		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-		width: 400px;
-		max-height: 300px;
-		overflow-y: hidden; /* Prevent scrollbar in hover to keep it clean, use click for full view */
+		max-width: 800px;
+		max-height: 600px;
+		overflow: hidden; /* Prevent scrollbar in hover to keep it clean, use click for full view */
 		padding: 12px;
 		pointer-events: none; /* Let mouse events pass through so we don't interrupt hover on cell */
 	}
