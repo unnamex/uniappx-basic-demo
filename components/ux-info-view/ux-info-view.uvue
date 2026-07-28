@@ -115,6 +115,24 @@
 					val = this.data![prop]
 				}
 				
+				// 容错 1: 尝试将 prop 转换为 camelCase 查找
+				if (val == null) {
+					const camelProp = prop.replace(/_([a-z])/g, (match: string, letter: string): string => letter.toUpperCase())
+					val = this.data![camelProp]
+				}
+				
+				// 容错 2: 尝试将 displayProp 转换为 camelCase 查找
+				if (val == null) {
+					const camelDisplayProp = displayProp.replace(/_([a-z])/g, (match: string, letter: string): string => letter.toUpperCase())
+					val = this.data![camelDisplayProp]
+				}
+				
+				// 容错 3: 特殊处理类似 classId_display 这种一半camel一半snake的情况
+				if (val == null && prop.endsWith('_display')) {
+					const camelProp2 = prop.replace('_display', 'Display')
+					val = this.data![camelProp2]
+				}
+				
 				if (val == null) return '—'
 				const str = val.toString()
 				if (str.trim() == '') return '—'

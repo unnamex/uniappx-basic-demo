@@ -1555,7 +1555,31 @@
 	// Helper to get string safely
 	const getString = (obj: UTSJSONObject | null, key: string): string => {
 		if (obj == null) return ''
-		return obj[key]?.toString() ?? ''
+		let val = obj[key]
+		
+		// 容错: 尝试查 xxx_display
+		if (val == null) {
+			val = obj[key + '_display']
+		}
+		
+		// 容错: 尝试转 camelCase
+		if (val == null) {
+			const camelKey = key.replace(/_([a-z])/g, (match: string, letter: string): string => letter.toUpperCase())
+			val = obj[camelKey]
+		}
+		
+		// 容错: 尝试转 camelCase + display
+		if (val == null) {
+			const camelDisplayKey = (key + '_display').replace(/_([a-z])/g, (match: string, letter: string): string => letter.toUpperCase())
+			val = obj[camelDisplayKey]
+		}
+
+		if (val == null && key.endsWith('_display')) {
+			const camelKey2 = key.replace('_display', 'Display')
+			val = obj[camelKey2]
+		}
+
+		return val?.toString() ?? ''
 	}
 	
 	/**
