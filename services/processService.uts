@@ -207,7 +207,7 @@ export function getOperationsByProcessId(processId: string): Promise<OperationEn
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM t_operation WHERE process_id = '${processId}' ORDER BY sort_order ASC`)
+        querySQL(`SELECT * FROM t_operation WHERE process_id = '${processId}'`)
             .then((result: any[]) => {
                 const list: OperationEntity[] = []
                 for (let i = 0; i < result.length; i++) {
@@ -238,7 +238,7 @@ export function getStepsByOperationId(operationId: string): Promise<StepEntity[]
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM t_step WHERE operation_id = '${operationId}' ORDER BY sort_order ASC`)
+        querySQL(`SELECT * FROM t_step WHERE operation_id = '${operationId}'`)
             .then((result: any[]) => {
                 const list: StepEntity[] = []
                 for (let i = 0; i < result.length; i++) {
@@ -269,7 +269,7 @@ export function getActionsByStepId(stepId: string): Promise<ActionEntity[]> {
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM t_action WHERE step_id = '${stepId}' ORDER BY sort_order ASC`)
+        querySQL(`SELECT * FROM t_action WHERE step_id = '${stepId}'`)
             .then((result: any[]) => {
                 const list: ActionEntity[] = []
                 for (let i = 0; i < result.length; i++) {
@@ -379,18 +379,12 @@ export function queryChildrenByParentId(parentType: string, parentId: string): P
         // #ifdef WEB
         webGetByIndex(childTableName, foreignKey, parentId).then((res) => {
             const list = res as UTSJSONObject[]
-            // Web 端查询回来的是对象数组，按照 sortOrder 排序
-            list.sort((a, b) => {
-                const sa = (a['sortOrder'] as number | null) ?? 0
-                const sb = (b['sortOrder'] as number | null) ?? 0
-                return sa - sb
-            })
             resolve(list)
         }).catch(e => reject(e as Error))
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM ${childTableName} WHERE ${foreignKey} = '${parentId}' ORDER BY sort_order ASC`)
+        querySQL(`SELECT * FROM ${childTableName} WHERE ${foreignKey} = '${parentId}'`)
             .then((result: any[]) => {
                 const list: UTSJSONObject[] = []
                 for (let i = 0; i < result.length; i++) {

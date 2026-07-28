@@ -1901,13 +1901,6 @@
 							comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 						}
 					}
-					
-					// 按照 sortOrder 排序
-					comp.data.sort((a, b) => {
-					    const sa = a['sortOrder'] as number | null ?? 0
-					    const sb = b['sortOrder'] as number | null ?? 0
-					    return sa - sb
-					})
 				}
 			}
 		}
