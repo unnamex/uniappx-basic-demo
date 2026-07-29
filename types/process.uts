@@ -123,6 +123,7 @@ export type OperationEntity = {
 	content: string | null
 	tabs_top: string | null
 	tabs_bottom: string | null
+	weight: number
 	sort_order: number
 	extra_json: string | null
 	created_at: string | null
@@ -143,6 +144,7 @@ export type StepEntity = {
 	content: string | null
 	tabs_top: string | null
 	tabs_bottom: string | null
+	weight: number
 	sort_order: number
 	extra_json: string | null
 	created_at: string | null
@@ -164,6 +166,7 @@ export type ActionEntity = {
 	content: string | null
 	tabs_top: string | null
 	tabs_bottom: string | null
+	weight: number
 	sort_order: number
 	extra_json: string | null
 	created_at: string | null

@@ -915,7 +915,7 @@ function extractAndParseAndroid(
 			const stepJson = findJsonFile('data/step.json')
 			if (stepJson != null) stepRecords = JSON.parse(stepJson) as UTSJSONObject[]
 			
-			const actionJson = findJsonFile('data/action.json')
+			const actionJson = findJsonFile('data/actionUnit.json')
 			if (actionJson != null) actionRecords = JSON.parse(actionJson) as UTSJSONObject[]
 			
 			// 读取 V6.1 节点关联数据集
@@ -925,9 +925,9 @@ function extractAndParseAndroid(
 		}
 		
 		const PROCESS_FIELDS = ['innerId', 'code', 'name', 'classId', 'classId_display', 'classId_business_icon', 'classId_icon', 'version', 'fullversionNo', 'stateName', 'checkoutState', 'checkoutState_display', 'modifyById', 'modifyById_display', 'modifyTime', 'createById', 'createById_display', 'createTime', 'createTime_display', 'contextName', 'contextId', 'contextId_display', 'departmentName', 'workshopName', 'personalworkspace', 'personalworkspace_display', 'folderPath', 'phaseId', 'phaseId_display', 'secretId', 'secretId_display', 'lifeCycleTemplate', 'lifeCycleTemplate_display', 'taskName', 'routeContent', 'mfgNodeName', 'processCharacteristics', 'note', 'partCode', 'partName', 'partClassId', 'partClassId_display', 'partClassId_business_icon', 'partModifyById', 'partModifyById_display', 'partModifyTime', 'partContextName', 'partPhaseId', 'partPhaseId_display', 'partSecretId', 'partSecretId_display', 'partStateName', 'partFullversionNo', 'tabs_top', 'tabs_bottom', 'sortOrder']
-		const OPERATION_FIELDS = ['innerId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'isKey', 'isKey_display', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
-		const STEP_FIELDS = ['innerId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
-		const ACTION_FIELDS = ['innerId', 'stepId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const OPERATION_FIELDS = ['innerId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'isKey', 'isKey_display', 'content', 'tabs_top', 'tabs_bottom', 'weight', 'sortOrder']
+		const STEP_FIELDS = ['innerId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'weight', 'sortOrder']
+		const ACTION_FIELDS = ['innerId', 'stepId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'weight', 'sortOrder']
 
 		// 开始事务
 		beginTransaction()
@@ -1285,8 +1285,8 @@ function processHarmonyExtractedFiles(
 			const stepContent = readJsonFileHarmony(stepKey != null ? files[stepKey] as string : 'data/step.json')
 			if (stepContent != '') stepRecords = JSON.parse(stepContent) as UTSJSONObject[]
 
-			const actionKey = findKeyFuzzy(files, 'action')
-			const actionContent = readJsonFileHarmony(actionKey != null ? files[actionKey] as string : 'data/action.json')
+			const actionKey = findKeyFuzzy(files, 'actionUnit')
+			const actionContent = readJsonFileHarmony(actionKey != null ? files[actionKey] as string : 'data/actionUnit.json')
 			if (actionContent != '') actionRecords = JSON.parse(actionContent) as UTSJSONObject[]
 			
 			// 读取 V6.1 节点关联数据集
@@ -1336,9 +1336,9 @@ function processHarmonyExtractedFiles(
 		
 		// 6. 保存到数据库
 		const PROCESS_FIELDS = ['innerId', 'code', 'name', 'classId', 'classId_display', 'classId_business_icon', 'classId_icon', 'version', 'fullversionNo', 'stateName', 'checkoutState', 'checkoutState_display', 'modifyById', 'modifyById_display', 'modifyTime', 'createById', 'createById_display', 'createTime', 'createTime_display', 'contextName', 'contextId', 'contextId_display', 'departmentName', 'workshopName', 'personalworkspace', 'personalworkspace_display', 'folderPath', 'phaseId', 'phaseId_display', 'secretId', 'secretId_display', 'lifeCycleTemplate', 'lifeCycleTemplate_display', 'taskName', 'routeContent', 'mfgNodeName', 'processCharacteristics', 'note', 'partCode', 'partName', 'partClassId', 'partClassId_display', 'partClassId_business_icon', 'partModifyById', 'partModifyById_display', 'partModifyTime', 'partContextName', 'partPhaseId', 'partPhaseId_display', 'partSecretId', 'partSecretId_display', 'partStateName', 'partFullversionNo', 'tabs_top', 'tabs_bottom', 'sortOrder']
-		const OPERATION_FIELDS = ['innerId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'isKey', 'isKey_display', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
-		const STEP_FIELDS = ['innerId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
-		const ACTION_FIELDS = ['innerId', 'stepId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'sortOrder']
+		const OPERATION_FIELDS = ['innerId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'isKey', 'isKey_display', 'content', 'tabs_top', 'tabs_bottom', 'weight', 'sortOrder']
+		const STEP_FIELDS = ['innerId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'weight', 'sortOrder']
+		const ACTION_FIELDS = ['innerId', 'stepId', 'operationId', 'processId', 'code', 'name', 'serialNumber', 'classId', 'classId_display', 'note', 'content', 'tabs_top', 'tabs_bottom', 'weight', 'sortOrder']
 
 		beginTransaction()
 		
@@ -1890,7 +1890,7 @@ function extractAndParseWeb(
     
 			operationRecords = await readTableFile(files['operation'] as string | null, 'data/operation.json')
 			stepRecords = await readTableFile(files['step'] as string | null, 'data/step.json')
-			actionRecords = await readTableFile(files['action'] as string | null, 'data/action.json')
+			actionRecords = await readTableFile(files['actionUnit'] as string | null, 'data/actionUnit.json')
 			
 			// 读取 V6.1 节点关联数据集
 			const ndPath = (files.nodeDatasets as string | null) ?? 'data/node_datasets.json'

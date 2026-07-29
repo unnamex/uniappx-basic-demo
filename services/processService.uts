@@ -202,12 +202,13 @@ export function getOperationsByProcessId(processId: string): Promise<OperationEn
             for (let i = 0; i < res.length; i++) {
                 list.push(JSON.parse<OperationEntity>(JSON.stringify(res[i]))!)
             }
+            list.sort((a, b) => (a.weight - b.weight))
             resolve(list)
         }).catch(e => reject(e as Error))
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM t_operation WHERE process_id = '${processId}'`)
+        querySQL(`SELECT * FROM t_operation WHERE process_id = '${processId}' ORDER BY weight ASC`)
             .then((result: any[]) => {
                 const list: OperationEntity[] = []
                 for (let i = 0; i < result.length; i++) {
@@ -233,12 +234,13 @@ export function getStepsByOperationId(operationId: string): Promise<StepEntity[]
             for (let i = 0; i < res.length; i++) {
                 list.push(JSON.parse<StepEntity>(JSON.stringify(res[i]))!)
             }
+            list.sort((a, b) => (a.weight - b.weight))
             resolve(list)
         }).catch(e => reject(e as Error))
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM t_step WHERE operation_id = '${operationId}'`)
+        querySQL(`SELECT * FROM t_step WHERE operation_id = '${operationId}' ORDER BY weight ASC`)
             .then((result: any[]) => {
                 const list: StepEntity[] = []
                 for (let i = 0; i < result.length; i++) {
@@ -264,12 +266,13 @@ export function getActionsByStepId(stepId: string): Promise<ActionEntity[]> {
             for (let i = 0; i < res.length; i++) {
                 list.push(JSON.parse<ActionEntity>(JSON.stringify(res[i]))!)
             }
+            list.sort((a, b) => (a.weight - b.weight))
             resolve(list)
         }).catch(e => reject(e as Error))
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM t_action WHERE step_id = '${stepId}'`)
+        querySQL(`SELECT * FROM t_action WHERE step_id = '${stepId}' ORDER BY weight ASC`)
             .then((result: any[]) => {
                 const list: ActionEntity[] = []
                 for (let i = 0; i < result.length; i++) {
@@ -379,12 +382,17 @@ export function queryChildrenByParentId(parentType: string, parentId: string): P
         // #ifdef WEB
         webGetByIndex(childTableName, foreignKey, parentId).then((res) => {
             const list = res as UTSJSONObject[]
+            list.sort((a, b) => {
+                const wa = (a['weight'] as number | null) ?? 0
+                const wb = (b['weight'] as number | null) ?? 0
+                return wa - wb
+            })
             resolve(list)
         }).catch(e => reject(e as Error))
         // #endif
 
         // #ifndef WEB
-        querySQL(`SELECT * FROM ${childTableName} WHERE ${foreignKey} = '${parentId}'`)
+        querySQL(`SELECT * FROM ${childTableName} WHERE ${foreignKey} = '${parentId}' ORDER BY weight ASC`)
             .then((result: any[]) => {
                 const list: UTSJSONObject[] = []
                 for (let i = 0; i < result.length; i++) {

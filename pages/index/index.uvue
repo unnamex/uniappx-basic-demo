@@ -926,6 +926,19 @@
 		return (node['innerId'] as string | null) ?? (node['id'] as string | null) ?? ''
 	}
 
+	// 直接通过 targetClassId 获取节点类型
+	const getNodeType = (node: UTSJSONObject | null): string => {
+		if (node == null) return ''
+		
+		const tc = node['targetClassId'] as string | null
+		if (tc != null && tc != '') {
+			const tcLower = tc.toLowerCase()
+			if (tcLower == 'actionunit') return 'action'
+			return tcLower
+		}
+		return ''
+	}
+
 	const hasPrevNode = computed((): boolean => {
 		if (selectedRow.value == null) return false
 		const targetId = getNodeId(selectedRow.value!)
@@ -1382,7 +1395,7 @@
 			if (targetCls == 'Process') node['type'] = 'process'
 			else if (targetCls == 'Operation') node['type'] = 'operation'
 			else if (targetCls == 'Step') node['type'] = 'step'
-			else if (targetCls == 'ActionUnit') node['type'] = 'action-unit'
+			else if (targetCls == 'ActionUnit') node['type'] = 'action'
 			else node['type'] = targetCls.toLowerCase()
 		}
 		
@@ -1589,7 +1602,7 @@
 	 */
 	const updateBreadcrumbs = (node: UTSJSONObject) => {
 		// 如果选中的不是底层工艺节点(process)，则不更新面包屑，始终保持顶部显示部件和工艺信息
-		const nodeType = node['type'] as string
+		const nodeType = getNodeType(node)
 		if (nodeType != 'process') return
 		
 		// === 工艺侧元数据 ===
@@ -1698,7 +1711,7 @@
 		// 如果是骨架节点（缺少业务字段），尝试从数据库获取完整记录
 		let fullRow = row
 		const nodeId = getNodeId(row)
-		const nodeType = (row['type'] as string) ?? ''
+		const nodeType = getNodeType(row)
 		
 		if (row['tabs_top'] == null || row['tabs_top'] == '') {
 			const dbRecord = await queryNodeById(nodeType, nodeId)
@@ -1862,7 +1875,7 @@
 	}
 
 	const bindDataToGroup = async (group: GroupVM, node: UTSJSONObject) => {
-		const nodeType = (node['type'] as string) ?? ''
+		const nodeType = getNodeType(node)
 		const nodeId = getNodeId(node)
 
 		for (let i = 0; i < group.tabs.length; i++) {
@@ -1893,11 +1906,21 @@
 					const children = await queryChildrenByParentId(nodeType, nodeId)
 					// 如果外键未匹配到（可能是更底层的 action），fallback 为拿内存节点的 children
 					if (children.length > 0) {
+						children.sort((a, b) => {
+							const wA = (a['weight'] as number | null) ?? 0
+							const wB = (b['weight'] as number | null) ?? 0
+							return wA - wB
+						})
 						comp.data = children.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 					} else {
 						const memoryChildren = node['children']
 						if (memoryChildren != null && Array.isArray(memoryChildren)) {
 							const list = memoryChildren as UTSJSONObject[]
+							list.sort((a, b) => {
+								const wA = (a['weight'] as number | null) ?? 0
+								const wB = (b['weight'] as number | null) ?? 0
+								return wA - wB
+							})
 							comp.data = list.map((c: UTSJSONObject): UTSJSONObject => enrichNodeForDisplay(c))
 						}
 					}

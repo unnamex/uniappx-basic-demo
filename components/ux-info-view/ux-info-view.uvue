@@ -106,7 +106,10 @@
 			/** 从 data 中读取 prop 对应的值 */
 			getFieldValue(field: UTSJSONObject): string {
 				if (this.data == null) return '—'
-				const prop = field['prop'] as string | null
+				let prop = field['prop'] as string | null
+				if (prop == null || prop == '') {
+					prop = field['vModel'] as string | null
+				}
 				if (prop == null || prop == '') return '—'
 				
 				const displayProp = prop + '_display'
