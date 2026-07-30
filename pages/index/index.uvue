@@ -110,6 +110,7 @@
 											:fields="getFieldsFromConfig(comp.config)" 
 											:data="comp.data"
 											:showExpand="false"
+											@row-click="handleTabTableRowClick"
 										></ux-table>
 									</view>
 									
@@ -190,6 +191,7 @@
 													:fields="getFieldsFromConfig(comp.config)" 
 													:data="comp.data"
 													:showExpand="false"
+													@row-click="handleTabTableRowClick"
 												></ux-table>
 											</view>
 											
@@ -2001,6 +2003,39 @@
 			console.log(`Loaded ${resources.length} resources for node: ${nodeId}`)
 		} catch (e) {
 			console.error('loadNodeResources error:', e)
+			nodeResources.value = []
+			previewResource.value = null
+		}
+	}
+	
+	/**
+	 * tab 内 table 行点击事件处理：从行数据中提取 ID 并加载其附件资源
+	 * @param rowData 行原始数据（UTSJSONObject）
+	 */
+	const handleTabTableRowClick = async (rowData: UTSJSONObject) => {
+		// 从行数据中提取节点ID（优先 innerId，其次 id）
+		const rowId = (rowData['innerId'] as string | null) ?? (rowData['id'] as string | null) ?? ''
+		if (rowId == '') {
+			// 没有可用ID，清空查看器
+			nodeResources.value = []
+			nodeResourcesTitle.value = '附件'
+			previewResource.value = null
+			return
+		}
+		// 更新标题
+		const rowName = (rowData['name'] as string | null) ?? ''
+		nodeResourcesTitle.value = rowName != '' ? `${rowName} 附件` : '附件'
+		// 查询该行数据的附件资源
+		try {
+			const resources = await getResourcesByNodeId(rowId)
+			nodeResources.value = resources
+			previewResource.value = null
+			if (resources.length > 0) {
+				previewResource.value = resources[0]
+			}
+			console.log(`Tab table row clicked, loaded ${resources.length} resources for id: ${rowId}`)
+		} catch (e) {
+			console.error('handleTabTableRowClick error:', e)
 			nodeResources.value = []
 			previewResource.value = null
 		}

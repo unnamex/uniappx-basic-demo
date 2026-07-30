@@ -161,6 +161,7 @@ function readExtractedData(tempDir) {
   const operationRecords = readJson(files['operation'], 'data/operation.json') || [];
   const stepRecords = readJson(files['step'], 'data/step.json') || [];
   const actionRecords = readJson(files['action'], 'data/action.json') || [];
+  const nodeDatasetRecords = readJson(files['nodeDatasets'], 'data/node_datasets.json') || [];
   
   // 附件和资源处理
   let attachmentRecords = [];
@@ -186,7 +187,7 @@ function readExtractedData(tempDir) {
   return {
     manifest,
     jsonFiles: {
-      groups, tabs, components, processTreeStr, processRecords, operationRecords, stepRecords, actionRecords
+      groups, tabs, components, processTreeStr, processRecords, operationRecords, stepRecords, actionRecords, nodeDatasetRecords
     },
     assetFiles,
     attachmentRecords

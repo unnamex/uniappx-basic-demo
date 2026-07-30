@@ -168,7 +168,8 @@
 				// 备用：延迟直接测量
 				setTimeout(() => {
 					try {
-						const wrap = iframeDoc.getElementById('rich-wrap') as any | null
+						const iframeDoc = (iframe as any).contentDocument
+						const wrap = iframeDoc != null ? iframeDoc.getElementById('rich-wrap') as any | null : null
 						if (wrap != null) {
 							const h = wrap.offsetHeight as number | null
 							if (h != null && h > 0) {
@@ -182,14 +183,7 @@
 				}, 300)
 			}
 			// #endif
-		},
-		// #ifdef WEB
-		beforeUnmount() {
-			if (this._messageHandler != null) {
-				window.removeEventListener('message', this._messageHandler)
-			}
 		}
-		// #endif
 	}
 </script>
 

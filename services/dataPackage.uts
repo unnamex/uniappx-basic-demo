@@ -421,7 +421,7 @@ export function importPackage(
 								resolve(res)
 							})
 							.catch((e: any) => {
-								reject(new Error(JSON.stringify(e)))
+								reject(e instanceof Error ? e : new Error(String(e)))
 							})
 					})
 					.catch((e: any) => {
@@ -430,7 +430,7 @@ export function importPackage(
 					})
 			})
 			.catch((e: any) => {
-				reject(new Error(JSON.stringify(e)))
+				reject(e instanceof Error ? e : new Error(String(e)))
 			})
 	})
 }
@@ -1682,9 +1682,28 @@ function importPackageElectronStreaming(
 				const operationRecords = jsonFiles.operationRecords as any[];
 				const stepRecords = jsonFiles.stepRecords as any[];
 				const actionRecords = jsonFiles.actionRecords as any[];
+				const nodeDatasetRecords = jsonFiles.nodeDatasetRecords as any[];
 				
-				// 保存 UI 配置
-				saveUiConfigurationToDatabase(groups, tabs, components)
+				// 保存 UI 配置到 IndexedDB (Electron/Web 环境)
+				let componentsCount = 0;
+				webClearStore('meta_tab_groups')
+					.then(() => webClearStore('meta_tabs'))
+					.then(() => webClearStore('meta_components'))
+					.then(() => {
+						for (const g of groups) {
+							webPutData('meta_tab_groups', g);
+							componentsCount++;
+						}
+						for (const t of tabs) {
+							webPutData('meta_tabs', t);
+							componentsCount++;
+						}
+						for (const c of components) {
+							webPutData('meta_components', c);
+							componentsCount++;
+						}
+						return Promise.resolve(componentsCount);
+					})
 					.then((componentsCount: number) => {
 						// 存储附加数据
 						if (processTreeStr != '') {
@@ -1695,6 +1714,26 @@ function importPackageElectronStreaming(
 						if (operationRecords.length > 0) webPutData('t_meta_operation', { id: 'all_operations', data: operationRecords, updated_at: Date.now() });
 						if (stepRecords.length > 0) webPutData('t_meta_step', { id: 'all_steps', data: stepRecords, updated_at: Date.now() });
 						if (actionRecords.length > 0) webPutData('t_meta_action', { id: 'all_actions', data: actionRecords, updated_at: Date.now() });
+						
+						if (nodeDatasetRecords.length > 0) {
+							webClearStore('t_node_dataset').then(() => {
+								for (const row of nodeDatasetRecords) {
+									const dsId = ((row['id'] as string | null) ?? '')
+									const nodeInnerId = ((row['nodeInnerId'] as string | null) ?? '')
+									const dataKey = ((row['dataKey'] as string | null) ?? '')
+									if (dsId == '' || nodeInnerId == '' || dataKey == '') continue
+									
+									const dbRow = {
+										id: dsId,
+										node_inner_id: nodeInnerId,
+										data_key: dataKey,
+										rows_json: JSON.stringify(row['rows'] ?? []),
+										sort_order: ((row['sortOrder'] as number | null) ?? 0).toString()
+									}
+									webPutData('t_node_dataset', dbRow)
+								}
+							});
+						}
 						
 						// 处理资源文件，按需将原生 Buffer 存为 Blob
 						if (onProgress != null) {
